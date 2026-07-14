@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# SQLite databases
+*.db
+*.db-journal
+*.sqlite
+
+# Environment variables / Configs
+.env
+
+# Agent/Tool cache folders
+.agents/
+.sixth/

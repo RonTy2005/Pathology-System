@@ -1,0 +1,57 @@
+const { importBatch } = require('./import_helper.js');
+
+const tests = [
+  // Image 00007
+  { name: "Chikungunya IgM", category: "Serology", price: 600, sample_type: "Serum" },
+  { name: "Chlamydia Antibody IgG & IgM", category: "Serology", price: 1200, sample_type: "Serum" },
+  { name: "Chlamydia Antigen", category: "Serology", price: 550, sample_type: "Serum" },
+  { name: "Chloride (Random)", category: "Biochemistry", price: 250, sample_type: "Random Urine" },
+  { name: "Chloride (24 hrs. Urine)", category: "Biochemistry", price: 250, sample_type: "24h Urine" },
+  { name: "Chloride (Serum)", category: "Biochemistry", price: 150, sample_type: "Serum" },
+  { name: "Cholesterol - Total", category: "Biochemistry", price: 500, sample_type: "Serum" },
+  { name: "CK-MB", category: "Biochemistry", price: 500, sample_type: "Serum" },
+  { name: "Clot Retraction Time", category: "Hematology", price: 80, sample_type: "Blood" },
+  { name: "CMV (Cytomegalovirus) IgM & IgG", category: "Serology", price: 400, sample_type: "Serum" },
+  { name: "Coagulation Profile", category: "Hematology", price: 870, sample_type: "Plasma" },
+  { name: "Colonoscopy", category: "Endoscopy", price: 3500, sample_type: "Procedure" },
+  { name: "Colorectal Cancer Monitor Profile", category: "Biochemistry", price: 1400, sample_type: "Serum" },
+  { name: "Complete Body Health Checkup", category: "Health Package", price: 5870, sample_type: "Multiple" },
+  { name: "Complete Haemogram", category: "Hematology", price: 300, sample_type: "EDTA Blood" },
+  { name: "Conj Swab Both Eye", category: "Microbiology", price: 150, sample_type: "Swab" },
+  { name: "Conj Swab C/S Rt Eye", category: "Microbiology", price: 150, sample_type: "Swab" },
+  { name: "Conjunctival Swab Culture", category: "Microbiology", price: 200, sample_type: "Swab" },
+  { name: "Coombs Test Direct", category: "Hematology", price: 400, sample_type: "EDTA Blood" },
+  { name: "Coombs Test Indirect", category: "Hematology", price: 400, sample_type: "Serum" },
+  { name: "Copper (24 hrs. urine)", category: "Biochemistry", price: 350, sample_type: "24h Urine" },
+  { name: "Copper (Serum)", category: "Biochemistry", price: 400, sample_type: "Serum" },
+
+  // Image 00008
+  { name: "Copper (Urine)", category: "Biochemistry", price: 400, sample_type: "Random Urine" },
+  { name: "Cortisol (Evening)", category: "Biochemistry", price: 400, sample_type: "Serum" },
+  { name: "Cortisol (Midnight)", category: "Biochemistry", price: 400, sample_type: "Serum" },
+  { name: "Cortisol (Morning & Evening)", category: "Biochemistry", price: 750, sample_type: "Serum" },
+  { name: "Cortisol (Morning)", category: "Biochemistry", price: 400, sample_type: "Serum" },
+  { name: "Cortisol (Morning, Evening & Midnight)", category: "Biochemistry", price: 1300, sample_type: "Serum" },
+  { name: "C-Peptide Level", category: "Biochemistry", price: 600, sample_type: "Serum" },
+  { name: "CPK (Creatine Phosphokinase)", category: "Biochemistry", price: 500, sample_type: "Serum" },
+  { name: "CPK with CK-MB", category: "Biochemistry", price: 900, sample_type: "Serum" },
+  { name: "Creatinine", category: "Biochemistry", price: 150, sample_type: "Serum" },
+  { name: "Creatinine (24 hrs. urine)", category: "Biochemistry", price: 200, sample_type: "24h Urine" },
+  { name: "CRP (C-Reactive Protein) Test", category: "Serology", price: 400, sample_type: "Serum" },
+  { name: "Cryoglobulins Screening Test", category: "Serology", price: 800, sample_type: "Serum" },
+  { name: "CSF Fluid for AFB Stain", category: "Microbiology", price: 150, sample_type: "CSF" },
+  { name: "CSF Fluid for Cell Type & Cell Count", category: "Hematology", price: 250, sample_type: "CSF" },
+  { name: "CSF Fluid for Chloride", category: "Biochemistry", price: 200, sample_type: "CSF" },
+  { name: "CSF Fluid for Gram stain", category: "Microbiology", price: 200, sample_type: "CSF" },
+  { name: "CSF Fluid for Protein", category: "Biochemistry", price: 200, sample_type: "CSF" },
+  { name: "CSF Fluid for Specific Gravity", category: "Biochemistry", price: 250, sample_type: "CSF" },
+  { name: "CSF Fluid for Sugar", category: "Biochemistry", price: 100, sample_type: "CSF" },
+  { name: "CT PNS WITH CONTRAST", category: "CT Scan", price: 4500, sample_type: "Imaging" },
+  { name: "CT SCAN 3D FACE", category: "CT Scan", price: 3500, sample_type: "Imaging" },
+  { name: "CT Scan Abdominal Pelvis", category: "CT Scan", price: 5000, sample_type: "Imaging" },
+  { name: "CT Scan Ankle Joint", category: "CT Scan", price: 3500, sample_type: "Imaging" },
+  { name: "CT Scan Both Ankle Joint", category: "CT Scan", price: 2600, sample_type: "Imaging" },
+  { name: "CT Scan Both Hip Joint", category: "CT Scan", price: 3500, sample_type: "Imaging" }
+];
+
+importBatch(tests).then(() => process.exit());

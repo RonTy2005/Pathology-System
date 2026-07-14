@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Test Catalog | Lab LMS</title>
+  <link rel="stylesheet" href="styles/app.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div>
+        <div class="brand">We Care Diagnostics Centre</div>
+        <div class="sidebar-subtitle">Test Catalog</div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="test-catalog.html" class="active">Catalog</a>
+        <a href="reception.html">Back to Reception</a>
+      </nav>
+      <button class="secondary-btn" id="logoutBtn">Logout</button>
+    </aside>
+
+    <main class="main-content">
+      <header class="page-header">
+        <div>
+          <div class="eyebrow">Catalog Manager</div>
+          <h1>Lab test entries</h1>
+        </div>
+        <div id="currentUser" class="pill"></div>
+      </header>
+
+      <section class="panel">
+        <div class="section-title">
+          <h2>Add or update a test</h2>
+          <span>Receptionist access only for test management</span>
+        </div>
+        <form id="testCatalogForm" class="stack">
+          <input id="editingTestId" type="hidden" />
+          <div class="inline-grid">
+            <label class="field">
+              <span>Test name</span>
+              <input id="testName" required />
+            </label>
+            <label class="field">
+              <span>Test code</span>
+              <input id="testCode" />
+            </label>
+          </div>
+          <div class="inline-grid">
+            <label class="field">
+              <span>Category</span>
+              <input id="testCategory" />
+            </label>
+            <label class="field">
+              <span>Sample type</span>
+              <input id="testSampleType" />
+            </label>
+          </div>
+          <div class="inline-grid">
+            <label class="field">
+              <span>Price</span>
+              <input id="testPrice" type="number" min="0" value="0" />
+            </label>
+            <label class="field">
+              <span>Turnaround hours</span>
+              <input id="testTurnaroundHours" type="number" min="1" value="24" />
+            </label>
+          </div>
+          <label class="field">
+            <span>Parameters</span>
+            <textarea id="testParameters" rows="4" placeholder="One per line: Hemoglobin|g/dL|13 - 17"></textarea>
+          </label>
+          <div class="actions-row">
+            <button class="primary-btn" id="saveTestBtn" type="submit">Add test</button>
+            <button class="secondary-btn" id="resetTestBtn" type="button">Clear form</button>
+          </div>
+          <p id="testMessage" class="message"></p>
+        </form>
+      </section>
+
+      <section class="panel">
+        <div class="section-title">
+          <h2>Bulk import</h2>
+          <span>Upload a JSON file containing tests and parameters</span>
+        </div>
+        <div class="stack compact">
+          <input id="testImportFile" type="file" accept="application/json" />
+          <div class="actions-row">
+            <button class="secondary-btn" id="importTestsBtn" type="button">Import tests</button>
+          </div>
+          <p id="importTestMessage" class="message"></p>
+          <p class="helper">JSON array format example:<br /><code>[{ "name": "CBC", "code": "CBC", "category": "Haematology", "sampleType": "Blood", "price": 550, "turnaroundHours": 24, "parameters": [{ "parameterName": "Hemoglobin", "unit": "g/dL", "normalRange": "13 - 17" }] }]</code></p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-title">
+          <h2>Existing tests</h2>
+          <span>Edit entries from the current catalog</span>
+        </div>
+        <div id="testList" class="list"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="scripts/common.js"></script>
+  <script src="scripts/testCatalog.js?v=2"></script>
+</body>
+</html>

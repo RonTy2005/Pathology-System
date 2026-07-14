@@ -1,0 +1,58 @@
+const { importBatch } = require('./import_helper.js');
+
+const tests = [
+  // Image 00025
+  { name: "Glucose Random", category: "Biochemistry", price: 50, sample_type: "Plasma" },
+  { name: "Gram Stain of Smears", category: "Microbiology", price: 100, sample_type: "Body Fluid" },
+  { name: "Gram stain of Urethral Discharge", category: "Microbiology", price: 150, sample_type: "Urethral" },
+  { name: "GTT (Glucose Tolerance Test)", category: "Biochemistry", price: 300, sample_type: "Plasma" },
+  { name: "Hanging Drop Preparation", category: "Microbiology", price: 100, sample_type: "Stool" },
+  { name: "HAV Total (IgG + IgM)", category: "Serology", price: 720, sample_type: "Serum" },
+  { name: "Hb & ESR", category: "Hematology", price: 80, sample_type: "Whole Blood" },
+  { name: "Hb Electrophoresis", category: "Hematology", price: 150, sample_type: "Whole Blood" },
+  { name: "Hb(Haemoglobin)", category: "Hematology", price: 150, sample_type: "Whole Blood" },
+  { name: "Hb, DC & ESR", category: "Hematology", price: 150, sample_type: "Whole Blood" },
+  { name: "Hb, TC & DC", category: "Hematology", price: 250, sample_type: "Whole Blood" },
+  { name: "Hb, TC, DC & ESR", category: "Hematology", price: 350, sample_type: "Whole Blood" },
+  { name: "Hb, TC, DC & MP", category: "Hematology", price: 250, sample_type: "Whole Blood" },
+  { name: "Hb, TC, DC & PCV", category: "Hematology", price: 300, sample_type: "Whole Blood" },
+  { name: "Hb, TC, DC, ESR & Platelet Count", category: "Hematology", price: 350, sample_type: "Whole Blood" },
+  { name: "Hb, TC, DC, ESR, MP & Widal", category: "Hematology", price: 570, sample_type: "Whole Blood" },
+  { name: "HbA1c (Glycosylated Haemoglobin)", category: "Biochemistry", price: 350, sample_type: "Whole Blood" },
+  { name: "HBDH (LDH - 1)", category: "Biochemistry", price: 250, sample_type: "Serum" },
+  { name: "HBsAg (Australia Antigen) Test", category: "Serology", price: 250, sample_type: "Serum" },
+  { name: "HBV DNA PCR / Hepatitis B Viral DNA", category: "Molecular Biology", price: 2000, sample_type: "Whole Blood" },
+  { name: "hCG titre", category: "Hormone", price: 1200, sample_type: "Serum" },
+  { name: "hCG titre (Elisa)", category: "Hormone", price: 600, sample_type: "Serum" },
+
+  // Image 00026
+  { name: "HCV Rapid Card Test", category: "Serology", price: 600, sample_type: "Serum" },
+  { name: "HCV RNA PCR / Hepatitis C Viral RNA", category: "Molecular Biology", price: 2000, sample_type: "Whole Blood" },
+  { name: "HCV Total (IgM + IgG)", category: "Serology", price: 900, sample_type: "Serum" },
+  { name: "HDL - Cholesterol", category: "Biochemistry", price: 200, sample_type: "Serum" },
+  { name: "HDL : LDL", category: "Biochemistry", price: 100, sample_type: "Serum" },
+  { name: "HDV Antibody", category: "Serology", price: 500, sample_type: "Serum" },
+  { name: "Helicobacter pylori", category: "Microbiology", price: 500, sample_type: "Serum" },
+  { name: "Helicobacter pylori IgG", category: "Serology", price: 1400, sample_type: "Serum" },
+  { name: "Helicobacter pylori IgG & IgM", category: "Serology", price: 1700, sample_type: "Serum" },
+  { name: "Helicobacter pylori IgM", category: "Serology", price: 1400, sample_type: "Serum" },
+  { name: "Hepatic Profile", category: "Profile", price: 6000, sample_type: "Serum" },
+  { name: "Hepatitis A Virus (HAV) IgG", category: "Serology", price: 500, sample_type: "Serum" },
+  { name: "Hepatitis A Virus (HAV) IgM", category: "Serology", price: 500, sample_type: "Serum" },
+  { name: "Hepatitis A virus Profile", category: "Profile", price: 1200, sample_type: "Serum" },
+  { name: "Hepatitis B core Antibody (HBcAb) IgM", category: "Serology", price: 500, sample_type: "Serum" },
+  { name: "Hepatitis B core Antibody (HBcAb) Total", category: "Serology", price: 500, sample_type: "Serum" },
+  { name: "Hepatitis B envelope Antibody (HBeAb)", category: "Serology", price: 500, sample_type: "Serum" },
+  { name: "Hepatitis B envelope Antigen (HBeAg)", category: "Serology", price: 500, sample_type: "Serum" },
+  { name: "Hepatitis B Profile", category: "Profile", price: 3600, sample_type: "Serum" },
+  { name: "Hepatitis B surface Antibody (HBsAb)", category: "Serology", price: 500, sample_type: "Serum" },
+  { name: "Hepatitis B surface Antigen (HBsAg)", category: "Serology", price: 200, sample_type: "Serum" },
+  { name: "Hepatitis B Viral DNA Qualitative", category: "Molecular Biology", price: 1600, sample_type: "Whole Blood" },
+  { name: "Hepatitis B virus Treatment (Follow Up)", category: "Molecular Biology", price: 1600, sample_type: "Whole Blood" },
+  { name: "Hepatitis C RNA PCR (Quantitative)", category: "Molecular Biology", price: 7500, sample_type: "Whole Blood" },
+  { name: "Hepatitis C Viral RNA Qualitative", category: "Molecular Biology", price: 2000, sample_type: "Whole Blood" },
+  { name: "Hepatitis C Virus (HCV) Antibody IgG", category: "Serology", price: 500, sample_type: "Serum" },
+  { name: "Hepatitis C Virus (HCV) Antibody IgM", category: "Serology", price: 500, sample_type: "Serum" }
+];
+
+importBatch(tests).then(() => process.exit());

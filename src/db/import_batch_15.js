@@ -1,0 +1,55 @@
+const { importBatch } = require('./import_helper.js');
+
+const tests = [
+  // Image 00029
+  { name: "Leptospira Antibody IgG", category: "Serology", price: 1000, sample_type: "Serum" },
+  { name: "Leptospira Antibody IgM", category: "Serology", price: 1000, sample_type: "Serum" },
+  { name: "LFT (Liver Function Test)", category: "Profile", price: 650, sample_type: "Serum" },
+  { name: "LFT with GGT", category: "Profile", price: 770, sample_type: "Serum" },
+  { name: "LH & FSH", category: "Hormone", price: 800, sample_type: "Serum" },
+  { name: "LH & PRL", category: "Hormone", price: 800, sample_type: "Serum" },
+  { name: "LH (Lutenising Hormone)", category: "Hormone", price: 400, sample_type: "Serum" },
+  { name: "Lipase", category: "Biochemistry", price: 400, sample_type: "Serum" },
+  { name: "Lipid Comprehensive Profile", category: "Profile", price: 1200, sample_type: "Serum" },
+  { name: "Lipid Profile", category: "Profile", price: 650, sample_type: "Serum" },
+  { name: "LipoProtein", category: "Biochemistry", price: 500, sample_type: "Serum" },
+  { name: "Lipoprotein Profile", category: "Profile", price: 1000, sample_type: "Serum" },
+  { name: "Lithium", category: "Biochemistry", price: 400, sample_type: "Serum" },
+  { name: "Liver Cancer Monitor Profile", category: "Profile", price: 900, sample_type: "Serum" },
+  { name: "Lupus Anticoagulant", category: "Hematology", price: 1200, sample_type: "Plasma" },
+  { name: "Magnesium", category: "Biochemistry", price: 300, sample_type: "Serum" },
+  { name: "Magnesium (Urine)", category: "Biochemistry", price: 300, sample_type: "Urine" },
+  { name: "Malaria (Pan / Pf ) Antigen", category: "Serology", price: 500, sample_type: "Whole Blood" },
+  { name: "Malaria Profile", category: "Profile", price: 400, sample_type: "Whole Blood" },
+  { name: "Male Infertility Profile", category: "Profile", price: 2500, sample_type: "Semen" },
+  { name: "Mantoux 1:10000", category: "Microbiology", price: 150, sample_type: "N/A" },
+
+  // Image 00030
+  { name: "Mantoux 1:5000", category: "Microbiology", price: 150, sample_type: "N/A" },
+  { name: "Mantoux Test", category: "Microbiology", price: 150, sample_type: "N/A" },
+  { name: "Mantoux Test (PPD 5 TU)", category: "Microbiology", price: 70, sample_type: "N/A" },
+  { name: "MASTER HEALTH CHECK-UP", category: "Profile", price: 5000, sample_type: "Multiple" },
+  { name: "MCH (Mean Corpuscular Haemoglobin)", category: "Hematology", price: 50, sample_type: "Whole Blood" },
+  { name: "MCHC (Mean Corpuscular Hb. Concentration)", category: "Hematology", price: 50, sample_type: "Whole Blood" },
+  { name: "MCV (Mean Corpuscular Volume)", category: "Hematology", price: 50, sample_type: "Whole Blood" },
+  { name: "Measles / Rubeola Antibodies IgG & IgM", category: "Serology", price: 3000, sample_type: "Serum" },
+  { name: "Measles / Rubeola Antibody IgG", category: "Serology", price: 1500, sample_type: "Serum" },
+  { name: "Measles / Rubeola Antibody IgM", category: "Serology", price: 1500, sample_type: "Serum" },
+  { name: "Menstrual Blood for TB PCR", category: "Molecular Biology", price: 2000, sample_type: "Menstrual Blood" },
+  { name: "Micro Filaria", category: "Parasitology", price: 500, sample_type: "Whole Blood" },
+  { name: "Microalbumin (Urine)", category: "Biochemistry", price: 250, sample_type: "Urine" },
+  { name: "MP (Malaria Parasites) Conce Method", category: "Parasitology", price: 50, sample_type: "Whole Blood" },
+  { name: "MP (Malaria Parasites) Thick & Thin", category: "Parasitology", price: 100, sample_type: "Whole Blood" },
+  { name: "MRI S. I. JOINT(BOTH)/SACRUM", category: "MRI", price: 6000, sample_type: "N/A" },
+  { name: "MRI ANGIO", category: "MRI", price: 5000, sample_type: "N/A" },
+  { name: "MRI BOTH JOINT", category: "MRI", price: 6500, sample_type: "N/A" },
+  { name: "MRI BRAIN", category: "MRI", price: 6000, sample_type: "N/A" },
+  { name: "MRI BRAIN & MRA/MRS/MRV", category: "MRI", price: 7000, sample_type: "N/A" },
+  { name: "MRI BRAIN & PNS/ORBIT/PITUITARY", category: "MRI", price: 6500, sample_type: "N/A" },
+  { name: "MRI C. SPINE,DORSAL,D/L, L. SPINE", category: "MRI", price: 12200, sample_type: "N/A" },
+  { name: "MRI CERVICAL SPINE", category: "MRI", price: 6000, sample_type: "N/A" },
+  { name: "MRI Cervical Spine with Brain", category: "MRI", price: 9000, sample_type: "N/A" },
+  { name: "MRI CONTRAST (ANY PART)", category: "MRI", price: 2200, sample_type: "N/A" }
+];
+
+importBatch(tests).then(() => process.exit());

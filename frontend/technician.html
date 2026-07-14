@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Technician | Lab LMS</title>
+  <link rel="stylesheet" href="styles/app.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div>
+        <div class="brand">We Care Diagnostics Centre</div>
+        <div class="sidebar-subtitle">Technician Workbench</div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="technician.html" class="active">Assignments</a>
+        <a href="reception.html" id="receptionLink" hidden>Reception</a>
+      </nav>
+      <button class="secondary-btn" id="logoutBtn">Logout</button>
+    </aside>
+
+    <main class="main-content">
+      <header class="page-header">
+        <div>
+          <div class="eyebrow">Technician Desk</div>
+          <h1>Enter results and finalize reports</h1>
+        </div>
+        <div id="currentUser" class="pill"></div>
+      </header>
+
+      <nav class="tabs">
+        <button class="tab-btn" data-tab="assignments">My Assignments</button>
+        <button class="tab-btn active" data-tab="patient-search">Patient Search</button>
+      </nav>
+
+      <section class="two-column technician-layout" id="assignments" hidden>
+        <article class="panel">
+          <div class="section-title">
+            <h2>Assigned visits</h2>
+            <span>Only your worklist</span>
+          </div>
+          <input id="techVisitSearch" placeholder="Search bill or patient" />
+          <div id="technicianVisits" class="list"></div>
+        </article>
+
+        <article class="panel">
+          <div class="section-title">
+            <h2>Result entry</h2>
+            <span>One visit at a time</span>
+          </div>
+          <div id="visitDetails" class="list empty-state">Select a visit to load assigned tests.</div>
+          <div class="actions-row">
+            <button class="secondary-btn" id="saveAllResultsBtn" type="button" disabled>Save all results</button>
+            <button class="primary-btn" id="finalizeBtn" disabled>Finalize report</button>
+            <button class="secondary-btn" id="printBtn" disabled>Print report</button>
+            <button class="ghost-btn" id="viewReportBtn" disabled>Preview report</button>
+            <button class="whatsapp-btn" id="techWhatsAppBtn" disabled>WhatsApp PDF</button>
+          </div>
+          <p id="techMessage" class="message"></p>
+        </article>
+      </section>
+
+      <section class="two-column technician-layout" id="patient-search">
+        <article class="panel">
+          <div class="section-title">
+            <h2>Search patients</h2>
+            <span>Find any registered patient to update results</span>
+          </div>
+          <form id="patientSearchForm" class="stack">
+            <label class="field">
+              <span>Search patient</span>
+              <input id="patientSearchInput" placeholder="Search by name or phone" autocomplete="off" />
+            </label>
+            <div class="inline-grid">
+              <label class="field">
+                <span>From date</span>
+                <input id="patientSearchDateFrom" type="date" />
+              </label>
+              <label class="field">
+                <span>To date</span>
+                <input id="patientSearchDateTo" type="date" />
+              </label>
+            </div>
+          </form>
+          <div id="patientSearchResults" class="list"></div>
+        </article>
+
+        <article class="panel">
+          <div class="section-title">
+            <h2>Result entry</h2>
+            <span>Update tests if assigned to you</span>
+          </div>
+          <div id="patientVisitDetails" class="list empty-state">Select a patient visit to load tests.</div>
+          <div class="actions-row">
+            <button class="secondary-btn" id="patientSaveAllResultsBtn" type="button" disabled>Save all results</button>
+            <button class="primary-btn" id="patientFinalizeBtn" disabled>Finalize report</button>
+            <button class="secondary-btn" id="patientPrintBtn" disabled>Print report</button>
+            <button class="ghost-btn" id="patientViewReportBtn" disabled>View report</button>
+            <button class="whatsapp-btn" id="patientWhatsAppBtn" disabled>WhatsApp PDF</button>
+          </div>
+          <p id="patientTechMessage" class="message"></p>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script src="scripts/common.js"></script>
+  <script src="scripts/technician.js"></script>
+</body>
+</html>

@@ -1,0 +1,246 @@
+
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        @page {
+          size: A3;
+          margin: 0;
+        }
+        body { 
+          font-family: 'Times New Roman', Times, serif; 
+          font-size: 18px;
+          margin: 0; 
+          padding: 0;
+          color: #000; 
+          line-height: 1.2;
+          box-sizing: border-box;
+          background: white;
+          width: 297mm;
+        }
+        .blank-header {
+          height: 4cm;
+          width: 100%;
+        }
+        .main-content {
+          padding: 0 1.5cm 2cm 1.5cm;
+          min-height: calc(420mm - 4cm - 2cm);
+          display: flex;
+          flex-direction: column;
+        }
+        .header-table {
+          width: 100%;
+          border-top: 2px solid #000;
+          border-bottom: 2px solid #000;
+          border-collapse: collapse;
+          margin-bottom: 20px;
+        }
+        .header-table td {
+          vertical-align: top;
+          padding: 10px;
+          border-right: 1px solid #aaa;
+        }
+        .header-table td:last-child {
+          border-right: none;
+        }
+        
+        .patient-name { font-size: 26px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; }
+        .info-row { margin-bottom: 5px; font-size: 18px; display: flex; }
+        .info-label { width: 60px; color: #333; }
+        .info-colon { width: 15px; }
+        
+        .qr-img { width: 85px; height: 85px; margin-top: 5px; }
+        .barcode-img { height: 45px; width: auto; margin-bottom: 8px; }
+
+        .dept-title { 
+          text-align: center; 
+          font-weight: bold; 
+          font-size: 22px; 
+          margin: 10px 0;
+          text-transform: uppercase;
+        }
+        
+        table.results-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        table.results-table th { 
+          border-top: 2px solid #000; 
+          border-bottom: 2px solid #000; 
+          padding: 8px 5px; 
+          text-align: left; 
+          font-weight: bold;
+          font-size: 19px;
+        }
+        table.results-table td { padding: 6px 5px; font-size: 18px; vertical-align: top; }
+        .center { text-align: center; }
+        .high-val, .low-val { font-weight: 900; }
+        
+        .group-header { font-weight: bold; padding-top: 15px !important; padding-bottom: 5px !important; font-size: 19px; }
+        .sub-param { padding-left: 30px !important; }
+        
+        .end-report { text-align: center; margin-top: 5px; font-weight: bold; padding-bottom: 10px; }
+        
+        .signature-wrapper {
+          margin-top: auto;
+          display: flex;
+          justify-content: flex-end;
+        }
+        .signature-section {
+          text-align: center;
+          width: 250px;
+        }
+        .sig-image { 
+          width: 180px; 
+          height: auto; 
+          display: block; 
+          margin: 0 auto 5px auto;
+        }
+        .doc-name { font-weight: bold; font-size: 20px; margin: 0; color: #1a237e; }
+        .doc-detail { font-size: 16px; margin: 0; color: #1a237e; }
+ 
+        tr { page-break-inside: avoid; }
+      </style>
+    </head>
+    <body>
+      <div class="blank-header"></div>
+      
+      <div class="main-content">
+        <table class="header-table">
+          <tr>
+            <td style="width: 40%;">
+              <div style="display: flex; align-items: flex-start; justify-content: space-between;">
+                <div style="flex-grow: 1;">
+                  <div class="patient-name">David White</div>
+                  <div class="info-row"><span class="info-label">Age</span><span class="info-colon">:</span> 42 Years</div>
+                  <div class="info-row"><span class="info-label">Sex</span><span class="info-colon">:</span> Male</div>
+                  <div class="info-row"><span class="info-label">PID</span><span class="info-colon">:</span> 006</div>
+                </div>
+                <div style="padding-right: 15px;">
+                  <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=BILL-2026-006-David%20White" class="qr-img" style="margin-top: 0;" />
+                </div>
+              </div>
+            </td>
+            <td style="width: 30%;">
+              <div style="margin-bottom: 12px;">
+                <strong style="font-size: 17px; display: block; margin-bottom: 4px;">Sample Collected At:</strong>
+                <span style="font-size: 16px; color: #222; line-height: 1.4;">We Care Diagnostics Center</span>
+              </div>
+              <div style="margin-top: 15px;">
+                <span style="font-size: 17px;">Ref. By:</span> <strong style="font-size: 18px;">Dr. Self</strong>
+                
+              </div>
+            </td>
+            <td style="width: 30%; border-right: none;">
+              <div style="text-align: right; padding-right: 10px;">
+                <img src="https://bwipjs-api.metafloor.com/?bcid=code128&text=BILL-2026-006&scale=2&height=10&includetext" class="barcode-img" />
+                <div class="info-row" style="justify-content: flex-end; font-size: 15px;"><span style="width: 100px; text-align: left;">Registered on:</span> <span style="font-weight: 500;">04 May 2026, 08:30 pm</span></div>
+                <div class="info-row" style="justify-content: flex-end; font-size: 15px;"><span style="width: 100px; text-align: left;">Collected on:</span> <span style="font-weight: 500;">04 May 2026, 08:30 pm</span></div>
+                <div class="info-row" style="justify-content: flex-end; font-size: 15px;"><span style="width: 100px; text-align: left;">Reported on:</span> <span style="font-weight: 500;">04 May 2026, 10:30 pm</span></div>
+              </div>
+            </td>
+          </tr>
+        </table>
+
+        <div class="dept-title">MCV (MEAN CORPUSCULAR VOLUME) (MCV8506)</div>
+
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th style="width: 40%">Investigation</th>
+              <th style="width: 15%">Result</th>
+              <th style="width: 30%">Reference Value</th>
+              <th style="width: 15%">Unit</th>
+            </tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td style="font-weight: bold;">Primary Sample Type :</td>
+                <td>Blood</td>
+                <td></td>
+                <td></td>
+              </tr>
+            
+            
+                  <tr>
+                    <td class="">
+                      Mean Corpuscular Volume (MCV)
+                      
+                      
+                      
+                      
+                      
+                      
+                      
+                      <div style="font-size: 13px; color: #444; font-weight: normal; margin-top: 2px;">Calculated</div>
+                    </td>
+                    <td style="font-weight: normal">87.85</td>
+                    <td style="font-size: 15px;">83.00 - 101.00</td>
+                    <td>fL</td>
+                  </tr>
+                
+          </tbody>
+        </table>
+        
+        
+
+        
+        
+        
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+        <div style="font-size: 13px; margin-top: 25px; line-height: 1.4;">
+          <strong>Comments :</strong>
+          <ul style="margin-top: 5px; margin-bottom: 12px; padding-left: 20px;">
+            <li>MCV Blood Test (Mean Corpuscular Volume) Calculates the average size of your red blood cell.</li>
+          </ul>
+          
+          <strong>Low MCV Causes :</strong>
+          <ul style="margin-top: 5px; margin-bottom: 12px; padding-left: 20px;">
+            <li>Sideroblastic anemia - A rare type of anemia in which the bone marrow produces immature red blood cells that can't carry oxygen effectively.</li>
+            <li>Thalassemia - A group of inherited blood disorders that cause the body to produce abnormal hemoglobin, leading to low levels of healthy red blood cells.</li>
+            <li>Lead poisoning - Exposure to high levels of lead can interfere with the body's production of hemoglobin and lead to anemia.</li>
+            <li>Bone marrow disorders - Certain bone marrow disorders, such as myelodysplastic syndrome or aplastic anemia, can lead to low levels of red blood cells.</li>
+          </ul>
+
+          <strong>High MCV Causes :</strong>
+          <ul style="margin-top: 5px; margin-bottom: 15px; padding-left: 20px;">
+            <li>Macrocytic anemia - A type of anemia characterized by red blood cells that are larger than normal. This can be caused by deficiencies in vitamin B12 or folate.</li>
+            <li>Liver disease - Some types of liver disease, such as cirrhosis, can interfere with the body's ability to process and metabolize certain nutrients, leading to anemia and high MCV levels.</li>
+            <li>Hypothyroidism - An underactive thyroid gland can cause a variety of symptoms, including anemia and high MCV levels.</li>
+            <li>Bone marrow disorders - Certain bone marrow disorders, such as myelodysplastic syndrome, can lead to abnormal red blood cell production and high MCV levels.</li>
+          </ul>
+        </div>
+        
+        
+        <div style="font-size: 14px; padding-top: 15px; font-style: italic;">
+          Note: Our laboratory staff are highly skilled and adhere to strict quality standards. All reports are prepared with utmost care and precision. Results should always be interpreted in correlation with the patient’s clinical condition.
+        </div>
+
+        <div style="display: flex; justify-content: space-between; border-top: 1px solid #000; padding-top: 5px; margin-top: 20px; font-size: 14px;">
+          <div>Thanks for Reference</div>
+          <div style="font-weight: bold;">****End of Report****</div>
+          <div style="width: 120px;"></div> <!-- Spacer for balance -->
+        </div>
+
+        <div class="signature-wrapper">
+          <div class="signature-section">
+            <img src="data:image/jpeg;base64,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ABH+C/jzwpaIj3mt6DfadAJCAvmy27ohJ7fMw57V/NFMON+OWySD7/8A1wa/qTr8Zv8Agof/AME+PEfw38aa18Q/h7o0+t+BNWlm1C8stOhzLocxy8oMaj/j2PzMrKMIAVbaFVn2o1FBNPqFj9PvgN+0Z4P+Mnw38Kaxb+K9BuNc1DTLae+062v4vNt7l4laWJot25SrbhgjtVb4iftjfBT4WWN3ceIPiZ4djltX8qWwsb5L28D/AN37PCXkzkYPy4Hciv5xWi+fG07vQA5/Kux8IfBj4g+PFaTwv4E8TeIkXq2laPcXIH1KIcUnCLd0PfY/Vj9nX/grR4O17xL46s/ipqjeHNJOpz3Xhi/OnSOfsBciO2nWBXImVdp3YIbLAnIG7vvHn/BXT4DeFIk/sWbxB4zldSQNK0toEQ9t7XJiIB9VDV+Y3hL/AIJ7/tEeL4UntPhTrEUbcgarPb6c3XHK3Do36V754J/4I2fFvxQ1hN4r8T+GfCNlKuZ4beSa/vIPYxhViY9Puy4x3zQoUore4Gh4z/4LXfEa61md/CngLwtpWlcCKDWWub2fpyTJHJCpycnAXjOMnGT4f44/4Kd/tE+OBfRf8JyPD1jdn/j00HT4LfyR6RzFWmX6+Zn3r7K8Kf8ABEbwbaTKfE3xO13V4h1XStPhsG/AuZ8flXt/hv8A4JT/ALN+h6RBZ3vg6+8RXEed2oanrd4s8uST8wgkjj4zj5UHA9eaFKEdUgPxS8a/Gz4g/Emzjs/FvjzxL4ltIn8yO31rWLi7jRsYyqOxAP0rK8GeAfFPxC1F7Dwp4a1jxNfBSxttH06W7kC+u1FJA96/ox+GP7M/wq+DUNqvg3wBoOhz2wZY76KyWS8ILFjuuX3SvyeNznAwBwAK9Mo9tb4UI/AfwZ/wTJ/aN8bJYz/8IEdEsroj/Sdc1G3tjEM43SQ7zMuPTy846A17v4X/AOCJXj+7YjxF8RfDWkr2OlWtxek/g4hr9gaKzdSTA/Mzwl/wRD8NWV+H8TfFXVdXsf4odJ0iKwkP0eSScD/vmvobwd/wS9/Zz8Jafawy+B5PEF3CCHv9Z1O5lkmOScuiusXGcfLGBgDvkn6toqHKT6jueRaL+yH8D/D6AWXwk8FqV5Ek2h28zj/gToT+teheHPBHh3wckiaBoGl6GsgAddNs47cMB0zsUZrboqdwuFFFFAgooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKAP/Z" class="sig-image" />
+            <p class="doc-name">Dr. Arun Kumar Biswas</p>
+            <p class="doc-detail">MBBS, MD (Path.)</p>
+            <p class="doc-detail">Consultant Pathologist</p>
+            <p class="doc-detail">Regd. No.- 58516</p>
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+  

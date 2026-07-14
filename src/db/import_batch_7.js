@@ -1,0 +1,57 @@
+const { importBatch } = require('./import_helper.js');
+
+const tests = [
+  // Image 00013
+  { name: "Digital Xray Cervical Spine Lat", category: "X-Ray", price: 250, sample_type: "Imaging" },
+  { name: "Digital Xray Cervical Spine Obl", category: "X-Ray", price: 250, sample_type: "Imaging" },
+  { name: "Digital Xray Cervico-Thoracic AP / Lat", category: "X-Ray", price: 500, sample_type: "Imaging" },
+  { name: "Digital Xray Chest (Inlet)", category: "X-Ray", price: 250, sample_type: "Imaging" },
+  { name: "Digital Xray Chest AP", category: "X-Ray", price: 250, sample_type: "Imaging" },
+  { name: "Digital Xray Chest AP / Lat", category: "X-Ray", price: 500, sample_type: "Imaging" },
+  { name: "Digital Xray Chest Child", category: "X-Ray", price: 250, sample_type: "Imaging" },
+  { name: "Digital Xray Chest Decubitous", category: "X-Ray", price: 250, sample_type: "Imaging" },
+  { name: "Digital Xray Chest Lat", category: "X-Ray", price: 250, sample_type: "Imaging" },
+  { name: "Digital Xray Chest Lordotic", category: "X-Ray", price: 250, sample_type: "Imaging" },
+  { name: "Digital Xray Chest Obl", category: "X-Ray", price: 250, sample_type: "Imaging" },
+  { name: "Digital Xray Chest PA", category: "X-Ray", price: 250, sample_type: "Imaging" },
+  { name: "Digital Xray Chest PA (Child)", category: "X-Ray", price: 250, sample_type: "Imaging" },
+  { name: "Digital Xray Chest PA / Lat", category: "X-Ray", price: 500, sample_type: "Imaging" },
+  { name: "Digital Xray Chest PA / Lat / Obl", category: "X-Ray", price: 750, sample_type: "Imaging" },
+  { name: "Digital Xray Clavicle AP", category: "X-Ray", price: 250, sample_type: "Imaging" },
+  { name: "Digital Xray Clavicle AP / Lat", category: "X-Ray", price: 500, sample_type: "Imaging" },
+  { name: "Digital Xray Clavicle Lat", category: "X-Ray", price: 250, sample_type: "Imaging" },
+  { name: "Digital Xray Coccyx AP", category: "X-Ray", price: 250, sample_type: "Imaging" },
+  { name: "Digital Xray Coccyx AP / Lat", category: "X-Ray", price: 500, sample_type: "Imaging" },
+  { name: "Digital Xray Coccyx Lat", category: "X-Ray", price: 250, sample_type: "Imaging" },
+  { name: "Digital Xray Connedown Sacroilliac Joint", category: "X-Ray", price: 200, sample_type: "Imaging" },
+  { name: "Digital Xray Cystogram", category: "X-Ray", price: 500, sample_type: "Imaging" },
+
+  // Image 00014
+  { name: "Digital XRAY D/L Spine AP", category: "X-Ray", price: 250, sample_type: "Imaging" },
+  { name: "Digital XRAY D/L Spine AP / Lat", category: "X-Ray", price: 500, sample_type: "Imaging" },
+  { name: "Digital XRAY D/L Spine AP / Lat / Obl", category: "X-Ray", price: 750, sample_type: "Imaging" },
+  { name: "Digital XRAY D/L Spine Lat", category: "X-Ray", price: 250, sample_type: "Imaging" },
+  { name: "Digital XRAY Dental (Each Plate)", category: "X-Ray", price: 120, sample_type: "Imaging" },
+  { name: "Digital XRAY Ear", category: "X-Ray", price: 250, sample_type: "Imaging" },
+  { name: "Digital XRAY Eema Charges", category: "X-Ray", price: 150, sample_type: "Imaging" },
+  { name: "Digital XRAY Elbow AP", category: "X-Ray", price: 250, sample_type: "Imaging" },
+  { name: "Digital XRAY Elbow AP / Lat", category: "X-Ray", price: 250, sample_type: "Imaging" },
+  { name: "Digital XRAY Elbow Lat", category: "X-Ray", price: 250, sample_type: "Imaging" },
+  { name: "Digital XRAY Face", category: "X-Ray", price: 250, sample_type: "Imaging" },
+  { name: "Digital XRAY Feet AP / Lat / Obl", category: "X-Ray", price: 350, sample_type: "Imaging" },
+  { name: "Digital XRAY Femur (Both) AP", category: "X-Ray", price: 250, sample_type: "Imaging" },
+  { name: "Digital XRAY Femur (Both) AP / Lat", category: "X-Ray", price: 500, sample_type: "Imaging" },
+  { name: "Digital XRAY Femur (Both) Lat", category: "X-Ray", price: 500, sample_type: "Imaging" },
+  { name: "Digital XRAY Femur (Left/Right) AP", category: "X-Ray", price: 250, sample_type: "Imaging" },
+  { name: "Digital XRAY Femur (Left/Right) Lat", category: "X-Ray", price: 250, sample_type: "Imaging" },
+  { name: "Digital XRAY Finger AP", category: "X-Ray", price: 250, sample_type: "Imaging" },
+  { name: "Digital XRAY Finger AP / Lat", category: "X-Ray", price: 250, sample_type: "Imaging" },
+  { name: "Digital XRAY Finger BV", category: "X-Ray", price: 150, sample_type: "Imaging" },
+  { name: "Digital XRAY Finger Lat", category: "X-Ray", price: 250, sample_type: "Imaging" },
+  { name: "Digital XRAY Fistulogram", category: "X-Ray", price: 500, sample_type: "Imaging" },
+  { name: "Digital XRAY Fluoroscopy", category: "X-Ray", price: 125, sample_type: "Imaging" },
+  { name: "Digital XRAY Foot AP", category: "X-Ray", price: 250, sample_type: "Imaging" },
+  { name: "Digital XRAY Foot AP / Lat", category: "X-Ray", price: 250, sample_type: "Imaging" }
+];
+
+importBatch(tests).then(() => process.exit());

@@ -1,0 +1,257 @@
+
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <title>Report RPT-TEST-001</title>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+      <style>
+        @page {
+          size: A3;
+          margin: 3.5cm 1.2cm 1.5cm 1.2cm;
+        }
+        body { 
+          font-family: 'Inter', sans-serif; 
+          font-size: 14px;
+          margin: 0; 
+          color: #000; 
+          line-height: 1.4;
+        }
+        .header-grid {
+          display: grid;
+          grid-template-columns: 2fr 1fr 2fr;
+          gap: 20px;
+          margin-bottom: 30px;
+          align-items: start;
+        }
+        .header-col div { margin-bottom: 5px; }
+        .qr-container { text-align: center; }
+        .qr-container img { width: 90px; height: 90px; }
+        
+        .barcode-container { text-align: right; margin-bottom: 20px; }
+        .barcode-container img { height: 35px; }
+
+        .test-section { margin-bottom: 40px; }
+        .test-header {
+          text-align: center;
+          font-size: 18px;
+          font-weight: 700;
+          margin-bottom: 20px;
+          text-decoration: underline;
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th { border-bottom: 2px solid #000; padding: 8px 4px; text-align: left; }
+        td { padding: 6px 4px; border-bottom: 1px solid #eee; }
+        .center { text-align: center; }
+        .left { text-align: left; }
+        .high-val { color: #dc2626; }
+        .low-val { color: #2563eb; }
+        
+        .footer-note { margin-top: 50px; font-size: 12px; font-style: italic; text-align: center; }
+        .end-report { margin-top: 20px; text-align: center; font-weight: 600; }
+        
+        .page-footer {
+          position: fixed;
+          bottom: 0;
+          width: 100%;
+          display: flex;
+          justify-content: space-between;
+          font-size: 11px;
+          padding-top: 10px;
+          border-top: 1px solid #eee;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="barcode-container">
+        <img src="https://bwipjs-api.metafloor.com/?bcid=code128&text=TEST-1777772473168&scale=2&height=10&includetext" alt="Barcode" />
+      </div>
+
+      <div class="header-grid">
+        <div class="header-col">
+          <div><strong>Patient Name:</strong> Test Mita Ghosh</div>
+          <div><strong>Referred By:</strong> Self</div>
+          <div><strong>Age / Sex:</strong> 28 Years / Female</div>
+          <div><strong>Investigations:</strong> Complete Blood Count</div>
+        </div>
+        
+        <div class="qr-container">
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=TEST-1777772473168-Test%20Mita%20Ghosh" alt="QR Code" />
+        </div>
+        
+        <div class="header-col" style="text-align: right;">
+          <div><strong>Date:</strong> 03/05/2026</div>
+          <div><strong>Daily Case Number:</strong> TEST-1777772473168</div>
+          <div><strong>Patient ID:</strong> 38</div>
+        </div>
+      </div>
+      
+      
+      <div class="test-section">
+        <div class="test-header">Complete Blood Count</div>
+        <table>
+          <thead>
+            <tr>
+              <th class="left" style="width: 40%">TEST</th>
+              <th class="center" style="width: 20%">VALUE</th>
+              <th class="center" style="width: 20%">UNIT</th>
+              <th class="center" style="width: 20%">REFERENCE</th>
+            </tr>
+          </thead>
+          <tbody>
+    
+        <tr>
+          <td class="param-name" style="padding-left: 0">Hemoglobin</td>
+          <td class="center">14.2</td>
+          <td class="center">g/dl</td>
+          <td class="center">12 - 15</td>
+        </tr>
+      
+        <tr>
+          <td class="param-name" style="padding-left: 0">Total Leukocyte Count</td>
+          <td class="center">7500</td>
+          <td class="center">cumm</td>
+          <td class="center">4,800 - 10,800</td>
+        </tr>
+      
+          <tr>
+            <td colspan="4" style="font-weight: 700; padding: 10px 0 5px 0; border-bottom: 1px solid #000;">Differential Leucocyte Count</td>
+          </tr>
+        
+        <tr>
+          <td class="param-name" style="padding-left: 0">Neutrophils</td>
+          <td class="center">65</td>
+          <td class="center">%</td>
+          <td class="center">40 - 80</td>
+        </tr>
+      
+        <tr>
+          <td class="param-name" style="padding-left: 0">Lymphocyte</td>
+          <td class="center">25</td>
+          <td class="center">%</td>
+          <td class="center">20 - 40</td>
+        </tr>
+      
+        <tr>
+          <td class="param-name" style="padding-left: 0">Eosinophils</td>
+          <td class="center">4</td>
+          <td class="center">%</td>
+          <td class="center">1 - 6</td>
+        </tr>
+      
+        <tr>
+          <td class="param-name" style="padding-left: 0">Monocytes</td>
+          <td class="center">5</td>
+          <td class="center">%</td>
+          <td class="center">2 - 10</td>
+        </tr>
+      
+        <tr>
+          <td class="param-name" style="padding-left: 0">Basophils</td>
+          <td class="center">1</td>
+          <td class="center">%</td>
+          <td class="center">&lt; 2</td>
+        </tr>
+      
+        <tr>
+          <td class="param-name" style="padding-left: 0">Platelet Count</td>
+          <td class="center">2.8</td>
+          <td class="center">lakhs/cumm</td>
+          <td class="center">1.5 - 4.1</td>
+        </tr>
+      
+        <tr>
+          <td class="param-name" style="padding-left: 0">Total RBC Count</td>
+          <td class="center">4.5</td>
+          <td class="center">million/cumm</td>
+          <td class="center">3.9 - 4.8</td>
+        </tr>
+      
+        <tr>
+          <td class="param-name" style="padding-left: 0">Hematocrit Value, Hct</td>
+          <td class="center">42.5</td>
+          <td class="center">%</td>
+          <td class="center">36 - 46</td>
+        </tr>
+      
+        <tr>
+          <td class="param-name" style="padding-left: 0">Mean Corpuscular Volume, MCV</td>
+          <td class="center">94.4</td>
+          <td class="center">fL</td>
+          <td class="center">83 - 101</td>
+        </tr>
+      
+        <tr>
+          <td class="param-name" style="padding-left: 0">Mean Cell Haemoglobin, MCH</td>
+          <td class="center">31.6</td>
+          <td class="center">Pg</td>
+          <td class="center">27 - 32</td>
+        </tr>
+      
+        <tr>
+          <td class="param-name" style="padding-left: 0">Mean Cell Haemoglobin CON, MCHC</td>
+          <td class="center">33.4</td>
+          <td class="center">%</td>
+          <td class="center">31.5 - 34.5</td>
+        </tr>
+      
+        <tr>
+          <td class="param-name" style="padding-left: 0">RDW</td>
+          <td class="center">-</td>
+          <td class="center">%</td>
+          <td class="center">11.5 - 14.5</td>
+        </tr>
+      
+        <tr>
+          <td class="param-name" style="padding-left: 20px">Absolute Neutrophil Count</td>
+          <td class="center">4875</td>
+          <td class="center">cumm</td>
+          <td class="center">2,000 - 7,000</td>
+        </tr>
+      
+        <tr>
+          <td class="param-name" style="padding-left: 20px">Absolute Lymphocyte Count</td>
+          <td class="center">1875</td>
+          <td class="center">cumm</td>
+          <td class="center">1,000 - 3,000</td>
+        </tr>
+      
+        <tr>
+          <td class="param-name" style="padding-left: 20px">Absolute Eosinophil Count</td>
+          <td class="center">-</td>
+          <td class="center">cumm</td>
+          <td class="center">20 - 500</td>
+        </tr>
+      
+        <tr>
+          <td class="param-name" style="padding-left: 20px">Absolute Monocyte Count</td>
+          <td class="center">-</td>
+          <td class="center">cumm</td>
+          <td class="center">200 - 1,000</td>
+        </tr>
+      
+        <tr>
+          <td class="param-name" style="padding-left: 20px">Absolute Basophil Count</td>
+          <td class="center">-</td>
+          <td class="center">cumm</td>
+          <td class="center">20 - 100</td>
+        </tr>
+      
+          </tbody>
+        </table>
+      </div>
+    
+
+      <div class="footer-note">
+        Note: This report presents precise results delivered by our highly skilled staff using state of the art equipment. Clinical correlation is recommended for final diagnosis.
+      </div>
+      
+      <div class="end-report">~~~ End of report ~~~</div>
+
+      <div class="page-footer">
+        <div>Scanning QR Code verifies authenticity</div>
+        <div>Generated on : 03/05/2026</div>
+      </div>
+    </body>
+    </html>
+  

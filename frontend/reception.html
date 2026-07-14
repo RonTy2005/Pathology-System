@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reception | Lab LMS</title>
+  <link rel="stylesheet" href="styles/app.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div>
+        <div class="brand">We Care Diagnostics Centre</div>
+        <div class="sidebar-subtitle">Reception Workflow</div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="#reception-summary" class="active">Overview</a>
+        <a href="#new-visit" id="navNewVisit">New Visit</a>
+        <a href="#patient-management">Patient Management</a>
+        <a href="#results-entry" id="navResultsEntry">Enter Results</a>
+        <a href="#collection-delivery">Bill Collection & Reports</a>
+        <a href="#price-inquiry" id="navPriceInquiry">Price Inquiry</a>
+        <a href="#daily-accounts" id="navDailyAccounts">Daily Accounts</a>
+      </nav>
+      <button class="secondary-btn" id="logoutBtn">Logout</button>
+    </aside>
+
+    <main class="main-content">
+      <header class="page-header">
+        <div>
+          <div class="eyebrow">Reception Desk</div>
+          <h1 id="pageTitle">Register patient and issue bill</h1>
+        </div>
+        <div>
+          <div id="currentUser" class="pill"></div>
+          <button class="secondary-btn" id="openTestCatalogBtn" type="button" hidden>Manage Tests</button>
+        </div>
+      </header>
+
+      <section id="reception-summary" class="panel">
+        <div class="section-title">
+          <h2>Daily Overview</h2>
+          <span>Summary of today's activities</span>
+        </div>
+        <div class="stats-grid" id="receptionistStatsGrid" style="grid-template-columns: repeat(3, minmax(0, 1fr)); display: none;">
+          <div class="metric-card">
+            <h3>Total Lab Cases Today</h3>
+            <div class="stat-value" id="summaryLabBills" style="font-size: 2.2rem; font-weight: 800; margin-top: 12px; color: var(--primary);">0</div>
+            <div class="helper" style="margin-top: 6px; font-size: 0.85rem;">Samples collected at lab</div>
+          </div>
+          <div class="metric-card">
+            <h3>Total Sales Today</h3>
+            <div class="stat-value" id="summaryTotalSales" style="font-size: 2.2rem; font-weight: 800; margin-top: 12px; color: var(--primary);">₹0</div>
+            <div class="helper" style="margin-top: 6px; font-size: 0.85rem;">Total money collected from today's bills</div>
+          </div>
+          <div class="metric-card">
+            <h3>Total Dues Cleared</h3>
+            <div class="stat-value" id="summaryTotalMoney" style="font-size: 2.2rem; font-weight: 800; margin-top: 12px; color: var(--primary);">₹0</div>
+            <div class="helper" style="margin-top: 6px; font-size: 0.85rem;">Collected from previous due bills</div>
+          </div>
+        </div>
+
+        <div class="stats-grid" id="technicianStatsGrid" style="grid-template-columns: repeat(3, minmax(0, 1fr)); display: none;">
+          <div class="metric-card">
+            <h3>Pending Reports</h3>
+            <div class="stat-value" id="summaryPendingReports" style="font-size: 2.2rem; font-weight: 800; margin-top: 12px; color: var(--accent);">0</div>
+          </div>
+          <div class="metric-card">
+            <h3>Today's Workload</h3>
+            <div class="stat-value" id="summaryTodaySamples" style="font-size: 2.2rem; font-weight: 800; margin-top: 12px; color: var(--primary);">0</div>
+          </div>
+          <div class="metric-card">
+            <h3>Today's Reported</h3>
+            <div class="stat-value" id="summaryTotalReported" style="font-size: 2.2rem; font-weight: 800; margin-top: 12px; color: var(--primary);">0</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="new-visit" class="workflow-grid" hidden>
+        <article class="panel">
+          <div class="section-title">
+            <h2>1. Patient details</h2>
+            <span>Quick entry</span>
+          </div>
+          <form id="visitForm" class="stack">
+            <div class="inline-grid">
+              <label class="field">
+                <span>Name</span>
+                <input id="patientName" placeholder="Enter patient name" autocomplete="off" required />
+                <div id="patientNameResults" class="autocomplete"></div>
+              </label>
+              <label class="field">
+                <span>Phone</span>
+                <input id="patientPhone" />
+              </label>
+            </div>
+            <div class="inline-grid">
+              <label class="field">
+                <span>Age</span>
+                <input id="patientAge" type="number" required />
+              </label>
+              <label class="field">
+                <span>Gender</span>
+                <select id="patientGender">
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+              </label>
+            </div>
+            <div class="inline-grid">
+              <label class="field">
+                <span>Registration time</span>
+                <input id="registrationTime" type="datetime-local" required />
+              </label>
+            </div>
+            <div class="section-title tight">
+              <h2>2. Sample source</h2>
+              <span>Track the collector or direct lab sample</span>
+            </div>
+            <div class="inline-grid">
+              <label class="field">
+                <span>Source</span>
+                <select id="sampleSource">
+                  <option value="lab">Direct at lab</option>
+                  <option value="associate">Associate / collector</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Associate / collector</span>
+                <select id="associateSelectNew">
+                  <option value="">-- Choose Associate --</option>
+                </select>
+              </label>
+            </div>
+            <div id="selectedAssociate" class="selection-card empty">Sample marked as direct at lab.</div>
+
+            <label class="field">
+              <span>3. Referring doctor</span>
+              <input id="doctorSearch" placeholder="Search doctor by name or phone" autocomplete="off" />
+              <div id="doctorResults" class="autocomplete"></div>
+            </label>
+            <div id="selectedDoctor" class="selection-card empty">No doctor selected</div>
+
+            <div class="field">
+              <span>4. Add tests</span>
+              <div class="tab-group" id="testTabGroup">
+                <button type="button" class="tab-btn active" data-tab="inlab">In-Lab</button>
+                <button type="button" class="tab-btn" data-tab="outside">Outside</button>
+              </div>
+              
+              <div id="inlabTabContent">
+                <input id="testSearch" placeholder="Search test by name, code, or category" autocomplete="off" />
+                <div id="testResults" class="autocomplete"></div>
+              </div>
+
+              <div id="outsideTabContent" hidden>
+                <div class="stack compact result-card" style="padding: 12px; border-style: dashed; background: rgba(0,0,0,0.02);">
+                  <div class="inline-grid">
+                    <input id="outsideTestName" placeholder="Test name (e.g. Vitamin D)" style="flex: 1.5;" />
+                    <input id="outsideTestPrice" type="number" placeholder="Price (₹)" style="flex: 0.5;" />
+                  </div>
+                  <div class="inline-grid">
+                    <input id="outsideLabName" placeholder="Outside Lab (e.g. Serum)" value="Serum" />
+                    <button type="button" class="primary-btn" id="addOutsideTestBtn">Add Outside Test</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div id="selectedTests" class="selected-tests"></div>
+
+            <div class="billing-box">
+              <div class="inline-grid">
+                <label class="field">
+                  <span>Discount</span>
+                  <input id="discount" type="number" value="0" min="0" />
+                </label>
+                <label class="field">
+                  <span>Paid now</span>
+                  <input id="amountPaid" type="number" value="0" min="0" />
+                </label>
+              </div>
+              <div class="inline-grid">
+                <label class="field">
+                  <span>Payment mode</span>
+                  <select id="paymentMode">
+                    <option value="cash">Cash</option>
+                    <option value="upi">UPI</option>
+                    <option value="card">Card</option>
+                  </select>
+                </label>
+                <div class="totals-card">
+                  <div>Subtotal: <strong id="subtotal">0</strong></div>
+                  <div>Total: <strong id="total">0</strong></div>
+                  <div>Due: <strong id="due">0</strong></div>
+                </div>
+              </div>
+            </div>
+
+            <div id="editBillChangedBanner" hidden style="background: rgba(255,180,0,0.12); border: 1px solid rgba(255,180,0,0.4); border-radius: 12px; padding: 14px 18px; margin-top: 8px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;"><span style="font-weight: 600;">&#9888; Bill amount has changed.</span><button class="primary-btn" id="generateEditedBillBtn" type="button">Generate New Bill</button><button class="ghost-btn" id="printEditedBillBtn" type="button" hidden>Print New Bill</button></div>
+          <div class="actions-row">
+              <button class="secondary-btn" id="savePatientDetailsBtn" type="button">Save patient details</button>
+              <button class="primary-btn" type="submit">Generate bill</button>
+            </div>
+            <p id="visitMessage" class="message"></p>
+            <div id="generatedBillActions" class="actions-row" hidden>
+              <span id="generatedBillNumber"></span>
+              <button class="secondary-btn" id="previewGeneratedBillBtn" type="button">Preview bill</button>
+              <button class="ghost-btn" id="printGeneratedBillBtn" type="button">Print bill</button>
+            </div>
+          </form>
+        </article>
+
+        <article class="panel">
+          <div class="section-title">
+            <h2>Recent visits</h2>
+            <span>Open reports or download printable copy</span>
+          </div>
+          <div class="inline-grid">
+            <label class="field">
+              <span>Search</span>
+              <input id="visitSearch" placeholder="Search by bill, patient, or phone" />
+            </label>
+            <label class="field">
+              <span>From date</span>
+              <input id="visitDateFrom" type="date" />
+            </label>
+            <label class="field">
+              <span>To date</span>
+              <input id="visitDateTo" type="date" />
+            </label>
+          </div>
+          <div id="recentVisits" class="list"></div>
+        </article>
+      </section>
+
+      <section id="patient-management" class="panel" hidden>
+        <div class="section-title">
+          <h2>Patient Management</h2>
+          <span>Search and edit patient details and tests</span>
+        </div>
+        <div class="stack" style="gap: 24px;">
+          <div style="background: rgba(255, 255, 255, 0.5); padding: 24px; border-radius: 16px; border: 1px solid var(--line);">
+            <form id="patientSearchForm" class="stack">
+              <label class="field">
+                <span>Search patient</span>
+                <input id="patientSearch" placeholder="Search by name or phone" autocomplete="off" />
+              </label>
+              <div class="inline-grid">
+                <label class="field">
+                  <span>From date</span>
+                  <input id="patientSearchDateFrom" type="date" />
+                </label>
+                <label class="field">
+                  <span>To date</span>
+                  <input id="patientSearchDateTo" type="date" />
+                </label>
+              </div>
+              <div id="patientSearchResults" class="list"></div>
+            </form>
+          </div>
+          
+          <div style="background: rgba(255, 255, 255, 0.5); padding: 24px; border-radius: 16px; border: 1px solid var(--line);">
+            <div id="patientEditEmptyState" class="empty-state" style="text-align: center; color: var(--muted); padding: 2rem;">
+              Select a patient from the search results to view and edit details.
+            </div>
+            <form id="patientEditForm" class="stack" hidden>
+          <div class="section-title tight">
+            <h2>Patient Details</h2>
+          </div>
+          <div class="inline-grid">
+            <label class="field">
+              <span>Name</span>
+              <input id="editPatientName" required />
+            </label>
+            <label class="field">
+              <span>Phone</span>
+              <input id="editPatientPhone" />
+            </label>
+          </div>
+          <div class="inline-grid">
+            <label class="field">
+              <span>Age</span>
+              <input id="editPatientAge" type="number" required />
+            </label>
+            <label class="field">
+              <span>Gender</span>
+              <select id="editPatientGender">
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Registration Date</span>
+              <input id="editPatientDate" readonly style="background: var(--bg-muted);" />
+            </label>
+          </div>
+          
+          <div class="section-title tight">
+            <h2>Tests & Referrals</h2>
+            <span>Modify tests and referral details for this visit</span>
+          </div>
+
+          <div class="inline-grid">
+            <label class="field">
+              <span>Source</span>
+              <select id="editSampleSourceInput">
+                <option value="lab">Direct at lab</option>
+                <option value="associate">Associate / collector</option>
+              </select>
+            </label>
+            <label class="field" id="editAssociateSelection" hidden>
+              <span>Associate / collector</span>
+              <select id="editAssociateSelect"></select>
+            </label>
+          </div>
+          <div id="editSelectedAssociate" class="selection-card empty" hidden>No associate selected</div>
+
+          <label class="field">
+            <span>Referring doctor</span>
+            <input id="editDoctorSearch" placeholder="Search doctor by name or phone" autocomplete="off" />
+            <div id="editDoctorResults" class="autocomplete"></div>
+          </label>
+          <div id="editSelectedDoctor" class="selection-card empty">No doctor selected</div>
+
+          <div class="section-title tight" style="margin-top: 8px;">
+            <h2>Current tests on this visit</h2>
+            <span>Remove a test if the patient wants to change it</span>
+          </div>
+          <div id="existingVisitTests" class="selected-tests">
+            <div class="empty-state">Loading...</div>
+          </div>
+
+          <div class="field">
+            <span>Add tests</span>
+            <div class="tab-group" id="editTestTabGroup">
+              <button type="button" class="tab-btn active" data-tab="edit-inlab">In-Lab</button>
+              <button type="button" class="tab-btn" data-tab="edit-outside">Outside</button>
+            </div>
+
+            <div id="editInlabTabContent">
+              <input id="editTestSearch" placeholder="Search test by name, code, or category" autocomplete="off" />
+              <div id="editTestResults" class="autocomplete"></div>
+            </div>
+
+            <div id="editOutsideTabContent" hidden>
+              <div class="stack compact result-card" style="padding: 12px; border-style: dashed; background: rgba(0,0,0,0.02);">
+                <div class="inline-grid">
+                  <input id="editOutsideTestName" placeholder="Test name" style="flex: 1.5;" />
+                  <input id="editOutsideTestPrice" type="number" placeholder="Price" style="flex: 0.5;" />
+                </div>
+                <div class="inline-grid">
+                  <input id="editOutsideLabName" placeholder="Outside Lab" value="Serum" />
+                  <button type="button" class="primary-btn" id="addEditOutsideTestBtn">Add Outside Test</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="editSelectedTests" class="selected-tests"></div>
+          
+          <div class="section-title tight" style="margin-top: 16px;">
+            <h2>Visit History</h2>
+            <span>Previous visits and tests for this patient</span>
+          </div>
+          <div id="patientVisitHistory" class="stack" style="gap: 12px; margin-top: 8px;">
+            <div class="empty-state">Loading history...</div>
+          </div>
+
+          <div class="billing-box">
+            <div class="inline-grid">
+              <label class="field">
+                <span>Discount</span>
+                <input id="editDiscount" type="number" value="0" min="0" />
+              </label>
+              <label class="field">
+                <span>Paid now</span>
+                <input id="editAmountPaid" type="number" value="0" min="0" />
+              </label>
+              <label class="field">
+                <span>Payment mode</span>
+                <select id="editPaymentMode">
+                  <option value="cash">Cash</option>
+                  <option value="upi">UPI</option>
+                  <option value="card">Card</option>
+                </select>
+              </label>
+            </div>
+            <div class="totals-card">
+              <div>Subtotal: <strong id="editSubtotal">0</strong></div>
+              <div>Total: <strong id="editTotal">0</strong></div>
+              <div>Due: <strong id="editDue">0</strong></div>
+            </div>
+          </div>
+          
+          <div id="editBillChangedBanner" hidden style="background: rgba(255,180,0,0.12); border: 1px solid rgba(255,180,0,0.4); border-radius: 12px; padding: 14px 18px; margin-top: 8px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;"><span style="font-weight: 600;">&#9888; Bill amount has changed.</span><button class="primary-btn" id="generateEditedBillBtn" type="button">Generate New Bill</button><button class="ghost-btn" id="printEditedBillBtn" type="button" hidden>Print New Bill</button></div>
+          <div class="actions-row">
+            <button class="primary-btn" type="submit">Update patient & tests</button>
+            <button class="secondary-btn" id="cancelPatientEdit" type="button">Cancel</button>
+            <button class="danger-btn" id="deleteSelectedPatientBtn" type="button" hidden>Delete patient</button>
+          </div>
+            <p id="patientEditMessage" class="message"></p>
+          </form>
+          </div>
+        </div>
+      </section>
+
+      <section id="results-entry" class="two-column technician-layout" hidden>
+        <article class="panel">
+          <div class="section-title">
+            <h2>Search visits</h2>
+            <span>Find a visit to enter test results</span>
+          </div>
+          <div class="stack">
+            <label class="field">
+              <span>Search patient or bill</span>
+              <input id="resultsSearchInput" placeholder="Search by bill, patient name, or phone" autocomplete="off" />
+            </label>
+            <div class="inline-grid">
+              <label class="field">
+                <span>From date</span>
+                <input id="resultsSearchDateFrom" type="date" />
+              </label>
+              <label class="field">
+                <span>To date</span>
+                <input id="resultsSearchDateTo" type="date" />
+              </label>
+            </div>
+            <div id="resultsSearchResults" class="list"></div>
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="section-title">
+            <h2>Result entry</h2>
+            <span>Enter test results and finalize report</span>
+          </div>
+          <div id="resultsVisitDetails" class="list empty-state">Select a visit to enter test results.</div>
+          <div class="actions-row" id="resultsActions" hidden>
+            <button class="secondary-btn" id="resultsSaveAllBtn" type="button" disabled>Save all results</button>
+            <button class="primary-btn" id="resultsFinalizeBtn" disabled>Finalize report</button>
+            <button class="secondary-btn" id="resultsPrintBtn" disabled>Print report</button>
+            <button class="ghost-btn" id="resultsViewReportBtn" disabled>View report</button>
+            <button class="whatsapp-btn" id="resultsWhatsAppBtn" disabled>WhatsApp PDF</button>
+          </div>
+          <p id="resultsMessage" class="message"></p>
+        </article>
+      </section>
+
+      <section id="collection-delivery" class="panel" hidden>
+        <div class="section-title">
+          <h2>Bill Collection & Reports</h2>
+          <span>Collect due amounts and print finalized reports</span>
+        </div>
+          <div class="inline-grid">
+            <label class="field">
+              <span>Search patient or bill</span>
+              <input id="collectionSearchInput" placeholder="Search by bill, patient name, or phone" autocomplete="off" />
+            </label>
+            <label class="field">
+              <span>From date</span>
+              <input id="collectionDateFrom" type="date" />
+            </label>
+            <label class="field">
+              <span>To date</span>
+              <input id="collectionDateTo" type="date" />
+            </label>
+          </div>
+        <div id="collectionList" class="list"></div>
+
+        <form id="paymentForm" class="stack result-card" hidden style="margin-top: 20px;">
+          <div class="section-title tight">
+            <h2>Collect Payment</h2>
+            <span id="paymentVisitDetails"></span>
+          </div>
+          <input type="hidden" id="paymentVisitId" />
+          <div class="inline-grid">
+            <label class="field">
+              <span>Amount to Collect</span>
+              <input id="paymentAmount" type="number" step="0.01" min="0.01" required />
+            </label>
+            <label class="field">
+              <span>Payment Mode</span>
+              <select id="paymentCollectionMode">
+                <option value="cash">Cash</option>
+                <option value="upi">UPI</option>
+                <option value="card">Card</option>
+              </select>
+            </label>
+          </div>
+          <div id="editBillChangedBanner" hidden style="background: rgba(255,180,0,0.12); border: 1px solid rgba(255,180,0,0.4); border-radius: 12px; padding: 14px 18px; margin-top: 8px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;"><span style="font-weight: 600;">&#9888; Bill amount has changed.</span><button class="primary-btn" id="generateEditedBillBtn" type="button">Generate New Bill</button><button class="ghost-btn" id="printEditedBillBtn" type="button" hidden>Print New Bill</button></div>
+          <div class="actions-row">
+            <button class="primary-btn" type="submit">Receive Payment</button>
+            <button class="secondary-btn" id="cancelPaymentBtn" type="button">Cancel</button>
+          </div>
+          <p id="paymentMessage" class="message"></p>
+        </form>
+
+        <form id="refundForm" class="stack result-card" hidden style="margin-top: 20px; border-left: 4px solid var(--danger);">
+          <div class="section-title tight">
+            <h2>Issue Patient Refund</h2>
+            <span id="refundVisitDetails"></span>
+          </div>
+          <input type="hidden" id="refundVisitId" />
+          <input type="hidden" id="refundBillNo" />
+          <p style="font-size: 0.88rem; color: var(--muted); margin: 0 0 12px;">
+            This will log a <strong>Patient Refund</strong> expense for today's date. The amount will automatically appear under Refunds in the Financial Report.
+          </p>
+          <div class="inline-grid">
+            <label class="field">
+              <span>Refund Amount (₹)</span>
+              <input id="refundAmount" type="number" step="0.01" min="0.01" required placeholder="Enter amount to refund" />
+            </label>
+            <label class="field">
+              <span>Paid back via</span>
+              <select id="refundPaymentMode">
+                <option value="cash">Cash</option>
+                <option value="upi">UPI</option>
+                <option value="card">Card</option>
+              </select>
+            </label>
+          </div>
+          <label class="field">
+            <span>Reason / Note</span>
+            <input id="refundNote" placeholder="e.g. Test cancelled, duplicate payment..." />
+          </label>
+          <div class="actions-row">
+            <button class="primary-btn" type="submit">Confirm Refund</button>
+            <button class="secondary-btn" id="cancelRefundBtn" type="button">Cancel</button>
+          </div>
+          <p id="refundMessage" class="message"></p>
+        </form>
+      </section>
+
+      <section id="price-inquiry" class="panel" hidden>
+        <div class="section-title">
+          <h2>Price Inquiry</h2>
+          <span>Calculate test prices for customer quotes</span>
+        </div>
+        
+        <div class="stack">
+          <div class="field">
+            <span>Choose test source</span>
+            <div class="tab-group" id="priceInquiryTabGroup">
+              <button type="button" class="tab-btn active" data-price-tab="inlab">In-Lab</button>
+              <button type="button" class="tab-btn" data-price-tab="outside">Outside</button>
+            </div>
+          </div>
+
+          <div id="inlabInquiryContent">
+            <div class="inline-grid">
+              <label class="field">
+                <span>Category</span>
+                <select id="priceInquiryCategory">
+                  <option value="">All Categories</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Search Test</span>
+                <input id="priceInquirySearch" placeholder="Search test by name, code, or category" autocomplete="off" />
+              </label>
+            </div>
+            <div id="priceInquiryList" class="list scrollable-list"></div>
+          </div>
+
+          <div id="outsideInquiryContent" hidden>
+            <div class="stack compact result-card" style="padding: 12px; border-style: dashed; background: rgba(0,0,0,0.02);">
+              <div class="inline-grid">
+                <input id="priceInquiryOutsideTestName" placeholder="Test name (e.g. Vitamin D)" style="flex: 1.5;" />
+                <input id="priceInquiryOutsideTestPrice" type="number" placeholder="Price (₹)" style="flex: 0.5;" />
+              </div>
+              <div class="inline-grid">
+                <input id="priceInquiryOutsideLabName" placeholder="Outside Lab (e.g. Serum)" value="Serum" />
+                <button type="button" class="primary-btn" id="addPriceInquiryOutsideTestBtn">Add Outside Test</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="stack result-card" style="background: var(--bg-alt); border: 2px solid var(--primary-light);">
+            <div class="section-title tight">
+              <h2>Quote Calculator</h2>
+              <span id="quoteCount">0 tests selected</span>
+            </div>
+            <div class="actions-row" style="gap: 8px; margin-bottom: 8px;">
+              <button class="ghost-btn" type="button" id="clearQuoteBtn">Clear quote</button>
+              <button class="secondary-btn" type="button" id="copyQuoteBtn">Copy quote</button>
+            </div>
+            <div id="quoteList" class="list scrollable-list" style="min-height: 100px;"></div>
+            <div class="totals-card" style="margin-top: 12px; background: white; border: 1px solid var(--primary);">
+              <div style="font-size: 1.2rem; display: flex; justify-content: space-between; align-items: center;">
+                <span>Total Amount:</span>
+                <strong id="quoteTotal" style="color: var(--primary); font-size: 1.5rem;">₹0</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="daily-accounts" class="panel" hidden>
+        <div class="section-title">
+          <h2>Daily Accounts</h2>
+          <span>Sales, dues, expenses, and closing cash</span>
+        </div>
+
+        <div class="inline-grid">
+          <label class="field">
+            <span>Date</span>
+            <input id="accountsDate" type="date" />
+          </label>
+          <label class="field">
+            <span>&nbsp;</span>
+            <button class="secondary-btn" id="refreshAccountsBtn" type="button">Refresh accounts</button>
+          </label>
+        </div>
+
+        <div class="stats-grid accounts-grid">
+          <div class="metric-card">
+            <h3>Total Sales</h3>
+            <div class="stat-value" id="accountsTotalSales">Rs. 0.00</div>
+            <div class="helper" id="accountsBillCount">0 bills</div>
+          </div>
+          <div class="metric-card">
+            <h3>Dues Cleared</h3>
+            <div class="stat-value" id="accountsDuesCleared">Rs. 0.00</div>
+            <div class="helper">Collected from older bills</div>
+          </div>
+          <div class="metric-card">
+            <h3>Expenses</h3>
+            <div class="stat-value" id="accountsExpenses">Rs. 0.00</div>
+            <div class="helper">Cash and online expenses</div>
+          </div>
+          <div class="metric-card">
+            <h3>Expected Total</h3>
+            <div class="stat-value" id="accountsExpectedTotal">Rs. 0.00</div>
+            <div class="helper">Sales + dues - expenses</div>
+          </div>
+          <div class="metric-card">
+            <h3>Cash Expected</h3>
+            <div class="stat-value" id="accountsExpectedCash">Rs. 0.00</div>
+            <div class="helper" id="accountsCashBreakdown">Cash sales + cash dues - cash expenses</div>
+          </div>
+          <div class="metric-card">
+            <h3>Online Expected</h3>
+            <div class="stat-value" id="accountsExpectedOnline">Rs. 0.00</div>
+            <div class="helper" id="accountsOnlineBreakdown">UPI/card sales + dues - expenses</div>
+          </div>
+        </div>
+
+        <div class="two-column">
+          <form id="expenseForm" class="stack result-card">
+            <div class="section-title tight">
+              <h2>Enter Expense</h2>
+              <span id="expenseMessage"></span>
+            </div>
+            <div class="inline-grid">
+              <label class="field">
+                <span>Paid From</span>
+                <select id="expensePaidFrom">
+                  <option value="reception">Reception Cash</option>
+                  <option value="office">Main Office</option>
+                  <option value="bank">Bank / Card</option>
+                  <option value="other">Other</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Amount</span>
+                <input id="expenseAmount" type="number" step="0.01" min="0.01" required />
+              </label>
+              <label class="field">
+                <span>Mode</span>
+                <select id="expensePaymentMode">
+                  <option value="cash">Cash</option>
+                  <option value="upi">UPI</option>
+                  <option value="card">Card</option>
+                </select>
+              </label>
+            </div>
+            <div class="inline-grid">
+              <label class="field">
+                <span>Category</span>
+                <input id="expenseCategory" list="expenseCategoryList" placeholder="Supplies, transport, tea..." autocomplete="off" />
+                <datalist id="expenseCategoryList">
+                  <option value="Patient Refund">Patient Refund</option>
+                  <option value="Supplies">Supplies</option>
+                  <option value="Transport">Transport</option>
+                  <option value="Stationery">Stationery</option>
+                  <option value="Maintenance">Maintenance</option>
+                  <option value="Utilities">Utilities</option>
+                  <option value="Salary Advance">Salary Advance</option>
+                  <option value="Miscellaneous">Miscellaneous</option>
+                </datalist>
+              </label>
+              <label class="field">
+                <span>Vendor (optional)</span>
+                <select id="expenseVendor">
+                  <option value="">-- No vendor --</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Note</span>
+                <input id="expenseNotes" placeholder="Optional" />
+              </label>
+            </div>
+            <button class="primary-btn" type="submit">Add expense</button>
+          </form>
+
+          <div class="stack result-card">
+            <div class="section-title tight">
+              <h2>Check Accounts</h2>
+              <span id="accountsCheckMessage"></span>
+            </div>
+            <div class="inline-grid">
+              <label class="field">
+                <span>Cash Counted</span>
+                <input id="actualCashAmount" type="number" step="0.01" min="0" />
+              </label>
+              <label class="field">
+                <span>Online Counted</span>
+                <input id="actualOnlineAmount" type="number" step="0.01" min="0" />
+              </label>
+            </div>
+            <div class="totals-card">
+              <div>Cash Difference: <strong id="cashVariance">Rs. 0.00</strong></div>
+              <div>Online Difference: <strong id="onlineVariance">Rs. 0.00</strong></div>
+              <div>Total Difference: <strong id="totalVariance">Rs. 0.00</strong></div>
+            </div>
+            <div id="editBillChangedBanner" hidden style="background: rgba(255,180,0,0.12); border: 1px solid rgba(255,180,0,0.4); border-radius: 12px; padding: 14px 18px; margin-top: 8px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;"><span style="font-weight: 600;">&#9888; Bill amount has changed.</span><button class="primary-btn" id="generateEditedBillBtn" type="button">Generate New Bill</button><button class="ghost-btn" id="printEditedBillBtn" type="button" hidden>Print New Bill</button></div>
+          <div class="actions-row">
+              <button class="primary-btn" id="saveAccountCheckBtn" type="button">Save Account Check</button>
+            </div>
+            <p id="accountsSubmitMessage" class="message"></p>
+          </div>
+        </div>
+
+        <div class="section-title tight">
+          <h2>Expenses</h2>
+          <span id="expenseCount">0 entries</span>
+        </div>
+        <div id="expenseList" class="list" style="max-height: 420px; overflow-y: auto;"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="scripts/common.js"></script>
+  <script src="scripts/reception.js"></script>
+</body>
+</html>

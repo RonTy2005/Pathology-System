@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lab LMS Login</title>
+  <link rel="stylesheet" href="styles/app.css" />
+</head>
+<body class="login-body">
+  <main class="login-shell">
+    <section class="login-panel" style="padding: 48px;">
+      <div class="eyebrow">Enterprise Core</div>
+      <h1 style="color: var(--primary-dark);">Diagnostic Intelligence</h1>
+      <p class="muted" style="font-size: 1.1rem; line-height: 1.6; margin-top: 12px;">Welcome back. Access your laboratory's secure management environment.</p>
+
+      <form id="loginForm" class="stack" style="margin-top: 32px; gap: 20px;">
+        <label class="field">
+          <span style="font-weight: 700; color: var(--muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">Authorized Username</span>
+          <input id="username" placeholder="Enter username" required style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 18px;" />
+        </label>
+        <label class="field">
+          <span style="font-weight: 700; color: var(--muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">Security Password</span>
+          <input id="password" type="password" placeholder="••••••••" required style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 18px;" />
+        </label>
+        <button class="primary-btn" type="submit" style="padding: 18px; font-size: 1.1rem; box-shadow: 0 10px 15px -3px rgba(15, 118, 110, 0.2);">Initialize Session</button>
+      </form>
+
+      <div class="inline-note" style="margin-top: 24px; font-size: 0.85rem; padding: 12px; background: #fffcf0; border: 1px dashed #fcd34d; border-radius: 12px; text-align: center;">
+        Development Mode: Use <strong>admin / admin123</strong> for testing.
+      </div>
+      <p id="loginMessage" class="message"></p>
+    </section>
+
+    <section class="login-aside" style="position: relative; overflow: hidden; background: linear-gradient(135deg, var(--primary) 0%, #134e4a 100%); color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; border: none;">
+      <!-- Decorative background elements -->
+      <div style="position: absolute; top: -10%; right: -10%; width: 300px; height: 300px; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%); border-radius: 50%;"></div>
+      <div style="position: absolute; bottom: -5%; left: -5%; width: 200px; height: 200px; background: radial-gradient(circle, rgba(217, 119, 6, 0.15) 0%, transparent 70%); border-radius: 50%;"></div>
+      
+      <div style="position: relative; z-index: 1;">
+        <div class="eyebrow" style="color: rgba(255,255,255,0.7); margin-bottom: 12px; font-size: 0.85rem;">Secure Access</div>
+        <div style="font-size: 4.5rem; font-weight: 900; line-height: 1; letter-spacing: -0.04em; background: linear-gradient(to bottom, #ffffff, #ccfbf1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.1));">LabShield</div>
+        <div style="margin-top: 20px; font-size: 1.1rem; font-weight: 500; opacity: 0.9;">
+          Empowering Diagnostics through Innovation
+        </div>
+        <div style="margin-top: 60px; font-size: 0.9rem; opacity: 0.6; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;">
+          Crafted by <span style="color: #fff; border-bottom: 2px solid var(--accent);">Nexora Web Studios</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="scripts/common.js"></script>
+  <script src="scripts/login.js"></script>
+</body>
+</html>

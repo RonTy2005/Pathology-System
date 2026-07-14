@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CT Technician | Lab LMS</title>
+  <link rel="stylesheet" href="styles/app.css" />
+  <style>
+    .scan-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .scan-row-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .scan-row-info .bill-no {
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+    .scan-row-info h3 {
+      margin: 0 0 2px 0;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+    .scan-row-info .meta {
+      font-size: 0.83rem;
+      color: var(--muted);
+    }
+    .scan-row-info .test-name {
+      margin-top: 6px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--primary);
+    }
+    .scan-row-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .status-pill {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+    .status-pill.done {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .status-pill.pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .result-card.scan-done {
+      border-left: 4px solid #10b981;
+      opacity: 0.8;
+    }
+    .result-card.scan-pending {
+      border-left: 4px solid #f59e0b;
+    }
+    .serial-num {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--muted);
+      min-width: 28px;
+      text-align: center;
+    }
+    #statsRow {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div>
+        <div class="brand">We Care Diagnostics Centre</div>
+        <div class="sidebar-subtitle">CT Scan Department</div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="#ct-queue" class="active">CT Scan Queue</a>
+        <a href="reception.html#new-visit" data-requires-permissions="manage_patients,manage_billing" hidden>Patient Registration</a>
+        <a href="reception.html#patient-management" data-requires-permissions="manage_patients" hidden>Patient Management</a>
+        <a href="reception.html#collection-delivery" data-requires-any-permission="manage_billing,view_reports,print_reports,download_reports" hidden>Billing & Reports</a>
+      </nav>
+      <button class="secondary-btn" id="logoutBtn">Logout</button>
+    </aside>
+
+    <main class="main-content">
+      <header class="page-header">
+        <div>
+          <div class="eyebrow">CT Scan Department</div>
+          <h1>CT Scan Queue</h1>
+        </div>
+        <div>
+          <div id="currentUser" class="pill"></div>
+          <button class="secondary-btn" id="refreshBtn" type="button">Refresh List</button>
+        </div>
+      </header>
+
+      <section id="ct-queue" class="panel">
+        <div id="statsRow">
+          <div class="metric-card">
+            <h3>Total Scans Today</h3>
+            <div class="stat-value" id="statTotal" style="font-size: 2.2rem; font-weight: 800; margin-top: 12px; color: var(--primary);">0</div>
+          </div>
+          <div class="metric-card">
+            <h3>Done</h3>
+            <div class="stat-value" id="statDone" style="font-size: 2.2rem; font-weight: 800; margin-top: 12px; color: #10b981;">0</div>
+          </div>
+          <div class="metric-card">
+            <h3>Pending</h3>
+            <div class="stat-value" id="statPending" style="font-size: 2.2rem; font-weight: 800; margin-top: 12px; color: var(--accent);">0</div>
+          </div>
+        </div>
+
+        <div class="section-title tight">
+          <h2>Patient Queue</h2>
+          <span>Showing CT scan patients from the last 48 hours, in registration order</span>
+        </div>
+
+        <div id="ctList" class="list">
+          <div class="loader-container"><div class="loader"></div></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="scripts/common.js"></script>
+  <script src="scripts/ct_technician.js"></script>
+</body>
+</html>

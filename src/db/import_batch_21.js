@@ -1,0 +1,56 @@
+const { importBatch } = require('./import_helper.js');
+
+const tests = [
+  // Image 00041
+  { name: "Urine Bence Jones Protein", category: "Biochemistry", price: 100, sample_type: "Urine" },
+  { name: "Urine Beta Gravindex", category: "Serology", price: 60, sample_type: "Urine" },
+  { name: "Urine Bile salt + Bile Pigments", category: "Biochemistry", price: 50, sample_type: "Urine" },
+  { name: "Urine Bile Salts", category: "Biochemistry", price: 70, sample_type: "Urine" },
+  { name: "Urine Chyle", category: "Biochemistry", price: 100, sample_type: "Urine" },
+  { name: "Urine Culture", category: "Microbiology", price: 100, sample_type: "Urine" },
+  { name: "Urine Culture & Sensitivity", category: "Microbiology", price: 300, sample_type: "Urine" },
+  { name: "Urine for AFB Culture X 3 Consiqutive days", category: "Microbiology", price: 1050, sample_type: "Urine" },
+  { name: "Urine for PAP", category: "Other", price: 250, sample_type: "Urine" },
+  { name: "Urine KetoneBody", category: "Biochemistry", price: 100, sample_type: "Urine" },
+  { name: "Urine OBT", category: "Biochemistry", price: 70, sample_type: "Urine" },
+  { name: "Urine OBT (3 Consecutive days)", category: "Biochemistry", price: 300, sample_type: "Urine" },
+  { name: "Urine pH", category: "Biochemistry", price: 70, sample_type: "Urine" },
+  { name: "Urine Porphobilinogen", category: "Biochemistry", price: 100, sample_type: "Urine" },
+  { name: "Urine Pregnancy Test", category: "Serology", price: 50, sample_type: "Urine" },
+  { name: "Urine Pregnancy Test (Elisa method)", category: "Serology", price: 80, sample_type: "Urine" },
+  { name: "Urine Protein / Albumin", category: "Biochemistry", price: 100, sample_type: "Urine" },
+  { name: "Urine Protein 24 Hours", category: "Biochemistry", price: 620, sample_type: "Urine" },
+  { name: "Urine RE (Routine Examination)", category: "Biochemistry", price: 150, sample_type: "Urine" },
+  { name: "Urine Reducing Substance", category: "Biochemistry", price: 50, sample_type: "Urine" },
+  { name: "Urine Sugar", category: "Biochemistry", price: 50, sample_type: "Urine" },
+  { name: "Urine Urobilinogen", category: "Biochemistry", price: 100, sample_type: "Urine" },
+  { name: "Uroflowmetry", category: "Other", price: 800, sample_type: "N/A" },
+  { name: "USG Abdominal Aorta", category: "USG", price: 400, sample_type: "N/A" },
+  { name: "USG Ankle Lt / Rt Joint", category: "USG", price: 1400, sample_type: "N/A" },
+
+  // Image 00042
+  { name: "USG Arm (Left / Right)", category: "USG", price: 600, sample_type: "N/A" },
+  { name: "USG Axillary Mass", category: "USG", price: 600, sample_type: "N/A" },
+  { name: "USG Bone (Single)", category: "USG", price: 600, sample_type: "N/A" },
+  { name: "USG Both HIP Joints", category: "USG", price: 600, sample_type: "N/A" },
+  { name: "USG Both Tendo Achilis", category: "USG", price: 600, sample_type: "N/A" },
+  { name: "USG Brain", category: "USG", price: 1400, sample_type: "N/A" },
+  { name: "USG Breast (Both)", category: "USG", price: 2000, sample_type: "N/A" },
+  { name: "USG Breast (Left / Right)", category: "USG", price: 1400, sample_type: "N/A" },
+  { name: "USG Carotid Doppler Study", category: "USG", price: 1750, sample_type: "N/A" },
+  { name: "USG Chest", category: "USG", price: 1400, sample_type: "N/A" },
+  { name: "USG Chest (Screening)", category: "USG", price: 600, sample_type: "N/A" },
+  { name: "USG Color Doppler Study Pelvis", category: "USG", price: 1200, sample_type: "N/A" },
+  { name: "USG Doppler of Study Lt/Rt Joint", category: "USG", price: 1200, sample_type: "N/A" },
+  { name: "USG Doppler Study Flowmetry of Both Lower Limb", category: "USG", price: 1200, sample_type: "N/A" },
+  { name: "USG Doppler Study of Aorta", category: "USG", price: 1200, sample_type: "N/A" },
+  { name: "USG Doppler Study of Both Lower Limb", category: "USG", price: 3500, sample_type: "N/A" },
+  { name: "USG Doppler Study of Both Upper Limb", category: "USG", price: 3500, sample_type: "N/A" },
+  { name: "USG Doppler Study of Carotid Artery", category: "USG", price: 1200, sample_type: "N/A" },
+  { name: "USG Doppler Study of Left Lower Limb", category: "USG", price: 1200, sample_type: "N/A" },
+  { name: "USG Doppler Study of Lt/Rt Lower Limb", category: "USG", price: 1200, sample_type: "N/A" },
+  { name: "USG Doppler Study of Lt/Rt Upper Limb", category: "USG", price: 1200, sample_type: "N/A" },
+  { name: "USG Doppler Study of Neck", category: "USG", price: 1400, sample_type: "N/A" }
+];
+
+importBatch(tests).then(() => process.exit());

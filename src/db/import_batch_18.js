@@ -1,0 +1,56 @@
+const { importBatch } = require('./import_helper.js');
+
+const tests = [
+  // Image 00035
+  { name: "PUS AFB Stain", category: "Microbiology", price: 150, sample_type: "Pus" },
+  { name: "PUS Culture & Sensitivity", category: "Microbiology", price: 100, sample_type: "Pus" },
+  { name: "PUS for C/S from Any Site", category: "Microbiology", price: 250, sample_type: "Pus" },
+  { name: "PUS Gram Stain", category: "Microbiology", price: 250, sample_type: "Pus" },
+  { name: "RA (Rheumatoid Factor) Test", category: "Serology", price: 350, sample_type: "Serum" },
+  { name: "RBC / WBC Morphology", category: "Hematology", price: 50, sample_type: "Whole Blood" },
+  { name: "RBC Fragility Test", category: "Hematology", price: 1200, sample_type: "Whole Blood" },
+  { name: "RDW (Red Cell Distribution Width)", category: "Hematology", price: 1, sample_type: "Whole Blood" },
+  { name: "Rectal Swab Gram Stain", category: "Microbiology", price: 100, sample_type: "Rectal Swab" },
+  { name: "Renal (Kidney) Profile", category: "Profile", price: 1670, sample_type: "Multiple" },
+  { name: "Reticulocyte Count", category: "Hematology", price: 120, sample_type: "Whole Blood" },
+  { name: "Review for Histology Slide", category: "Other", price: 400, sample_type: "N/A" },
+  { name: "Rh (D) Factor", category: "Hematology", price: 35, sample_type: "Whole Blood" },
+  { name: "Rheumatic Fever Profile", category: "Profile", price: 1870, sample_type: "Serum" },
+  { name: "Rheumatoid Profile", category: "Profile", price: 1870, sample_type: "Serum" },
+  { name: "Rose Wallar Test", category: "Serology", price: 140, sample_type: "Serum" },
+  { name: "RPR TEST", category: "Serology", price: 100, sample_type: "Serum" },
+  { name: "Rubella IgG", category: "Serology", price: 500, sample_type: "Serum" },
+  { name: "Rubella IgG & IgM", category: "Serology", price: 800, sample_type: "Serum" },
+  { name: "Rubella IgM", category: "Serology", price: 500, sample_type: "Serum" },
+  { name: "Scraping/Examination for Hansen's", category: "Other", price: 200, sample_type: "N/A" },
+
+  // Image 00036
+  { name: "Scraping from peptic ulcer for DGI", category: "Other", price: 200, sample_type: "N/A" },
+  { name: "Semen Analysis", category: "Other", price: 250, sample_type: "Semen" },
+  { name: "Semen Culture", category: "Microbiology", price: 150, sample_type: "Semen" },
+  { name: "Semen for Fructose", category: "Biochemistry", price: 150, sample_type: "Semen" },
+  { name: "Seminal Fluid for AFB Stain", category: "Microbiology", price: 150, sample_type: "Semen" },
+  { name: "Seminal Fluid for Culture & Sensitivity", category: "Microbiology", price: 150, sample_type: "Semen" },
+  { name: "Seminal Fluid for Gram Stain", category: "Microbiology", price: 150, sample_type: "Semen" },
+  { name: "Seminal Germ Cell Study", category: "Other", price: 150, sample_type: "Semen" },
+  { name: "Serology/Viral Marker", category: "Profile", price: 870, sample_type: "Serum" },
+  { name: "Serum Vitamin B12 Estimation", category: "Hormone", price: 600, sample_type: "Serum" },
+  { name: "Sex Chromatin Study", category: "Other", price: 500, sample_type: "Multiple" },
+  { name: "SGOT / AST", category: "Biochemistry", price: 150, sample_type: "Serum" },
+  { name: "SGPT / ALT", category: "Biochemistry", price: 150, sample_type: "Serum" },
+  { name: "SHBG (Sex Hormone Binding Globulin)", category: "Hormone", price: 2500, sample_type: "Serum" },
+  { name: "Sickle Cell Screen / Sickling Test", category: "Hematology", price: 200, sample_type: "Whole Blood" },
+  { name: "Skin Biopsy", category: "Other", price: 800, sample_type: "N/A" },
+  { name: "Skin Smear for Fungi", category: "Microbiology", price: 100, sample_type: "Skin Smear" },
+  { name: "SLE (L.E. Cell + ANF + Anti ds DNA)", category: "Profile", price: 800, sample_type: "Serum" },
+  { name: "Slit Skin Smears for AFB", category: "Microbiology", price: 150, sample_type: "Skin Smear" },
+  { name: "Slit Skin Smears for Gram Stain", category: "Microbiology", price: 150, sample_type: "Skin Smear" },
+  { name: "Smear for Tzanck Test (Acantholytic Cells)", category: "Other", price: 250, sample_type: "N/A" },
+  { name: "Sodium(24 hrs Urine)", category: "Biochemistry", price: 200, sample_type: "Urine" },
+  { name: "Sodium(Serum)", category: "Biochemistry", price: 250, sample_type: "Serum" },
+  { name: "Sodium(Urine)", category: "Biochemistry", price: 250, sample_type: "Urine" },
+  { name: "Spirometry", category: "Other", price: 1000, sample_type: "N/A" },
+  { name: "Sputum AFB Stain", category: "Microbiology", price: 150, sample_type: "Sputum" }
+];
+
+importBatch(tests).then(() => process.exit());

@@ -1,0 +1,57 @@
+const { importBatch } = require('./import_helper.js');
+
+const tests = [
+  // Image 00039
+  { name: "Throat Swab Culture", category: "Microbiology", price: 150, sample_type: "Throat Swab" },
+  { name: "Throat Swab Culture & Sensitivity", category: "Microbiology", price: 150, sample_type: "Throat Swab" },
+  { name: "Throat Swab for AFB", category: "Microbiology", price: 80, sample_type: "Throat Swab" },
+  { name: "Throat Swab for Gram Stain", category: "Microbiology", price: 120, sample_type: "Throat Swab" },
+  { name: "Throat Swab for KLB", category: "Microbiology", price: 500, sample_type: "Throat Swab" },
+  { name: "Thrombin Time (TT)", category: "Hematology", price: 300, sample_type: "Citrate Plasma" },
+  { name: "Thyroid Profile", category: "Profile", price: 600, sample_type: "Serum" },
+  { name: "TIBC (Total Iron Binding Capacity)", category: "Biochemistry", price: 400, sample_type: "Serum" },
+  { name: "TLC (Total Leukocytes Count)", category: "Hematology", price: 70, sample_type: "Whole Blood" },
+  { name: "TMT (TREADMILL HEART TEST)", category: "Other", price: 2000, sample_type: "N/A" },
+  { name: "Torch Panel (IgG & IgM)", category: "Profile", price: 2000, sample_type: "Serum" },
+  { name: "Torch Panel (IgG)", category: "Profile", price: 1100, sample_type: "Serum" },
+  { name: "Torch Panel (IgM)", category: "Profile", price: 1100, sample_type: "Serum" },
+  { name: "Total Cholesterol : HDL", category: "Biochemistry", price: 200, sample_type: "Serum" },
+  { name: "Total Count of RBC", category: "Hematology", price: 50, sample_type: "Whole Blood" },
+  { name: "Total IgE", category: "Hormone", price: 570, sample_type: "Serum" },
+  { name: "Total Lipid", category: "Biochemistry", price: 400, sample_type: "Serum" },
+  { name: "Total Protein", category: "Biochemistry", price: 120, sample_type: "Serum" },
+  { name: "Total Protein & Albumin (with A-G ratio)", category: "Biochemistry", price: 200, sample_type: "Serum" },
+  { name: "Toxic Granuals", category: "Hematology", price: 40, sample_type: "Whole Blood" },
+  { name: "Toxoplasma IgG", category: "Serology", price: 500, sample_type: "Serum" },
+  { name: "Toxoplasma IgG & IgM", category: "Serology", price: 800, sample_type: "Serum" },
+  { name: "Toxoplasma IgM", category: "Serology", price: 300, sample_type: "Serum" },
+  { name: "TPHA (Syphilis Antibodies Screening)", category: "Serology", price: 100, sample_type: "Serum" },
+  { name: "Transferrin", category: "Biochemistry", price: 400, sample_type: "Serum" },
+
+  // Image 00040
+  { name: "Triglycerides", category: "Biochemistry", price: 200, sample_type: "Serum" },
+  { name: "Triple Screening Diagnosis", category: "Profile", price: 1250, sample_type: "Serum" },
+  { name: "Troponin - I", category: "Serology", price: 1300, sample_type: "Serum" },
+  { name: "Troponin - T", category: "Serology", price: 1300, sample_type: "EDTA Blood" },
+  { name: "TSH (Thyroid Stimulating Hormone)", category: "Hormone", price: 300, sample_type: "Serum" },
+  { name: "Typhi Dot IgG & IgM", category: "Serology", price: 450, sample_type: "Serum" },
+  { name: "Ulcer for Gram Stain", category: "Microbiology", price: 70, sample_type: "Ulcer Swab" },
+  { name: "Ulcer Smear for PAP", category: "Other", price: 350, sample_type: "Ulcer Swab" },
+  { name: "UPPER GI ENDOSCOPY", category: "Other", price: 2000, sample_type: "N/A" },
+  { name: "Urea", category: "Biochemistry", price: 150, sample_type: "Serum" },
+  { name: "Urea(24 hrs. Urine)", category: "Biochemistry", price: 100, sample_type: "Urine" },
+  { name: "Urethral Discharge C/S", category: "Microbiology", price: 220, sample_type: "Urethral Swab" },
+  { name: "Urethral Smear for Gonococcus (inc c. charge)", category: "Microbiology", price: 150, sample_type: "Urethral Swab" },
+  { name: "Urethral Swab AFB Stain", category: "Microbiology", price: 100, sample_type: "Urethral Swab" },
+  { name: "Urethral Swab Culture (coll. Charge Extra)", category: "Microbiology", price: 200, sample_type: "Urethral Swab" },
+  { name: "Uric Acid", category: "Biochemistry", price: 150, sample_type: "Serum" },
+  { name: "Uric Acid(24 hrs Urine)", category: "Biochemistry", price: 200, sample_type: "Urine" },
+  { name: "Uric Acid(Urine)", category: "Biochemistry", price: 200, sample_type: "Urine" },
+  { name: "Urinary 17 Ketosteroid", category: "Biochemistry", price: 600, sample_type: "Urine" },
+  { name: "Urinary 17 Oxysteriod", category: "Biochemistry", price: 600, sample_type: "Urine" },
+  { name: "Urinary V M A", category: "Biochemistry", price: 600, sample_type: "Urine" },
+  { name: "Urine Acetone", category: "Biochemistry", price: 100, sample_type: "Urine" },
+  { name: "URINE ALBUMIN CREATININE RATIO (UACR)", category: "Biochemistry", price: 650, sample_type: "Urine" }
+];
+
+importBatch(tests).then(() => process.exit());
