@@ -12,3 +12,7 @@ node_modules/
 # Agent/Tool cache folders
 .agents/
 .sixth/
+
+# Generated build output and local browser/PDF test artefacts
+release/
+tmp/

@@ -44,8 +44,11 @@
       display: flex;
       align-items: center;
       gap: 10px;
+      flex-wrap: wrap;
       flex-shrink: 0;
     }
+    .imaging-report-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .imaging-report-name, .imaging-report-help { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.8rem; color: var(--muted); }
     .status-pill {
       padding: 4px 12px;
       border-radius: 20px;
@@ -89,7 +92,7 @@
   <div class="app-shell">
     <aside class="sidebar">
       <div>
-        <div class="brand">We Care Diagnostics Centre</div>
+        <div class="brand">Your Diagnostic Centre</div>
         <div class="sidebar-subtitle">MRI Department</div>
       </div>
       <nav class="sidebar-nav">
@@ -142,6 +145,7 @@
   </div>
 
   <script src="scripts/common.js"></script>
+  <script src="scripts/imaging-report-upload.js"></script>
   <script src="scripts/mri_technician.js"></script>
 </body>
 </html>

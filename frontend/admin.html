@@ -12,12 +12,14 @@
   <div class="app-shell">
     <aside class="sidebar">
       <div>
-        <div class="brand">We Care Diagnostics Centre</div>
+        <div class="brand">Your Diagnostic Centre</div>
         <div class="sidebar-subtitle">Admin Control</div>
       </div>
       <nav class="sidebar-nav">
         <a href="#window-overview" class="active">Overview</a>
-        <a href="#window-employee-management">Employee Management</a>
+        <a href="#window-business-settings" data-superadmin-only hidden>Business Settings</a>
+        <a href="#window-report-doctor-signature">Report Doctor Signature</a>
+        <a href="#window-employee-management">User Management</a>
         <a href="#window-id-card-studio">ID Card Studio</a>
         <a href="#window-salary-management">Salary Management</a>
         <a href="#window-full-financial-report">Full Financial Report</a>
@@ -48,7 +50,7 @@
         <div id="workspaceEmptyState" class="panel workspace-empty">
           <div class="eyebrow">Task Workspace</div>
           <h2>Open a section from the left menu</h2>
-          <p class="muted">Each menu item opens a dedicated admin work window. You can keep multiple windows open together for employee management, doctor setup, associates, billing controls, and more.</p>
+          <p class="muted">Each menu item opens a dedicated admin work window. You can keep multiple windows open together for user management, doctor setup, associates, billing controls, and more.</p>
         </div>
 
         <div class="workspace-grid">
@@ -77,16 +79,253 @@
             </div>
           </section>
 
+          <section class="panel task-window" id="window-business-settings" hidden>
+            <div class="window-header">
+              <div>
+                <div class="eyebrow">Super Admin</div>
+                <h2>Business settings</h2>
+              </div>
+              <button class="ghost-btn window-close" data-close-window="#window-business-settings" type="button">Close</button>
+            </div>
+            <form id="businessSettingsForm" class="stack" style="max-width: 760px;">
+              <label class="field">
+                <span>Facility name</span>
+                <input id="businessName" maxlength="100" required autocomplete="organization" />
+              </label>
+              <div class="form-grid">
+                <fieldset class="field" style="border: 0; padding: 0; margin: 0;">
+                  <legend>Facility types</legend>
+                  <div class="facility-type-grid">
+                    <label class="facility-type-option"><input type="checkbox" name="facilityTypes" value="Diagnostic Centre" /> <span>Diagnostic Centre</span></label>
+                    <label class="facility-type-option"><input type="checkbox" name="facilityTypes" value="Hospital" /> <span>Hospital</span></label>
+                    <label class="facility-type-option"><input type="checkbox" name="facilityTypes" value="Laboratory" /> <span>Laboratory</span></label>
+                    <label class="facility-type-option"><input type="checkbox" name="facilityTypes" value="Clinic" /> <span>Clinic</span></label>
+                    <label class="facility-type-option"><input type="checkbox" name="facilityTypes" value="Imaging Centre" /> <span>Imaging Centre</span></label>
+                    <label class="facility-type-option"><input type="checkbox" name="facilityTypes" value="Other" /> <span>Other</span></label>
+                  </div>
+                </fieldset>
+                <label class="field">
+                  <span>Registration number</span>
+                  <input id="registrationNo" maxlength="80" placeholder="Optional registration / licence number" />
+                </label>
+              </div>
+              <label class="field">
+                <span>Address</span>
+                <textarea id="businessAddress" maxlength="250" rows="3" autocomplete="street-address" placeholder="Facility address"></textarea>
+              </label>
+              <div class="form-grid">
+                <label class="field">
+                  <span>Phone</span>
+                  <input id="businessPhone" maxlength="80" autocomplete="tel" placeholder="Contact number" />
+                </label>
+                <label class="field">
+                  <span>Email</span>
+                  <input id="businessEmail" maxlength="120" type="email" autocomplete="email" placeholder="contact@example.com" />
+                </label>
+              </div>
+              <p class="helper">These details identify this facility on bills, reports, ID cards, and throughout the app.</p>
+              <section class="letterhead-settings">
+                <div class="section-title">
+                  <div>
+                    <h3>Public report portal</h3>
+                    <span>Use your business website subdomain for patient QR links and online reports.</span>
+                  </div>
+                </div>
+                <label class="field">
+                  <span>Public portal URL</span>
+                  <input id="patientPortalBaseUrl" type="url" maxlength="250" autocomplete="url" placeholder="https://reports.yourdomain.com" />
+                </label>
+                <p class="helper">Enter this only after its DNS and secure tunnel are connected to this server. Leave blank to use the automatic local-network address.</p>
+              </section>
+              <section class="letterhead-settings" style="background: #fffbeb; border-color: #fde68a;">
+                <div class="section-title">
+                  <div>
+                    <h3 style="color: #92400e;">Subscription access</h3>
+                    <span>Only the Super Admin can set or renew the date that keeps this installation active.</span>
+                  </div>
+                </div>
+                <div id="adminSubscriptionStatus" class="metric-card" style="padding: 14px; background: #fff; border-color: #fde68a;">
+                  <strong>Loading subscription status…</strong>
+                </div>
+                <div class="form-grid">
+                  <label class="field">
+                    <span>Valid through</span>
+                    <input id="subscriptionExpiresOnAdmin" type="date" required />
+                  </label>
+                  <div class="field">
+                    <span>Quick renewal</span>
+                    <div class="actions-row">
+                      <button class="secondary-btn" type="button" data-admin-subscription-days="30">+30 days</button>
+                      <button class="secondary-btn" type="button" data-admin-subscription-days="90">+3 months</button>
+                      <button class="secondary-btn" type="button" data-admin-subscription-days="365">+1 year</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="actions-row">
+                  <button id="saveSubscriptionBtn" class="primary-btn" type="button">Save subscription date</button>
+                </div>
+                <p id="subscriptionSettingsMessage" class="message"></p>
+              </section>
+              <div class="letterhead-settings business-logo-settings">
+                <div class="section-title">
+                  <div>
+                    <h3>Business logo</h3>
+                    <span>Use this logo on bills and on reports printed without a letterhead.</span>
+                  </div>
+                </div>
+                <label class="field">
+                  <span>Logo image</span>
+                  <input id="businessLogoFile" type="file" accept="image/*" />
+                </label>
+                <p class="helper">Upload a clear PNG, JPG, WebP, or another image format supported by your browser. Maximum file size: 2 MB.</p>
+                <div class="actions-row">
+                  <button id="removeBusinessLogoBtn" class="ghost-btn" type="button" disabled>Remove logo</button>
+                </div>
+                <div class="business-logo-preview">
+                  <span id="businessLogoPreviewEmpty" class="muted">No business logo selected.</span>
+                  <img id="businessLogoPreview" alt="Business logo preview" hidden />
+                </div>
+              </div>
+              <div class="letterhead-settings">
+                <div class="section-title">
+                  <div>
+                    <h3>Report letterhead</h3>
+                    <span>Upload an image letterhead in any image extension supported by your browser.</span>
+                  </div>
+                </div>
+                <label class="field">
+                  <span>Letterhead image</span>
+                  <input id="letterheadFile" type="file" accept="image/*" />
+                </label>
+                <p class="helper">Maximum file size: 4 MB. Use an A4 letterhead image with its design in the header and footer areas.</p>
+                <label class="field">
+                  <span>Default report print style</span>
+                  <select id="defaultReportOutputStyle">
+                    <option value="letterhead">With letterhead</option>
+                    <option value="plain">Without letterhead</option>
+                  </select>
+                </label>
+                <p class="helper">This saved choice applies to every report preview, Ctrl+P printout, download, and QR report page until it is changed here.</p>
+                <div class="letterhead-layout-controls">
+                  <label class="field">
+                    <span>Patient report starts after header (mm)</span>
+                    <input id="reportHeaderSpaceMm" type="number" min="0" max="140" step="1" value="0" inputmode="numeric" />
+                  </label>
+                  <label class="field">
+                    <span>Footer space reserved (mm)</span>
+                    <input id="reportFooterSpaceMm" type="number" min="0" max="140" step="1" value="0" inputmode="numeric" />
+                  </label>
+                </div>
+                <p class="helper">Adjust the guides in the A4 preview to set where patient details begin and where report content must stop. These spaces apply to every printed report page.</p>
+                <div class="actions-row">
+                  <button id="previewLetterheadBtn" class="secondary-btn" type="button" disabled>Preview letterhead</button>
+                  <button id="removeLetterheadBtn" class="ghost-btn" type="button" disabled>Remove letterhead</button>
+                </div>
+                <div class="letterhead-preview-frame">
+                  <span id="letterheadPreviewEmpty" class="muted">No custom letterhead selected.</span>
+                  <div id="letterheadPreviewCanvas" class="letterhead-preview-canvas" hidden>
+                    <img id="letterheadPreview" class="letterhead-preview" alt="A4 letterhead preview" />
+                    <div class="letterhead-guide letterhead-header-guide"><span id="reportHeaderGuideLabel"></span></div>
+                    <div class="letterhead-guide letterhead-content-guide"><span>Patient report area</span></div>
+                    <div class="letterhead-guide letterhead-footer-guide"><span id="reportFooterGuideLabel"></span></div>
+                  </div>
+                </div>
+              </div>
+              <div class="actions-row">
+                <button class="primary-btn" type="submit">Save business settings</button>
+              </div>
+              <p id="businessSettingsMessage" class="message"></p>
+            </form>
+            <dialog id="letterheadPreviewDialog" class="letterhead-preview-dialog">
+              <div class="window-header">
+                <div>
+                  <div class="eyebrow">Report letterhead</div>
+                  <h2>Preview</h2>
+                </div>
+                <button id="closeLetterheadPreviewBtn" class="ghost-btn" type="button">Close</button>
+              </div>
+              <img id="letterheadPreviewLarge" alt="Full letterhead preview" />
+            </dialog>
+          </section>
+
+          <section class="panel task-window" id="window-report-doctor-signature" hidden>
+            <div class="window-header">
+              <div>
+                <div class="eyebrow">Report configuration</div>
+                <h2>Report doctor signature</h2>
+              </div>
+              <button class="ghost-btn window-close" data-close-window="#window-report-doctor-signature" type="button">Close</button>
+            </div>
+            <form id="reportDoctorSignatureForm" class="stack" style="max-width: 900px;">
+              <p class="helper">Admins can update the reporting doctor details and signature shown after “End of Report” on blood and pathology reports. Facility, subscription, and letterhead settings remain Super Admin-only.</p>
+              <div class="form-grid">
+                <label class="field">
+                  <span>Reporting doctor name</span>
+                  <input id="reportDoctorName" maxlength="100" placeholder="e.g. Dr. Ananya Sen" />
+                </label>
+                <label class="field">
+                  <span>Qualification / designation</span>
+                  <input id="reportDoctorQualification" maxlength="160" placeholder="e.g. MBBS, MD (Pathology)" />
+                </label>
+              </div>
+              <div class="form-grid">
+                <label class="field">
+                  <span>Registration number</span>
+                  <input id="reportDoctorRegistrationNo" maxlength="80" placeholder="e.g. WBMC-12345" />
+                </label>
+                <label class="field">
+                  <span>Signature image or PDF</span>
+                  <input id="reportDoctorSignatureFile" type="file" accept="image/*,application/pdf,.pdf" />
+                </label>
+              </div>
+              <p class="helper">Upload an image in any format your browser supports, or a PDF. The first PDF page is converted locally to an editable signature image. Maximum file size: 2 MB.</p>
+              <section class="signature-editor" aria-label="Signature crop and image adjustments">
+                <div class="signature-editor-preview">
+                  <canvas id="reportDoctorSignaturePreview" width="720" height="260" aria-label="Doctor signature preview"></canvas>
+                  <span id="reportDoctorSignaturePreviewEmpty" class="muted">Upload a signature image or PDF to crop and adjust it.</span>
+                </div>
+                <div class="signature-editor-controls">
+                  <label class="field">
+                    <span>Crop zoom <output id="reportDoctorSignatureZoomValue">100%</output></span>
+                    <input id="reportDoctorSignatureZoom" type="range" min="100" max="350" value="100" step="5" disabled />
+                  </label>
+                  <label class="field">
+                    <span>Crop horizontal position <output id="reportDoctorSignatureOffsetXValue">0</output></span>
+                    <input id="reportDoctorSignatureOffsetX" type="range" min="-100" max="100" value="0" step="1" disabled />
+                  </label>
+                  <label class="field">
+                    <span>Crop vertical position <output id="reportDoctorSignatureOffsetYValue">0</output></span>
+                    <input id="reportDoctorSignatureOffsetY" type="range" min="-100" max="100" value="0" step="1" disabled />
+                  </label>
+                  <label class="field">
+                    <span>Brightness <output id="reportDoctorSignatureBrightnessValue">100%</output></span>
+                    <input id="reportDoctorSignatureBrightness" type="range" min="40" max="180" value="100" step="1" disabled />
+                  </label>
+                  <label class="field">
+                    <span>Contrast <output id="reportDoctorSignatureContrastValue">100%</output></span>
+                    <input id="reportDoctorSignatureContrast" type="range" min="40" max="220" value="100" step="1" disabled />
+                  </label>
+                </div>
+              </section>
+              <div class="actions-row">
+                <button id="resetReportDoctorSignatureAdjustmentsBtn" class="secondary-btn" type="button" disabled>Reset crop &amp; adjustments</button>
+                <button id="removeReportDoctorSignatureBtn" class="ghost-btn" type="button" disabled>Remove signature image</button>
+                <button class="primary-btn" type="submit">Save report doctor signature</button>
+              </div>
+              <p id="reportDoctorSignatureMessage" class="message"></p>
+            </form>
+          </section>
+
           <section class="panel task-window" id="window-employee-management" hidden>
             <div class="window-header">
               <div>
                 <div class="eyebrow">Employment Manager</div>
-                <h2>Employee access and records</h2>
+                <h2>User access and records</h2>
               </div>
               <button class="ghost-btn window-close" data-close-window="#window-employee-management" type="button">Close</button>
             </div>
             <div class="two-column window-columns">
-              <article>
+              <article class="employee-editor">
                 <div class="section-title">
                   <h2>User access</h2>
                   <span>Role, joining date, controls, and employee title</span>
@@ -171,12 +410,21 @@
                 <p id="userMessage" class="message"></p>
               </article>
 
-              <article>
+              <article class="employee-directory">
                 <div class="section-title">
                   <h2>Employee directory</h2>
-                  <span>Active credentials with control summary</span>
+                  <span id="employeeDirectorySummary">Loading employee records...</span>
                 </div>
-                <div id="userList" class="list"></div>
+                <div class="employee-directory-toolbar">
+                  <label class="field">
+                    <span>Search employees</span>
+                    <input id="employeeSearch" type="search" placeholder="Name, username, employee ID, or role" autocomplete="off" />
+                  </label>
+                  <button class="secondary-btn" id="refreshUsersBtn" type="button">Refresh</button>
+                </div>
+                <div id="userList" class="list" aria-live="polite">
+                  <div class="list-item empty-state">Loading employees...</div>
+                </div>
               </article>
             </div>
           </section>
@@ -185,22 +433,43 @@
             <div class="window-header">
               <div>
                 <div class="eyebrow">ID Card Studio</div>
-                <h2>Admin-only employee card designer</h2>
+                <h2>Professional employee identity cards</h2>
               </div>
               <button class="ghost-btn window-close" data-close-window="#window-id-card-studio" type="button">Close</button>
             </div>
-            <div class="stack">
-              <label class="field">
-                <span>Find employee</span>
-                <input id="idCardSearch" placeholder="Search by full name or username" autocomplete="off" />
-              </label>
-              <div id="idCardSearchResults" class="list"></div>
-              <div id="idCardSummary" class="selection-card empty">Search an employee by name or username to generate the ID card.</div>
-              <canvas id="idCardCanvas" class="id-card-canvas" width="900" height="540"></canvas>
-              <div class="actions-row">
-                <button class="primary-btn" id="downloadIdCardBtn" type="button">Download ID card</button>
-              </div>
-              <p class="helper">The card uses employee name, joining date, ID card title, employee ID, and uploaded image. The display role/title can be typed manually or chosen from the suggestions in Employee Management.</p>
+            <div class="id-card-studio">
+              <section class="id-card-controls" aria-label="ID card controls">
+                <div class="id-card-step">
+                  <span class="id-card-step-number">1</span>
+                  <div><strong>Choose an employee</strong><span>Search the staff directory.</span></div>
+                </div>
+                <label class="field">
+                  <span>Find employee</span>
+                  <input id="idCardSearch" placeholder="Name or username" autocomplete="off" />
+                </label>
+                <div id="idCardSearchResults" class="list id-card-search-results" aria-live="polite"></div>
+                <div id="idCardSummary" class="selection-card empty">Search an employee by name or username to generate the ID card.</div>
+                <div class="id-card-studio-note">
+                  <strong>Automatically included</strong>
+                  <span>Facility name, employee photo, role, staff ID, username, joining date, address, and phone number.</span>
+                </div>
+                <div class="actions-row id-card-actions">
+                  <button class="primary-btn" id="downloadIdCardBtn" type="button">Download PNG card</button>
+                </div>
+                <p class="helper">Edit an employee in User Management to update their photo, title, joining date, or staff ID, then download a fresh card here.</p>
+              </section>
+              <section class="id-card-preview-panel" aria-label="ID card live preview">
+                <div class="id-card-preview-heading">
+                  <div>
+                    <span class="eyebrow">Live preview</span>
+                    <strong>Landscape staff identity card</strong>
+                  </div>
+                  <span class="id-card-format">PNG - 900 x 540</span>
+                </div>
+                <div class="id-card-preview-stage">
+                  <canvas id="idCardCanvas" class="id-card-canvas" width="900" height="540"></canvas>
+                </div>
+              </section>
             </div>
           </section>
 
@@ -495,7 +764,7 @@
                 
                 <div class="section-title tight" style="margin-top: 10px;">
                   <h2>Custom Commission Rules</h2>
-                  <span>Override default percentage for specific test categories</span>
+                  <span>Choose Blood / Pathology, CT Scan, MRI, or a specific catalog category to override the default percentage</span>
                 </div>
                 <div id="doctorCommissionRules" class="stack compact">
                   <!-- Rules will be added here dynamically -->
@@ -538,25 +807,17 @@
                 <input id="testPrice" type="number" placeholder="Price" />
               </div>
               <input id="testTurnaroundHours" type="number" placeholder="Process / turnaround hours" />
-              <textarea id="testParameters" rows="4" placeholder="Parameters, one per line. Example: Hemoglobin|g/dL|13 - 17"></textarea>
+              <textarea id="testParameters" rows="5" placeholder="Manual: Hemoglobin|g/dL|13 - 17&#10;Calculated: Indirect Bilirubin|mg/dL|0.20 - 0.80|calculated|{Bilirubin Total} - {Bilirubin Direct}|2"></textarea>
+              <small class="helper">Manual: <code>name|unit|range</code>. Automatic: <code>name|unit|range|calculated|{Source parameter} * 2|decimals</code>.</small>
+              <textarea id="testReportBody" rows="5" maxlength="8000" placeholder="Report body text - add notes, interpretation, method, or any text to print below this test's results."></textarea>
+              <small class="helper">For the complete manual parameter builder and live report layout, open the full Test Catalog.</small>
               <div class="actions-row">
                 <button class="primary-btn" id="saveTestBtn" type="submit">Add test</button>
                 <button class="secondary-btn" id="resetTestBtn" type="button">Clear form</button>
+                <a class="secondary-btn" href="test-catalog.html">Open full test builder</a>
               </div>
             </form>
             <p id="testMessage" class="message"></p>
-            <div class="section-title tight">
-              <h2>Bulk test import</h2>
-              <span>Import a JSON file containing catalog tests and parameters</span>
-            </div>
-            <div class="stack compact">
-              <input id="testImportFile" type="file" accept="application/json" />
-              <div class="actions-row">
-                <button class="secondary-btn" id="importTestsBtn" type="button">Import tests</button>
-              </div>
-              <p id="importTestMessage" class="message"></p>
-              <p class="helper">Use JSON array format. Example:<br /><code>[ { name: "CBC", code: "CBC", category: "Haematology", sampleType: "Blood", price: 550, turnaroundHours: 24, parameters: [{ parameterName: "Hemoglobin", unit: "g/dL", normalRange: "13 - 17" }] } ]</code></p>
-            </div>
             <div class="section-title">
               <h2>Present tests in system</h2>
               <span>View catalog price, process, and parameter details</span>

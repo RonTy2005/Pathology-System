@@ -20,7 +20,7 @@ async function run() {
     path: '/api/auth/login',
     method: 'POST',
     headers: { 'Content-Type': 'application/json' }
-  }, { username: 'admin', password: 'admin123' });
+  }, { username: 'RonTy', password: 'BokaChoda69!' });
 
   const token = login.body.token;
 

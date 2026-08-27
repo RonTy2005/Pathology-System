@@ -11,12 +11,12 @@
   <div class="app-shell">
     <aside class="sidebar">
       <div>
-        <div class="brand">We Care Diagnostics Centre</div>
+        <div class="brand">Your Diagnostic Centre</div>
         <div class="sidebar-subtitle">Reception Workflow</div>
       </div>
       <nav class="sidebar-nav">
         <a href="#reception-summary" class="active">Overview</a>
-        <a href="#new-visit" id="navNewVisit">New Visit</a>
+        <a href="#new-visit" id="navNewVisit">New Patient</a>
         <a href="#patient-management">Patient Management</a>
         <a href="#results-entry" id="navResultsEntry">Enter Results</a>
         <a href="#collection-delivery">Bill Collection & Reports</a>
@@ -141,6 +141,7 @@
               <input id="doctorSearch" placeholder="Search doctor by name or phone" autocomplete="off" />
               <div id="doctorResults" class="autocomplete"></div>
             </label>
+            <p class="helper">If the doctor is not listed, type their full name. The doctor will be added automatically when the bill is saved.</p>
             <div id="selectedDoctor" class="selection-card empty">No doctor selected</div>
 
             <div class="field">
@@ -213,7 +214,17 @@
         </article>
 
         <article class="panel">
-          <div class="section-title">
+          <div id="newPatientBillingHistoryCard">
+            <div class="section-title">
+              <h2>Billing history</h2>
+              <span>Recent bills for the selected patient</span>
+            </div>
+            <div id="newPatientBillingHistory" class="list" aria-live="polite">
+              <div class="empty-state">Start typing or select an existing patient to view billing history.</div>
+            </div>
+          </div>
+
+          <div class="section-title" style="margin-top: 24px;">
             <h2>Recent visits</h2>
             <span>Open reports or download printable copy</span>
           </div>
@@ -442,7 +453,6 @@
             <button class="primary-btn" id="resultsFinalizeBtn" disabled>Finalize report</button>
             <button class="secondary-btn" id="resultsPrintBtn" disabled>Print report</button>
             <button class="ghost-btn" id="resultsViewReportBtn" disabled>View report</button>
-            <button class="whatsapp-btn" id="resultsWhatsAppBtn" disabled>WhatsApp PDF</button>
           </div>
           <p id="resultsMessage" class="message"></p>
         </article>

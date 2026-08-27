@@ -2,14 +2,14 @@ const express = require("express");
 const { all, get, run } = require("../db/helpers");
 const { allowPermissions, allowRoles } = require("../middleware/auth");
 const { logAction } = require("../services/logService");
-const { ACCESS_CONTROLS, PERMISSIONS, ROLES } = require("../config/constants");
+const { ACCESS_CONTROLS, PERMISSIONS, ROLES, isAdministrativeRole } = require("../config/constants");
 
 const associateRouter = express.Router();
 
 associateRouter.get("/", async (req, res, next) => {
   try {
     const query = `%${req.query.query || ""}%`;
-    const includeInactive = req.user.role === ROLES.ADMIN && req.query.includeInactive === "1";
+    const includeInactive = isAdministrativeRole(req.user.role) && req.query.includeInactive === "1";
     const associates = await all(
       `
       SELECT *

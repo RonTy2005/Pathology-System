@@ -1,14 +1,14 @@
 const express = require("express");
 const { all, get, run } = require("../db/helpers");
 const { allowPermissions, allowRoles } = require("../middleware/auth");
-const { hashPassword, normalizeAccessControls, normalizePermissions } = require("../services/authService");
+const { hashPassword, invalidateUserSessions, normalizeAccessControls, normalizePermissions } = require("../services/authService");
 const { logAction } = require("../services/logService");
-const { PERMISSIONS, ROLES } = require("../config/constants");
+const { DEFAULT_SUPERADMIN_USERNAME, PERMISSIONS, ROLES } = require("../config/constants");
 
 const userRouter = express.Router();
 
 function isProtectedDefaultAdmin(user) {
-  return user?.username === "admin";
+  return user?.username === DEFAULT_SUPERADMIN_USERNAME;
 }
 
 function canRecoverUserCredentials(user) {
@@ -143,7 +143,7 @@ userRouter.patch("/:id", async (req, res, next) => {
     }
 
     if (isProtectedDefaultAdmin(current)) {
-      return res.status(400).json({ message: 'Protected system administrator account "admin" cannot be edited' });
+      return res.status(400).json({ message: `Protected superadmin account "${DEFAULT_SUPERADMIN_USERNAME}" cannot be edited` });
     }
 
     const role = req.body.role || current.role;
@@ -199,6 +199,8 @@ userRouter.patch("/:id", async (req, res, next) => {
       meta: { ...req.body, password: req.body.password ? "[REDACTED]" : undefined },
     });
 
+    await invalidateUserSessions(req.params.id);
+
     res.json({ ok: true });
   } catch (error) {
     if (error.message.includes("UNIQUE")) {
@@ -217,7 +219,7 @@ userRouter.delete("/:id", async (req, res, next) => {
     }
 
     if (isProtectedDefaultAdmin(userToDelete)) {
-      return res.status(400).json({ message: 'Protected system administrator account "admin" cannot be deleted' });
+      return res.status(400).json({ message: `Protected superadmin account "${DEFAULT_SUPERADMIN_USERNAME}" cannot be deleted` });
     }
 
     if (userToDelete.id === req.user.id) {

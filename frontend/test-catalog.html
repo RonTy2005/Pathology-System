@@ -10,7 +10,7 @@
   <div class="app-shell">
     <aside class="sidebar">
       <div>
-        <div class="brand">We Care Diagnostics Centre</div>
+        <div class="brand">Your Diagnostic Centre</div>
         <div class="sidebar-subtitle">Test Catalog</div>
       </div>
       <nav class="sidebar-nav">
@@ -29,69 +29,88 @@
         <div id="currentUser" class="pill"></div>
       </header>
 
-      <section class="panel">
-        <div class="section-title">
-          <h2>Add or update a test</h2>
-          <span>Receptionist access only for test management</span>
-        </div>
-        <form id="testCatalogForm" class="stack">
-          <input id="editingTestId" type="hidden" />
-          <div class="inline-grid">
-            <label class="field">
-              <span>Test name</span>
-              <input id="testName" required />
-            </label>
-            <label class="field">
-              <span>Test code</span>
-              <input id="testCode" />
-            </label>
+      <div class="catalog-builder-layout">
+        <section class="panel catalog-editor-panel">
+          <div class="section-title">
+            <div>
+              <h2>Test builder</h2>
+              <span>Add every test detail manually and see its report layout before saving.</span>
+            </div>
+            <span class="catalog-step-pill">Step 1</span>
           </div>
-          <div class="inline-grid">
-            <label class="field">
-              <span>Category</span>
-              <input id="testCategory" />
-            </label>
-            <label class="field">
-              <span>Sample type</span>
-              <input id="testSampleType" />
-            </label>
-          </div>
-          <div class="inline-grid">
-            <label class="field">
-              <span>Price</span>
-              <input id="testPrice" type="number" min="0" value="0" />
-            </label>
-            <label class="field">
-              <span>Turnaround hours</span>
-              <input id="testTurnaroundHours" type="number" min="1" value="24" />
-            </label>
-          </div>
-          <label class="field">
-            <span>Parameters</span>
-            <textarea id="testParameters" rows="4" placeholder="One per line: Hemoglobin|g/dL|13 - 17"></textarea>
-          </label>
-          <div class="actions-row">
-            <button class="primary-btn" id="saveTestBtn" type="submit">Add test</button>
-            <button class="secondary-btn" id="resetTestBtn" type="button">Clear form</button>
-          </div>
-          <p id="testMessage" class="message"></p>
-        </form>
-      </section>
+          <form id="testCatalogForm" class="stack">
+            <input id="editingTestId" type="hidden" />
+            <div class="inline-grid">
+              <label class="field">
+                <span>Test name *</span>
+                <input id="testName" required placeholder="e.g. Serum Calcium" />
+              </label>
+              <label class="field">
+                <span>Test code</span>
+                <input id="testCode" placeholder="e.g. CAL-001" />
+              </label>
+            </div>
+            <div class="inline-grid">
+              <label class="field">
+                <span>Category</span>
+                <input id="testCategory" placeholder="e.g. Biochemistry" />
+              </label>
+              <label class="field">
+                <span>Sample type</span>
+                <input id="testSampleType" placeholder="e.g. Serum" />
+              </label>
+            </div>
+            <div class="inline-grid">
+              <label class="field">
+                <span>Price</span>
+                <input id="testPrice" type="number" min="0" step="0.01" value="0" />
+              </label>
+              <label class="field">
+                <span>Turnaround hours</span>
+                <input id="testTurnaroundHours" type="number" min="1" value="24" />
+              </label>
+            </div>
 
-      <section class="panel">
-        <div class="section-title">
-          <h2>Bulk import</h2>
-          <span>Upload a JSON file containing tests and parameters</span>
-        </div>
-        <div class="stack compact">
-          <input id="testImportFile" type="file" accept="application/json" />
-          <div class="actions-row">
-            <button class="secondary-btn" id="importTestsBtn" type="button">Import tests</button>
+            <section class="parameter-builder">
+              <div class="parameter-builder-header">
+                <div>
+                  <strong>Report parameters</strong>
+                  <span>Add the result fields that the technician will fill in.</span>
+                </div>
+                <button id="addParameterBtn" class="secondary-btn" type="button">Add parameter</button>
+              </div>
+              <div id="parameterRows" class="parameter-builder-rows"></div>
+              <p class="helper">Choose Calculated only when the formula uses another parameter name in braces, for example <code>{Bilirubin Total} - {Bilirubin Direct}</code>.</p>
+            </section>
+
+            <label class="field">
+              <span>Report body text</span>
+              <textarea id="testReportBody" rows="6" maxlength="8000" placeholder="Add an interpretation, method, note, or any text that should appear below this test's results in the final report."></textarea>
+              <small class="helper">Plain text only. New lines and paragraphs are kept in printed and QR reports.</small>
+            </label>
+            <div class="actions-row">
+              <button class="primary-btn" id="saveTestBtn" type="submit">Save test</button>
+              <button class="secondary-btn" id="previewTestBtn" type="button">Refresh preview</button>
+              <button class="ghost-btn" id="resetTestBtn" type="button">Clear form</button>
+            </div>
+            <p id="testMessage" class="message"></p>
+          </form>
+        </section>
+
+        <section class="panel catalog-preview-panel">
+          <div class="section-title">
+            <div>
+              <h2>Report preview</h2>
+              <span>A4 portrait visual guide before you save. Sample values are for layout only.</span>
+            </div>
+            <span class="catalog-step-pill">Step 2</span>
           </div>
-          <p id="importTestMessage" class="message"></p>
-          <p class="helper">JSON array format example:<br /><code>[{ "name": "CBC", "code": "CBC", "category": "Haematology", "sampleType": "Blood", "price": 550, "turnaroundHours": 24, "parameters": [{ "parameterName": "Hemoglobin", "unit": "g/dL", "normalRange": "13 - 17" }] }]</code></p>
-        </div>
-      </section>
+          <div class="report-preview-frame">
+            <article id="reportPreview" class="report-preview-sheet" aria-live="polite"></article>
+          </div>
+          <p class="helper">This preview uses an A4 portrait page (210 × 297 mm). After saving, use <strong>Printable preview</strong> from the catalog list to open the complete sample report. Its QR code opens a safe, non-patient web preview for the same test.</p>
+        </section>
+      </div>
 
       <section class="panel">
         <div class="section-title">
@@ -104,6 +123,6 @@
   </div>
 
   <script src="scripts/common.js"></script>
-  <script src="scripts/testCatalog.js?v=2"></script>
+  <script src="scripts/testCatalog.js?v=3"></script>
 </body>
 </html>

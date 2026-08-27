@@ -49,6 +49,62 @@ function sendCsv(res, filename, rows) {
   res.send(csv);
 }
 
+function normalizeCommissionCategory(value) {
+  return String(value || "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, " ");
+}
+
+function getServiceCommissionCategory(row) {
+  const category = normalizeCommissionCategory(row.category);
+  const sampleType = normalizeCommissionCategory(row.sampleType);
+  const description = normalizeCommissionCategory(
+    [row.category, row.custom_test_name, row.catalogTestName].filter(Boolean).join(" ")
+  );
+
+  if (category === "CT SCAN" || /\bCT\b|COMPUTED TOMOGRAPHY/.test(description)) {
+    return "CT Scan";
+  }
+  if (category === "MRI" || /\bMRI\b|MAGNETIC RESONANCE/.test(description)) {
+    return "MRI";
+  }
+
+  const bloodCategoryTerms = [
+    "HEMATOLOGY",
+    "HAEMATOLOGY",
+    "BIOCHEMISTRY",
+    "SEROLOGY",
+    "HORMONE",
+    "ELECTROLYTE",
+    "ENDOCRINOLOGY",
+    "IMMUNOLOGY",
+    "CHEMISTRY",
+    "CLINICAL PATHOLOGY",
+    "PATHOLOGY",
+  ];
+  if (sampleType.includes("BLOOD") || bloodCategoryTerms.some((term) => category.includes(term))) {
+    return "Blood";
+  }
+
+  return null;
+}
+
+function getCommissionRule(rules, row) {
+  const category = normalizeCommissionCategory(row.category || "General");
+  const ruleEntries = Object.entries(rules || {});
+  const exactCategoryRule = ruleEntries.find(([ruleCategory]) => normalizeCommissionCategory(ruleCategory) === category);
+  if (exactCategoryRule) {
+    return exactCategoryRule[1];
+  }
+
+  const serviceCategory = getServiceCommissionCategory(row);
+  const serviceRule = ruleEntries.find(
+    ([ruleCategory]) => normalizeCommissionCategory(ruleCategory) === normalizeCommissionCategory(serviceCategory)
+  );
+  return serviceRule ? serviceRule[1] : null;
+}
+
 async function getDetailedDoctorCommissions(dateFilter) {
   const rows = await all(
     `
@@ -67,7 +123,9 @@ async function getDetailedDoctorCommissions(dateFilter) {
       vt.custom_test_price,
       vt.custom_test_name,
       t.price AS catalogPrice,
-      t.category
+      t.name AS catalogTestName,
+      t.category,
+      t.sample_type AS sampleType
     FROM doctors d
     JOIN visits v ON v.doctor_id = d.id
     LEFT JOIN visit_tests vt ON vt.visit_id = v.id
@@ -114,8 +172,7 @@ async function getDetailedDoctorCommissions(dateFilter) {
       rules = JSON.parse(row.commission_rules || "{}");
     } catch (e) {}
 
-    const category = row.category || "General";
-    const rule = rules[category];
+    const rule = getCommissionRule(rules, row);
     const price = row.custom_test_price || row.catalogPrice || 0;
     const ratio = row.visitSubtotal > 0 ? row.visitTotal / row.visitSubtotal : 1;
     const netPrice = price * ratio;
@@ -168,8 +225,11 @@ async function getDetailedDoctorVisitCommissions(dateFilter, doctorId = null) {
       v.subtotal,
       v.total,
       vt.custom_test_price,
+      vt.custom_test_name,
       t.price AS catalogPrice,
-      t.category
+      t.name AS catalogTestName,
+      t.category,
+      t.sample_type AS sampleType
     FROM visits v
     JOIN patients p ON p.id = v.patient_id
     JOIN doctors d ON d.id = v.doctor_id
@@ -203,8 +263,7 @@ async function getDetailedDoctorVisitCommissions(dateFilter, doctorId = null) {
     }
 
     const v = visitsMap[row.visitId];
-    const category = row.category || "General";
-    const rule = v.rules[category];
+    const rule = getCommissionRule(v.rules, row);
     const price = row.custom_test_price || row.catalogPrice || 0;
     const ratio = v.subtotal > 0 ? v.total / v.subtotal : 1;
     const netPrice = price * ratio;

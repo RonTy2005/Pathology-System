@@ -1,5 +1,5 @@
 const crypto = require("crypto");
-const { get } = require("../db/helpers");
+const { get, run } = require("../db/helpers");
 const { PERMISSIONS, ROLE_ACCESS_CONTROL_DEFAULTS, ROLE_PERMISSION_DEFAULTS } = require("../config/constants");
 
 const sessions = new Map();
@@ -17,7 +17,11 @@ function normalizePermissions(role, rawPermissions) {
       return defaultPermissions;
     }
 
-    return Array.from(new Set(parsed.filter((permission) => KNOWN_PERMISSIONS.has(permission))));
+    const permissions = new Set(parsed.filter((permission) => KNOWN_PERMISSIONS.has(permission)));
+    if (permissions.has(PERMISSIONS.DOWNLOAD_REPORTS) || permissions.has(PERMISSIONS.SHARE_WHATSAPP_PDF)) {
+      permissions.add(PERMISSIONS.VIEW_REPORTS);
+    }
+    return Array.from(permissions);
   } catch (_error) {
     return defaultPermissions;
   }
@@ -54,11 +58,10 @@ function verifyPassword(password, storedHash) {
   return crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(originalHash));
 }
 
-function createSession(user) {
-  const token = crypto.randomBytes(32).toString("hex");
+function buildSession(token, user, createdAt = Date.now()) {
   const permissions = normalizePermissions(user.role, user.permissions);
   const accessControls = normalizeAccessControls(user.role, user.access_controls);
-  sessions.set(token, {
+  return {
     token,
     user: {
       id: user.id,
@@ -68,17 +71,52 @@ function createSession(user) {
       permissions,
       accessControls,
     },
-    createdAt: Date.now(),
-  });
+    createdAt,
+  };
+}
+
+async function createSession(user) {
+  const token = crypto.randomBytes(32).toString("hex");
+  const session = buildSession(token, user);
+  await run(
+    "INSERT INTO user_sessions (token, user_id) VALUES (?, ?)",
+    [token, user.id]
+  );
+  sessions.set(token, session);
   return token;
 }
 
-function getSession(token) {
-  return sessions.get(token);
+async function getSession(token) {
+  const cached = sessions.get(token);
+  if (cached) return cached;
+
+  const stored = await get(
+    `SELECT s.token, s.created_at, u.id, u.username, u.role, u.full_name, u.permissions, u.access_controls
+     FROM user_sessions s
+     JOIN users u ON u.id = s.user_id
+     WHERE s.token = ? AND u.active = 1`,
+    [token]
+  );
+  if (!stored) return null;
+
+  const createdAt = Date.parse(stored.created_at || "") || Date.now();
+  const session = buildSession(token, stored, createdAt);
+  sessions.set(token, session);
+  return session;
 }
 
-function destroySession(token) {
+async function destroySession(token) {
   sessions.delete(token);
+  await run("DELETE FROM user_sessions WHERE token = ?", [token]);
+}
+
+async function invalidateUserSessions(userId) {
+  for (const [token, session] of sessions.entries()) {
+    if (Number(session.user?.id) === Number(userId)) {
+      sessions.delete(token);
+    }
+  }
+  await run("DELETE FROM user_sessions WHERE user_id = ?", [userId]);
 }
 
 async function authenticate(username, password) {
@@ -104,6 +142,7 @@ module.exports = {
   authenticate,
   createSession,
   destroySession,
+  invalidateUserSessions,
   getSession,
   hashPassword,
   normalizePermissions,

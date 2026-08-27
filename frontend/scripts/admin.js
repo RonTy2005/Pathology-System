@@ -2,6 +2,9 @@ const currentAdminUser = protectPage(["admin", "manager"]);
 
 const overviewCards = document.getElementById("overviewCards");
 const userList = document.getElementById("userList");
+const employeeSearch = document.getElementById("employeeSearch");
+const employeeDirectorySummary = document.getElementById("employeeDirectorySummary");
+const refreshUsersBtn = document.getElementById("refreshUsersBtn");
 const doctorList = document.getElementById("doctorList");
 const auditLog = document.getElementById("auditLog");
 const associateList = document.getElementById("associateList");
@@ -39,6 +42,53 @@ const patientDataDateFrom = document.getElementById("patientDataDateFrom");
 const patientDataDateTo = document.getElementById("patientDataDateTo");
 const downloadPatientDataCsvBtn = document.getElementById("downloadPatientDataCsvBtn");
 const patientDataMessage = document.getElementById("patientDataMessage");
+const businessSettingsForm = document.getElementById("businessSettingsForm");
+const businessNameInput = document.getElementById("businessName");
+const businessAddressInput = document.getElementById("businessAddress");
+const businessPhoneInput = document.getElementById("businessPhone");
+const businessEmailInput = document.getElementById("businessEmail");
+const registrationNoInput = document.getElementById("registrationNo");
+const patientPortalBaseUrlInput = document.getElementById("patientPortalBaseUrl");
+const businessLogoFileInput = document.getElementById("businessLogoFile");
+const businessLogoPreview = document.getElementById("businessLogoPreview");
+const businessLogoPreviewEmpty = document.getElementById("businessLogoPreviewEmpty");
+const removeBusinessLogoBtn = document.getElementById("removeBusinessLogoBtn");
+const letterheadFileInput = document.getElementById("letterheadFile");
+const defaultReportOutputStyle = document.getElementById("defaultReportOutputStyle");
+const reportHeaderSpaceInput = document.getElementById("reportHeaderSpaceMm");
+const reportFooterSpaceInput = document.getElementById("reportFooterSpaceMm");
+const letterheadPreviewCanvas = document.getElementById("letterheadPreviewCanvas");
+const letterheadPreview = document.getElementById("letterheadPreview");
+const letterheadPreviewEmpty = document.getElementById("letterheadPreviewEmpty");
+const reportHeaderGuideLabel = document.getElementById("reportHeaderGuideLabel");
+const reportFooterGuideLabel = document.getElementById("reportFooterGuideLabel");
+const previewLetterheadBtn = document.getElementById("previewLetterheadBtn");
+const removeLetterheadBtn = document.getElementById("removeLetterheadBtn");
+const letterheadPreviewDialog = document.getElementById("letterheadPreviewDialog");
+const letterheadPreviewLarge = document.getElementById("letterheadPreviewLarge");
+const closeLetterheadPreviewBtn = document.getElementById("closeLetterheadPreviewBtn");
+const reportDoctorSignatureForm = document.getElementById("reportDoctorSignatureForm");
+const reportDoctorNameInput = document.getElementById("reportDoctorName");
+const reportDoctorQualificationInput = document.getElementById("reportDoctorQualification");
+const reportDoctorRegistrationNoInput = document.getElementById("reportDoctorRegistrationNo");
+const reportDoctorSignatureFileInput = document.getElementById("reportDoctorSignatureFile");
+const reportDoctorSignaturePreview = document.getElementById("reportDoctorSignaturePreview");
+const reportDoctorSignaturePreviewEmpty = document.getElementById("reportDoctorSignaturePreviewEmpty");
+const reportDoctorSignatureZoomInput = document.getElementById("reportDoctorSignatureZoom");
+const reportDoctorSignatureOffsetXInput = document.getElementById("reportDoctorSignatureOffsetX");
+const reportDoctorSignatureOffsetYInput = document.getElementById("reportDoctorSignatureOffsetY");
+const reportDoctorSignatureBrightnessInput = document.getElementById("reportDoctorSignatureBrightness");
+const reportDoctorSignatureContrastInput = document.getElementById("reportDoctorSignatureContrast");
+const reportDoctorSignatureZoomValue = document.getElementById("reportDoctorSignatureZoomValue");
+const reportDoctorSignatureOffsetXValue = document.getElementById("reportDoctorSignatureOffsetXValue");
+const reportDoctorSignatureOffsetYValue = document.getElementById("reportDoctorSignatureOffsetYValue");
+const reportDoctorSignatureBrightnessValue = document.getElementById("reportDoctorSignatureBrightnessValue");
+const reportDoctorSignatureContrastValue = document.getElementById("reportDoctorSignatureContrastValue");
+const resetReportDoctorSignatureAdjustmentsBtn = document.getElementById("resetReportDoctorSignatureAdjustmentsBtn");
+const removeReportDoctorSignatureBtn = document.getElementById("removeReportDoctorSignatureBtn");
+const subscriptionExpiresOnAdmin = document.getElementById("subscriptionExpiresOnAdmin");
+const adminSubscriptionStatus = document.getElementById("adminSubscriptionStatus");
+const saveSubscriptionBtn = document.getElementById("saveSubscriptionBtn");
 
 const editingDoctorId = document.getElementById("editingDoctorId");
 const doctorNameInput = document.getElementById("doctorName");
@@ -62,6 +112,7 @@ const ROLE_DEFAULTS = {
     "manage_billing",
     "view_reports",
     "download_reports",
+    "share_whatsapp_pdf",
     "print_reports",
     "manage_tests",
     "manage_doctors",
@@ -73,6 +124,7 @@ const ROLE_DEFAULTS = {
     "delete_patients",
     "view_reports",
     "download_reports",
+    "share_whatsapp_pdf",
     "enter_results",
     "finalize_reports",
     "print_reports",
@@ -85,11 +137,12 @@ const ROLE_DEFAULTS = {
 };
 
 const PERMISSION_LABELS = [
-  ["manage_patients", "Patient registration"],
+  ["manage_patients", "Patient registration (New Patient workspace)"],
   ["manage_billing", "Billing and bill access"],
   ["delete_patients", "Delete patients"],
   ["view_reports", "View reports"],
-  ["download_reports", "WhatsApp PDF"],
+  ["download_reports", "Download report PDF"],
+  ["share_whatsapp_pdf", "WhatsApp report PDF"],
   ["enter_results", "Enter test results"],
   ["finalize_reports", "Finalize reports"],
   ["print_reports", "Print reports"],
@@ -177,46 +230,555 @@ const ROLE_ACCESS_CONTROL_DEFAULTS = {
   },
 };
 
-const ID_CARD_BACKGROUND_SRC = "assets/we-care-id-card-bg.jpg";
-const ID_CARD_ADDRESS = "Kalna, Purba Bardhaman";
-const ID_CARD_PHONE = "7872122767";
+let ID_CARD_ADDRESS = "";
+let ID_CARD_PHONE = "";
 
 let selectedProfileImage = "";
 let selectedUserForCard = null;
 let usersCache = [];
 let doctorsCache = [];
 let testsCache = [];
-let idCardBackgroundPromise = null;
 let sectionNavigationInitialized = false;
 let testCategories = [];
+let letterheadDataUrl = null;
+let letterheadHasPendingChange = false;
+let businessLogoDataUrl = null;
+let businessLogoHasPendingChange = false;
+let reportDoctorSignatureDataUrl = null;
+let reportDoctorSignatureHasPendingChange = false;
+let reportDoctorSignatureSourceImage = null;
+let reportDoctorPdfJsPromise = null;
+let currentSubscriptionStatus = null;
 
 const ADMIN_ONLY_WINDOWS = new Set([
+  "#window-report-doctor-signature",
   "#window-employee-management",
   "#window-id-card-studio",
   "#window-system-actions",
   "#window-due-reports-audit",
 ]);
+const SUPERADMIN_ONLY_WINDOWS = new Set(["#window-business-settings"]);
 
 function isDefaultSystemAdministrator() {
-  return currentAdminUser?.username === "admin";
+  return currentAdminUser?.username === "RonTy";
 }
 
 function isAdminRole() {
-  return currentAdminUser?.role === "admin";
+  return isAdministrativeRole(currentAdminUser?.role);
+}
+
+function isSuperadminRole() {
+  return currentAdminUser?.role === "superadmin";
+}
+
+function formatSubscriptionDate(value) {
+  if (!value) return "not set";
+  return new Date(`${value}T12:00:00`).toLocaleDateString("en-IN", {
+    day: "2-digit", month: "long", year: "numeric",
+  });
+}
+
+function renderAdminSubscriptionStatus(subscription) {
+  currentSubscriptionStatus = subscription;
+  if (subscriptionExpiresOnAdmin) {
+    subscriptionExpiresOnAdmin.min = subscription.today || "";
+    subscriptionExpiresOnAdmin.value = subscription.expiresOn || "";
+  }
+  if (!adminSubscriptionStatus) return;
+
+  if (subscription.active) {
+    adminSubscriptionStatus.style.background = "#f0fdf4";
+    adminSubscriptionStatus.style.borderColor = "#bbf7d0";
+    adminSubscriptionStatus.innerHTML = `<strong style="color:#047857">Subscription active</strong><div class="helper" style="margin-top:4px;">Valid through ${formatSubscriptionDate(subscription.expiresOn)}${subscription.daysRemaining === 0 ? " — expires today" : ` — ${subscription.daysRemaining} day(s) remaining`}</div>`;
+  } else {
+    adminSubscriptionStatus.style.background = "#fff";
+    adminSubscriptionStatus.style.borderColor = "#fde68a";
+    adminSubscriptionStatus.innerHTML = `<strong style="color:#92400e">Subscription needs renewal</strong><div class="helper" style="margin-top:4px;">${subscription.expiresOn ? `Expired on ${formatSubscriptionDate(subscription.expiresOn)}.` : "No subscription date has been set."} Save a new date after payment is confirmed.</div>`;
+  }
+}
+
+function addAdminSubscriptionDays(days) {
+  const base = subscriptionExpiresOnAdmin?.value
+    || currentSubscriptionStatus?.expiresOn
+    || currentSubscriptionStatus?.today
+    || new Date().toISOString().slice(0, 10);
+  const date = new Date(`${base}T12:00:00`);
+  date.setDate(date.getDate() + Number(days));
+  if (subscriptionExpiresOnAdmin) subscriptionExpiresOnAdmin.value = date.toISOString().slice(0, 10);
+}
+
+async function saveSubscriptionExpiry() {
+  if (!subscriptionExpiresOnAdmin?.value) {
+    showMessage("subscriptionSettingsMessage", "Choose the date through which the app should remain active.", true);
+    return;
+  }
+
+  saveSubscriptionBtn.disabled = true;
+  try {
+    const subscription = await API.request("/api/settings/subscription", {
+      method: "PATCH",
+      body: JSON.stringify({ expiresOn: subscriptionExpiresOnAdmin.value }),
+    });
+    renderAdminSubscriptionStatus(subscription);
+    localStorage.removeItem("labSubscriptionExpired");
+    showMessage("subscriptionSettingsMessage", "Subscription date saved.");
+  } catch (error) {
+    showMessage("subscriptionSettingsMessage", error.message, true);
+  } finally {
+    saveSubscriptionBtn.disabled = false;
+  }
+}
+
+function setFacilityTypes(types = []) {
+  const selected = new Set(types);
+  document.querySelectorAll('input[name="facilityTypes"]').forEach((input) => {
+    input.checked = selected.has(input.value);
+  });
+}
+
+function getFacilityTypes() {
+  return Array.from(document.querySelectorAll('input[name="facilityTypes"]:checked'))
+    .map((input) => input.value);
 }
 
 function canOpenWindow(hash) {
+  if (SUPERADMIN_ONLY_WINDOWS.has(hash)) return isSuperadminRole();
   return isAdminRole() || !ADMIN_ONLY_WINDOWS.has(hash);
 }
 
 function configureSectionAccess() {
-  if (isAdminRole()) return;
-
   document.querySelectorAll(".sidebar-nav a").forEach((link) => {
-    if (ADMIN_ONLY_WINDOWS.has(link.getAttribute("href"))) {
-      link.hidden = true;
-    }
+    const hash = link.getAttribute("href");
+    if (SUPERADMIN_ONLY_WINDOWS.has(hash)) link.hidden = !isSuperadminRole();
+    else if (ADMIN_ONLY_WINDOWS.has(hash)) link.hidden = !isAdminRole();
   });
+}
+
+async function loadBusinessSettings() {
+  if (!businessNameInput || !isSuperadminRole()) return;
+  const [settings, letterhead, subscription, logo] = await Promise.all([
+    API.request("/api/settings/business"),
+    API.request("/api/settings/business/letterhead"),
+    API.request("/api/settings/subscription"),
+    API.request("/api/settings/business/logo"),
+  ]);
+  businessNameInput.value = settings.businessName || getBusinessName();
+  setFacilityTypes(settings.facilityTypes || []);
+  if (businessAddressInput) businessAddressInput.value = settings.address || "";
+  if (businessPhoneInput) businessPhoneInput.value = settings.phone || "";
+  if (businessEmailInput) businessEmailInput.value = settings.email || "";
+  if (registrationNoInput) registrationNoInput.value = settings.registrationNo || "";
+  if (patientPortalBaseUrlInput) patientPortalBaseUrlInput.value = settings.patientPortalBaseUrl || "";
+  ID_CARD_ADDRESS = settings.address || "";
+  ID_CARD_PHONE = settings.phone || "";
+  if (defaultReportOutputStyle) {
+    defaultReportOutputStyle.value = settings.defaultReportIncludesLetterhead === false ? "plain" : "letterhead";
+  }
+  if (reportHeaderSpaceInput) reportHeaderSpaceInput.value = settings.reportHeaderSpaceMm || 0;
+  if (reportFooterSpaceInput) reportFooterSpaceInput.value = settings.reportFooterSpaceMm || 0;
+  letterheadDataUrl = letterhead.letterheadDataUrl || null;
+  letterheadHasPendingChange = false;
+  businessLogoDataUrl = logo.businessLogoDataUrl || null;
+  businessLogoHasPendingChange = false;
+  if (letterheadFileInput) letterheadFileInput.value = "";
+  if (businessLogoFileInput) businessLogoFileInput.value = "";
+  updateBusinessLogoPreview();
+  updateLetterheadPreview();
+  renderAdminSubscriptionStatus(subscription);
+}
+
+async function saveBusinessSettings(event) {
+  event.preventDefault();
+  const businessName = businessNameInput?.value.trim() || "";
+  const facilityTypes = getFacilityTypes();
+  if (facilityTypes.length === 0) {
+    showMessage("businessSettingsMessage", "Select at least one facility type.", true);
+    return;
+  }
+  const { headerSpaceMm, footerSpaceMm } = normalizeReportLayoutInputs();
+  const payload = {
+    businessName,
+    facilityTypes,
+    address: businessAddressInput?.value.trim() || "",
+    phone: businessPhoneInput?.value.trim() || "",
+    email: businessEmailInput?.value.trim() || "",
+    registrationNo: registrationNoInput?.value.trim() || "",
+    patientPortalBaseUrl: patientPortalBaseUrlInput?.value.trim() || "",
+    defaultReportIncludesLetterhead: defaultReportOutputStyle?.value !== "plain",
+    reportHeaderSpaceMm: headerSpaceMm,
+    reportFooterSpaceMm: footerSpaceMm,
+  };
+
+  if (letterheadHasPendingChange) {
+    payload.letterheadDataUrl = letterheadDataUrl;
+  }
+  if (businessLogoHasPendingChange) {
+    payload.businessLogoDataUrl = businessLogoDataUrl;
+  }
+
+  try {
+    const settings = await API.request("/api/settings/business", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+    setBusinessName(settings.businessName);
+    ID_CARD_ADDRESS = settings.address || "";
+    ID_CARD_PHONE = settings.phone || "";
+    if (selectedUserForCard) drawIdCard(selectedUserForCard);
+    letterheadHasPendingChange = false;
+    businessLogoHasPendingChange = false;
+    updateBusinessLogoPreview();
+    updateLetterheadPreview();
+    showMessage("businessSettingsMessage", "Business settings saved successfully.");
+  } catch (error) {
+    showMessage("businessSettingsMessage", error.message, true);
+  }
+}
+
+function updateBusinessLogoPreview() {
+  const hasLogo = Boolean(businessLogoDataUrl);
+  if (businessLogoPreview) {
+    businessLogoPreview.src = hasLogo ? businessLogoDataUrl : "";
+    businessLogoPreview.hidden = !hasLogo;
+  }
+  if (businessLogoPreviewEmpty) businessLogoPreviewEmpty.hidden = hasLogo;
+  if (removeBusinessLogoBtn) removeBusinessLogoBtn.disabled = !hasLogo;
+}
+
+async function selectBusinessLogoFile() {
+  const file = businessLogoFileInput?.files?.[0];
+  if (!file) return;
+
+  if (!file.type.startsWith("image/")) {
+    businessLogoFileInput.value = "";
+    showMessage("businessSettingsMessage", "Please select an image file for the business logo.", true);
+    return;
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    businessLogoFileInput.value = "";
+    showMessage("businessSettingsMessage", "The business logo image must be 2 MB or smaller.", true);
+    return;
+  }
+
+  try {
+    businessLogoDataUrl = await readFileAsDataUrl(file);
+    businessLogoHasPendingChange = true;
+    updateBusinessLogoPreview();
+    showMessage("businessSettingsMessage", "Business logo selected. Save business settings to apply it to bills and reports.");
+  } catch (error) {
+    showMessage("businessSettingsMessage", error.message, true);
+  }
+}
+
+function removeBusinessLogo() {
+  businessLogoDataUrl = null;
+  businessLogoHasPendingChange = true;
+  if (businessLogoFileInput) businessLogoFileInput.value = "";
+  updateBusinessLogoPreview();
+  showMessage("businessSettingsMessage", "Business logo will be removed when you save business settings.");
+}
+
+function updateLetterheadPreview() {
+  const hasLetterhead = Boolean(letterheadDataUrl);
+
+  if (letterheadPreview) {
+    letterheadPreview.src = hasLetterhead ? letterheadDataUrl : "";
+  }
+  if (letterheadPreviewCanvas) letterheadPreviewCanvas.hidden = !hasLetterhead;
+  if (letterheadPreviewEmpty) letterheadPreviewEmpty.hidden = hasLetterhead;
+  if (letterheadPreviewLarge) letterheadPreviewLarge.src = hasLetterhead ? letterheadDataUrl : "";
+  if (previewLetterheadBtn) previewLetterheadBtn.disabled = !hasLetterhead;
+  if (removeLetterheadBtn) removeLetterheadBtn.disabled = !hasLetterhead;
+  updateReportLayoutPreview();
+}
+
+function normalizeReportLayoutInputs() {
+  let headerSpaceMm = Math.min(140, Math.max(0, Math.round(Number(reportHeaderSpaceInput?.value) || 0)));
+  let footerSpaceMm = Math.min(140, Math.max(0, Math.round(Number(reportFooterSpaceInput?.value) || 0)));
+
+  if (headerSpaceMm + footerSpaceMm > 240) {
+    footerSpaceMm = 240 - headerSpaceMm;
+  }
+  if (reportHeaderSpaceInput) reportHeaderSpaceInput.value = headerSpaceMm;
+  if (reportFooterSpaceInput) reportFooterSpaceInput.value = footerSpaceMm;
+
+  return { headerSpaceMm, footerSpaceMm };
+}
+
+function updateReportLayoutPreview() {
+  const { headerSpaceMm, footerSpaceMm } = normalizeReportLayoutInputs();
+  const headerPercent = (headerSpaceMm / 297) * 100;
+  const footerPercent = (footerSpaceMm / 297) * 100;
+
+  if (letterheadPreviewCanvas) {
+    letterheadPreviewCanvas.style.setProperty("--report-header-space", `${headerPercent}%`);
+    letterheadPreviewCanvas.style.setProperty("--report-footer-space", `${footerPercent}%`);
+  }
+  if (reportHeaderGuideLabel) {
+    reportHeaderGuideLabel.textContent = headerSpaceMm
+      ? `Header reserved: ${headerSpaceMm} mm`
+      : "Patient report starts at the top edge";
+  }
+  if (reportFooterGuideLabel) {
+    reportFooterGuideLabel.textContent = footerSpaceMm
+      ? `Footer reserved: ${footerSpaceMm} mm`
+      : "No footer area reserved";
+  }
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("Unable to read the selected image file."));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function selectLetterheadFile() {
+  const file = letterheadFileInput?.files?.[0];
+  if (!file) return;
+
+  if (!file.type.startsWith("image/")) {
+    letterheadFileInput.value = "";
+    showMessage("businessSettingsMessage", "Please select an image file for the letterhead.", true);
+    return;
+  }
+  if (file.size > 4 * 1024 * 1024) {
+    letterheadFileInput.value = "";
+    showMessage("businessSettingsMessage", "The letterhead image must be 4 MB or smaller.", true);
+    return;
+  }
+
+  try {
+    letterheadDataUrl = await readFileAsDataUrl(file);
+    letterheadHasPendingChange = true;
+    updateLetterheadPreview();
+    showMessage("businessSettingsMessage", "Letterhead selected. Preview it, then save your settings.");
+  } catch (error) {
+    showMessage("businessSettingsMessage", error.message, true);
+  }
+}
+
+function removeLetterhead() {
+  letterheadDataUrl = null;
+  letterheadHasPendingChange = true;
+  if (letterheadFileInput) letterheadFileInput.value = "";
+  updateLetterheadPreview();
+  showMessage("businessSettingsMessage", "Letterhead will be removed when you save your settings.");
+}
+
+function reportDoctorSignatureControls() {
+  return [
+    reportDoctorSignatureZoomInput,
+    reportDoctorSignatureOffsetXInput,
+    reportDoctorSignatureOffsetYInput,
+    reportDoctorSignatureBrightnessInput,
+    reportDoctorSignatureContrastInput,
+  ].filter(Boolean);
+}
+
+function updateReportDoctorSignatureControlLabels() {
+  if (reportDoctorSignatureZoomValue) reportDoctorSignatureZoomValue.textContent = `${reportDoctorSignatureZoomInput?.value || 100}%`;
+  if (reportDoctorSignatureOffsetXValue) reportDoctorSignatureOffsetXValue.textContent = reportDoctorSignatureOffsetXInput?.value || "0";
+  if (reportDoctorSignatureOffsetYValue) reportDoctorSignatureOffsetYValue.textContent = reportDoctorSignatureOffsetYInput?.value || "0";
+  if (reportDoctorSignatureBrightnessValue) reportDoctorSignatureBrightnessValue.textContent = `${reportDoctorSignatureBrightnessInput?.value || 100}%`;
+  if (reportDoctorSignatureContrastValue) reportDoctorSignatureContrastValue.textContent = `${reportDoctorSignatureContrastInput?.value || 100}%`;
+}
+
+function resetReportDoctorSignatureAdjustments({ render = true, markPending = false } = {}) {
+  if (reportDoctorSignatureZoomInput) reportDoctorSignatureZoomInput.value = "100";
+  if (reportDoctorSignatureOffsetXInput) reportDoctorSignatureOffsetXInput.value = "0";
+  if (reportDoctorSignatureOffsetYInput) reportDoctorSignatureOffsetYInput.value = "0";
+  if (reportDoctorSignatureBrightnessInput) reportDoctorSignatureBrightnessInput.value = "100";
+  if (reportDoctorSignatureContrastInput) reportDoctorSignatureContrastInput.value = "100";
+  updateReportDoctorSignatureControlLabels();
+  if (render && reportDoctorSignatureSourceImage) {
+    renderReportDoctorSignaturePreview({ markPending });
+  }
+}
+
+function setReportDoctorSignatureEditorEnabled(enabled) {
+  reportDoctorSignatureControls().forEach((control) => {
+    control.disabled = !enabled;
+  });
+  if (resetReportDoctorSignatureAdjustmentsBtn) resetReportDoctorSignatureAdjustmentsBtn.disabled = !enabled;
+  if (removeReportDoctorSignatureBtn) removeReportDoctorSignatureBtn.disabled = !enabled;
+}
+
+function loadSignatureImage(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Your browser could not read this signature image."));
+    image.src = dataUrl;
+  });
+}
+
+function renderReportDoctorSignaturePreview({ markPending = false } = {}) {
+  if (!reportDoctorSignaturePreview) return;
+
+  const context = reportDoctorSignaturePreview.getContext("2d");
+  const width = reportDoctorSignaturePreview.width;
+  const height = reportDoctorSignaturePreview.height;
+  context.clearRect(0, 0, width, height);
+
+  const hasSignature = Boolean(reportDoctorSignatureSourceImage);
+  reportDoctorSignaturePreview.hidden = !hasSignature;
+  if (reportDoctorSignaturePreviewEmpty) reportDoctorSignaturePreviewEmpty.hidden = hasSignature;
+  setReportDoctorSignatureEditorEnabled(hasSignature);
+
+  if (!hasSignature) return;
+
+  const zoom = Number(reportDoctorSignatureZoomInput?.value || 100) / 100;
+  const offsetX = Number(reportDoctorSignatureOffsetXInput?.value || 0) / 100;
+  const offsetY = Number(reportDoctorSignatureOffsetYInput?.value || 0) / 100;
+  const brightness = Number(reportDoctorSignatureBrightnessInput?.value || 100);
+  const contrast = Number(reportDoctorSignatureContrastInput?.value || 100);
+  const image = reportDoctorSignatureSourceImage;
+  const baseScale = Math.max(width / image.naturalWidth, height / image.naturalHeight);
+  const drawWidth = image.naturalWidth * baseScale * zoom;
+  const drawHeight = image.naturalHeight * baseScale * zoom;
+  const maxOffsetX = Math.max(0, (drawWidth - width) / 2);
+  const maxOffsetY = Math.max(0, (drawHeight - height) / 2);
+  const x = (width - drawWidth) / 2 + maxOffsetX * offsetX;
+  const y = (height - drawHeight) / 2 + maxOffsetY * offsetY;
+
+  context.save();
+  context.filter = `brightness(${brightness}%) contrast(${contrast}%)`;
+  context.drawImage(image, x, y, drawWidth, drawHeight);
+  context.restore();
+
+  if (markPending) {
+    reportDoctorSignatureDataUrl = reportDoctorSignaturePreview.toDataURL("image/png");
+    reportDoctorSignatureHasPendingChange = true;
+  }
+}
+
+async function setReportDoctorSignatureSource(dataUrl, { markPending = false } = {}) {
+  if (!dataUrl) {
+    reportDoctorSignatureSourceImage = null;
+    reportDoctorSignatureDataUrl = null;
+    resetReportDoctorSignatureAdjustments({ render: false });
+    renderReportDoctorSignaturePreview();
+    return;
+  }
+
+  reportDoctorSignatureSourceImage = await loadSignatureImage(dataUrl);
+  resetReportDoctorSignatureAdjustments({ render: false });
+  renderReportDoctorSignaturePreview({ markPending });
+}
+
+async function getPdfJs() {
+  if (!reportDoctorPdfJsPromise) {
+    reportDoctorPdfJsPromise = import("/vendor/pdfjs/pdf.mjs").then((pdfjsLib) => {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "/vendor/pdfjs/pdf.worker.mjs";
+      return pdfjsLib;
+    });
+  }
+  return reportDoctorPdfJsPromise;
+}
+
+async function convertSignaturePdfToImage(file) {
+  const pdfjsLib = await getPdfJs();
+  const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+  const page = await pdf.getPage(1);
+  const baseViewport = page.getViewport({ scale: 1 });
+  const scale = Math.min(2, 1600 / Math.max(baseViewport.width, baseViewport.height));
+  const viewport = page.getViewport({ scale: Math.max(0.75, scale) });
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.ceil(viewport.width);
+  canvas.height = Math.ceil(viewport.height);
+  const context = canvas.getContext("2d", { alpha: false });
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  await page.render({ canvasContext: context, viewport }).promise;
+  return canvas.toDataURL("image/png");
+}
+
+async function loadReportDoctorSignatureSettings() {
+  if (!reportDoctorSignatureForm) return;
+  const settings = await API.request("/api/settings/report-doctor-signature");
+  if (reportDoctorNameInput) reportDoctorNameInput.value = settings.reportDoctorName || "";
+  if (reportDoctorQualificationInput) reportDoctorQualificationInput.value = settings.reportDoctorQualification || "";
+  if (reportDoctorRegistrationNoInput) reportDoctorRegistrationNoInput.value = settings.reportDoctorRegistrationNo || "";
+  if (reportDoctorSignatureFileInput) reportDoctorSignatureFileInput.value = "";
+  reportDoctorSignatureHasPendingChange = false;
+  reportDoctorSignatureDataUrl = settings.reportDoctorSignatureDataUrl || null;
+  await setReportDoctorSignatureSource(reportDoctorSignatureDataUrl);
+}
+
+async function selectReportDoctorSignatureFile() {
+  const file = reportDoctorSignatureFileInput?.files?.[0];
+  if (!file) return;
+
+  const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+  if (!isPdf && !file.type.startsWith("image/")) {
+    reportDoctorSignatureFileInput.value = "";
+    showMessage("reportDoctorSignatureMessage", "Choose an image file or a PDF containing the doctor signature.", true);
+    return;
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    reportDoctorSignatureFileInput.value = "";
+    showMessage("reportDoctorSignatureMessage", "The signature file must be 2 MB or smaller.", true);
+    return;
+  }
+
+  try {
+    const dataUrl = isPdf ? await convertSignaturePdfToImage(file) : await readFileAsDataUrl(file);
+    await setReportDoctorSignatureSource(dataUrl, { markPending: true });
+    showMessage("reportDoctorSignatureMessage", isPdf
+      ? "The first PDF page is ready to crop and adjust. Save when it looks right."
+      : "Signature loaded. Crop or adjust it, then save when it looks right.");
+  } catch (error) {
+    reportDoctorSignatureFileInput.value = "";
+    showMessage("reportDoctorSignatureMessage", error.message || "Unable to prepare the signature file.", true);
+  }
+}
+
+function applyReportDoctorSignatureAdjustments() {
+  updateReportDoctorSignatureControlLabels();
+  renderReportDoctorSignaturePreview({ markPending: true });
+}
+
+function removeReportDoctorSignature() {
+  reportDoctorSignatureDataUrl = null;
+  reportDoctorSignatureHasPendingChange = true;
+  reportDoctorSignatureSourceImage = null;
+  if (reportDoctorSignatureFileInput) reportDoctorSignatureFileInput.value = "";
+  resetReportDoctorSignatureAdjustments({ render: false });
+  renderReportDoctorSignaturePreview();
+  showMessage("reportDoctorSignatureMessage", "Doctor signature image will be removed when you save.");
+}
+
+async function saveReportDoctorSignature(event) {
+  event.preventDefault();
+  const payload = {
+    reportDoctorName: reportDoctorNameInput?.value.trim() || "",
+    reportDoctorQualification: reportDoctorQualificationInput?.value.trim() || "",
+    reportDoctorRegistrationNo: reportDoctorRegistrationNoInput?.value.trim() || "",
+  };
+  if (reportDoctorSignatureHasPendingChange) {
+    payload.reportDoctorSignatureDataUrl = reportDoctorSignatureDataUrl;
+  }
+
+  try {
+    await API.request("/api/settings/report-doctor-signature", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+    reportDoctorSignatureHasPendingChange = false;
+    showMessage("reportDoctorSignatureMessage", "Report doctor signature saved. It will appear on new blood and pathology report prints.");
+  } catch (error) {
+    showMessage("reportDoctorSignatureMessage", error.message, true);
+  }
+}
+
+function openLetterheadPreview() {
+  if (!letterheadDataUrl || !letterheadPreviewDialog) return;
+  if (typeof letterheadPreviewDialog.showModal === "function") {
+    letterheadPreviewDialog.showModal();
+  }
 }
 
 function canManageTests() {
@@ -229,11 +791,14 @@ function parseParameterText(text) {
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => {
-      const [parameterName, unit, normalRange] = line.split("|");
+      const [parameterName, unit, normalRange, entryMode, calculationFormula, calculationPrecision] = line.split("|");
       return {
         parameterName: parameterName?.trim(),
         unit: unit?.trim() || "",
         normalRange: normalRange?.trim() || "",
+        entryMode: entryMode?.trim().toLowerCase() === "calculated" ? "calculated" : "manual",
+        calculationFormula: calculationFormula?.trim() || "",
+        calculationPrecision: calculationPrecision?.trim() || "2",
       };
     })
     .filter((item) => item.parameterName);
@@ -311,17 +876,6 @@ function loadCanvasImage(src) {
   });
 }
 
-function getIdCardBackground() {
-  if (!idCardBackgroundPromise) {
-    idCardBackgroundPromise = loadCanvasImage(ID_CARD_BACKGROUND_SRC).catch((error) => {
-      idCardBackgroundPromise = null;
-      throw error;
-    });
-  }
-
-  return idCardBackgroundPromise;
-}
-
 function drawCoverImage(ctx, image, x, y, width, height) {
   const targetRatio = width / height;
   const sourceRatio = image.width / image.height;
@@ -355,177 +909,224 @@ function drawRoundedRect(ctx, x, y, width, height, radius) {
   ctx.closePath();
 }
 
+function getIdCardInitials(value) {
+  const parts = String(value || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  return (parts.slice(0, 2).map((part) => part[0]).join("") || "ID").toUpperCase();
+}
+
+function setIdCardFont(ctx, weight, size) {
+  ctx.font = `${weight} ${size}px "Segoe UI", Arial, sans-serif`;
+}
+
+function getFittedIdCardText(ctx, value, maxWidth, preferredSize, minSize, weight = "700") {
+  const text = String(value || "-");
+  let size = preferredSize;
+
+  while (size > minSize) {
+    setIdCardFont(ctx, weight, size);
+    if (ctx.measureText(text).width <= maxWidth) return { text, size };
+    size -= 1;
+  }
+
+  setIdCardFont(ctx, weight, minSize);
+  if (ctx.measureText(text).width <= maxWidth) return { text, size: minSize };
+
+  let shortened = text;
+  while (shortened.length > 1 && ctx.measureText(`${shortened}...`).width > maxWidth) {
+    shortened = shortened.slice(0, -1);
+  }
+  return { text: `${shortened}...`, size: minSize };
+}
+
+function drawFittedIdCardText(ctx, value, x, y, maxWidth, preferredSize, minSize, weight = "700") {
+  const result = getFittedIdCardText(ctx, value, maxWidth, preferredSize, minSize, weight);
+  setIdCardFont(ctx, weight, result.size);
+  ctx.fillText(result.text, x, y);
+}
+
+function drawIdCardPhotoPlaceholder(ctx, x, y, width, height, initials) {
+  const gradient = ctx.createLinearGradient(x, y, x + width, y + height);
+  gradient.addColorStop(0, "#1a857a");
+  gradient.addColorStop(1, "#0c3f3b");
+  drawRoundedRect(ctx, x, y, width, height, 18);
+  ctx.fillStyle = gradient;
+  ctx.fill();
+
+  ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
+  ctx.beginPath();
+  ctx.arc(x + width - 20, y + 26, 58, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#ffffff";
+  ctx.textAlign = "center";
+  setIdCardFont(ctx, "700", 48);
+  ctx.fillText(initials, x + width / 2, y + height / 2 + 16);
+  ctx.textAlign = "left";
+}
+
+function drawIdCardField(ctx, label, value, x, y, width) {
+  drawRoundedRect(ctx, x, y, width, 58, 12);
+  ctx.fillStyle = "#f4f8f7";
+  ctx.fill();
+
+  ctx.fillStyle = "#6f837d";
+  setIdCardFont(ctx, "700", 10);
+  ctx.fillText(label, x + 15, y + 20);
+
+  ctx.fillStyle = "#173f38";
+  drawFittedIdCardText(ctx, value || "-", x + 15, y + 43, width - 30, 17, 13, "700");
+}
+
 async function drawIdCard(user) {
   const ctx = idCardCanvas.getContext("2d");
   const card = buildIdCardData(user);
-  let background = null;
+  const width = idCardCanvas.width;
+  const height = idCardCanvas.height;
+  const hasSelectedEmployee = Boolean(card.name || card.username || card.employeeCode);
+  const staffName = card.name || "Select a staff member";
+  const staffRole = card.role || "Employee identity preview";
+  const joiningDate = card.joiningDate ? formatDate(card.joiningDate) : "Not recorded";
+  const facilityName = getBusinessName() || "Diagnostic Centre";
+  const contactLine = [ID_CARD_ADDRESS, ID_CARD_PHONE ? `Phone: ${ID_CARD_PHONE}` : ""]
+    .filter(Boolean)
+    .join(" | ") || "Official staff identity card";
 
-  ctx.clearRect(0, 0, idCardCanvas.width, idCardCanvas.height);
-  ctx.fillStyle = "#f8fbff";
-  ctx.fillRect(0, 0, idCardCanvas.width, idCardCanvas.height);
+  ctx.clearRect(0, 0, width, height);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
 
-  try {
-    background = await getIdCardBackground();
-    drawCoverImage(ctx, background, 0, 0, idCardCanvas.width, idCardCanvas.height);
-  } catch (_error) {
-    const fallback = ctx.createLinearGradient(0, 0, idCardCanvas.width, idCardCanvas.height);
-    fallback.addColorStop(0, "#e7f1fb");
-    fallback.addColorStop(1, "#bfd5ef");
-    ctx.fillStyle = fallback;
-    ctx.fillRect(0, 0, idCardCanvas.width, idCardCanvas.height);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, width, height);
+
+  const leftGradient = ctx.createLinearGradient(0, 0, 310, height);
+  leftGradient.addColorStop(0, "#0a3934");
+  leftGradient.addColorStop(0.52, "#0d6259");
+  leftGradient.addColorStop(1, "#082c2a");
+  ctx.fillStyle = leftGradient;
+  ctx.fillRect(0, 0, 310, height);
+
+  ctx.fillStyle = "rgba(94, 234, 212, 0.13)";
+  ctx.beginPath();
+  ctx.arc(286, 68, 138, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(25, 490, 154, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "rgba(13, 98, 89, 0.08)";
+  ctx.fillRect(310, 0, width - 310, height);
+  ctx.fillStyle = "#e2efec";
+  ctx.fillRect(310, 0, 8, height);
+
+  drawRoundedRect(ctx, 42, 38, 42, 42, 13);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.16)";
+  ctx.fill();
+  ctx.fillStyle = "#bffbf1";
+  ctx.textAlign = "center";
+  setIdCardFont(ctx, "500", 30);
+  ctx.fillText("+", 63, 68);
+  ctx.textAlign = "left";
+
+  ctx.fillStyle = "#a7f3e8";
+  setIdCardFont(ctx, "700", 10);
+  ctx.fillText("STAFF IDENTITY", 42, 105);
+  ctx.fillStyle = "#ffffff";
+  drawFittedIdCardText(ctx, facilityName, 42, 135, 224, 21, 15, "700");
+  ctx.fillStyle = "rgba(236, 253, 245, 0.72)";
+  setIdCardFont(ctx, "600", 11);
+  ctx.fillText("OFFICIAL PERSONNEL", 42, 158);
+
+  const photoX = 42;
+  const photoY = 190;
+  const photoWidth = 226;
+  const photoHeight = 234;
+  let imageLoaded = false;
+
+  if (card.profileImage) {
+    try {
+      const image = await loadCanvasImage(card.profileImage);
+      ctx.save();
+      drawRoundedRect(ctx, photoX, photoY, photoWidth, photoHeight, 18);
+      ctx.clip();
+      drawCoverImage(ctx, image, photoX, photoY, photoWidth, photoHeight);
+      ctx.restore();
+      imageLoaded = true;
+    } catch (_error) {
+      imageLoaded = false;
+    }
   }
 
-  ctx.fillStyle = "rgba(255,255,255,0.72)";
-  ctx.fillRect(0, 0, idCardCanvas.width, idCardCanvas.height);
+  if (!imageLoaded) {
+    drawIdCardPhotoPlaceholder(ctx, photoX, photoY, photoWidth, photoHeight, getIdCardInitials(staffName));
+  }
 
-  drawRoundedRect(ctx, 34, 34, 832, 472, 30);
-  ctx.fillStyle = "rgba(255,255,255,0.90)";
+  drawRoundedRect(ctx, photoX, photoY, photoWidth, photoHeight, 18);
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.58)";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  drawRoundedRect(ctx, 42, 447, 166, 30, 15);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.13)";
   ctx.fill();
-  ctx.strokeStyle = "rgba(31, 78, 136, 0.22)";
+  ctx.fillStyle = "#d4fbf5";
+  setIdCardFont(ctx, "700", 10);
+  ctx.fillText(hasSelectedEmployee ? "ACTIVE STAFF PROFILE" : "PREVIEW MODE", 56, 467);
+
+  ctx.fillStyle = "rgba(236, 253, 245, 0.68)";
+  drawFittedIdCardText(ctx, contactLine, 42, 505, 226, 11, 8, "600");
+
+  ctx.fillStyle = "#0b6c62";
+  setIdCardFont(ctx, "800", 11);
+  ctx.fillText("EMPLOYEE IDENTITY CARD", 356, 62);
+  ctx.fillStyle = "#7c8d88";
+  setIdCardFont(ctx, "600", 11);
+  ctx.fillText("VALID FOR OFFICIAL DUTIES", 356, 84);
+
+  drawRoundedRect(ctx, 744, 42, 108, 32, 16);
+  ctx.fillStyle = "#e3f6f2";
+  ctx.fill();
+  ctx.fillStyle = "#0c6e64";
+  ctx.textAlign = "center";
+  setIdCardFont(ctx, "800", 10);
+  ctx.fillText("STAFF CARD", 798, 63);
+  ctx.textAlign = "left";
+
+  ctx.strokeStyle = "#dce9e6";
   ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(356, 111);
+  ctx.lineTo(852, 111);
   ctx.stroke();
 
-  drawRoundedRect(ctx, 48, 48, 804, 108, 24);
-  ctx.fillStyle = "rgba(11, 55, 105, 0.92)";
+  ctx.fillStyle = "#748983";
+  setIdCardFont(ctx, "800", 10);
+  ctx.fillText("EMPLOYEE NAME", 356, 143);
+  ctx.fillStyle = "#163f38";
+  drawFittedIdCardText(ctx, staffName, 356, 184, 476, 34, 22, "700");
+
+  drawRoundedRect(ctx, 356, 204, 250, 31, 15);
+  ctx.fillStyle = "#edf8f5";
   ctx.fill();
+  ctx.fillStyle = "#0d6d63";
+  drawFittedIdCardText(ctx, String(staffRole).toUpperCase(), 371, 225, 220, 12, 9, "800");
 
-  ctx.fillStyle = "#dd4042";
-  ctx.fillRect(48, 128, 804, 28);
+  drawIdCardField(ctx, "STAFF ID", card.employeeCode || "Not assigned", 356, 262, 236);
+  drawIdCardField(ctx, "USERNAME", card.username || "Not assigned", 616, 262, 236);
+  drawIdCardField(ctx, "JOINING DATE", joiningDate, 356, 342, 236);
+  drawIdCardField(ctx, "FACILITY", facilityName, 616, 342, 236);
 
-  drawRoundedRect(ctx, 66, 64, 140, 74, 18);
-  ctx.fillStyle = "rgba(255,255,255,0.96)";
-  ctx.fill();
-  ctx.strokeStyle = "rgba(15, 63, 120, 0.18)";
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
+  ctx.fillStyle = "#526963";
+  setIdCardFont(ctx, "600", 11);
+  ctx.fillText("This card remains the property of the facility and must be carried while on duty.", 356, 454);
+  ctx.fillStyle = "#8a9c98";
+  setIdCardFont(ctx, "600", 10);
+  ctx.fillText("Identity details are generated from the current employee record.", 356, 478);
 
-  if (background) {
-    ctx.save();
-    drawRoundedRect(ctx, 72, 70, 128, 62, 16);
-    ctx.clip();
-    ctx.drawImage(
-      background,
-      background.width * 0.26,
-      background.height * 0.18,
-      background.width * 0.48,
-      background.height * 0.28,
-      72,
-      70,
-      128,
-      62
-    );
-    ctx.restore();
-  } else {
-    ctx.fillStyle = "#0f3f78";
-    ctx.font = "700 20px Trebuchet MS";
-    ctx.fillText("WC", 116, 107);
-  }
-
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "700 30px Trebuchet MS";
-  ctx.fillText("We Care Diagnostic Centre", 228, 93);
-  ctx.font = "600 17px Trebuchet MS";
-  ctx.fillStyle = "#dce9f9";
-  ctx.fillText("Professional Staff Identity Card", 229, 121);
-
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "700 14px Trebuchet MS";
-  ctx.fillText(ID_CARD_ADDRESS, 610, 84);
-  ctx.fillText(`Phone: ${ID_CARD_PHONE}`, 610, 107);
-  ctx.fillStyle = "#ffe6e6";
-  ctx.font = "700 13px Trebuchet MS";
-  ctx.fillText("AUTHORIZED PERSONNEL ONLY", 610, 130);
-
-  drawRoundedRect(ctx, 58, 180, 210, 258, 24);
-  ctx.fillStyle = "rgba(255,255,255,0.96)";
-  ctx.fill();
-  ctx.strokeStyle = "rgba(31, 78, 136, 0.18)";
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-
-  drawRoundedRect(ctx, 290, 180, 538, 258, 24);
-  ctx.fillStyle = "rgba(12, 48, 93, 0.91)";
-  ctx.fill();
-
-  ctx.fillStyle = "#d73b3e";
-  ctx.fillRect(290, 180, 538, 10);
-
-  ctx.fillStyle = "#dbeafe";
-  ctx.font = "700 14px Trebuchet MS";
-  ctx.fillText("EMPLOYEE DETAILS", 320, 210);
-
-  const renderText = () => {
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "700 36px Trebuchet MS";
-    ctx.fillText(card.name || "Unnamed Staff", 320, 254);
-    ctx.font = "600 21px Trebuchet MS";
-    ctx.fillStyle = "#cfe2ff";
-    ctx.fillText(String(card.role || "staff").toUpperCase(), 320, 290);
-
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "600 18px Trebuchet MS";
-    ctx.fillText(`Employee ID`, 320, 334);
-    ctx.fillText(`Username`, 320, 372);
-    ctx.fillText(`Joining Date`, 320, 410);
-
-    ctx.fillStyle = "#ffe8b3";
-    ctx.font = "700 19px Trebuchet MS";
-    ctx.fillText(`: ${card.employeeCode || "-"}`, 468, 334);
-    ctx.fillText(`: ${card.username || "-"}`, 468, 372);
-    ctx.fillText(`: ${card.joiningDate || "-"}`, 468, 410);
-
-    ctx.fillStyle = "#dbeafe";
-    ctx.font = "500 14px Trebuchet MS";
-    ctx.fillText("If found, please return to We Care Diagnostic Centre.", 320, 463);
-  };
-
-  ctx.fillStyle = "#0f3f78";
-  ctx.font = "700 15px Trebuchet MS";
-  ctx.fillText("Photo identification", 74, 462);
-  ctx.font = "500 13px Trebuchet MS";
-  ctx.fillStyle = "#47698f";
-  ctx.fillText("This card is valid only for official work.", 74, 484);
-
-  ctx.fillStyle = "#0f3f78";
-  ctx.fillRect(48, 456, 804, 24);
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "600 13px Trebuchet MS";
-  ctx.fillText(`Address: ${ID_CARD_ADDRESS}`, 68, 472);
-  ctx.fillText(`Contact: ${ID_CARD_PHONE}`, 606, 472);
-
-  if (!card.profileImage) {
-    ctx.fillStyle = "#cbd5e1";
-    drawRoundedRect(ctx, 71, 194, 184, 226, 20);
-    ctx.fill();
-    ctx.fillStyle = "#334155";
-    ctx.font = "600 22px Trebuchet MS";
-    ctx.fillText("No image", 112, 313);
-    renderText();
-    return;
-  }
-
-  try {
-    const image = await loadCanvasImage(card.profileImage);
-    ctx.save();
-    drawRoundedRect(ctx, 71, 194, 184, 226, 20);
-    ctx.clip();
-    drawCoverImage(ctx, image, 71, 194, 184, 226);
-    ctx.restore();
-
-    ctx.strokeStyle = "rgba(15, 63, 120, 0.18)";
-    ctx.lineWidth = 1.5;
-    drawRoundedRect(ctx, 71, 194, 184, 226, 20);
-    ctx.stroke();
-    renderText();
-  } catch (_error) {
-    ctx.fillStyle = "#cbd5e1";
-    drawRoundedRect(ctx, 71, 194, 184, 226, 20);
-    ctx.fill();
-    ctx.fillStyle = "#334155";
-    ctx.font = "600 22px Trebuchet MS";
-    ctx.fillText("No image", 112, 313);
-    renderText();
-  }
+  ctx.fillStyle = "#0d7469";
+  ctx.fillRect(356, 502, 496, 5);
 }
 
 function setCardUser(user) {
@@ -648,8 +1249,8 @@ function configureCredentialFieldsForEdit(user) {
   usernameInput.placeholder = canRecoverLogin ? "Update login ID if user forgot it" : "";
   passwordInput.placeholder = canRecoverLogin ? "Leave blank to keep current password" : "";
   credentialHelp.textContent = canRecoverLogin
-    ? "Default system administrator can update the login ID and set a new password for this user."
-    : "Login ID and password reset are available only to the default system administrator.";
+    ? "The default superadmin can update the login ID and set a new password for this user."
+    : "Login ID and password reset are available only to the default superadmin.";
 }
 
 function renderPermissionGrid(role = document.getElementById("role")?.value || "na", permissions = ROLE_DEFAULTS[role] || []) {
@@ -759,6 +1360,8 @@ function openTaskWindow(hash) {
 
   // Auto-refresh data to ensure it's always up-to-date
   if (hash === '#window-overview') loadDashboard().catch(console.error);
+  if (hash === '#window-business-settings') loadBusinessSettings().catch(console.error);
+  if (hash === '#window-report-doctor-signature') loadReportDoctorSignatureSettings().catch(console.error);
   if (hash === '#window-employee-management') loadUsers().catch(console.error);
   if (hash === '#window-id-card-studio') loadUsers().catch(console.error);
   if (hash === '#window-financial-reports') loadFinancialReport().catch(console.error);
@@ -1129,16 +1732,40 @@ async function downloadCommissionReport(type, id = null) {
   URL.revokeObjectURL(link.href);
 }
 
-async function loadUsers() {
-  const data = await API.request("/api/users");
-  usersCache = data.users;
-  userList.innerHTML = data.users
+function renderUsers() {
+  if (!userList) return;
+
+  const query = normalizeSearchText(employeeSearch?.value);
+  const filteredUsers = usersCache.filter((user) => {
+    if (!query) return true;
+    return [user.full_name, user.username, user.employee_code, user.employment_title, user.role]
+      .some((value) => normalizeSearchText(value).includes(query));
+  });
+
+  if (employeeDirectorySummary) {
+    employeeDirectorySummary.textContent = query
+      ? `${filteredUsers.length} of ${usersCache.length} employees`
+      : `${usersCache.length} employee${usersCache.length === 1 ? "" : "s"} in the system`;
+  }
+
+  if (!filteredUsers.length) {
+    userList.innerHTML = `
+      <div class="list-item empty-state">
+        <strong>${query ? "No matching employees" : "No employees found"}</strong><br />
+        <span>${query ? "Try a different name, username, employee ID, or role." : "Create the first employee using the form."}</span>
+      </div>
+    `;
+    return;
+  }
+
+  userList.innerHTML = filteredUsers
     .map(
       (user) => `
-        <div class="list-item">
+        <div class="list-item${user.active ? "" : " deactivated"}">
           <div class="list-item-main">
             <strong>${user.full_name || user.username}</strong>
-            ${user.is_protected_system_admin ? '<span class="pill warning" style="margin-left: 8px;">System Admin</span>' : ""}
+            ${user.is_protected_system_admin ? '<span class="pill warning" style="margin-left: 8px;">Super Admin</span>' : ""}
+            ${user.active ? "" : '<span class="pill danger" style="margin-left: 8px;">Inactive</span>'}
             <br />
             <span>${user.username} • ${user.employment_title || user.role} • ${user.employee_code || "-"} • Joined ${formatDate(user.joining_date)}</span><br />
             <small>${summarizePermissions(user.permissions) || "No permissions set"}</small>
@@ -1211,6 +1838,35 @@ async function loadUsers() {
       }
     });
   });
+}
+
+async function loadUsers() {
+  if (!userList) return;
+
+  if (!usersCache.length) {
+    userList.innerHTML = '<div class="list-item empty-state">Loading employees...</div>';
+    if (employeeDirectorySummary) employeeDirectorySummary.textContent = "Loading employee records...";
+  }
+
+  try {
+    const data = await API.request("/api/users");
+    usersCache = Array.isArray(data.users) ? data.users : [];
+    renderUsers();
+  } catch (error) {
+    if (employeeDirectorySummary) employeeDirectorySummary.textContent = "Employee records unavailable";
+    userList.innerHTML = `
+      <div class="list-item empty-state">
+        <strong>Unable to load employees</strong><br />
+        <span>${error.message}</span>
+        <div class="actions-row">
+          <button class="secondary-btn" data-retry-users type="button">Try again</button>
+        </div>
+      </div>
+    `;
+    userList.querySelector("[data-retry-users]")?.addEventListener("click", () => loadUsers().catch(console.error));
+    showMessage("userMessage", error.message, true);
+    throw error;
+  }
 }
 
 async function loadDoctors() {
@@ -1296,16 +1952,39 @@ function addDoctorCommissionRule(rule = {}) {
   ruleDiv.style.borderRadius = "8px";
   ruleDiv.style.marginTop = "8px";
 
+  const serviceCategories = [
+    { value: "Blood", label: "Blood / Pathology Tests" },
+    { value: "CT Scan", label: "CT Scan" },
+    { value: "MRI", label: "MRI" },
+  ];
+  const selectedCategory = String(rule.category || "");
+  const normalized = (value) => String(value || "").trim().toLowerCase();
+  const presetCategories = new Set(serviceCategories.map((item) => normalized(item.value)));
   const categoryOptions = testCategories
-    .map((cat) => `<option value="${cat}" ${rule.category === cat ? "selected" : ""}>${cat}</option>`)
+    .filter((cat) => !presetCategories.has(normalized(cat)))
+    .map((cat) => `<option value="${escapeHtml(cat)}" ${normalized(selectedCategory) === normalized(cat) ? "selected" : ""}>${escapeHtml(cat)}</option>`)
     .join("");
+  const serviceOptions = serviceCategories
+    .map((item) => `<option value="${item.value}" ${normalized(selectedCategory) === normalized(item.value) ? "selected" : ""}>${item.label}</option>`)
+    .join("");
+  const hasKnownCategory = [...serviceCategories.map((item) => item.value), ...testCategories]
+    .some((category) => normalized(category) === normalized(selectedCategory));
+  const legacyOption = selectedCategory && !hasKnownCategory
+    ? `<option value="${escapeHtml(selectedCategory)}" selected>${escapeHtml(selectedCategory)}</option>`
+    : "";
 
   ruleDiv.innerHTML = `
     <label class="field">
       <span>Category</span>
       <select class="rule-category" required>
         <option value="">Select Category</option>
-        ${categoryOptions}
+        <optgroup label="Diagnostic service">
+          ${serviceOptions}
+        </optgroup>
+        <optgroup label="Specific test category">
+          ${categoryOptions}
+        </optgroup>
+        ${legacyOption}
       </select>
     </label>
     <label class="field">
@@ -1480,7 +2159,7 @@ function renderTestList(query = "") {
     .map((test) => {
       const parameterSummary = (test.parameters || []).length
         ? test.parameters
-            .map((parameter) => `${parameter.parameter_name}${parameter.unit ? ` (${parameter.unit})` : ""}${parameter.normal_range ? ` - ${parameter.normal_range}` : ""}`)
+            .map((parameter) => `${parameter.parameter_name}${parameter.unit ? ` (${parameter.unit})` : ""}${parameter.normal_range ? ` - ${parameter.normal_range}` : ""}${parameter.entry_mode === "calculated" ? " • Auto-calculated" : ""}`)
             .join(", ")
         : "No parameter details added";
 
@@ -1490,6 +2169,7 @@ function renderTestList(query = "") {
           <span>${test.code || "No code"} • ${test.category || "General"} • ${test.sample_type || "Sample type not set"}</span><br />
           <span>Price: ${currency(test.price)} • Process: ${test.turnaround_hours || 24} hours</span><br />
           <span>${parameterSummary}</span>
+          ${test.report_body ? '<br /><span class="catalog-report-text-badge">Custom report text included</span>' : ""}
           <div class="actions-row">
             <button class="secondary-btn" data-preview-test="${test.id}" type="button">Preview Report</button>
             ${canEditTests
@@ -1517,8 +2197,14 @@ function renderTestList(query = "") {
       document.getElementById("testPrice").value = test.price || 0;
       document.getElementById("testTurnaroundHours").value = test.turnaround_hours || 24;
       document.getElementById("testParameters").value = (test.parameters || [])
-        .map((parameter) => `${parameter.parameter_name}|${parameter.unit || ""}|${parameter.normal_range || ""}`)
+        .map((parameter) => {
+          const base = `${parameter.parameter_name}|${parameter.unit || ""}|${parameter.normal_range || ""}`;
+          return parameter.entry_mode === "calculated"
+            ? `${base}|calculated|${parameter.calculation_formula || ""}|${parameter.calculation_precision ?? 2}`
+            : base;
+        })
         .join("\n");
+      document.getElementById("testReportBody").value = test.report_body || "";
       document.getElementById("saveTestBtn").textContent = "Update test";
       showMessage("testMessage", `Editing ${test.name}`);
       openTaskWindow("#window-test-catalog");
@@ -1554,40 +2240,6 @@ function renderTestList(query = "") {
       }
     });
   });
-}
-
-async function importTestCatalog() {
-  if (!canManageTests()) {
-    showMessage("importTestMessage", "You do not have permission to import tests.", true);
-    return;
-  }
-
-  const fileInput = document.getElementById("testImportFile");
-  const file = fileInput.files?.[0];
-  if (!file) {
-    showMessage("importTestMessage", "Choose a JSON file containing tests to import.", true);
-    return;
-  }
-
-  try {
-    const text = await file.text();
-    const payload = JSON.parse(text);
-    const tests = Array.isArray(payload) ? payload : payload.tests;
-    if (!Array.isArray(tests) || !tests.length) {
-      throw new Error("Import file must be a JSON array of test objects.");
-    }
-
-    await API.request("/api/tests/import", {
-      method: "POST",
-      body: JSON.stringify({ tests }),
-    });
-
-    showMessage("importTestMessage", "Test catalog imported successfully.");
-    fileInput.value = "";
-    await loadTests();
-  } catch (error) {
-    showMessage("importTestMessage", error.message || "Unable to import tests.", true);
-  }
 }
 
 document.getElementById("role").addEventListener("change", (event) => {
@@ -1784,6 +2436,7 @@ document.getElementById("testForm").addEventListener("submit", async (event) => 
     price: Number(document.getElementById("testPrice").value || 0),
     turnaroundHours: Number(document.getElementById("testTurnaroundHours").value || 24),
     parameters: parseParameterText(document.getElementById("testParameters").value),
+    reportBody: document.getElementById("testReportBody").value.trim(),
   };
 
   try {
@@ -2573,7 +3226,30 @@ document.addEventListener("hashchange", function() {
     setDefaultFinancialReportDates();
     initializeSectionNavigation();
 
-    document.getElementById("importTestsBtn")?.addEventListener("click", importTestCatalog);
+    employeeSearch?.addEventListener("input", renderUsers);
+    refreshUsersBtn?.addEventListener("click", () => loadUsers().catch(console.error));
+    businessSettingsForm?.addEventListener("submit", saveBusinessSettings);
+    reportDoctorSignatureForm?.addEventListener("submit", saveReportDoctorSignature);
+    businessLogoFileInput?.addEventListener("change", () => selectBusinessLogoFile().catch(console.error));
+    letterheadFileInput?.addEventListener("change", () => selectLetterheadFile().catch(console.error));
+    reportDoctorSignatureFileInput?.addEventListener("change", () => selectReportDoctorSignatureFile().catch(console.error));
+    reportDoctorSignatureControls().forEach((control) => {
+      control.addEventListener("input", applyReportDoctorSignatureAdjustments);
+    });
+    reportHeaderSpaceInput?.addEventListener("input", updateReportLayoutPreview);
+    reportFooterSpaceInput?.addEventListener("input", updateReportLayoutPreview);
+    previewLetterheadBtn?.addEventListener("click", openLetterheadPreview);
+    removeBusinessLogoBtn?.addEventListener("click", removeBusinessLogo);
+    removeLetterheadBtn?.addEventListener("click", removeLetterhead);
+    removeReportDoctorSignatureBtn?.addEventListener("click", removeReportDoctorSignature);
+    resetReportDoctorSignatureAdjustmentsBtn?.addEventListener("click", () => {
+      resetReportDoctorSignatureAdjustments({ markPending: true });
+    });
+    closeLetterheadPreviewBtn?.addEventListener("click", () => letterheadPreviewDialog?.close());
+    saveSubscriptionBtn?.addEventListener("click", () => saveSubscriptionExpiry().catch(console.error));
+    document.querySelectorAll("[data-admin-subscription-days]").forEach((button) => {
+      button.addEventListener("click", () => addAdminSubscriptionDays(button.dataset.adminSubscriptionDays));
+    });
 
     const loadAccountsLogBtn = document.getElementById("loadAccountsLogBtn");
     if (loadAccountsLogBtn) {

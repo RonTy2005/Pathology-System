@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", async () => {
   const user = getUser();
-  if (!user || (user.role !== "ct_technician" && user.role !== "admin")) {
+  if (!user || (user.role !== "ct_technician" && !isAdministrativeRole(user.role))) {
     window.location.href = "login.html";
     return;
   }
@@ -62,6 +62,7 @@ document.addEventListener("DOMContentLoaded", async () => {
               data-id="${s.visit_test_id}"
               data-status="${s.scan_done ? '1' : '0'}"
             >${s.scan_done ? "Mark Pending" : "Mark Done"}</button>
+            ${imagingReportControls(s)}
           </div>
         </div>
       </div>
@@ -89,6 +90,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       });
     });
+
+    bindImagingReportControls(ctList, loadScans);
   }
 
   refreshBtn.addEventListener("click", loadScans);

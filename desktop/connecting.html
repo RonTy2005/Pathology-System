@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Connecting to Lab LMS</title>
+  <link rel="stylesheet" href="connecting.css" />
+</head>
+<body>
+  <main class="connection-card">
+    <div class="mark" aria-hidden="true">+</div>
+    <div class="eyebrow">Lab LMS desktop</div>
+    <h1>Connecting to your laboratory</h1>
+    <p id="connectionMessage" class="message" aria-live="polite">Preparing Lab LMS…</p>
+    <div id="serverChoices" class="server-choices" hidden></div>
+    <div class="actions">
+      <button id="retryButton" type="button">Search again</button>
+      <button id="manualButton" class="secondary" type="button">Enter server address</button>
+    </div>
+    <form id="manualForm" hidden>
+      <label>
+        Server address
+        <input id="serverUrl" type="url" placeholder="http://192.168.1.20:3000" autocomplete="url" required />
+      </label>
+      <button type="submit">Connect</button>
+      <p id="manualMessage" class="manual-message" aria-live="polite"></p>
+    </form>
+    <p class="note">Staff PCs automatically find the central Lab LMS server on the same private network.</p>
+  </main>
+  <script src="connecting.js"></script>
+</body>
+</html>

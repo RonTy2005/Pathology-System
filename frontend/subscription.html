@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Subscription renewal</title>
+  <link rel="stylesheet" href="styles/app.css" />
+  <style>
+    .subscription-page { min-height: 100vh; padding: 28px; display: grid; place-items: center; background: radial-gradient(circle at top right, rgba(251,191,36,.20), transparent 28%), radial-gradient(circle at bottom left, rgba(20,184,166,.18), transparent 32%), #f3f8f6; }
+    .subscription-card { width: min(700px, 100%); background: rgba(255,255,255,.94); border: 1px solid rgba(255,255,255,.8); border-radius: 26px; padding: clamp(28px, 6vw, 52px); box-shadow: 0 28px 70px rgba(15,77,70,.15); }
+    .subscription-symbol { width: 54px; height: 54px; border-radius: 17px; display: grid; place-items: center; background: #fef3c7; color: #92400e; font-size: 1.55rem; font-weight: 900; }
+    .subscription-card h1 { margin: 18px 0 8px; color: #143d37; font-size: clamp(1.9rem, 4vw, 2.65rem); }
+    .subscription-card > p { color: var(--muted); line-height: 1.6; }
+    .subscription-state { margin: 24px 0; padding: 16px 18px; border: 1px solid #fde68a; border-radius: 16px; background: #fffbeb; display: grid; gap: 4px; }
+    .subscription-state strong { color: #92400e; }
+    .subscription-state span { color: #7c5e1f; font-size: .9rem; }
+    .renew-grid { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: end; }
+    .quick-renew { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 24px; }
+    .quick-renew button { padding: 8px 11px; border-radius: 10px; background: #e8f7f4; color: #0f766e; font-size: .82rem; }
+    .subscription-footer { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-top: 24px; flex-wrap: wrap; }
+    @media (max-width: 560px) { .subscription-page { padding: 18px; } .renew-grid { grid-template-columns: 1fr; } .subscription-card { padding: 30px 24px; } }
+    @media (max-width: 380px) {
+      .subscription-page { padding: 0; place-items: stretch; }
+      .subscription-card { min-height: 100svh; border-radius: 0; padding: 26px 16px; }
+      .subscription-symbol { width: 46px; height: 46px; border-radius: 14px; font-size: 1.3rem; }
+      .subscription-card h1 { margin-top: 14px; font-size: 1.72rem; }
+      .subscription-state { margin: 18px 0; padding: 13px; border-radius: 13px; }
+      .quick-renew button { flex: 1 1 calc(50% - 4px); min-height: 38px; }
+      .subscription-footer { align-items: stretch; }
+      .subscription-footer .secondary-btn { width: 100%; }
+    }
+  </style>
+</head>
+<body class="subscription-page">
+  <main class="subscription-card">
+    <div class="subscription-symbol" aria-hidden="true">+</div>
+    <div class="eyebrow">Super Admin only</div>
+    <h1>Subscription access</h1>
+    <p>Set the new expiry date after payment is confirmed. The system is usable through the full selected calendar day.</p>
+    <section id="subscriptionState" class="subscription-state" aria-live="polite"><strong>Checking subscription...</strong><span>Please wait.</span></section>
+    <form id="subscriptionForm">
+      <div class="renew-grid"><label class="field"><span>Valid through *</span><input id="expiresOn" type="date" required /></label><button class="primary-btn" type="submit">Save renewal</button></div>
+      <div class="quick-renew"><button type="button" data-renew-days="30">+30 days</button><button type="button" data-renew-days="90">+3 months</button><button type="button" data-renew-days="365">+1 year</button></div>
+      <p id="subscriptionMessage" class="message" aria-live="polite"></p>
+    </form>
+    <div class="subscription-footer"><span class="muted" style="font-size:.84rem;">Renewals are recorded in the audit log.</span><button id="logoutBtn" class="secondary-btn" type="button">Log out</button></div>
+  </main>
+  <script src="scripts/common.js"></script>
+  <script src="scripts/subscription.js"></script>
+</body>
+</html>

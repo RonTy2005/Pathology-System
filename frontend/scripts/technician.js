@@ -14,6 +14,12 @@ function isPathologyTest(testName = "", testCategory = "") {
 
 const receptionLink = document.getElementById("receptionLink");
 if (hasPermission("manage_patients") || hasPermission("manage_billing")) {
+  receptionLink.href = hasPermission("manage_patients")
+    ? "reception.html#new-visit"
+    : "reception.html#collection-delivery";
+  receptionLink.textContent = hasPermission("manage_patients")
+    ? "Patient Registration"
+    : "Billing & Reports";
   receptionLink.hidden = false;
 }
 
@@ -31,7 +37,6 @@ const saveAllResultsBtn = document.getElementById("saveAllResultsBtn");
 const finalizeBtn = document.getElementById("finalizeBtn");
 const printBtn = document.getElementById("printBtn");
 const viewReportBtn = document.getElementById("viewReportBtn");
-const techWhatsAppBtn = document.getElementById("techWhatsAppBtn");
 
 const patientSearchInput = document.getElementById("patientSearchInput");
 const patientSearchDateFrom = document.getElementById("patientSearchDateFrom");
@@ -42,7 +47,6 @@ const patientSaveAllResultsBtn = document.getElementById("patientSaveAllResultsB
 const patientFinalizeBtn = document.getElementById("patientFinalizeBtn");
 const patientPrintBtn = document.getElementById("patientPrintBtn");
 const patientViewReportBtn = document.getElementById("patientViewReportBtn");
-const patientWhatsAppBtn = document.getElementById("patientWhatsAppBtn");
 
 const tabButtons = document.querySelectorAll(".tab-btn");
 const tabContents = document.querySelectorAll(".technician-layout");
@@ -170,33 +174,11 @@ async function loadVisit(visitId) {
     const testCatalog = await API.request(`/api/tests?query=${encodeURIComponent(test.name)}`);
     const matched = testCatalog.tests.find((item) => item.test_id === test.test_id || item.name === test.name);
     const holder = document.getElementById(`parameters-${test.id}`);
-    holder.innerHTML = (matched?.parameters || []).map(
-      (parameter) => {
-        const isHeader = [
-          "CBC (Complete Blood Count)",
-          "TLC (Total Leukocytes Count)",
-          "DLC (Differential Leukocytes Count)",
-          "ESR (Erythrocyte Sedimentation Rate)",
-          "RBC COUNT",
-          "PROTHROMBIN TIME STUDIES"
-        ].includes(parameter.parameter_name);
-        
-        return `
-          <label class="result-parameter ${isHeader ? 'header-param' : ''}" data-parameter-row data-parameter-name="${parameter.parameter_name}" data-unit="${parameter.unit || ""}" data-range="${parameter.normal_range || ""}" style="${isHeader ? 'grid-column: 1 / -1; background: #f8fafc; padding: 10px; border-radius: 4px; font-weight: bold; margin-top: 10px; border-bottom: 2px solid #ddd;' : ''}">
-            <span>${parameter.parameter_name}${isHeader ? '' : `<br /><small>${parameter.normal_range || "-"} ${parameter.unit || ""}</small>`}</span>
-            ${isHeader ? '<span></span>' : (parameter.parameter_name === "Peripheral Smear" ? '<textarea placeholder="Enter smear details (optional)" style="width: 100%; min-height: 60px;"></textarea>' : `<input placeholder="Enter value" value="${parameter.parameter_name.toLowerCase().includes('sample type') ? 'Blood' : ''}" />`)}
-          </label>
-        `;
-      }
-    ).join("");
+    holder.innerHTML = (matched?.parameters || [])
+      .map((parameter) => renderResultParameterField(parameter, test.results || []))
+      .join("");
 
-    if (test.name.includes("Complete Blood Count") || test.name === "CBC") {
-      attachCBCAutoCalc(holder);
-    } else if (test.name.includes("LFT") || test.name.includes("Liver Function Test")) {
-      attachLFTAutoCalc(holder);
-    } else if (test.name.toUpperCase().includes("PROTHROMBIN TIME")) {
-      attachPTAutoCalc(holder);
-    }
+    attachParameterCalculations(holder);
   }
 
   visitDetails.querySelectorAll("[data-result-form]").forEach((form) => {
@@ -227,7 +209,6 @@ async function loadVisit(visitId) {
 
   printBtn.disabled = !reportData?.report?.finalized;
   viewReportBtn.disabled = !reportData?.report;
-  techWhatsAppBtn.disabled = !reportData?.report?.finalized;
 }
 
 async function loadPatientVisit(visitId) {
@@ -263,33 +244,11 @@ async function loadPatientVisit(visitId) {
     const testCatalog = await API.request(`/api/tests?query=${encodeURIComponent(test.name)}`);
     const matched = testCatalog.tests.find((item) => item.test_id === test.test_id || item.name === test.name);
     const holder = document.getElementById(`patient-parameters-${test.id}`);
-    holder.innerHTML = (matched?.parameters || []).map(
-      (parameter) => {
-        const isHeader = [
-          "CBC (Complete Blood Count)",
-          "TLC (Total Leukocytes Count)",
-          "DLC (Differential Leukocytes Count)",
-          "ESR (Erythrocyte Sedimentation Rate)",
-          "RBC COUNT",
-          "PROTHROMBIN TIME STUDIES"
-        ].includes(parameter.parameter_name);
-        
-        return `
-          <label class="result-parameter ${isHeader ? 'header-param' : ''}" data-parameter-row data-parameter-name="${parameter.parameter_name}" data-unit="${parameter.unit || ""}" data-range="${parameter.normal_range || ""}" style="${isHeader ? 'grid-column: 1 / -1; background: #f8fafc; padding: 10px; border-radius: 4px; font-weight: bold; margin-top: 10px; border-bottom: 2px solid #ddd;' : ''}">
-            <span>${parameter.parameter_name}${isHeader ? '' : `<br /><small>${parameter.normal_range || "-"} ${parameter.unit || ""}</small>`}</span>
-            ${isHeader ? '<span></span>' : (parameter.parameter_name === "Peripheral Smear" ? '<textarea placeholder="Enter smear details (optional)" style="width: 100%; min-height: 60px;"></textarea>' : `<input placeholder="Enter value" value="${parameter.parameter_name.toLowerCase().includes('sample type') ? 'Blood' : ''}" />`)}
-          </label>
-        `;
-      }
-    ).join("");
+    holder.innerHTML = (matched?.parameters || [])
+      .map((parameter) => renderResultParameterField(parameter, test.results || []))
+      .join("");
 
-    if (test.name.includes("Complete Blood Count") || test.name === "CBC") {
-      attachCBCAutoCalc(holder);
-    } else if (test.name.includes("LFT") || test.name.includes("Liver Function Test")) {
-      attachLFTAutoCalc(holder);
-    } else if (test.name.toUpperCase().includes("PROTHROMBIN TIME")) {
-      attachPTAutoCalc(holder);
-    }
+    attachParameterCalculations(holder);
   }
 
   patientVisitDetails.querySelectorAll("[data-result-form]").forEach((form) => {
@@ -320,7 +279,6 @@ async function loadPatientVisit(visitId) {
 
   patientPrintBtn.disabled = !reportData?.report?.finalized;
   patientViewReportBtn.disabled = !reportData?.report;
-  patientWhatsAppBtn.disabled = !reportData?.report?.finalized;
 }
 
 document.getElementById("techVisitSearch").addEventListener("input", (event) => {
@@ -341,11 +299,10 @@ function reloadPatientVisits() {
 finalizeBtn.addEventListener("click", async () => {
   if (!activeVisitId) return;
   try {
-    await API.request(`/api/visits/${activeVisitId}/finalize-report`, { method: "POST" });
+    const data = await API.request(`/api/visits/${activeVisitId}/finalize-report`, { method: "POST" });
     printBtn.disabled = false;
     viewReportBtn.disabled = false;
-    techWhatsAppBtn.disabled = false;
-    showMessage("techMessage", "Report finalized");
+    showMessage("techMessage", `Report finalized${data.doctorCreated ? ` • ${data.doctor.name} was added to Doctor Setup.` : ""}`);
     await loadAssignedVisits();
   } catch (error) {
     showMessage("techMessage", error.message, true);
@@ -356,7 +313,7 @@ printBtn.addEventListener("click", async () => {
   if (!activeVisitId) return;
   try {
     await API.request(`/api/visits/${activeVisitId}/print`, { method: "POST" });
-    openHtmlReport(activeVisitId, false);
+    openHtmlReport(activeVisitId, true);
     showMessage("techMessage", "Report opened for printing");
   } catch (error) {
     showMessage("techMessage", error.message, true);
@@ -365,24 +322,17 @@ printBtn.addEventListener("click", async () => {
 
 viewReportBtn.addEventListener("click", () => {
   if (activeVisitId) {
-    openHtmlReport(activeVisitId, false);
-  }
-});
-
-techWhatsAppBtn.addEventListener("click", () => {
-  if (activeVisitId) {
-    shareAndDownloadReport(activeVisitId);
+    openHtmlReport(activeVisitId);
   }
 });
 
 patientFinalizeBtn.addEventListener("click", async () => {
   if (!activePatientVisitId) return;
   try {
-    await API.request(`/api/visits/${activePatientVisitId}/finalize-report`, { method: "POST" });
+    const data = await API.request(`/api/visits/${activePatientVisitId}/finalize-report`, { method: "POST" });
     patientPrintBtn.disabled = false;
     patientViewReportBtn.disabled = false;
-    patientWhatsAppBtn.disabled = false;
-    showMessage("patientTechMessage", "Report finalized");
+    showMessage("patientTechMessage", `Report finalized${data.doctorCreated ? ` • ${data.doctor.name} was added to Doctor Setup.` : ""}`);
     reloadPatientVisits();
   } catch (error) {
     showMessage("patientTechMessage", error.message, true);
@@ -393,7 +343,7 @@ patientPrintBtn.addEventListener("click", async () => {
   if (!activePatientVisitId) return;
   try {
     await API.request(`/api/visits/${activePatientVisitId}/print`, { method: "POST" });
-    openHtmlReport(activePatientVisitId, false);
+    openHtmlReport(activePatientVisitId, true);
     showMessage("patientTechMessage", "Report opened for printing");
   } catch (error) {
     showMessage("patientTechMessage", error.message, true);
@@ -402,13 +352,7 @@ patientPrintBtn.addEventListener("click", async () => {
 
 patientViewReportBtn.addEventListener("click", () => {
   if (activePatientVisitId) {
-    openHtmlReport(activePatientVisitId, false);
-  }
-});
-
-patientWhatsAppBtn.addEventListener("click", () => {
-  if (activePatientVisitId) {
-    shareAndDownloadReport(activePatientVisitId);
+    openHtmlReport(activePatientVisitId);
   }
 });
 

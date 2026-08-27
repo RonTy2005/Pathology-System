@@ -2,6 +2,9 @@ const express = require("express");
 const { authenticate, createSession, destroySession, getSession } = require("../services/authService");
 const { authRequired } = require("../middleware/auth");
 const { logAction } = require("../services/logService");
+const { isBusinessSetupComplete } = require("../services/businessSettingsService");
+const { getSubscriptionStatus } = require("../services/subscriptionService");
+const { ROLES } = require("../config/constants");
 
 const authRouter = express.Router();
 
@@ -14,7 +17,15 @@ authRouter.post("/login", async (req, res, next) => {
       return res.status(401).json({ message: "Invalid username or password" });
     }
 
-    const token = createSession(user);
+    const subscription = await getSubscriptionStatus();
+    if (!subscription.active && user.role !== ROLES.SUPERADMIN) {
+      return res.status(423).json({
+        message: "This application subscription has expired. Please contact the Super Admin to renew it.",
+        code: "SUBSCRIPTION_EXPIRED",
+      });
+    }
+
+    const token = await createSession(user);
     await logAction({
       userId: user.id,
       action: "login",
@@ -23,11 +34,15 @@ authRouter.post("/login", async (req, res, next) => {
       meta: { username: user.username },
     });
 
-    const session = getSession(token);
+    const session = await getSession(token);
+    const setupRequired = user.role === ROLES.SUPERADMIN && !(await isBusinessSetupComplete());
 
     res.json({
       token,
       user: session.user,
+      setupRequired,
+      subscription,
+      subscriptionExpired: !subscription.active,
     });
   } catch (error) {
     next(error);
@@ -46,7 +61,7 @@ authRouter.post("/logout", authRequired, async (req, res, next) => {
       entityType: "session",
       entityId: req.token.slice(0, 12),
     });
-    destroySession(req.token);
+    await destroySession(req.token);
     res.json({ ok: true });
   } catch (error) {
     next(error);

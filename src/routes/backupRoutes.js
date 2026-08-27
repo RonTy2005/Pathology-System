@@ -1,6 +1,7 @@
 const express = require("express");
 const fs = require("fs/promises");
 const path = require("path");
+const { dataDirectory } = require("../config/paths");
 
 const { allowRoles } = require("../middleware/auth");
 const { getDatabasePath } = require("../db/connection");
@@ -11,7 +12,7 @@ const backupRouter = express.Router();
 
 backupRouter.post("/", allowRoles(ROLES.ADMIN), async (req, res, next) => {
   try {
-    const backupDir = path.join(process.cwd(), "backups");
+    const backupDir = path.join(dataDirectory, "backups");
     await fs.mkdir(backupDir, { recursive: true });
 
     const timestamp = new Date().toISOString().replaceAll(":", "-");

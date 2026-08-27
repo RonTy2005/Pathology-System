@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Set up your facility</title>
+  <link rel="stylesheet" href="styles/app.css" />
+  <style>
+    .setup-page { min-height: 100vh; padding: 28px; background: radial-gradient(circle at 8% 8%, rgba(45, 212, 191, .22), transparent 27%), radial-gradient(circle at 92% 90%, rgba(251, 191, 36, .18), transparent 30%), #eff8f5; }
+    .setup-shell { width: min(1180px, 100%); margin: 0 auto; display: grid; grid-template-columns: 370px minmax(0, 1fr); overflow: hidden; border-radius: 28px; box-shadow: 0 28px 70px rgba(15, 77, 70, .16); background: white; min-height: calc(100vh - 56px); }
+    .setup-aside { color: #ecfdf5; padding: 48px 38px; background: linear-gradient(155deg, #073b36 0%, #0f766e 56%, #115e59 100%); display: flex; flex-direction: column; gap: 26px; }
+    .setup-logo { width: 50px; height: 50px; border-radius: 16px; display: grid; place-items: center; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.18); font-size: 1.55rem; font-weight: 900; }
+    .setup-aside h1 { color: white; margin: 0; font-size: clamp(2rem, 4vw, 3.1rem); line-height: 1.05; }
+    .setup-aside .eyebrow { color: #99f6e4; }
+    .setup-aside p { margin: 0; color: #ccfbf1; line-height: 1.65; }
+    .setup-checklist { display: grid; gap: 12px; margin-top: auto; }
+    .setup-check { display: flex; gap: 11px; align-items: flex-start; padding: 13px; border-radius: 15px; background: rgba(255,255,255,.08); color: #ecfdf5; font-size: .9rem; line-height: 1.35; }
+    .setup-check strong { color: #fef3c7; }
+    .setup-content { padding: clamp(28px, 5vw, 56px); display: grid; align-content: start; gap: 28px; overflow: auto; }
+    .setup-heading { display: grid; gap: 8px; }
+    .setup-heading h2 { margin: 0; color: var(--primary-dark); font-size: clamp(1.7rem, 3vw, 2.4rem); }
+    .setup-heading p { margin: 0; color: var(--muted); max-width: 680px; line-height: 1.55; }
+    .setup-progress { display: flex; gap: 8px; flex-wrap: wrap; }
+    .setup-progress span { padding: 7px 10px; border-radius: 999px; background: #ecfdf5; color: #0f766e; font-size: .78rem; font-weight: 800; }
+    .setup-form { display: grid; gap: 24px; max-width: 790px; }
+    .setup-section { padding: 22px; border: 1px solid #d8e8e3; border-radius: 20px; display: grid; gap: 17px; background: linear-gradient(135deg, #fff, #fbfefd); }
+    .setup-section-header { display: flex; gap: 12px; align-items: center; }
+    .step-number { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: #d1fae5; color: #065f46; font-size: .8rem; font-weight: 900; }
+    .setup-section h3 { margin: 0; font-size: 1.05rem; color: #163b36; }
+    .setup-section .helper { margin: -8px 0 0 42px; line-height: 1.45; font-size: .86rem; }
+    .setup-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px; }
+    .setup-grid .wide { grid-column: 1 / -1; }
+    .type-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .type-option { cursor: pointer; min-height: 74px; padding: 12px; border: 1px solid #d6e4df; border-radius: 14px; display: flex; align-items: center; gap: 9px; color: #31504a; font-weight: 700; font-size: .88rem; background: white; }
+    .type-option:has(input:checked) { border-color: #14b8a6; background: #f0fdfa; color: #115e59; box-shadow: 0 0 0 3px rgba(20,184,166,.1); }
+    .type-option input { width: 16px; height: 16px; margin: 0; accent-color: #0f766e; }
+    .subscription-panel { border: 1px solid #fde6b4; background: linear-gradient(135deg, #fffbeb, #fff); }
+    .subscription-panel .step-number { background: #fef3c7; color: #92400e; }
+    .subscription-panel h3 { color: #7c4a03; }
+    .quick-date-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .quick-date-actions button { padding: 8px 11px; border-radius: 10px; background: #fff7ed; color: #9a3412; font-size: .82rem; }
+    .setup-submit { min-height: 54px; font-size: 1rem; box-shadow: 0 12px 24px rgba(15,118,110,.18); }
+    .setup-privacy { color: var(--muted); font-size: .82rem; line-height: 1.45; margin: 0; }
+    @media (max-width: 850px) { .setup-page { padding: 0; } .setup-shell { grid-template-columns: 1fr; border-radius: 0; min-height: 100vh; } .setup-aside { padding: 32px 28px; } .setup-checklist { margin-top: 0; } .setup-content { padding: 32px 24px; } }
+    @media (max-width: 560px) { .setup-grid, .type-grid { grid-template-columns: 1fr; } .setup-grid .wide { grid-column: auto; } .setup-aside h1 { font-size: 2rem; } }
+    @media (max-width: 420px) {
+      .setup-aside { padding: 25px 18px; gap: 17px; }
+      .setup-logo { width: 42px; height: 42px; border-radius: 13px; font-size: 1.3rem; }
+      .setup-aside h1 { font-size: 1.72rem; }
+      .setup-aside p { font-size: .9rem; line-height: 1.5; }
+      .setup-checklist { gap: 8px; }
+      .setup-check { padding: 10px; font-size: .82rem; border-radius: 12px; }
+      .setup-content { padding: 24px 14px; gap: 20px; }
+      .setup-heading h2 { font-size: 1.55rem; }
+      .setup-heading p { font-size: .9rem; }
+      .setup-form { gap: 16px; }
+      .setup-section { padding: 15px; gap: 13px; border-radius: 15px; }
+      .setup-section-header { gap: 9px; }
+      .step-number { width: 27px; height: 27px; font-size: .74rem; }
+      .setup-section h3 { font-size: .98rem; }
+      .setup-section .helper { margin: -4px 0 0 0; font-size: .8rem; }
+      .setup-progress { gap: 6px; }
+      .setup-progress span { padding: 6px 8px; font-size: .68rem; }
+      .quick-date-actions button { flex: 1 1 calc(50% - 4px); min-height: 38px; padding: 8px; }
+      .setup-submit { min-height: 48px; }
+    }
+  </style>
+</head>
+<body class="setup-page">
+  <main class="setup-shell">
+    <aside class="setup-aside">
+      <div class="setup-logo" aria-hidden="true">+</div>
+      <div class="eyebrow">Secure installation</div>
+      <h1>Set up your<br />care centre.</h1>
+      <p>These details become the identity of this installation on bills, reports, QR pages, and staff workspaces.</p>
+      <div class="setup-checklist">
+        <div class="setup-check"><strong>01</strong><span>Choose one or more facility types for this centre.</span></div>
+        <div class="setup-check"><strong>02</strong><span>Set the exact date through which this installation may be used.</span></div>
+        <div class="setup-check"><strong>03</strong><span>Only the Super Admin can change these settings later.</span></div>
+      </div>
+    </aside>
+    <section class="setup-content">
+      <div class="setup-heading">
+        <div class="setup-progress"><span>Super Admin only</span><span>First-time setup</span><span>About 2 minutes</span></div>
+        <h2>Welcome. Let’s personalise the system.</h2>
+        <p>Enter the facility profile and subscription end date. The subscription remains active through the selected calendar day.</p>
+      </div>
+      <form id="setupForm" class="setup-form" novalidate>
+        <section class="setup-section">
+          <div class="setup-section-header"><span class="step-number">1</span><h3>Facility profile</h3></div>
+          <p class="helper">Used on printed bills, digital reports, and throughout the application.</p>
+          <div class="setup-grid">
+            <label class="field wide"><span>Facility name *</span><input id="businessName" maxlength="100" autocomplete="organization" required placeholder="e.g. Sunrise Diagnostics" /></label>
+            <fieldset class="field wide" style="border:0; padding:0; margin:0;"><legend>Facility types *</legend><div class="facility-type-grid">
+              <label class="facility-type-option"><input type="checkbox" name="facilityTypes" value="Diagnostic Centre" /> <span>Diagnostic Centre</span></label>
+              <label class="facility-type-option"><input type="checkbox" name="facilityTypes" value="Hospital" /> <span>Hospital</span></label>
+              <label class="facility-type-option"><input type="checkbox" name="facilityTypes" value="Laboratory" /> <span>Laboratory</span></label>
+              <label class="facility-type-option"><input type="checkbox" name="facilityTypes" value="Clinic" /> <span>Clinic</span></label>
+              <label class="facility-type-option"><input type="checkbox" name="facilityTypes" value="Imaging Centre" /> <span>Imaging Centre</span></label>
+              <label class="facility-type-option"><input type="checkbox" name="facilityTypes" value="Other" /> <span>Other</span></label>
+            </div></fieldset>
+            <label class="field wide"><span>Address</span><textarea id="address" maxlength="250" rows="3" autocomplete="street-address" placeholder="Facility address"></textarea></label>
+            <label class="field"><span>Phone</span><input id="phone" maxlength="80" autocomplete="tel" placeholder="Contact number" /></label>
+            <label class="field"><span>Email</span><input id="email" maxlength="120" type="email" autocomplete="email" placeholder="contact@example.com" /></label>
+            <label class="field wide"><span>Registration number</span><input id="registrationNo" maxlength="80" placeholder="Optional registration / licence number" /></label>
+          </div>
+        </section>
+        <section class="setup-section subscription-panel">
+          <div class="setup-section-header"><span class="step-number">2</span><h3>Subscription access</h3></div>
+          <p class="helper">Set the last usable date after confirming payment. On expiry, only the Super Admin can sign in to renew the subscription.</p>
+          <div class="setup-grid">
+            <label class="field"><span>Subscription valid through *</span><input id="subscriptionExpiresOn" type="date" required /></label>
+            <div class="field"><span>Quick selection</span><div class="quick-date-actions"><button type="button" data-subscription-days="30">+30 days</button><button type="button" data-subscription-days="90">+3 months</button><button type="button" data-subscription-days="365">+1 year</button></div></div>
+          </div>
+        </section>
+        <button class="primary-btn setup-submit" type="submit">Finish secure setup</button>
+        <p id="setupMessage" class="message" aria-live="polite"></p>
+        <p class="setup-privacy">The expiry date is controlled locally by the Super Admin and recorded in the audit log whenever it changes.</p>
+      </form>
+    </section>
+  </main>
+  <script src="scripts/common.js"></script>
+  <script src="scripts/setup.js"></script>
+</body>
+</html>

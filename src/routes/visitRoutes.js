@@ -6,8 +6,70 @@ const { ACCESS_CONTROLS, PAYMENT_MODES, PERMISSIONS, ROLES, TECHNICIAN_ROLES, VI
 const { logAction } = require("../services/logService");
 const { buildReportHtml } = require("../utils/reportFormatter");
 const { buildBillHtml } = require("../utils/billFormatter");
+const { getBusinessSettings } = require("../services/businessSettingsService");
+const { createPatientPortalToken, getPatientPortalUrl, getPatientPortalReportUrl, getPatientPortalBillUrl } = require("../utils/patientPortal");
+const { applyCalculatedParameters } = require("../utils/resultCalculations");
 
 const visitRouter = express.Router();
+const MAX_IMAGING_REPORT_BYTES = 6 * 1024 * 1024;
+const IMAGING_REPORT_MIME_TYPES = new Set([
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+
+function imagingRoleForCategory(category) {
+  const categoryRoles = {
+    "CT Scan": ROLES.CT_TECHNICIAN,
+    Radiology: ROLES.USG_TECHNICIAN,
+    MRI: ROLES.MRI_TECHNICIAN,
+  };
+  return categoryRoles[category] || null;
+}
+
+function canManageImagingCategory(user, category) {
+  if ([ROLES.SUPERADMIN, ROLES.ADMIN].includes(user?.role)) {
+    return true;
+  }
+
+  return user?.role === imagingRoleForCategory(category);
+}
+
+function sanitizeImagingFileName(fileName) {
+  const cleaned = String(fileName || "report")
+    .replace(/[\\/:*?"<>|\x00-\x1F]/g, "_")
+    .trim()
+    .slice(0, 180);
+  return cleaned || "report";
+}
+
+function readImagingReportUpload({ fileName, mimeType, dataUrl }) {
+  if (!IMAGING_REPORT_MIME_TYPES.has(mimeType)) {
+    throw httpError("Upload a PDF, JPG, PNG, or WebP report file", 400);
+  }
+
+  const prefix = `data:${mimeType};base64,`;
+  if (typeof dataUrl !== "string" || !dataUrl.startsWith(prefix)) {
+    throw httpError("The uploaded file data is invalid", 400);
+  }
+
+  const encodedFile = dataUrl.slice(prefix.length);
+  if (!encodedFile || !/^[A-Za-z0-9+/]+={0,2}$/.test(encodedFile)) {
+    throw httpError("The uploaded file data is invalid", 400);
+  }
+
+  const fileData = Buffer.from(encodedFile, "base64");
+  if (!fileData.length || fileData.length > MAX_IMAGING_REPORT_BYTES) {
+    throw httpError("Report files must be between 1 byte and 6 MB", 400);
+  }
+
+  return {
+    originalName: sanitizeImagingFileName(fileName),
+    mimeType,
+    fileData,
+  };
+}
 
 visitRouter.get("/ct-scans", allowRoles(ROLES.ADMIN, ROLES.CT_TECHNICIAN), async (req, res, next) => {
   try {
@@ -21,11 +83,16 @@ visitRouter.get("/ct-scans", allowRoles(ROLES.ADMIN, ROLES.CT_TECHNICIAN), async
         p.gender,
         vt.id AS visit_test_id,
         vt.scan_done,
-        t.name AS test_name
+        t.name AS test_name,
+        irf.id AS report_file_id,
+        irf.original_name AS report_file_name,
+        irf.mime_type AS report_file_mime_type,
+        irf.uploaded_at AS report_uploaded_at
       FROM visit_tests vt
       JOIN visits v ON v.id = vt.visit_id
       JOIN patients p ON p.id = v.patient_id
       JOIN tests t ON t.id = vt.test_id
+      LEFT JOIN imaging_report_files irf ON irf.visit_test_id = vt.id
       WHERE t.category = 'CT Scan'
         AND v.created_at >= DATE('now', '-2 days')
       ORDER BY datetime(v.created_at) ASC, v.id ASC
@@ -48,11 +115,16 @@ visitRouter.get("/usg-scans", allowRoles(ROLES.ADMIN, ROLES.USG_TECHNICIAN), asy
         p.gender,
         vt.id AS visit_test_id,
         vt.scan_done,
-        t.name AS test_name
+        t.name AS test_name,
+        irf.id AS report_file_id,
+        irf.original_name AS report_file_name,
+        irf.mime_type AS report_file_mime_type,
+        irf.uploaded_at AS report_uploaded_at
       FROM visit_tests vt
       JOIN visits v ON v.id = vt.visit_id
       JOIN patients p ON p.id = v.patient_id
       JOIN tests t ON t.id = vt.test_id
+      LEFT JOIN imaging_report_files irf ON irf.visit_test_id = vt.id
       WHERE t.category = 'Radiology'
         AND v.created_at >= DATE('now', '-2 days')
       ORDER BY datetime(v.created_at) ASC, v.id ASC
@@ -75,11 +147,16 @@ visitRouter.get("/mri-scans", allowRoles(ROLES.ADMIN, ROLES.MRI_TECHNICIAN), asy
         p.gender,
         vt.id AS visit_test_id,
         vt.scan_done,
-        t.name AS test_name
+        t.name AS test_name,
+        irf.id AS report_file_id,
+        irf.original_name AS report_file_name,
+        irf.mime_type AS report_file_mime_type,
+        irf.uploaded_at AS report_uploaded_at
       FROM visit_tests vt
       JOIN visits v ON v.id = vt.visit_id
       JOIN patients p ON p.id = v.patient_id
       JOIN tests t ON t.id = vt.test_id
+      LEFT JOIN imaging_report_files irf ON irf.visit_test_id = vt.id
       WHERE t.category = 'MRI'
         AND v.created_at >= DATE('now', '-2 days')
       ORDER BY datetime(v.created_at) ASC, v.id ASC
@@ -93,6 +170,22 @@ visitRouter.get("/mri-scans", allowRoles(ROLES.ADMIN, ROLES.MRI_TECHNICIAN), asy
 visitRouter.patch("/tests/:visitTestId/scan-status", allowRoles(ROLES.ADMIN, ROLES.CT_TECHNICIAN, ROLES.USG_TECHNICIAN, ROLES.MRI_TECHNICIAN), async (req, res, next) => {
   try {
     const { scanDone } = req.body;
+    const scan = await get(
+      `SELECT vt.id, t.category
+       FROM visit_tests vt
+       JOIN tests t ON t.id = vt.test_id
+       WHERE vt.id = ?`,
+      [req.params.visitTestId]
+    );
+
+    if (!scan) {
+      throw httpError("Study not found", 404);
+    }
+
+    if (!canManageImagingCategory(req.user, scan.category)) {
+      throw httpError("You can only update studies for your department", 403);
+    }
+
     await run(
       `UPDATE visit_tests SET scan_done = ? WHERE id = ?`,
       [scanDone ? 1 : 0, req.params.visitTestId]
@@ -100,7 +193,7 @@ visitRouter.patch("/tests/:visitTestId/scan-status", allowRoles(ROLES.ADMIN, ROL
     
     await logAction({
       userId: req.user.id,
-      action: "ct_scan_status_updated",
+      action: "imaging_scan_status_updated",
       entityType: "visit_test",
       entityId: req.params.visitTestId,
       meta: { scanDone },
@@ -112,6 +205,114 @@ visitRouter.patch("/tests/:visitTestId/scan-status", allowRoles(ROLES.ADMIN, ROL
   }
 });
 
+visitRouter.put(
+  "/tests/:visitTestId/imaging-report",
+  allowRoles(ROLES.ADMIN, ROLES.CT_TECHNICIAN, ROLES.USG_TECHNICIAN, ROLES.MRI_TECHNICIAN),
+  async (req, res, next) => {
+    try {
+      const study = await get(
+        `SELECT vt.id, vt.scan_done, t.category, t.name AS test_name
+         FROM visit_tests vt
+         JOIN tests t ON t.id = vt.test_id
+         WHERE vt.id = ?`,
+        [req.params.visitTestId]
+      );
+
+      if (!study) {
+        throw httpError("Study not found", 404);
+      }
+
+      if (!canManageImagingCategory(req.user, study.category)) {
+        throw httpError("You can only upload reports for your department", 403);
+      }
+
+      if (!study.scan_done) {
+        throw httpError("Mark the study as done before uploading its report", 400);
+      }
+
+      const upload = readImagingReportUpload(req.body || {});
+      const existingFile = await get(
+        "SELECT id FROM imaging_report_files WHERE visit_test_id = ?",
+        [study.id]
+      );
+
+      await transaction(async () => {
+        await run(
+          `INSERT INTO imaging_report_files (
+            visit_test_id, original_name, mime_type, file_data, file_size, uploaded_by, uploaded_at
+          ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+          ON CONFLICT(visit_test_id) DO UPDATE SET
+            original_name = excluded.original_name,
+            mime_type = excluded.mime_type,
+            file_data = excluded.file_data,
+            file_size = excluded.file_size,
+            uploaded_by = excluded.uploaded_by,
+            uploaded_at = CURRENT_TIMESTAMP`,
+          [study.id, upload.originalName, upload.mimeType, upload.fileData, upload.fileData.length, req.user.id]
+        );
+        await run(
+          "UPDATE visit_tests SET status = 'reported', finalized_at = CURRENT_TIMESTAMP WHERE id = ?",
+          [study.id]
+        );
+      });
+
+      const storedFile = await get(
+        `SELECT id, original_name, mime_type, file_size, uploaded_at
+         FROM imaging_report_files WHERE visit_test_id = ?`,
+        [study.id]
+      );
+
+      await logAction({
+        userId: req.user.id,
+        action: "imaging_report_uploaded",
+        entityType: "visit_test",
+        entityId: study.id,
+        meta: {
+          testName: study.test_name,
+          fileName: storedFile.original_name,
+          mimeType: storedFile.mime_type,
+          fileSize: storedFile.file_size,
+          replacedExisting: Boolean(existingFile),
+        },
+      });
+
+      res.json({ ok: true, reportFile: storedFile });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+visitRouter.get(
+  "/tests/:visitTestId/imaging-report",
+  allowRoles(ROLES.ADMIN, ROLES.MANAGER, ROLES.RECEPTIONIST, ...TECHNICIAN_ROLES),
+  allowAnyPermission(PERMISSIONS.VIEW_REPORTS, PERMISSIONS.MANAGE_BILLING),
+  async (req, res, next) => {
+    try {
+      const reportFile = await get(
+        `SELECT original_name, mime_type, file_data
+         FROM imaging_report_files
+         WHERE visit_test_id = ?`,
+        [req.params.visitTestId]
+      );
+
+      if (!reportFile) {
+        throw httpError("No uploaded imaging report was found", 404);
+      }
+
+      const safeFileName = sanitizeImagingFileName(reportFile.original_name).replace(/"/g, "_");
+      res.set({
+        "Cache-Control": "no-store",
+        "Content-Type": reportFile.mime_type,
+        "Content-Disposition": `inline; filename="${safeFileName}"`,
+      });
+      res.send(reportFile.file_data);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 function hasAccessControl(user, control) {
   return Boolean(user?.accessControls?.[control]);
 }
@@ -120,6 +321,47 @@ function httpError(message, statusCode) {
   const error = new Error(message);
   error.statusCode = statusCode;
   return error;
+}
+
+function parseReportReferringDoctor(value) {
+  const raw = String(value || "").trim().replace(/\s+/g, " ");
+  if (!raw) return { provided: false, doctorName: null, specialization: null };
+  if (raw.toLowerCase() === "self") return { provided: true, doctorName: null, specialization: null };
+
+  const separatorIndex = raw.indexOf(" - ");
+  const doctorName = (separatorIndex >= 0 ? raw.slice(0, separatorIndex) : raw).trim();
+  const specialization = (separatorIndex >= 0 ? raw.slice(separatorIndex + 3) : "General").trim() || "General";
+
+  if (doctorName.length < 2 || doctorName.length > 120) {
+    throw httpError("Enter a referring doctor name between 2 and 120 characters.", 400);
+  }
+
+  return { provided: true, doctorName, specialization };
+}
+
+async function resolveReportReferringDoctor(value) {
+  const requested = parseReportReferringDoctor(value);
+  if (!requested.provided || !requested.doctorName) {
+    return { ...requested, doctor: null, created: false };
+  }
+
+  const existingDoctor = await get(
+    `SELECT *
+     FROM doctors
+     WHERE LOWER(TRIM(name)) = LOWER(TRIM(?))
+     ORDER BY active DESC, id ASC
+     LIMIT 1`,
+    [requested.doctorName]
+  );
+  if (existingDoctor) return { ...requested, doctor: existingDoctor, created: false };
+
+  const created = await run(
+    `INSERT INTO doctors (name, specialization, commission_percent, active, created_at)
+     VALUES (?, ?, 0, 1, CURRENT_TIMESTAMP)`,
+    [requested.doctorName, requested.specialization]
+  );
+  const doctor = await get("SELECT * FROM doctors WHERE id = ?", [created.id]);
+  return { ...requested, doctor, created: true };
 }
 
 async function getReportUserAction(reportId, userId) {
@@ -248,6 +490,16 @@ async function getVisitDetails(visitId, user = null) {
 
   const tests = await all(testQuery, params);
 
+  for (const test of tests) {
+    test.results = await all(
+      `SELECT parameter_name, value, unit, normal_range, entry_mode
+       FROM results
+       WHERE visit_test_id = ?
+       ORDER BY id ASC`,
+      [test.id]
+    );
+  }
+
   return { visit, tests };
 }
 
@@ -270,6 +522,9 @@ async function getReportBundle(visitId) {
       COALESCE(vt.custom_test_name, t.name) AS name,
       t.category,
       t.code,
+      t.sample_type,
+      t.turnaround_hours,
+      t.report_body,
       COALESCE(vt.custom_test_price, t.price) AS price,
       vt.is_outside,
       vt.external_lab_name
@@ -297,7 +552,7 @@ async function getReportBundle(visitId) {
   for (const test of tests) {
     test.parameters = await all(
       `
-      SELECT parameter_name, value, unit, normal_range
+      SELECT parameter_name, value, unit, normal_range, entry_mode
       FROM results
       WHERE visit_test_id = ?
       ORDER BY id ASC
@@ -360,6 +615,7 @@ visitRouter.get("/", async (req, res, next) => {
     let sql = `
       SELECT
         v.id,
+        v.patient_id,
         v.bill_no,
         v.total,
         v.amount_due,
@@ -367,6 +623,8 @@ visitRouter.get("/", async (req, res, next) => {
         v.status,
         v.created_at,
         p.name AS patient_name,
+        p.patient_code,
+        p.created_at AS patient_created_at,
         p.age,
         p.gender,
         p.phone,
@@ -478,13 +736,19 @@ visitRouter.get("/technician-summary", allowRoles(ROLES.ADMIN, ...TECHNICIAN_ROL
 
 visitRouter.get("/latest-for-patient/:patientId", async (req, res, next) => {
   try {
+    const requestedVisitId = Number(req.query.visitId || 0);
+    if (req.query.visitId && (!Number.isInteger(requestedVisitId) || requestedVisitId < 1)) {
+      return res.status(400).json({ message: "Invalid visit selected for bill editing" });
+    }
+
     const visit = await get(
       `SELECT v.*, d.id AS doctor_id_val, d.name AS doctor_name, d.phone AS doctor_phone,
               d.specialization AS doctor_specialization
        FROM visits v
        LEFT JOIN doctors d ON d.id = v.doctor_id
-       WHERE v.patient_id = ? ORDER BY datetime(v.created_at) DESC, v.id DESC LIMIT 1`,
-      [req.params.patientId]
+       WHERE v.patient_id = ?${requestedVisitId ? " AND v.id = ?" : ""}
+       ORDER BY datetime(v.created_at) DESC, v.id DESC LIMIT 1`,
+      requestedVisitId ? [req.params.patientId, requestedVisitId] : [req.params.patientId]
     );
 
     if (!visit) {
@@ -601,6 +865,87 @@ visitRouter.delete(
   }
 );
 
+visitRouter.get(
+  "/:id/bill-share",
+  allowRoles(ROLES.ADMIN, ROLES.RECEPTIONIST, ...TECHNICIAN_ROLES),
+  allowPermissions(PERMISSIONS.MANAGE_BILLING),
+  async (req, res, next) => {
+    try {
+      const bill = await getBillBundle(req.params.id);
+      if (!bill) {
+        return res.status(404).json({ message: "Bill not found" });
+      }
+
+      const businessSettings = await getBusinessSettings();
+      res.json({
+        billNo: bill.visit.bill_no,
+        patientName: bill.patient.name,
+        patientPhone: bill.patient.phone || "",
+        billUrl: getPatientPortalBillUrl(req, bill.visit.patient_portal_token, businessSettings.patientPortalBaseUrl),
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+visitRouter.patch(
+  "/:id/report-contact",
+  allowRoles(ROLES.ADMIN, ROLES.RECEPTIONIST, ...TECHNICIAN_ROLES),
+  allowPermissions(PERMISSIONS.SHARE_WHATSAPP_PDF),
+  async (req, res, next) => {
+    try {
+      const visitId = Number(req.params.id);
+      const phone = String(req.body?.phone || "").trim();
+      const phoneDigits = phone.replace(/\D/g, "");
+
+      if (!Number.isInteger(visitId) || visitId <= 0) {
+        return res.status(400).json({ message: "Invalid report visit" });
+      }
+
+      if (phoneDigits.length < 7 || phoneDigits.length > 15) {
+        return res.status(400).json({ message: "Enter a valid patient WhatsApp number" });
+      }
+
+      const visit = await get(
+        `SELECT v.id, v.bill_no, v.patient_id, v.patient_portal_token, p.name AS patient_name
+         FROM visits v
+         JOIN patients p ON p.id = v.patient_id
+         WHERE v.id = ?`,
+        [visitId]
+      );
+      if (!visit) {
+        return res.status(404).json({ message: "Report visit not found" });
+      }
+
+      const storedPhone = phone.startsWith("+") ? `+${phoneDigits}` : phoneDigits;
+      const portalToken = visit.patient_portal_token || createPatientPortalToken();
+      if (!visit.patient_portal_token) {
+        await run("UPDATE visits SET patient_portal_token = ? WHERE id = ?", [portalToken, visit.id]);
+      }
+      await run("UPDATE patients SET phone = ? WHERE id = ?", [storedPhone, visit.patient_id]);
+      await logAction({
+        userId: req.user.id,
+        action: "patient_phone_updated_for_report_share",
+        entityType: "patient",
+        entityId: visit.patient_id,
+        details: `Updated the patient phone number while sharing report ${visit.bill_no}`,
+      });
+
+      const businessSettings = await getBusinessSettings();
+      res.json({
+        patientId: visit.patient_id,
+        patientName: visit.patient_name,
+        patientPhone: storedPhone,
+        billNo: visit.bill_no,
+        reportUrl: getPatientPortalReportUrl(req, portalToken, businessSettings.patientPortalBaseUrl),
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 visitRouter.get("/:id/bill", allowRoles(ROLES.ADMIN, ROLES.RECEPTIONIST, ...TECHNICIAN_ROLES), async (req, res, next) => {
   try {
     if (!hasPermission(req.user, PERMISSIONS.MANAGE_BILLING)) {
@@ -614,7 +959,12 @@ visitRouter.get("/:id/bill", allowRoles(ROLES.ADMIN, ROLES.RECEPTIONIST, ...TECH
 
     if (req.query.format === "html") {
       res.type("html");
-      return res.send(buildBillHtml(bill));
+      const businessSettings = await getBusinessSettings({ includeBusinessLogo: true });
+      return res.send(buildBillHtml({
+        ...bill,
+        businessSettings,
+        patientPortalUrl: getPatientPortalUrl(req, bill.visit.patient_portal_token, businessSettings.patientPortalBaseUrl),
+      }));
     }
 
     res.json(bill);
@@ -626,7 +976,26 @@ visitRouter.get("/:id/bill", allowRoles(ROLES.ADMIN, ROLES.RECEPTIONIST, ...TECH
 visitRouter.get(
   "/:id/report",
   allowRoles(ROLES.ADMIN, ROLES.RECEPTIONIST, ...TECHNICIAN_ROLES),
-  allowAnyPermission(PERMISSIONS.VIEW_REPORTS, PERMISSIONS.DOWNLOAD_REPORTS),
+  (req, res, next) => {
+    const printMode = req.query.print === "1";
+    const whatsappPdfMode = req.query.whatsapp === "1";
+    const canViewReports = hasPermission(req.user, PERMISSIONS.VIEW_REPORTS);
+    // PDF permissions include access to the report itself. This keeps View Report
+    // read-only while allowing the two optional actions to be granted separately.
+    const canDownloadReportPdf = hasPermission(req.user, PERMISSIONS.DOWNLOAD_REPORTS);
+    const canShareWhatsAppPdf = hasPermission(req.user, PERMISSIONS.SHARE_WHATSAPP_PDF);
+    const canAccessReport = canViewReports || canDownloadReportPdf || canShareWhatsAppPdf;
+    const allowed = printMode
+      ? hasPermission(req.user, PERMISSIONS.PRINT_REPORTS)
+      : whatsappPdfMode
+        ? canShareWhatsAppPdf
+        : canAccessReport;
+
+    if (!allowed) {
+      return res.status(403).json({ message: "Permission denied for this action" });
+    }
+    return next();
+  },
   async (req, res, next) => {
     try {
       const report = await getReportBundle(req.params.id);
@@ -639,7 +1008,46 @@ visitRouter.get(
           res.setHeader("Content-Disposition", `attachment; filename="${report.report.report_no}.html"`);
         }
         res.type("html");
-        return res.send(buildReportHtml(report));
+        const businessSettings = await getBusinessSettings({
+          includeLetterhead: true,
+          includeBusinessLogo: true,
+          includeReportDoctorSignature: true,
+        });
+        const includeLetterhead = req.query.letterhead === "0"
+          ? false
+          : req.query.letterhead === "1"
+            ? true
+            : businessSettings.defaultReportIncludesLetterhead;
+        const printMode = req.query.print === "1";
+        const canDownloadReportPdf = hasPermission(req.user, PERMISSIONS.DOWNLOAD_REPORTS);
+        const canShareWhatsAppPdf = hasPermission(req.user, PERMISSIONS.SHARE_WHATSAPP_PDF);
+        return res.send(buildReportHtml({
+          ...report,
+          businessName: businessSettings.businessName,
+          facilityType: businessSettings.facilityType,
+          address: businessSettings.address,
+          phone: businessSettings.phone,
+          email: businessSettings.email,
+          registrationNo: businessSettings.registrationNo,
+          digitalReportUrl: getPatientPortalReportUrl(req, report.visit.patient_portal_token, businessSettings.patientPortalBaseUrl),
+          letterheadDataUrl: includeLetterhead ? businessSettings.letterheadDataUrl : null,
+          businessLogoDataUrl: includeLetterhead && businessSettings.letterheadDataUrl
+            ? null
+            : businessSettings.businessLogoDataUrl,
+          reportHeaderSpaceMm: businessSettings.reportHeaderSpaceMm,
+          reportFooterSpaceMm: businessSettings.reportFooterSpaceMm,
+          reportDoctorName: businessSettings.reportDoctorName,
+          reportDoctorQualification: businessSettings.reportDoctorQualification,
+          reportDoctorRegistrationNo: businessSettings.reportDoctorRegistrationNo,
+          reportDoctorSignatureDataUrl: businessSettings.reportDoctorSignatureDataUrl,
+          showPrintControls: false,
+          readOnlyView: !printMode,
+          showReportActions: !printMode && req.query.actions !== "0" && (canDownloadReportPdf || canShareWhatsAppPdf),
+          reportActionVisitId: req.params.id,
+          reportActionPatientPhone: report.patient.phone,
+          canDownloadReportPdf,
+          canShareWhatsAppPdf,
+        }));
       }
 
       res.json(report);
@@ -729,7 +1137,10 @@ visitRouter.get("/:id", async (req, res, next) => {
 visitRouter.post(
   "/",
   allowRoles(ROLES.ADMIN, ROLES.RECEPTIONIST, ...TECHNICIAN_ROLES),
-  allowPermissions(PERMISSIONS.MANAGE_PATIENTS, PERMISSIONS.MANAGE_BILLING),
+  // Patient registration includes creating the initial visit.  Billing access is
+  // deliberately separate so a registration-only technician cannot open the
+  // wider billing workspace or print other patients' bills.
+  allowPermissions(PERMISSIONS.MANAGE_PATIENTS),
   async (req, res, next) => {
   try {
     const {
@@ -800,9 +1211,9 @@ visitRouter.post(
       INSERT INTO visits (
         bill_no, patient_id, doctor_id, subtotal, discount, total, amount_paid,
         amount_due, payment_mode, payment_status, associate_id, associate_label, sample_source,
-        status, created_by, created_at
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP))
+        status, created_by, created_at, patient_portal_token
+       )
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP), ?)
       `,
       [
         await nextDailySequenceId("BILL", "visits", "bill_no"),
@@ -821,6 +1232,7 @@ visitRouter.post(
         VISIT_STATUS.REGISTERED,
         req.user.id,
         registrationTime ? new Date(registrationTime).toISOString() : new Date().toISOString(),
+        createPatientPortalToken(),
       ]
     );
 
@@ -899,15 +1311,26 @@ visitRouter.post(
       }
     }
 
+    const catalogParameters = visitTest.test_id
+      ? await all(
+        `SELECT parameter_name, unit, normal_range, entry_mode, calculation_formula, calculation_precision
+         FROM test_parameters
+         WHERE test_id = ?
+         ORDER BY display_order ASC, id ASC`,
+        [visitTest.test_id]
+      )
+      : [];
+    const resolvedParameters = applyCalculatedParameters(catalogParameters, parameters);
+
     await run("DELETE FROM results WHERE visit_test_id = ?", [visitTestId]);
 
-    for (const parameter of parameters) {
+    for (const parameter of resolvedParameters) {
       await run(
         `
         INSERT INTO results (
-          visit_test_id, parameter_name, value, unit, normal_range, entered_by, entered_at
+          visit_test_id, parameter_name, value, unit, normal_range, entry_mode, entered_by, entered_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         `,
         [
           visitTestId,
@@ -915,6 +1338,7 @@ visitRouter.post(
           parameter.value,
           parameter.unit,
           parameter.normal_range,
+          parameter.entry_mode,
           req.user.id,
         ]
       );
@@ -955,7 +1379,7 @@ visitRouter.post(
       meta: { parameterCount: parameters.length },
     });
 
-    res.json({ ok: true });
+    res.json({ ok: true, parameters: resolvedParameters });
   } catch (error) {
     next(error);
   }
@@ -1004,7 +1428,20 @@ visitRouter.post(
       return res.status(400).json({ message: "All pathology tests must be completed before finalizing" });
     }
 
+    const hasReferringDoctorInput = Object.prototype.hasOwnProperty.call(req.body || {}, "referringDoctorName");
+    let resolvedReferringDoctor = null;
+    let referringDoctorCreated = false;
+    let linkedDoctorId = visit.doctor_id || null;
+
     await transaction(async () => {
+      if (hasReferringDoctorInput) {
+        resolvedReferringDoctor = await resolveReportReferringDoctor(req.body.referringDoctorName);
+        if (resolvedReferringDoctor.provided) {
+          linkedDoctorId = resolvedReferringDoctor.doctor?.id || null;
+          referringDoctorCreated = resolvedReferringDoctor.created;
+        }
+      }
+
       const existingReport = await get("SELECT * FROM reports WHERE visit_id = ?", [req.params.id]);
       if (existingReport) {
         await run(
@@ -1024,8 +1461,8 @@ visitRouter.post(
       }
 
       await run(
-        `UPDATE visits SET status = 'reported' WHERE id = ?`,
-        [req.params.id]
+        `UPDATE visits SET status = 'reported', doctor_id = ? WHERE id = ?`,
+        [linkedDoctorId, req.params.id]
       );
 
       for (const t of pathTests) {
@@ -1042,10 +1479,28 @@ visitRouter.post(
         action: "report_finalized",
         entityType: "visit",
         entityId: req.params.id,
+        meta: {
+          referringDoctorId: linkedDoctorId,
+          referringDoctorCreated,
+        },
       });
     });
 
-    res.json({ ok: true });
+    if (referringDoctorCreated && resolvedReferringDoctor?.doctor) {
+      await logAction({
+        userId: req.user.id,
+        action: "doctor_create",
+        entityType: "doctor",
+        entityId: resolvedReferringDoctor.doctor.id,
+        meta: { name: resolvedReferringDoctor.doctor.name, autoCreatedFrom: "report_finalization" },
+      });
+    }
+
+    res.json({
+      ok: true,
+      doctor: resolvedReferringDoctor?.doctor || null,
+      doctorCreated: referringDoctorCreated,
+    });
   } catch (error) {
     next(error);
   }
@@ -1112,4 +1567,4 @@ visitRouter.post("/:id/bill-print", allowRoles(ROLES.ADMIN, ROLES.RECEPTIONIST, 
   }
 });
 
-module.exports = { visitRouter };
+module.exports = { visitRouter, getReportBundle, getBillBundle };

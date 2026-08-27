@@ -93,7 +93,35 @@ doctorRouter.post("/", async (req, res, next) => {
       return res.status(403).json({ message: "Doctor entry is disabled for this user" });
     }
 
-    const { name, phone, specialization, commissionPercent, commissionRules } = req.body;
+    const isAutoCreate = req.body.isAutoCreate === true;
+    const name = String(req.body.name || "").trim().replace(/\s+/g, " ");
+    const phone = String(req.body.phone || "").trim();
+    const specialization = String(req.body.specialization || "General").trim() || "General";
+    const { commissionPercent, commissionRules } = req.body;
+
+    if (name.length < 2 || name.length > 120) {
+      return res.status(400).json({ message: "Enter a doctor name between 2 and 120 characters." });
+    }
+
+    // A receptionist may type a name instead of selecting its suggestion. Reuse
+    // the existing record when there is an exact name match, so automatic entry
+    // cannot create duplicate referral sources.
+    const existingDoctor = await get(
+      `SELECT *
+       FROM doctors
+       WHERE LOWER(TRIM(name)) = LOWER(TRIM(?))
+       ORDER BY active DESC, id ASC
+       LIMIT 1`,
+      [name]
+    );
+
+    if (existingDoctor) {
+      if (isAutoCreate) {
+        return res.json({ doctor: existingDoctor, created: false });
+      }
+      return res.status(409).json({ message: "A doctor with this name already exists." });
+    }
+
     const created = await run(
       `INSERT INTO doctors (name, phone, specialization, commission_percent, commission_rules, active, created_at)
        VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)`,
@@ -106,10 +134,10 @@ doctorRouter.post("/", async (req, res, next) => {
       action: "doctor_create",
       entityType: "doctor",
       entityId: created.id,
-      meta: { name },
+      meta: { name, autoCreated: isAutoCreate },
     });
 
-    res.status(201).json({ doctor });
+    res.status(201).json({ doctor, created: true });
   } catch (error) {
     next(error);
   }

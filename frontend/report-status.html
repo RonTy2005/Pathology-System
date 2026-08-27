@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Patient report status</title>
+  <link rel="stylesheet" href="styles/app.css" />
+</head>
+<body class="login-body">
+  <main class="login-shell" style="grid-template-columns: minmax(0, 680px); justify-content: center; padding: 28px;">
+    <section class="login-panel" style="padding: 36px; width: 100%;">
+      <div class="eyebrow" id="facilityName">Patient portal</div>
+      <h1 style="color: var(--primary-dark); margin-top: 8px;">Report status</h1>
+      <p class="muted" id="portalIntro" style="margin-top: 10px;">Checking your report link…</p>
+
+      <section id="reportCard" hidden style="margin-top: 24px; border: 1px solid var(--line); border-radius: 14px; padding: 20px; background: #f8fafc;">
+        <div style="display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; flex-wrap: wrap;">
+          <div>
+            <div class="eyebrow">Patient</div>
+            <strong id="patientName" style="font-size: 1.15rem;"></strong>
+            <p class="muted" id="billDetails" style="margin: 5px 0 0;"></p>
+          </div>
+          <span id="statusPill" class="pill"></span>
+        </div>
+        <p id="statusMessage" style="line-height: 1.55; margin: 20px 0;"></p>
+        <div id="availableReports" class="actions-row" hidden></div>
+        <div class="actions-row" style="margin-top: 10px;">
+          <button id="refreshStatusBtn" class="secondary-btn" type="button">Refresh status</button>
+        </div>
+      </section>
+
+      <p id="portalMessage" class="message"></p>
+      <p class="muted" style="font-size: 0.8rem; line-height: 1.5; margin-top: 26px;">
+        Keep this QR bill private. It provides access to the associated patient report.
+      </p>
+    </section>
+  </main>
+
+  <script src="scripts/report-status.js"></script>
+</body>
+</html>

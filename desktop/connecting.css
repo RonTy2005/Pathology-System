@@ -1,0 +1,21 @@
+:root { color-scheme: light; font-family: "Segoe UI", sans-serif; color: #193a35; background: #eef7f5; }
+* { box-sizing: border-box; }
+body { min-height: 100vh; margin: 0; display: grid; place-items: center; padding: 24px; background: radial-gradient(circle at 10% 10%, rgba(45, 212, 191, .24), transparent 28%), radial-gradient(circle at 90% 90%, rgba(251, 191, 36, .18), transparent 30%), #eef7f5; }
+.connection-card { width: min(100%, 560px); padding: clamp(24px, 6vw, 48px); border: 1px solid rgba(255,255,255,.92); border-radius: 26px; background: rgba(255,255,255,.92); box-shadow: 0 28px 70px rgba(15, 77, 70, .15); }
+.mark { width: 52px; height: 52px; display: grid; place-items: center; border-radius: 16px; color: #ccfbf1; background: linear-gradient(140deg, #0f766e, #0a5c55); font-size: 1.8rem; font-weight: 800; }
+.eyebrow { margin-top: 22px; color: #0f766e; font-size: .74rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+h1 { margin: 8px 0 12px; color: #173d37; font-size: clamp(1.75rem, 5vw, 2.45rem); letter-spacing: -.04em; }
+.message { margin: 0; color: #61746f; line-height: 1.6; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+button { min-height: 44px; padding: 10px 15px; border: 0; border-radius: 11px; background: #0f766e; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+button:hover { background: #0b665f; }
+button.secondary { border: 1px solid #cfe5e1; background: #edf8f6; color: #0d695f; }
+button.secondary:hover { background: #ddf1ed; }
+form { display: grid; gap: 12px; margin-top: 18px; padding-top: 18px; border-top: 1px solid #e4ece9; }
+label { display: grid; gap: 7px; color: #385650; font-size: .86rem; font-weight: 700; }
+input { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid #cbded9; border-radius: 10px; color: #1d3b36; font: inherit; font-size: 16px; }
+.manual-message { min-height: 18px; margin: 0; color: #aa4b13; font-size: .85rem; }
+.server-choices { display: grid; gap: 8px; margin-top: 20px; }
+.server-choices button { width: 100%; background: #e9f7f4; color: #0c655b; text-align: left; }
+.note { margin: 24px 0 0; color: #73837f; font-size: .82rem; line-height: 1.5; }
+@media (max-width: 380px) { body { padding: 0; } .connection-card { min-height: 100svh; padding: 28px 18px; border-radius: 0; } .actions button { width: 100%; } }

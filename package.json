@@ -1,10 +1,16 @@
 {
   "name": "lab-system",
-  "version": "1.0.0",
-  "main": "server.js",
+  "version": "1.0.1",
+  "main": "desktop/main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "start:lan": "node server.js",
+    "desktop:server": "electron . --server",
+    "desktop:client": "electron . --client",
+    "desktop:rebuild-native": "electron-builder install-app-deps",
+    "build:server-installer": "cmd /d /s /c \"set LAB_LMS_BUILD_MODE=server&& electron-builder --config desktop/electron-builder.config.cjs\"",
+    "build:client-installer": "cmd /d /s /c \"set LAB_LMS_BUILD_MODE=client&& electron-builder --config desktop/electron-builder.config.cjs\""
   },
   "keywords": [],
   "author": "",
@@ -14,6 +20,11 @@
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "mammoth": "^1.12.0",
+    "pdfjs-dist": "^6.2.108",
     "sqlite3": "^6.0.1"
+  },
+  "devDependencies": {
+    "electron": "^44.0.0",
+    "electron-builder": "^26.15.3"
   }
 }

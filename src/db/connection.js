@@ -1,7 +1,8 @@
 const path = require("path");
 const sqlite3 = require("sqlite3").verbose();
+const { dataDirectory } = require("../config/paths");
 
-let currentDatabasePath = path.join(process.cwd(), "lab-lms.db");
+let currentDatabasePath = path.join(dataDirectory, "lab-lms.db");
 let db;
 
 function openDatabase() {
