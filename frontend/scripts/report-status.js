@@ -56,7 +56,11 @@ async function loadReportStatus() {
       cache: "no-store",
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.message || "Unable to check report status.");
+    if (!response.ok) {
+      const error = new Error(data.message || "Unable to check report status.");
+      error.closedOutsideBusinessHours = data.closedOutsideBusinessHours === true;
+      throw error;
+    }
 
     portalIntro.textContent = data.message;
     patientName.textContent = data.patientName || "Patient";
@@ -66,7 +70,9 @@ async function loadReportStatus() {
     renderAvailableReports(data.reportAvailable ? data.reports : []);
     reportCard.hidden = false;
   } catch (error) {
-    portalIntro.textContent = "We could not open this report link.";
+    portalIntro.textContent = error.closedOutsideBusinessHours
+      ? "Report status is currently unavailable."
+      : "We could not open this report link.";
     showPortalMessage(error.message, true);
     reportCard.hidden = true;
   } finally {

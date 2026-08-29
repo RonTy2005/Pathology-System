@@ -10,18 +10,47 @@ const commandLineMode = process.argv.includes("--server")
   ? "server"
   : (process.argv.includes("--client") ? "client" : null);
 const appMode = commandLineMode || packageMetadata.labLmsMode || "client";
+const desktopProductName = appMode === "server" ? "LabShield Server" : "LabShield";
 
 let mainWindow;
 let serverInstance;
 let retryTimer;
 let connectionStatus = {
   phase: "starting",
-  message: "Preparing Lab LMS…",
+  message: "Preparing LabShield…",
   servers: [],
 };
 
 function getConnectionPath() {
   return path.join(app.getPath("userData"), "server-connection.json");
+}
+
+async function pathExists(candidatePath) {
+  try {
+    await fs.access(candidatePath);
+    return true;
+  } catch (_error) {
+    return false;
+  }
+}
+
+async function prepareServerDatabase() {
+  const dataDirectory = app.getPath("userData");
+  const databasePath = path.join(dataDirectory, "lab-lms.db");
+  if (await pathExists(databasePath)) return;
+
+  // Preserve data from an earlier Lab LMS Server installation when upgrading
+  // to the renamed LabShield desktop application.
+  const legacyDatabasePath = path.join(app.getPath("appData"), "Lab LMS Server", "lab-lms.db");
+  const packagedCataloguePath = path.join(process.resourcesPath || appRoot, "labshield-catalogue.db");
+  const seedSource = (await pathExists(legacyDatabasePath))
+    ? legacyDatabasePath
+    : ((await pathExists(packagedCataloguePath)) ? packagedCataloguePath : null);
+
+  if (!seedSource) return;
+
+  await fs.mkdir(dataDirectory, { recursive: true });
+  await fs.copyFile(seedSource, databasePath);
 }
 
 async function readSavedServerUrl() {
@@ -66,7 +95,7 @@ async function useServer(serverUrl) {
   const { isLabServer, normalizeServerUrl } = require(path.join(appRoot, "src", "services", "lanClientDiscovery"));
   const normalizedUrl = normalizeServerUrl(serverUrl);
   if (!normalizedUrl || !(await isLabServer(normalizedUrl))) {
-    throw new Error("That Lab LMS server could not be reached. Check the address and LAN connection.");
+    throw new Error("That LabShield server could not be reached. Check the address and LAN connection.");
   }
 
   clearRetryTimer();
@@ -86,7 +115,7 @@ async function connectToLanServer({ forceDiscovery = false } = {}) {
   await loadConnectingScreen();
   publishConnectionStatus({
     phase: "searching",
-    message: "Searching this local network for the Lab LMS server…",
+    message: "Searching this local network for the LabShield server…",
     servers: [],
   });
 
@@ -102,7 +131,7 @@ async function connectToLanServer({ forceDiscovery = false } = {}) {
   if (servers.length > 1) {
     publishConnectionStatus({
       phase: "choose-server",
-      message: "More than one Lab LMS server was found. Choose the central server for this installation.",
+      message: "More than one LabShield server was found. Choose the central server for this installation.",
       servers,
     });
     return null;
@@ -110,7 +139,7 @@ async function connectToLanServer({ forceDiscovery = false } = {}) {
 
   publishConnectionStatus({
     phase: "not-found",
-    message: "No Lab LMS server was found yet. Keep the server PC on and connected to this same private LAN; this app will keep retrying automatically.",
+    message: "No LabShield server was found yet. Keep the server PC on and connected to this same private LAN; this app will keep retrying automatically.",
     servers: [],
   });
   scheduleRetry();
@@ -118,13 +147,14 @@ async function connectToLanServer({ forceDiscovery = false } = {}) {
 }
 
 async function startLocalServer() {
+  await prepareServerDatabase();
   process.env.LAB_LMS_APP_ROOT = appRoot;
   process.env.LAB_LMS_DATA_DIR = app.getPath("userData");
 
   const { bootstrap } = require(path.join(appRoot, "server.js"));
   serverInstance = await bootstrap();
   const localUrl = "http://127.0.0.1:3000";
-  publishConnectionStatus({ phase: "starting", message: "Starting the central Lab LMS server…" });
+  publishConnectionStatus({ phase: "starting", message: "Starting the central LabShield server…" });
 
   const { isLabServer } = require(path.join(appRoot, "src", "services", "lanClientDiscovery"));
   for (let attempt = 0; attempt < 20; attempt += 1) {
@@ -135,7 +165,7 @@ async function startLocalServer() {
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
 
-  throw new Error("The central server did not become ready.");
+  throw new Error("The central LabShield server did not become ready.");
 }
 
 function createMainWindow() {
@@ -162,6 +192,7 @@ ipcMain.handle("lab-lms:retry-connection", () => connectToLanServer({ forceDisco
 ipcMain.handle("lab-lms:use-server", async (_event, serverUrl) => useServer(serverUrl));
 
 app.whenReady().then(async () => {
+  app.setName(desktopProductName);
   createMainWindow();
   await mainWindow.loadFile(path.join(__dirname, "connecting.html"));
 
@@ -174,12 +205,12 @@ app.whenReady().then(async () => {
   } catch (error) {
     publishConnectionStatus({
       phase: "error",
-      message: error.message || "Lab LMS could not start.",
+      message: error.message || "LabShield could not start.",
       servers: [],
     });
     await dialog.showMessageBox(mainWindow, {
       type: "error",
-      title: "Lab LMS could not start",
+      title: "LabShield could not start",
       message: error.message || "An unexpected error occurred.",
     });
   }

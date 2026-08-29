@@ -228,7 +228,10 @@ function getAbsoluteCountTemplate(test) {
 
 function isMchcTest(test) {
   const name = normalizeParameterName(test?.name);
-  return name.startsWith("mchc") || name.includes("meancorpuscularhbconcentration");
+  return name.startsWith("mchc")
+    || name.includes("meancorpuscularhbconcentration")
+    || name.includes("meancorpuscularhemoglobinconcentration")
+    || name.includes("meancorpuscularhaemoglobinconcentration");
 }
 
 function isBloodGroupTest(test) {
@@ -642,6 +645,18 @@ function isToxoplasmaAntibodiesPanelTest(test) {
   const name = normalizeParameterName(test?.name);
   const code = normalizeParameterName(test?.code);
   return code === "toxo001" || (name.includes("toxoplasma") && (name.includes("antibodies") || name.includes("antibody") || name.includes("panel")));
+}
+
+function isTorchProfileTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "torch" || name.includes("torchprofile") || name.includes("torchpanel");
+}
+
+function isTnfAlphaTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "tnfa" || (name.includes("necrosisfactor") && name.includes("tnf") && name.includes("alpha"));
 }
 
 function isRheumatoidFactorTest(test) {
@@ -1729,7 +1744,7 @@ function buildRbcReportBody(test) {
   const unit = rbcResult?.unit || "mill/cumm";
   const value = rbcResult?.value || "-";
   const status = getCbcStatus(rbcResult?.value, normalRange);
-  const statusText = status
+  const statusText = status && status.label !== "Normal"
     ? ` <span class="rbc-status ${status.className}">${status.label}</span>`
     : "";
 
@@ -1794,7 +1809,7 @@ function buildPlateletReportBody(test) {
   const unit = plateletResult?.unit || "cumm";
   const value = plateletResult?.value || "-";
   const status = getCbcStatus(plateletResult?.value, normalRange);
-  const statusText = status
+  const statusText = status && status.label !== "Normal"
     ? ` <span class="platelet-status ${status.className}">${status.label}</span>`
     : "";
 
@@ -1864,7 +1879,7 @@ function buildTlcReportBody(test) {
   const unit = tlcResult?.unit || "cumm";
   const value = tlcResult?.value || "-";
   const status = getCbcStatus(tlcResult?.value, normalRange);
-  const statusText = status
+  const statusText = status && status.label !== "Normal"
     ? ` <span class="tlc-status ${status.className}">${status.label}</span>`
     : "";
 
@@ -2126,7 +2141,7 @@ function buildMcvReportBody(test) {
   const unit = mcvResult?.unit || "fL";
   const value = mcvResult?.value || "-";
   const status = getCbcStatus(mcvResult?.value, normalRange);
-  const statusText = status
+  const statusText = status && status.label !== "Normal"
     ? ` <span class="mcv-status ${status.className}">${status.label}</span>`
     : "";
 
@@ -2185,7 +2200,7 @@ function buildMpvReportBody(test) {
   const unit = mpvResult?.unit || "fL";
   const value = mpvResult?.value || "-";
   const status = getCbcStatus(mpvResult?.value, normalRange);
-  const statusText = status
+  const statusText = status && status.label !== "Normal"
     ? ` <span class="mpv-status ${status.className}">${status.label}</span>`
     : "";
 
@@ -2228,7 +2243,7 @@ function buildHctPcvReportBody(test) {
   const unit = hctResult?.unit || "%";
   const value = hctResult?.value || "-";
   const status = getCbcStatus(hctResult?.value, normalRange);
-  const statusText = status
+  const statusText = status && status.label !== "Normal"
     ? ` <span class="hct-status ${status.className}">${status.label}</span>`
     : "";
 
@@ -2462,7 +2477,7 @@ function buildMchReportBody(test) {
   const unit = mchResult?.unit || "pg";
   const value = mchResult?.value || "-";
   const status = getCbcStatus(mchResult?.value, normalRange);
-  const statusText = status
+  const statusText = status && status.label !== "Normal"
     ? ` <span class="mch-status ${status.className}">${status.label}</span>`
     : "";
 
@@ -2520,7 +2535,7 @@ function buildMchcReportBody(test) {
   const unit = mchcResult?.unit || "g/dL";
   const value = mchcResult?.value || "-";
   const status = getCbcStatus(mchcResult?.value, normalRange);
-  const statusText = status
+  const statusText = status && status.label !== "Normal"
     ? ` <span class="mchc-status ${status.className}">${status.label}</span>`
     : "";
 
@@ -3129,7 +3144,7 @@ function buildCoagulationProfileReportBody(test) {
     const range = parameter?.normal_range || definition.range;
     const unit = parameter?.unit || definition.unit;
     const status = getCbcStatus(parameter?.value, range);
-    const statusText = status
+    const statusText = status && status.label !== "Normal"
       ? ` <span class="coagulation-profile-status ${status.className}">${status.label}</span>`
       : "";
 
@@ -4813,7 +4828,7 @@ function buildGroupBStrepReportBody(test) {
   const status = getGroupBStrepStatus(result.value);
   const resultLabel = status?.resultLabel || result.value || "-";
   const referenceLabel = status?.referenceLabel || "Negative";
-  const sampleType = test.sample_type || "Vaginal / Rectal Swab";
+  const sampleType = test.sample_type || "Cardial";
 
   return `
     <table class="results-table gbs-table">
@@ -4826,13 +4841,13 @@ function buildGroupBStrepReportBody(test) {
     </table>
     <div class="single-analyte-notes gbs-notes">
       <div class="report-note-heading">Comments:</div>
-      <p>Neonatal sepsis is frequently attributed to Streptococcus group B and <em>E. coli</em> K1. Prompt recognition of causative agents is important for choosing suitable antibiotic treatment.</p>
+      <p>Neonatal sepsis is frequently attributed to Streptococcus group B and <em>E. coli</em> K1, whereas in older age groups, prevalent isolates include H. influenzae Type B, S. pneumoniae, and N. meningitidis A, B, C, Y, and W135. Prompt recognition of these causative agents is crucial for administering patients with the suitable antibiotic treatment.</p>
       <div class="report-note-heading">Interpretation:</div>
       <ol>
-        <li><strong>Negative Result:</strong> A negative result suggests that Group B Streptococcus antigen was not detected. During pregnancy, this indicates a lower risk of transmission to the newborn during delivery.</li>
-        <li><strong>Positive Result:</strong> A positive result indicates Group B Streptococcus antigen is present and may indicate colonization or infection. Preventive measures during labor and delivery may be considered.</li>
-        <li><strong>Interpretation in Pregnancy:</strong> Screening is commonly performed between 35 and 37 weeks of gestation. When positive, intrapartum antibiotic prophylaxis may be recommended to reduce transmission risk.</li>
-        <li><strong>Clinical Correlation:</strong> Interpret the result with the patient's clinical condition, medical history, and risk factors.</li>
+        <li><strong>Negative Result:</strong> A negative result suggests that the Group B Streptococcus antigen was not detected in the sample. In the context of pregnancy, a negative result indicates a lower risk of transmitting GBS to the newborn during delivery.</li>
+        <li><strong>Positive Result:</strong> A positive result indicates the presence of the Group B Streptococcus antigen. This finding suggests an increased risk of GBS colonization or infection. In the context of pregnancy, a positive result may prompt healthcare providers to take preventive measures during labor and delivery.</li>
+        <li><strong>Interpretation in Pregnancy:</strong> During pregnancy, women are often screened for GBS between 35 and 37 weeks of gestation. If the result is positive, intrapartum antibiotic prophylaxis (IAP) is typically recommended during labor to reduce the risk of GBS transmission to the newborn. The antibiotics are usually administered to the mother through an IV.</li>
+        <li><strong>Clinical Correlation:</strong> The interpretation of the GBS Antigen Detection test results should be done by a healthcare professional in the context of the patient's overall clinical condition, medical history, and risk factors. Positive results may lead to specific interventions to prevent GBS-related complications.</li>
       </ol>
     </div>
   `;
@@ -5577,6 +5592,104 @@ function buildToxoplasmaAntibodiesPanelReportBody(test) {
       <p>Toxoplasma gondii is an intracellular parasite that can only thrive within host cells and has a wide range of intermediate hosts, including humans. Human infection with this parasite, known as toxoplasmosis, typically occurs through the ingestion of food or water contaminated with cat feces or by consuming undercooked meat containing viable oocysts. Vertical transmission of the parasite through the placenta can also result in congenital toxoplasmosis.</p>
       <p>In most cases, toxoplasmosis in humans is asymptomatic. After an initial infection, Toxoplasma gondii can remain latent within the host for the host's lifetime, with the risk of reactivation being highest among individuals with compromised immune systems. Symptomatic presentations of toxoplasmosis in humans can include lymphadenopathy, encephalitis, myocarditis, and pneumonitis. The diagnosis of ocular toxoplasmosis can be aided by the presence of Toxoplasma IgG in the serum of individuals with eye lesions. Additionally, confirming the diagnosis of ocular toxoplasmosis can involve assessing antibody levels and detecting parasite DNA in the aqueous humor of the eye.</p>
       <p>Congenital toxoplasmosis occurs when a pregnant woman passes the infection to her fetus, either after acquiring a primary infection during pregnancy or, less commonly, when a previously acquired infection is reactivated. The transmission rate to the fetus can vary, typically ranging from 30% to 50%, depending on the stage of pregnancy. A definitive diagnosis of fetal infection involves the demonstration of Toxoplasma-specific IgM and IgA antibodies in fetal serum or the isolation of Toxoplasma from fetal white blood cells. This confirms the presence of the parasite in the fetus.</p>
+    </div>
+  `;
+}
+
+function getTorchProfileStatus(value, thresholds) {
+  const numericValue = Number(String(value || "").replace(/,/g, "").trim());
+  if (!Number.isFinite(numericValue)) return null;
+  if (numericValue < thresholds.negative) return { label: "Negative", className: "normal-val" };
+  if (thresholds.equivocal && numericValue < thresholds.equivocal) return { label: "Equivocal", className: "equivocal-val" };
+  return { label: "Positive", className: "high-val" };
+}
+
+function buildTorchProfileReportBody(test) {
+  const definitions = [
+    { label: "Toxoplasma IgG", aliases: ["Toxoplasma IgG", "Toxo IgG"], unit: "IU/mL", range: "< 7.20", thresholds: { negative: 7.2, equivocal: 8.8 }, interpretation: ["< 7.20", "7.20- <8.80", "≥8.80"] },
+    { label: "Toxoplasma IgM", aliases: ["Toxoplasma IgM", "Toxo IgM"], unit: "AU/mL", range: "< 10.00", thresholds: { negative: 10 }, interpretation: ["< 10.00", "", "≥10.00"] },
+    { label: "Rubella IgG", aliases: ["Rubella IgG"], unit: "IU/mL", range: "< 7.00", thresholds: { negative: 7, equivocal: 10 }, interpretation: ["< 7.00", "7.00- <10.00", "≥10.00"] },
+    { label: "Rubella IgM", aliases: ["Rubella IgM"], unit: "AU/mL", range: "< 20.00", thresholds: { negative: 20, equivocal: 25 }, interpretation: ["< 20.00", "20.00- <25.00", "≥25.00"] },
+    { label: "Cytomegalovirus IgG", aliases: ["Cytomegalovirus IgG", "CMV IgG"], unit: "U/mL", range: "< 12.00", thresholds: { negative: 12, equivocal: 14 }, interpretation: ["< 12.00", "12.00- <14.00", "≥14.00"] },
+    { label: "Cytomegalovirus IgM", aliases: ["Cytomegalovirus IgM", "CMV IgM"], unit: "U/mL", range: "< 18.00", thresholds: { negative: 18, equivocal: 22 }, interpretation: ["< 18.00", "18.00- <22.00", "≥22.00"] },
+    { label: "Herpes simplex virus 1+2 IgG", aliases: ["Herpes simplex virus 1+2 IgG", "HSV 1+2 IgG", "HSV IgG"], unit: "Index", range: "< 0.90", thresholds: { negative: 0.9, equivocal: 1.1 }, interpretation: ["< 0.90", "0.90- <1.10", "≥1.10"] },
+    { label: "Herpes simplex virus 1+2 IgM", aliases: ["Herpes simplex virus 1+2 IgM", "HSV 1+2 IgM", "HSV IgM"], unit: "Index", range: "< 0.90", thresholds: { negative: 0.9, equivocal: 1.1 }, interpretation: ["< 0.90", "0.90- <1.10", "≥1.10"] },
+  ];
+
+  const rows = definitions.map((definition) => {
+    const parameter = findReportParameter(test, definition.aliases) || {};
+    const value = parameter.value || "-";
+    const status = getTorchProfileStatus(value, definition.thresholds);
+    const statusText = status && status.label !== "Negative"
+      ? ` <span class="torch-profile-status ${status.className}">${status.label}</span>`
+      : "";
+    return `<tr><td><strong>${escapeHtml(definition.label)}</strong></td><td><span class="${status?.className || ""}">${escapeHtml(value)}</span>${statusText}</td><td>${escapeHtml(parameter.normal_range || definition.range)}</td><td>${escapeHtml(parameter.unit || definition.unit)}</td></tr>`;
+  }).join("");
+
+  const interpretationRows = definitions.map((definition) => `
+    <tr><td>${escapeHtml(definition.label)}</td><td>${escapeHtml(definition.unit)}</td><td>${escapeHtml(definition.interpretation[0])}</td><td>${escapeHtml(definition.interpretation[1])}</td><td>${escapeHtml(definition.interpretation[2])}</td></tr>
+  `).join("");
+
+  return `
+    <table class="results-table torch-profile-table">
+      <thead><tr><th style="width: 36%">Investigation</th><th style="width: 27%">Result</th><th style="width: 24%">Reference Value</th><th style="width: 13%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="torch-profile-section"><td colspan="4"><strong>TORCH PANEL, IgG &amp; IgM, SERUM</strong></td></tr>
+        ${rows}
+      </tbody>
+    </table>
+    <div class="report-template-notes torch-profile-notes">
+      <div class="report-note-heading">Interpretation</div>
+      <table class="report-reference-table torch-profile-interpretation-table"><thead><tr><th>Infection</th><th>Unit</th><th>Negative</th><th>Equivocal</th><th>Positive</th></tr></thead><tbody>${interpretationRows}</tbody></table>
+    </div>
+  `;
+}
+
+function getTnfAlphaStatus(value) {
+  const numericValue = Number(String(value || "").replace(/,/g, "").trim());
+  if (!Number.isFinite(numericValue)) return null;
+  return numericValue <= 2.8
+    ? { label: "Negative", className: "normal-val" }
+    : { label: "Positive", className: "high-val" };
+}
+
+function buildTnfAlphaReportBody(test) {
+  const result = findReportParameter(test, ["TUMOUR NECROSIS FACTOR (TNF), ALPHA", "TNF Alpha", "TNF-α", "Tumor Necrosis Factor Alpha", "Result"])
+    || (test.parameters || [])[0];
+  const value = result?.value || "-";
+  const status = getTnfAlphaStatus(value);
+  const normalRange = result?.normal_range || "< = 2.80";
+  const unit = result?.unit || "pg/mL";
+
+  return `
+    <table class="results-table tnf-alpha-table">
+      <thead><tr><th style="width: 42%">Investigation</th><th style="width: 25%">Result</th><th style="width: 23%">Reference Value</th><th style="width: 10%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="tnf-alpha-sample-row"><td><strong>Sample Type</strong></td><td>${escapeHtml(test.sample_type || "Plasma (1 ml)")}</td><td colspan="2"><strong>TAT :</strong> 2 days (Normal: 2 - 8 days)</td></tr>
+        <tr><td><strong>TUMOUR NECROSIS FACTOR (TNF), ALPHA</strong><div class="tnf-alpha-method">CLIA</div></td><td><span class="${status?.className || ""}">${escapeHtml(value)}</span>${status ? ` <span class="tnf-alpha-status ${status.className}">${status.label}</span>` : ""}</td><td>${escapeHtml(normalRange)}</td><td>${escapeHtml(unit)}</td></tr>
+      </tbody>
+    </table>
+    <div class="tnf-alpha-notes">
+      <div class="report-note-heading">Comments:</div>
+      <p>TNF-α (Tumor Necrosis Factor-alpha), a proinflammatory cytokine with various functions, including its effects on tumor control and therapeutic applications.</p>
+      <div class="report-note-heading">TNF-α and Its Production:</div>
+      <ul>
+        <li>TNF-α is a proinflammatory cytokine that can induce apoptosis (programmed cell death) and is involved in various physiological processes.</li>
+        <li>Macrophages and monocytes are the primary producers of TNF-α, but activated T cells, mast cells, and keratinocytes can also produce it to a lesser extent.</li>
+      </ul>
+      <div class="report-note-heading">Effects of TNF-α:</div>
+      <ul><li>TNF-α has multiple effects on different aspects of the immune system and cellular functions. These effects include apoptosis, adhesion and cellular trafficking, angiogenesis (formation of new blood vessels), myocyte proliferation, fibrosis, phagocytosis (cellular engulfment), cytokine production, leucocyte/macrophage function, inflammation, and tumor control.</li></ul>
+      <div class="report-note-heading">Effect of TNF-α on Tumor Control:</div>
+      <ul>
+        <li>TNF-α can have a direct cytotoxic effect on tumor cells while sparing normal cells.</li>
+        <li>It can modify vasculature to enhance the migration of lymphocytes (white blood cells) into tumors, supporting the immune response against cancer.</li>
+        <li>TNF-α stimulates the immune response by activating cells that mediate anti-tumor immunity.</li>
+      </ul>
+      <div class="report-note-heading">Therapeutic Applications:</div>
+      <ul>
+        <li>Diseases directly related to excessive TNF-α production, such as septic shock, graft-versus-host disease, and lupus nephritis, may be amenable to treatment with anti-TNF-α antibodies or anti-inflammatory agents that reduce TNF production. This approach can help mitigate the inflammatory response associated with these conditions.</li>
+        <li>TNF-α has been used in the chemotherapy of certain tumors, including melanomas and advanced neoplastic diseases. However, the text notes that its success in this regard has been limited.</li>
+      </ul>
     </div>
   `;
 }
@@ -9039,6 +9152,8 @@ function buildReportHtml(reportData) {
     || isPapSmearTest(singleTest)
   ) ? singleTest : null;
   const toxoplasmaAntibodiesPanelTest = singleTest && isToxoplasmaAntibodiesPanelTest(singleTest) ? singleTest : null;
+  const torchProfileTest = singleTest && isTorchProfileTest(singleTest) ? singleTest : null;
+  const tnfAlphaTest = singleTest && isTnfAlphaTest(singleTest) ? singleTest : null;
   const rheumatoidFactorTest = singleTest && isRheumatoidFactorTest(singleTest) ? singleTest : null;
   const asoTiterTest = singleTest && isAsoTiterTest(singleTest) ? singleTest : null;
   const hsCrpTest = singleTest && isHsCrpTest(singleTest) ? singleTest : null;
@@ -9219,6 +9334,8 @@ function buildReportHtml(reportData) {
         if (reportData.tests.length === 1 && isSickleCellMutationAnalysisTest(t)) return "SICKLE CELL ANEMIA MUTATION ANALYSIS";
         if (reportData.tests.length === 1 && isBeta2GlycoproteinPanelTest(t)) return "BETA 2 GLYCOPROTEIN I, PANEL";
         if (reportData.tests.length === 1 && isToxoplasmaAntibodiesPanelTest(t)) return "TOXOPLASMA ANTIBODIES PANEL";
+        if (reportData.tests.length === 1 && isTorchProfileTest(t)) return "TORCH PROFILE";
+        if (reportData.tests.length === 1 && isTnfAlphaTest(t)) return "TUMOUR NECROSIS FACTOR (TNF), ALPHA";
         if (reportData.tests.length === 1 && isRheumatoidFactorTest(t)) return "RHEUMATOID FACTOR, RA";
         if (reportData.tests.length === 1 && isAsoTiterTest(t)) return "ANTISTREPTOLYSIN O, ASO TITER";
         if (reportData.tests.length === 1 && isHsCrpTest(t)) return "HS-CRP (HIGH SENSITIVITY C-REACTIVE PROTEIN)";
@@ -9413,6 +9530,7 @@ function buildReportHtml(reportData) {
     <html lang="en">
     <head>
       <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
       <style>
         @page {
           size: A4;
@@ -9434,6 +9552,10 @@ function buildReportHtml(reportData) {
             min-height: 100%;
             padding: 16px;
             background: #e9efee;
+            /* Prevent mobile browsers from selectively enlarging note and
+               description text when a report is opened through its QR link. */
+            -webkit-text-size-adjust: none;
+            text-size-adjust: none;
           }
           body {
             position: relative;
@@ -9442,6 +9564,14 @@ function buildReportHtml(reportData) {
             margin: 0 auto;
             padding: ${reportHeaderSpaceMm}mm 10mm ${reportFooterSpaceMm}mm;
             box-shadow: 0 14px 34px rgba(15, 23, 42, 0.18);
+          }
+        }
+        /* Android browsers may otherwise boost only selected paragraphs in
+           long report descriptions. This applies only to the QR/mobile view. */
+        @media screen and (max-width: 767px) {
+          html, body, body * {
+            -webkit-text-size-adjust: none !important;
+            text-size-adjust: none !important;
           }
         }
         .letterhead-background {
@@ -9596,6 +9726,15 @@ function buildReportHtml(reportData) {
         .report-result-status { margin-left: 8px; font-size: 11px; font-weight: bold; white-space: nowrap; }
         .b2gpi-table td, .b2gpi-table th, .toxoplasma-table td, .toxoplasma-table th, .hs-crp-table td, .hs-crp-table th { font-size: 10.5px; line-height: 1.12; padding: 4px; }
         .b2gpi-section td, .toxoplasma-section td { padding-top: 6px !important; padding-bottom: 4px !important; }
+        .torch-profile-table td, .torch-profile-table th, .tnf-alpha-table td, .tnf-alpha-table th { font-size: 10.5px; line-height: 1.12; padding: 4px; }
+        .torch-profile-section td { font-weight: bold; text-transform: uppercase; padding-top: 6px !important; padding-bottom: 4px !important; }
+        .torch-profile-interpretation-table { width: 72%; }
+        .torch-profile-status, .tnf-alpha-status { margin-left: 8px; font-weight: bold; white-space: nowrap; }
+        .tnf-alpha-method { font-size: 8px; line-height: 1; color: #333; font-weight: normal; margin-top: 1px; }
+        .tnf-alpha-notes { margin: 5px 5px 3px; font-size: 10px; line-height: 1.2; }
+        .tnf-alpha-notes p { margin: 3px 0 7px; text-align: justify; }
+        .tnf-alpha-notes ul { margin: 2px 0 7px; padding-left: 18px; }
+        .tnf-alpha-notes li { margin-bottom: 2px; text-align: justify; }
         .report-template-notes { margin: 5px 5px 3px; font-size: 10px; line-height: 1.2; }
         .report-template-notes p { margin: 3px 0 6px; text-align: justify; }
         .report-template-notes ul, .report-template-notes ol { margin: 2px 0 6px; padding-left: 18px; }
@@ -10353,7 +10492,7 @@ function buildReportHtml(reportData) {
 
         <div class="test-title">${testTitle}</div>
 
-        ${beta2GlycoproteinPanelTest ? buildBeta2GlycoproteinPanelReportBody(beta2GlycoproteinPanelTest) : toxoplasmaAntibodiesPanelTest ? buildToxoplasmaAntibodiesPanelReportBody(toxoplasmaAntibodiesPanelTest) : rheumatoidFactorTest ? buildRheumatoidFactorReportBody(rheumatoidFactorTest) : asoTiterTest ? buildAsoTiterReportBody(asoTiterTest) : hsCrpTest ? buildHsCrpReportBody(hsCrpTest) : typhidotTest ? buildTyphidotReportBody(typhidotTest) : vdrlTest ? buildVdrlReportBody(vdrlTest) : havIggTest ? buildHavIggReportBody(havIggTest) : havIgmTest ? buildHavIgmReportBody(havIgmTest) : hcvRapidScreeningTest ? buildHcvRapidScreeningReportBody(hcvRapidScreeningTest) : rtPcrTest ? buildRtPcrReportBody(rtPcrTest) : tpmtTest ? buildTpmtGenotypingReportBody(tpmtTest) : cysticFibrosisNewbornTest ? buildCysticFibrosisNewbornScreenReportBody(cysticFibrosisNewbornTest) : kftTest ? buildKftReportBody(kftTest) : factorIiTest ? buildFactorIiReportBody(factorIiTest) : karyotypeTest ? buildKaryotypeReportBody(karyotypeTest) : lipidProfileTest ? buildLipidProfileReportBody(lipidProfileTest) : lftTest ? buildLftReportBody(lftTest) : hba1cTest ? buildHba1cReportBody(hba1cTest) : vitaminDTest ? buildVitaminDReportBody(vitaminDTest) : vitaminCTest ? buildVitaminCReportBody(vitaminCTest) : vitaminB12Test ? buildVitaminB12ReportBody(vitaminB12Test) : randomBloodSugarTest ? buildRandomBloodSugarReportBody(randomBloodSugarTest) : fastingBloodSugarTest ? buildFastingBloodSugarReportBody(fastingBloodSugarTest) : bTypeNatriureticPeptideTest ? buildBTypeNatriureticPeptideReportBody(bTypeNatriureticPeptideTest) : creatineKinaseTest ? buildCreatineKinaseReportBody(creatineKinaseTest) : beta2MicroglobulinTest ? buildBeta2MicroglobulinReportBody(beta2MicroglobulinTest) : altSgptTest ? buildAltSgptReportBody(altSgptTest) : dnphTest ? buildDnphReportBody(dnphTest) : prealbuminTest ? buildPrealbuminReportBody(prealbuminTest) : haptoglobinTest ? buildHaptoglobinReportBody(haptoglobinTest) : gramStainBacterialVaginosisTest ? buildGramStainBacterialVaginosisReportBody(gramStainBacterialVaginosisTest) : aldolaseTest ? buildAldolaseReportBody(aldolaseTest) : urineProteinCreatinineRatioTest ? buildUrineProteinCreatinineRatioReportBody(urineProteinCreatinineRatioTest) : postPrandialBloodSugarTest ? buildPostPrandialBloodSugarReportBody(postPrandialBloodSugarTest) : tacrolimusTest ? buildTacrolimusReportBody(tacrolimusTest) : phosphorusTest ? buildPhosphorusReportBody(phosphorusTest) : alkalinePhosphataseTest ? buildAlkalinePhosphataseReportBody(alkalinePhosphataseTest) : clotRetractionTest ? buildClotRetractionReportBody(clotRetractionTest) : vitaminETest ? buildVitaminEReportBody(vitaminETest) : vitaminB9Test ? buildVitaminB9ReportBody(vitaminB9Test) : vitaminKTest ? buildVitaminKReportBody(vitaminKTest) : ldlCholesterolTest ? buildLdlCholesterolReportBody(ldlCholesterolTest) : hdlCholesterolTest ? buildHdlCholesterolReportBody(hdlCholesterolTest) : indirectBilirubinTest ? buildIndirectBilirubinReportBody(indirectBilirubinTest) : calciumTest ? buildCalciumReportBody(calciumTest) : ferritinTest ? buildFerritinReportBody(ferritinTest) : cPeptideTest ? buildCPeptideReportBody(cPeptideTest) : vldlCholesterolTest ? buildVldlCholesterolReportBody(vldlCholesterolTest) : comprehensiveMetabolicPanelTest ? buildComprehensiveMetabolicPanelReportBody(comprehensiveMetabolicPanelTest) : electrolyteProfileTest ? buildElectrolyteProfileReportBody(electrolyteProfileTest) : potassiumTest ? buildPotassiumReportBody(potassiumTest) : astSgotTest ? buildAstSgotReportBody(astSgotTest) : globulinTest ? buildGlobulinReportBody(globulinTest) : albuminTest ? buildAlbuminReportBody(albuminTest) : digoxinTest ? buildDigoxinReportBody(digoxinTest) : bunTest ? buildBunReportBody(bunTest) : cbcTest ? buildCbcReportBody(cbcTest, cbcVariant) : bloodGroupTest ? buildBloodGroupReportBody(bloodGroupTest) : dDimerTest ? buildDDimerReportBody(dDimerTest) : sickleCellMutationTest ? buildSickleCellMutationAnalysisReportBody(sickleCellMutationTest) : rbcTest ? buildRbcReportBody(rbcTest) : plateletTest ? buildPlateletReportBody(plateletTest) : tlcTest ? buildTlcReportBody(tlcTest) : absoluteCountTest ? buildAbsoluteCountReportBody(absoluteCountTest, absoluteCountTemplate) : mchcTest ? buildMchcReportBody(mchcTest) : mchTest ? buildMchReportBody(mchTest) : mcvTest ? buildMcvReportBody(mcvTest) : mpvTest ? buildMpvReportBody(mpvTest) : hctPcvTest ? buildHctPcvReportBody(hctPcvTest) : esrTest ? buildEsrReportBody(esrTest) : pdwTest ? buildPdwReportBody(pdwTest) : hemoglobinTest ? buildHemoglobinReportBody(hemoglobinTest, reportData.patient.gender) : ptTest ? buildProthrombinTimeReportBody(ptTest) : apttTest ? buildApttReportBody(apttTest) : dlcTest ? buildDlcReportBody(dlcTest) : indirectCoombsTest ? buildIndirectCoombsReportBody(indirectCoombsTest) : directCoombsTest ? buildDirectCoombsReportBody(directCoombsTest) : fibrinogenTest ? buildFibrinogenReportBody(fibrinogenTest) : reticulocyteTest ? buildReticulocyteReportBody(reticulocyteTest) : clottingTimeTest ? buildClottingTimeReportBody(clottingTimeTest) : bleedingTimeTest ? buildBleedingTimeReportBody(bleedingTimeTest) : coagulationProfileTest ? buildCoagulationProfileReportBody(coagulationProfileTest) : factorVTest ? buildFactorVReportBody(factorVTest) : factorViiTest ? buildFactorViiReportBody(factorViiTest) : factorIxTest ? buildFactorIxReportBody(factorIxTest) : factorXTest ? buildFactorXReportBody(factorXTest) : factorXiTest ? buildFactorXiReportBody(factorXiTest) : factorViiiTest ? buildFactorViiiReportBody(factorViiiTest) : peripheralSmearTest ? buildPeripheralBloodSmearReportBody(peripheralSmearTest) : factorXiiTest ? buildFactorXiiReportBody(factorXiiTest) : factorXiiiTest ? buildFactorXiiiReportBody(factorXiiiTest) : `
+        ${beta2GlycoproteinPanelTest ? buildBeta2GlycoproteinPanelReportBody(beta2GlycoproteinPanelTest) : toxoplasmaAntibodiesPanelTest ? buildToxoplasmaAntibodiesPanelReportBody(toxoplasmaAntibodiesPanelTest) : torchProfileTest ? buildTorchProfileReportBody(torchProfileTest) : tnfAlphaTest ? buildTnfAlphaReportBody(tnfAlphaTest) : rheumatoidFactorTest ? buildRheumatoidFactorReportBody(rheumatoidFactorTest) : asoTiterTest ? buildAsoTiterReportBody(asoTiterTest) : hsCrpTest ? buildHsCrpReportBody(hsCrpTest) : typhidotTest ? buildTyphidotReportBody(typhidotTest) : vdrlTest ? buildVdrlReportBody(vdrlTest) : havIggTest ? buildHavIggReportBody(havIggTest) : havIgmTest ? buildHavIgmReportBody(havIgmTest) : hcvRapidScreeningTest ? buildHcvRapidScreeningReportBody(hcvRapidScreeningTest) : rtPcrTest ? buildRtPcrReportBody(rtPcrTest) : tpmtTest ? buildTpmtGenotypingReportBody(tpmtTest) : cysticFibrosisNewbornTest ? buildCysticFibrosisNewbornScreenReportBody(cysticFibrosisNewbornTest) : kftTest ? buildKftReportBody(kftTest) : factorIiTest ? buildFactorIiReportBody(factorIiTest) : karyotypeTest ? buildKaryotypeReportBody(karyotypeTest) : lipidProfileTest ? buildLipidProfileReportBody(lipidProfileTest) : lftTest ? buildLftReportBody(lftTest) : hba1cTest ? buildHba1cReportBody(hba1cTest) : vitaminDTest ? buildVitaminDReportBody(vitaminDTest) : vitaminCTest ? buildVitaminCReportBody(vitaminCTest) : vitaminB12Test ? buildVitaminB12ReportBody(vitaminB12Test) : randomBloodSugarTest ? buildRandomBloodSugarReportBody(randomBloodSugarTest) : fastingBloodSugarTest ? buildFastingBloodSugarReportBody(fastingBloodSugarTest) : bTypeNatriureticPeptideTest ? buildBTypeNatriureticPeptideReportBody(bTypeNatriureticPeptideTest) : creatineKinaseTest ? buildCreatineKinaseReportBody(creatineKinaseTest) : beta2MicroglobulinTest ? buildBeta2MicroglobulinReportBody(beta2MicroglobulinTest) : altSgptTest ? buildAltSgptReportBody(altSgptTest) : dnphTest ? buildDnphReportBody(dnphTest) : prealbuminTest ? buildPrealbuminReportBody(prealbuminTest) : haptoglobinTest ? buildHaptoglobinReportBody(haptoglobinTest) : gramStainBacterialVaginosisTest ? buildGramStainBacterialVaginosisReportBody(gramStainBacterialVaginosisTest) : aldolaseTest ? buildAldolaseReportBody(aldolaseTest) : urineProteinCreatinineRatioTest ? buildUrineProteinCreatinineRatioReportBody(urineProteinCreatinineRatioTest) : postPrandialBloodSugarTest ? buildPostPrandialBloodSugarReportBody(postPrandialBloodSugarTest) : tacrolimusTest ? buildTacrolimusReportBody(tacrolimusTest) : phosphorusTest ? buildPhosphorusReportBody(phosphorusTest) : alkalinePhosphataseTest ? buildAlkalinePhosphataseReportBody(alkalinePhosphataseTest) : clotRetractionTest ? buildClotRetractionReportBody(clotRetractionTest) : vitaminETest ? buildVitaminEReportBody(vitaminETest) : vitaminB9Test ? buildVitaminB9ReportBody(vitaminB9Test) : vitaminKTest ? buildVitaminKReportBody(vitaminKTest) : ldlCholesterolTest ? buildLdlCholesterolReportBody(ldlCholesterolTest) : hdlCholesterolTest ? buildHdlCholesterolReportBody(hdlCholesterolTest) : indirectBilirubinTest ? buildIndirectBilirubinReportBody(indirectBilirubinTest) : calciumTest ? buildCalciumReportBody(calciumTest) : ferritinTest ? buildFerritinReportBody(ferritinTest) : cPeptideTest ? buildCPeptideReportBody(cPeptideTest) : vldlCholesterolTest ? buildVldlCholesterolReportBody(vldlCholesterolTest) : comprehensiveMetabolicPanelTest ? buildComprehensiveMetabolicPanelReportBody(comprehensiveMetabolicPanelTest) : electrolyteProfileTest ? buildElectrolyteProfileReportBody(electrolyteProfileTest) : potassiumTest ? buildPotassiumReportBody(potassiumTest) : astSgotTest ? buildAstSgotReportBody(astSgotTest) : globulinTest ? buildGlobulinReportBody(globulinTest) : albuminTest ? buildAlbuminReportBody(albuminTest) : digoxinTest ? buildDigoxinReportBody(digoxinTest) : bunTest ? buildBunReportBody(bunTest) : cbcTest ? buildCbcReportBody(cbcTest, cbcVariant) : bloodGroupTest ? buildBloodGroupReportBody(bloodGroupTest) : dDimerTest ? buildDDimerReportBody(dDimerTest) : sickleCellMutationTest ? buildSickleCellMutationAnalysisReportBody(sickleCellMutationTest) : rbcTest ? buildRbcReportBody(rbcTest) : plateletTest ? buildPlateletReportBody(plateletTest) : tlcTest ? buildTlcReportBody(tlcTest) : absoluteCountTest ? buildAbsoluteCountReportBody(absoluteCountTest, absoluteCountTemplate) : mchcTest ? buildMchcReportBody(mchcTest) : mchTest ? buildMchReportBody(mchTest) : mcvTest ? buildMcvReportBody(mcvTest) : mpvTest ? buildMpvReportBody(mpvTest) : hctPcvTest ? buildHctPcvReportBody(hctPcvTest) : esrTest ? buildEsrReportBody(esrTest) : pdwTest ? buildPdwReportBody(pdwTest) : hemoglobinTest ? buildHemoglobinReportBody(hemoglobinTest, reportData.patient.gender) : ptTest ? buildProthrombinTimeReportBody(ptTest) : apttTest ? buildApttReportBody(apttTest) : dlcTest ? buildDlcReportBody(dlcTest) : indirectCoombsTest ? buildIndirectCoombsReportBody(indirectCoombsTest) : directCoombsTest ? buildDirectCoombsReportBody(directCoombsTest) : fibrinogenTest ? buildFibrinogenReportBody(fibrinogenTest) : reticulocyteTest ? buildReticulocyteReportBody(reticulocyteTest) : clottingTimeTest ? buildClottingTimeReportBody(clottingTimeTest) : bleedingTimeTest ? buildBleedingTimeReportBody(bleedingTimeTest) : coagulationProfileTest ? buildCoagulationProfileReportBody(coagulationProfileTest) : factorVTest ? buildFactorVReportBody(factorVTest) : factorViiTest ? buildFactorViiReportBody(factorViiTest) : factorIxTest ? buildFactorIxReportBody(factorIxTest) : factorXTest ? buildFactorXReportBody(factorXTest) : factorXiTest ? buildFactorXiReportBody(factorXiTest) : factorViiiTest ? buildFactorViiiReportBody(factorViiiTest) : peripheralSmearTest ? buildPeripheralBloodSmearReportBody(peripheralSmearTest) : factorXiiTest ? buildFactorXiiReportBody(factorXiiTest) : factorXiiiTest ? buildFactorXiiiReportBody(factorXiiiTest) : `
         <table class="results-table">
           <thead>
             <tr>
@@ -10697,6 +10836,7 @@ function buildMultiTestReportHtml(reportData, tests) {
     <html lang="en">
     <head>
       <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
       <style>
         ${firstPage.style}
         body.multi-report { width: auto; min-height: auto; margin: 0; padding: 0; box-shadow: none; }

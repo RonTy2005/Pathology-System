@@ -3,10 +3,12 @@ const express = require("express");
 const { all, get } = require("../db/helpers");
 const { getBusinessSettings } = require("../services/businessSettingsService");
 const { logAction } = require("../services/logService");
+const { getPublicPortalAvailability } = require("../services/publicPortalAvailabilityService");
 const { buildReportHtml } = require("../utils/reportFormatter");
 const { buildBillHtml } = require("../utils/billFormatter");
 const { getPatientPortalReportUrl, getPatientPortalUrl, getTestReportPreviewUrl } = require("../utils/patientPortal");
 const { getReportBundle, getBillBundle } = require("./visitRoutes");
+const { getBundleComponentTests } = require("../services/testBundleService");
 
 const patientPortalRouter = express.Router();
 
@@ -110,6 +112,20 @@ async function resolvePortalVisit(req, res) {
     return null;
   }
 
+  const businessSettings = await getBusinessSettings();
+  const availability = getPublicPortalAvailability(businessSettings);
+  if (!availability.isOpen) {
+    setPrivateHeaders(res);
+    res.status(503).json({
+      message: availability.message,
+      portalOpen: false,
+      closedOutsideBusinessHours: true,
+      businessOpeningTime: availability.openingTime,
+      businessClosingTime: availability.closingTime,
+    });
+    return null;
+  }
+
   const visit = await getPortalVisit(token);
   if (!visit) {
     res.status(404).json({ message: "Report link not found." });
@@ -146,6 +162,32 @@ patientPortalRouter.get("/sample/test/:testId/report", async (req, res, next) =>
        ORDER BY display_order ASC, id ASC`,
       [test.id]
     );
+    const bundleComponents = await getBundleComponentTests(test.id);
+    const previewTests = bundleComponents.length
+      ? await Promise.all(bundleComponents.map(async (component) => {
+          const componentParameters = await all(
+            `SELECT parameter_name, unit, normal_range, entry_mode
+             FROM test_parameters
+             WHERE test_id = ?
+             ORDER BY display_order ASC, id ASC`,
+            [component.id]
+          );
+          return {
+            ...component,
+            test_id: component.id,
+            parameters: componentParameters.map((parameter) => ({
+              ...parameter,
+              value: getSampleParameterValue(parameter),
+            })),
+          };
+        }))
+      : [{
+          ...test,
+          parameters: parameters.map((parameter) => ({
+            ...parameter,
+            value: getSampleParameterValue(parameter),
+          })),
+        }];
     const businessSettings = await getBusinessSettings({
       includeLetterhead: true,
       includeBusinessLogo: true,
@@ -178,13 +220,7 @@ patientPortalRouter.get("/sample/test/:testId/report", async (req, res, next) =>
         specialization: "General Physician",
       },
       associate: null,
-      tests: [{
-        ...test,
-        parameters: parameters.map((parameter) => ({
-          ...parameter,
-          value: getSampleParameterValue(parameter),
-        })),
-      }],
+      tests: previewTests,
       businessName: businessSettings.businessName,
       facilityType: businessSettings.facilityType,
       address: businessSettings.address,

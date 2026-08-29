@@ -27,6 +27,9 @@ const patientNameResults = document.getElementById("patientNameResults");
 const newPatientBillingHistoryCard = document.getElementById("newPatientBillingHistoryCard");
 const newPatientBillingHistory = document.getElementById("newPatientBillingHistory");
 let newPatientHistoryTimer = null;
+let recentVisitsUsesTodayFilter = true;
+let recentVisitsBusinessDate = "";
+let recentVisitsBusinessDayWatcher = null;
 
 async function loadAssociates() {
   console.log("TOP LEVEL loadAssociates called");
@@ -547,65 +550,152 @@ async function searchDoctors(term) {
   }
 }
 
+function normaliseTestName(value) {
+  return String(value || "").trim().replace(/\s+/g, " ").toLocaleLowerCase();
+}
+
+function addNewRegistrationTest({ name, price, targetTests, isOutside = false, externalLabName = "", onChange }) {
+  const cleanName = String(name || "").trim().replace(/\s+/g, " ");
+  const hasPrice = String(price ?? "").trim() !== "";
+  const numericPrice = Number(price);
+
+  if (cleanName.length < 2 || !hasPrice || !Number.isFinite(numericPrice) || numericPrice <= 0) {
+    alert("Please enter a test name and a valid price.");
+    return false;
+  }
+
+  if (targetTests.some((test) => normaliseTestName(test.name) === normaliseTestName(cleanName))) {
+    alert("This test is already selected.");
+    return false;
+  }
+
+  targetTests.push({
+    id: null,
+    tempId: `custom-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    name: cleanName,
+    price: numericPrice,
+    isOutside: Boolean(isOutside),
+    externalLabName: isOutside ? (externalLabName || "Serum") : "",
+    isCustom: true,
+  });
+  onChange();
+  return true;
+}
+
+function promptForNewRegistrationTest(name, targetTests, onChange) {
+  const cleanName = String(name || "").trim().replace(/\s+/g, " ");
+  if (cleanName.length < 2) return false;
+
+  const price = window.prompt(
+    `Enter the price for "${cleanName}". It will be saved to the test catalogue when this registration is saved.`,
+    ""
+  );
+  if (price === null) return false;
+
+  return addNewRegistrationTest({ name: cleanName, price, targetTests, onChange });
+}
+
 async function searchTests(term) {
-  if (!term.trim()) {
+  const requestedName = String(term || "").trim().replace(/\s+/g, " ");
+  if (!requestedName) {
     testResults.innerHTML = "";
     return;
   }
   const data = await API.request(`/api/tests?query=${encodeURIComponent(term)}`);
-  testResults.innerHTML = data.tests
+  const tests = data.tests || [];
+  const hasExactMatch = tests.some((test) => normaliseTestName(test.name) === normaliseTestName(requestedName));
+  const addNewTestOption = !hasExactMatch
+    ? `
+        <button class="result-btn" data-add-new-test-name="${escapeHtml(requestedName)}" type="button">
+          <strong>+ Add “${escapeHtml(requestedName)}” as a new test</strong><br />
+          <span>Enter its price; it will be saved in the test catalogue.</span>
+        </button>
+      `
+    : "";
+
+  testResults.innerHTML = tests
     .slice(0, 8)
     .map(
       (test) => `
         <button class="result-btn" data-test-id="${test.id}" type="button">
           <strong>${test.name}</strong><br />
-          <span>${test.category || "General"} • ${currency(test.price)}</span>
+          <span>${test.is_bundle ? `Profile • Includes ${test.bundle_item_count} tests` : (test.category || "General")} • ${currency(test.is_bundle ? test.bundle_price : test.price)}</span>
         </button>
       `
     )
-    .join("");
+    .join("") + addNewTestOption;
 
   testResults.querySelectorAll("[data-test-id]").forEach((button) => {
     button.addEventListener("click", () => {
       const test = data.tests.find((item) => item.id === Number(button.dataset.testId));
       if (!selectedTests.some((item) => item.id === test.id)) {
-        selectedTests.push({ ...test, isOutside: false, externalLabName: "" });
+        selectedTests.push({ ...test, price: test.is_bundle ? Number(test.bundle_price) : test.price, isOutside: false, externalLabName: "" });
       }
       testSearch.value = "";
       testResults.innerHTML = "";
       renderSelectedTests();
     });
   });
+
+  testResults.querySelectorAll("[data-add-new-test-name]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (promptForNewRegistrationTest(button.dataset.addNewTestName, selectedTests, renderSelectedTests)) {
+        testSearch.value = "";
+        testResults.innerHTML = "";
+      }
+    });
+  });
 }
 
 async function searchEditTests(term) {
-  if (!term.trim()) {
+  const requestedName = String(term || "").trim().replace(/\s+/g, " ");
+  if (!requestedName) {
     editTestResults.innerHTML = "";
     return;
   }
 
   const data = await API.request(`/api/tests?query=${encodeURIComponent(term)}`);
-  editTestResults.innerHTML = data.tests
+  const tests = data.tests || [];
+  const hasExactMatch = tests.some((test) => normaliseTestName(test.name) === normaliseTestName(requestedName));
+  const addNewTestOption = !hasExactMatch
+    ? `
+        <button class="result-btn" data-add-edit-new-test-name="${escapeHtml(requestedName)}" type="button">
+          <strong>+ Add “${escapeHtml(requestedName)}” as a new test</strong><br />
+          <span>Enter its price; it will be saved in the test catalogue.</span>
+        </button>
+      `
+    : "";
+
+  editTestResults.innerHTML = tests
     .slice(0, 8)
     .map(
       (test) => `
         <button class="result-btn" data-edit-test-id="${test.id}" type="button">
           <strong>${test.name}</strong><br />
-          <span>${test.category || "General"} • ${currency(test.price)}</span>
+          <span>${test.is_bundle ? `Profile • Includes ${test.bundle_item_count} tests` : (test.category || "General")} • ${currency(test.is_bundle ? test.bundle_price : test.price)}</span>
         </button>
       `
     )
-    .join("");
+    .join("") + addNewTestOption;
 
   editTestResults.querySelectorAll("[data-edit-test-id]").forEach((button) => {
     button.addEventListener("click", () => {
       const test = data.tests.find((item) => item.id === Number(button.dataset.editTestId));
       if (!editSelectedTests.some((item) => item.id === test.id)) {
-        editSelectedTests.push({ ...test, isOutside: false, externalLabName: "" });
+        editSelectedTests.push({ ...test, price: test.is_bundle ? Number(test.bundle_price) : test.price, isOutside: false, externalLabName: "" });
       }
       editTestSearch.value = "";
       editTestResults.innerHTML = "";
       renderEditSelectedTests();
+    });
+  });
+
+  editTestResults.querySelectorAll("[data-add-edit-new-test-name]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (promptForNewRegistrationTest(button.dataset.addEditNewTestName, editSelectedTests, renderEditSelectedTests)) {
+        editTestSearch.value = "";
+        editTestResults.innerHTML = "";
+      }
     });
   });
 }
@@ -832,55 +922,42 @@ patientPhoneInput.addEventListener("input", () => {
   }, 300);
 });
 
-// Manual Outside Test Handlers
+// New tests can be registered from the Outside tab too. The backend turns these
+// into reusable catalogue tests while retaining their outside-lab details.
 document.getElementById("addOutsideTestBtn")?.addEventListener("click", () => {
-  const name = document.getElementById("outsideTestName").value.trim();
-  const price = Number(document.getElementById("outsideTestPrice").value || 0);
+  const name = document.getElementById("outsideTestName").value;
+  const price = document.getElementById("outsideTestPrice").value;
   const lab = document.getElementById("outsideLabName").value.trim();
 
-  if (!name || price <= 0) {
-    alert("Please enter a valid test name and price.");
-    return;
-  }
-
-  selectedTests.push({
-    id: null,
-    tempId: "custom-" + Date.now(),
+  if (addNewRegistrationTest({
     name,
     price,
+    targetTests: selectedTests,
     isOutside: true,
-    externalLabName: lab || "Serum",
-    isCustom: true
-  });
-
-  document.getElementById("outsideTestName").value = "";
-  document.getElementById("outsideTestPrice").value = "";
-  renderSelectedTests();
+    externalLabName: lab,
+    onChange: renderSelectedTests,
+  })) {
+    document.getElementById("outsideTestName").value = "";
+    document.getElementById("outsideTestPrice").value = "";
+  }
 });
 
 document.getElementById("addEditOutsideTestBtn")?.addEventListener("click", () => {
-  const name = document.getElementById("editOutsideTestName").value.trim();
-  const price = Number(document.getElementById("editOutsideTestPrice").value || 0);
+  const name = document.getElementById("editOutsideTestName").value;
+  const price = document.getElementById("editOutsideTestPrice").value;
   const lab = document.getElementById("editOutsideLabName").value.trim();
 
-  if (!name || price <= 0) {
-    alert("Please enter a valid test name and price.");
-    return;
-  }
-
-  editSelectedTests.push({
-    id: null,
-    tempId: "custom-" + Date.now(),
+  if (addNewRegistrationTest({
     name,
     price,
+    targetTests: editSelectedTests,
     isOutside: true,
-    externalLabName: lab || "Serum",
-    isCustom: true
-  });
-
-  document.getElementById("editOutsideTestName").value = "";
-  document.getElementById("editOutsideTestPrice").value = "";
-  renderEditSelectedTests();
+    externalLabName: lab,
+    onChange: renderEditSelectedTests,
+  })) {
+    document.getElementById("editOutsideTestName").value = "";
+    document.getElementById("editOutsideTestPrice").value = "";
+  }
 });
 
 document.addEventListener("click", (event) => {
@@ -943,8 +1020,14 @@ function reloadRecentVisits() {
 }
 
 document.getElementById("visitSearch").addEventListener("input", reloadRecentVisits);
-document.getElementById("visitDateFrom").addEventListener("change", reloadRecentVisits);
-document.getElementById("visitDateTo").addEventListener("change", reloadRecentVisits);
+document.getElementById("visitDateFrom").addEventListener("change", () => {
+  recentVisitsUsesTodayFilter = false;
+  reloadRecentVisits();
+});
+document.getElementById("visitDateTo").addEventListener("change", () => {
+  recentVisitsUsesTodayFilter = false;
+  reloadRecentVisits();
+});
 sampleSourceInput.addEventListener("change", renderSelectedAssociate);
 associateSelect.addEventListener("change", renderSelectedAssociate);
 
@@ -1649,15 +1732,31 @@ function getLocalDate() {
 }
 
 function setDefaultDateRange() {
-  const today = new Date();
-  const oneMonthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const offset = today.getTimezoneOffset() * 60000;
-  
-  const fromDateString = new Date(oneMonthAgo.getTime() - offset).toISOString().split("T")[0];
-  const toDateString = new Date(today.getTime() - offset).toISOString().split("T")[0];
-  
-  document.getElementById("visitDateFrom").value = fromDateString;
-  document.getElementById("visitDateTo").value = toDateString;
+  const today = getLocalDate();
+  document.getElementById("visitDateFrom").value = today;
+  document.getElementById("visitDateTo").value = today;
+  recentVisitsBusinessDate = today;
+  recentVisitsUsesTodayFilter = true;
+}
+
+function refreshRecentVisitsForNewBusinessDay() {
+  if (!recentVisitsUsesTodayFilter) return;
+
+  const today = getLocalDate();
+  if (today === recentVisitsBusinessDate) return;
+
+  document.getElementById("visitDateFrom").value = today;
+  document.getElementById("visitDateTo").value = today;
+  recentVisitsBusinessDate = today;
+  reloadRecentVisits().catch((error) => console.error("Recent visits daily refresh failed", error));
+}
+
+function startRecentVisitsBusinessDayWatcher() {
+  if (recentVisitsBusinessDayWatcher) return;
+  recentVisitsBusinessDayWatcher = window.setInterval(refreshRecentVisitsForNewBusinessDay, 60 * 1000);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) refreshRecentVisitsForNewBusinessDay();
+  });
 }
 
 function setDefaultResultsDateRange() {
@@ -2621,6 +2720,7 @@ function copyQuoteToClipboard() {
     }
 
     setDefaultDateRange();
+    startRecentVisitsBusinessDayWatcher();
     setDefaultResultsDateRange();
     setDefaultCollectionDateRange();
     

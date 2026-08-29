@@ -25,7 +25,7 @@ async function bootstrap() {
       httpPort: PORT,
       onError: (message) => console.warn(message),
     });
-    console.log(`Lab LMS server running on http://localhost:${PORT}`);
+    console.log(`LabShield server running on http://localhost:${PORT}`);
     if (HOST === "0.0.0.0" || HOST === "::") {
       for (const url of getLanUrls(PORT)) {
         console.log(`LAN access: ${url}`);
@@ -49,7 +49,7 @@ async function bootstrap() {
 
 if (require.main === module) {
   bootstrap().catch((error) => {
-    console.error("Failed to start Lab LMS:", error);
+    console.error("Failed to start LabShield:", error);
     process.exit(1);
   });
 }

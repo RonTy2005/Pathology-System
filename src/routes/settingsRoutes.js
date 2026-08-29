@@ -1,7 +1,7 @@
 const express = require("express");
 const { authRequired, allowRoles } = require("../middleware/auth");
 const { ROLES } = require("../config/constants");
-const { getBusinessSettings, updateBusinessSettings } = require("../services/businessSettingsService");
+const { getBusinessSettings, normalizeBusinessTime, updateBusinessSettings } = require("../services/businessSettingsService");
 const { getSubscriptionStatus, updateSubscriptionExpiry } = require("../services/subscriptionService");
 const { logAction } = require("../services/logService");
 
@@ -216,6 +216,8 @@ settingsRouter.patch("/business", authRequired, allowRoles(ROLES.SUPERADMIN), as
       ? validateBusinessLogoImage(req.body.businessLogoDataUrl)
       : undefined;
     const updatePatientPortalBaseUrl = Object.prototype.hasOwnProperty.call(req.body, "patientPortalBaseUrl");
+    const updateBusinessHours = Object.prototype.hasOwnProperty.call(req.body, "businessOpeningTime")
+      || Object.prototype.hasOwnProperty.call(req.body, "businessClosingTime");
     const updateReportLayout = Object.prototype.hasOwnProperty.call(req.body, "reportHeaderSpaceMm")
       || Object.prototype.hasOwnProperty.call(req.body, "reportFooterSpaceMm");
     const updateReportDoctorDetails = ["reportDoctorName", "reportDoctorQualification", "reportDoctorRegistrationNo"]
@@ -242,6 +244,12 @@ settingsRouter.patch("/business", authRequired, allowRoles(ROLES.SUPERADMIN), as
     const patientPortalBaseUrl = updatePatientPortalBaseUrl
       ? normalizePatientPortalBaseUrl(req.body.patientPortalBaseUrl)
       : previous.patientPortalBaseUrl;
+    const businessOpeningTime = updateBusinessHours
+      ? normalizeBusinessTime(req.body.businessOpeningTime)
+      : previous.businessOpeningTime;
+    const businessClosingTime = updateBusinessHours
+      ? normalizeBusinessTime(req.body.businessClosingTime)
+      : previous.businessClosingTime;
     const reportDoctorName = cleanText(req.body.reportDoctorName ?? previous.reportDoctorName, 100);
     const reportDoctorQualification = cleanText(req.body.reportDoctorQualification ?? previous.reportDoctorQualification, 160);
     const reportDoctorRegistrationNo = cleanText(req.body.reportDoctorRegistrationNo ?? previous.reportDoctorRegistrationNo, 80);
@@ -260,6 +268,16 @@ settingsRouter.patch("/business", authRequired, allowRoles(ROLES.SUPERADMIN), as
 
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return res.status(400).json({ message: "Enter a valid email address or leave it blank." });
+    }
+
+    if (updateBusinessHours && (businessOpeningTime === null || businessClosingTime === null)) {
+      return res.status(400).json({ message: "Opening and closing times must use the HH:MM format." });
+    }
+    if ((businessOpeningTime && !businessClosingTime) || (!businessOpeningTime && businessClosingTime)) {
+      return res.status(400).json({ message: "Set both opening and closing times, or leave both blank for always-on portal access." });
+    }
+    if (businessOpeningTime && businessOpeningTime === businessClosingTime) {
+      return res.status(400).json({ message: "Opening and closing times cannot be the same. Leave both blank to keep the portal always available." });
     }
 
     if (updateDefaultReportIncludesLetterhead && typeof defaultReportIncludesLetterhead !== "boolean") {
@@ -300,6 +318,9 @@ settingsRouter.patch("/business", authRequired, allowRoles(ROLES.SUPERADMIN), as
       updateFacilityProfile,
       patientPortalBaseUrl,
       updatePatientPortalBaseUrl,
+      businessOpeningTime,
+      businessClosingTime,
+      updateBusinessHours,
       setupCompleted: completeSetup ? true : previous.setupCompleted,
       updateSetupCompleted: completeSetup,
       letterheadDataUrl,
@@ -321,7 +342,7 @@ settingsRouter.patch("/business", authRequired, allowRoles(ROLES.SUPERADMIN), as
 
     await logAction({
       userId: req.user.id,
-      action: completeSetup ? "business_setup_completed" : updateLetterhead || updateDefaultReportIncludesLetterhead || updateBusinessLogo || updatePatientPortalBaseUrl || updateReportLayout || updateFacilityProfile || updateReportDoctorDetails || updateReportDoctorSignature ? "business_settings_updated" : "business_name_updated",
+      action: completeSetup ? "business_setup_completed" : updateLetterhead || updateDefaultReportIncludesLetterhead || updateBusinessLogo || updatePatientPortalBaseUrl || updateBusinessHours || updateReportLayout || updateFacilityProfile || updateReportDoctorDetails || updateReportDoctorSignature ? "business_settings_updated" : "business_name_updated",
       entityType: "business_settings",
       entityId: "1",
       meta: {
@@ -330,6 +351,9 @@ settingsRouter.patch("/business", authRequired, allowRoles(ROLES.SUPERADMIN), as
         facilityType: settings.facilityType,
         patientPortalBaseUrl: settings.patientPortalBaseUrl,
         patientPortalBaseUrlChanged: updatePatientPortalBaseUrl,
+        businessOpeningTime: settings.businessOpeningTime,
+        businessClosingTime: settings.businessClosingTime,
+        businessHoursChanged: updateBusinessHours,
         setupCompleted: settings.setupCompleted,
         letterheadChanged: updateLetterhead,
         defaultReportIncludesLetterheadChanged: updateDefaultReportIncludesLetterhead,

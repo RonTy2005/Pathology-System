@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin | Lab LMS</title>
+  <title>Admin | LabShield</title>
   <link rel="stylesheet" href="styles/app.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -136,6 +136,17 @@
                   <input id="patientPortalBaseUrl" type="url" maxlength="250" autocomplete="url" placeholder="https://reports.yourdomain.com" />
                 </label>
                 <p class="helper">Enter this only after its DNS and secure tunnel are connected to this server. Leave blank to use the automatic local-network address.</p>
+                <div class="form-grid">
+                  <label class="field">
+                    <span>Business opening time</span>
+                    <input id="businessOpeningTime" type="time" />
+                  </label>
+                  <label class="field">
+                    <span>Business closing time</span>
+                    <input id="businessClosingTime" type="time" />
+                  </label>
+                </div>
+                <p class="helper">When both times are set, patient status, bill, and report links are available only during those hours. Leave both blank to keep the public portal available at all times. Overnight hours are supported.</p>
               </section>
               <section class="letterhead-settings" style="background: #fffbeb; border-color: #fde68a;">
                 <div class="section-title">

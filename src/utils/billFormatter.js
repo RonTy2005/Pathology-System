@@ -28,7 +28,7 @@ function formatDateTime(value) {
   const minutes = String(date.getMinutes()).padStart(2, "0");
   const ampm = hours >= 12 ? "PM" : "AM";
   hours = hours % 12 || 12;
-  return `${day}/${month}/${year} · ${String(hours).padStart(2, "0")}:${minutes} ${ampm}`;
+  return `${day}/${month}/${year} at ${String(hours).padStart(2, "0")}:${minutes} ${ampm}`;
 }
 
 function numberToWords(num) {
@@ -67,19 +67,27 @@ function buildBillHtml(billData) {
   const logoDataUrl = /^data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/]+={0,2}$/i.test(String(settings.businessLogoDataUrl || ""))
     ? String(settings.businessLogoDataUrl)
     : "";
-  const contactDetails = [phone && `+91 ${phone}`, email].filter(Boolean).join("  ·  ");
+  const contactDetails = [phone && `+91 ${phone}`, email].filter(Boolean).join(" | ");
   const portalUrl = String(billData.patientPortalUrl || "");
   const portalQrUrl = portalUrl ? getPatientPortalQrUrl(portalUrl) : "";
   const tests = billData.tests || [];
-  const testsPerPage = 9;
+
+  // Each bill is an intentional half-A4 slip. A conservative item count keeps
+  // the entire booking receipt above the horizontal fold on every page.
+  const testsPerPage = 6;
   const totalPages = Math.max(1, Math.ceil(tests.length / testsPerPage));
   const doctorName = billData.doctor ? escapeHtml(billData.doctor.name) : "Not specified";
-  const doctorSpecialization = billData.doctor?.specialization ? ` · ${escapeHtml(billData.doctor.specialization)}` : "";
   const associateName = escapeHtml(billData.visit.associate_label || "Direct at facility");
   const sampleSource = String(billData.visit.sample_source || "lab").toLowerCase() === "associate"
     ? "Collected through associate"
     : "Collected at facility";
   const payment = paymentSummary(billData.visit);
+  const patientCode = escapeHtml(billData.patient.patient_code || `P-${billData.patient.id || "-"}`);
+  const patientAge = escapeHtml(billData.patient.age || "-");
+  const patientGender = escapeHtml(billData.patient.gender || "-");
+  const patientPhone = escapeHtml(billData.patient.phone || "-");
+  const paymentMode = escapeHtml(String(billData.visit.payment_mode || "Not recorded").replace(/\b\w/g, (letter) => letter.toUpperCase()));
+  const billedAmount = Number(billData.visit.total || 0);
 
   const pagesHtml = Array.from({ length: totalPages }, (_, pageIndex) => {
     const firstPage = pageIndex === 0;
@@ -88,96 +96,83 @@ function buildBillHtml(billData) {
     const testRows = pageTests.map((test, testIndex) => `
       <tr>
         <td class="serial">${pageIndex * testsPerPage + testIndex + 1}</td>
-        <td>
-          <strong>${escapeHtml(test.name)}</strong>
-          ${test.code ? `<span class="test-code">${escapeHtml(test.code)}</span>` : ""}
-        </td>
-        <td class="amount">₹ ${money(test.price)}</td>
+        <td class="service"><strong>${escapeHtml(test.name)}</strong></td>
+        <td class="test-code">${escapeHtml(test.code || "-")}</td>
+        <td class="amount">Rs. ${money(test.price)}</td>
       </tr>
     `).join("");
-    const fillerRows = Array.from(
-      { length: Math.max(0, testsPerPage - pageTests.length) },
-      () => '<tr class="filler"><td></td><td></td><td></td></tr>'
-    ).join("");
 
     return `
-      <main class="receipt${lastPage ? " receipt-last" : ""}">
-        <section class="brand-row">
-          <div class="brand-mark">${logoDataUrl ? `<img src="${logoDataUrl}" alt="${businessName} logo" />` : `<span>${businessName.slice(0, 1)}</span>`}</div>
-          <div class="brand-details">
-            <div class="eyebrow">${facilityType}</div>
-            <h1>${businessName}</h1>
-            ${address ? `<p>${address}</p>` : ""}
-            ${contactDetails ? `<p>${contactDetails}</p>` : ""}
-            ${registrationNo ? `<p class="registration">Registration no. ${registrationNo}</p>` : ""}
-          </div>
-          <div class="receipt-identification">
-            <span class="copy-label">PATIENT COPY</span>
-            <span class="receipt-label">Bill / Receipt</span>
-            <strong>${escapeHtml(billData.visit.bill_no)}</strong>
-            <span>${formatDateTime(billData.visit.created_at)}</span>
-          </div>
-        </section>
-
-        <section class="patient-strip">
-          <div class="patient-main">
-            <span class="section-label">Patient</span>
-            <h2>${escapeHtml(billData.patient.name)}</h2>
-            <p>${escapeHtml(billData.patient.age || "-")} years · ${escapeHtml(billData.patient.gender || "-")} · ${escapeHtml(billData.patient.phone || "No phone number")}</p>
-          </div>
-          <div class="patient-detail">
-            <span class="section-label">Referred by</span>
-            <strong>${doctorName}</strong><span>${doctorSpecialization.replace(" · ", "")}</span>
-          </div>
-          <div class="patient-detail">
-            <span class="section-label">Collection</span>
-            <strong>${sampleSource}</strong><span>${associateName}</span>
-          </div>
-          ${portalQrUrl ? `
-            <div class="portal-qr">
-              <img src="${escapeHtml(portalQrUrl)}" alt="Scan to check report status" />
-              <span>Scan for report status</span>
+      <main class="bill-slip${lastPage ? " bill-slip-last" : ""}">
+        <div class="accent-rule"></div>
+        <header class="slip-header">
+          <div class="brand-block">
+            <div class="brand-mark">${logoDataUrl ? `<img src="${logoDataUrl}" alt="${businessName} logo" />` : `<span>${businessName.slice(0, 1)}</span>`}</div>
+            <div>
+              <h1>${businessName}</h1>
+              <p>${facilityType}</p>
+              ${address ? `<p>${address}</p>` : ""}
+              ${contactDetails ? `<p>${contactDetails}</p>` : ""}
             </div>
-          ` : ""}
+          </div>
+          <div class="slip-title">
+            <span>Patient copy</span>
+            <strong>Diagnostic Booking Slip / Money Receipt</strong>
+            ${registrationNo ? `<small>Registration no. ${registrationNo}</small>` : ""}
+          </div>
+        </header>
+
+        <section class="booking-details" aria-label="Patient and booking details">
+          <div class="details-column">
+            <p><b>Patient ID</b><span>${patientCode}</span></p>
+            <p><b>Patient name</b><span>${escapeHtml(billData.patient.name)}</span></p>
+            <p><b>Age / gender</b><span>${patientAge} years / ${patientGender}</span></p>
+            <p><b>Phone no.</b><span>${patientPhone}</span></p>
+          </div>
+          <div class="details-column">
+            <p><b>Booking code</b><span>${escapeHtml(billData.visit.bill_no)}</span></p>
+            <p><b>Booking date</b><span>${formatDateTime(billData.visit.created_at)}</span></p>
+            <p><b>Referred by</b><span>${doctorName}</span></p>
+            <p><b>Collection</b><span>${sampleSource} - ${associateName}</span></p>
+          </div>
         </section>
 
-        ${!firstPage ? `<p class="continued">Bill ${escapeHtml(billData.visit.bill_no)} · continued · page ${pageIndex + 1} of ${totalPages}</p>` : ""}
+        ${!firstPage ? `<p class="continued">Booking ${escapeHtml(billData.visit.bill_no)} - continued (page ${pageIndex + 1} of ${totalPages})</p>` : ""}
 
         <table class="items-table">
           <thead>
-            <tr><th class="serial">#</th><th>Investigation / service</th><th class="amount">Amount</th></tr>
+            <tr><th class="serial">Sr.</th><th>Services booked</th><th class="test-code">Code</th><th class="amount">Charges</th></tr>
           </thead>
-          <tbody>${testRows}${fillerRows}</tbody>
+          <tbody>${testRows}</tbody>
         </table>
 
         ${lastPage ? `
           <section class="settlement">
-            <div class="amount-words">
-              <span class="section-label">Amount received in words</span>
-              <p>Rupees ${numberToWords(billData.visit.amount_paid)}</p>
-              <small>Payment mode: ${escapeHtml(String(billData.visit.payment_mode || "Not recorded").replace(/\b\w/g, (letter) => letter.toUpperCase()))}</small>
+            <div class="receipt-notes">
+              <p><b>Amount in words:</b> Rupees ${numberToWords(billedAmount)}</p>
+              <p><b>Payment mode:</b> ${paymentMode}</p>
+              <p class="report-note">Reports are released after payment and technical verification.</p>
             </div>
-            <div class="totals-card">
-              <div><span>Subtotal</span><strong>₹ ${money(billData.visit.subtotal)}</strong></div>
-              <div><span>Discount</span><strong>− ₹ ${money(billData.visit.discount)}</strong></div>
-              <div class="grand-total"><span>Total payable</span><strong>₹ ${money(billData.visit.total)}</strong></div>
-              <div><span>Amount received</span><strong>₹ ${money(billData.visit.amount_paid)}</strong></div>
-              <div class="due-row ${payment.tone}"><span>Balance due</span><strong>₹ ${money(billData.visit.amount_due)}</strong></div>
-              <div class="payment-state ${payment.tone}">${payment.label}</div>
-            </div>
+            <table class="totals-table">
+              <tbody>
+                <tr><th>Gross bill</th><td>Rs. ${money(billData.visit.subtotal)}</td></tr>
+                <tr><th>Discount</th><td>Rs. ${money(billData.visit.discount)}</td></tr>
+                <tr class="total-row"><th>Net bill</th><td>Rs. ${money(billData.visit.total)}</td></tr>
+                <tr><th>Amount received</th><td>Rs. ${money(billData.visit.amount_paid)}</td></tr>
+                <tr class="balance ${payment.tone}"><th>Balance</th><td>Rs. ${money(billData.visit.amount_due)}</td></tr>
+              </tbody>
+            </table>
           </section>
 
-          <footer class="receipt-footer">
+          <footer class="slip-footer">
             <div>
-              <strong>Thank you for choosing ${businessName}.</strong>
-              <p>Please retain this receipt. Reports are released only after the required payment and technical verification.</p>
+              <strong>${payment.label}</strong>
+              <p>Prepared by ${escapeHtml(billData.visit.creator_name || billData.visit.creator_username || "Admin")}</p>
             </div>
-            <div class="signatory">
-              <span>Prepared by ${escapeHtml(billData.visit.creator_name || billData.visit.creator_username || "Admin")}</span>
-              <strong>Authorised signatory</strong>
-            </div>
+            ${portalQrUrl ? `<div class="portal-qr"><img src="${escapeHtml(portalQrUrl)}" alt="Scan for report status" /><span>Scan for report status</span></div>` : ""}
+            <div class="signatory"><span>For ${businessName}</span><strong>Authorised signatory</strong></div>
           </footer>
-        ` : `<p class="next-page">Continued on next page · ${pageIndex + 1} of ${totalPages}</p>`}
+        ` : `<p class="next-page">Continued on the next booking slip (page ${pageIndex + 1} of ${totalPages})</p>`}
       </main>
     `;
   }).join("");
@@ -189,63 +184,59 @@ function buildBillHtml(billData) {
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <title>Bill ${escapeHtml(billData.visit.bill_no)}</title>
       <style>
-        :root { --ink: #18312d; --muted: #61736f; --line: #d7e3df; --accent: #087b68; --accent-soft: #e7f6f1; --danger: #b42318; --warn: #a15c00; }
+        :root { --ink: #172033; --muted: #536275; --line: #aac4d8; --accent: #0ea5e9; --accent-soft: #e9f8ff; --danger: #c21f39; --warn: #9a6200; }
         * { box-sizing: border-box; }
         @page { size: A4 portrait; margin: 0 !important; }
         html, body { margin: 0; padding: 0; background: #edf3f1; }
-        body { color: var(--ink); font-family: "Segoe UI", "Aptos", Arial, sans-serif; font-size: 10px; line-height: 1.35; }
-        .receipt { width: 210mm; min-height: 148.5mm; padding: 8.5mm 10mm 7mm; background: #fff; position: relative; overflow: hidden; page-break-after: always; border-bottom: 1px dashed #a9bdb7; }
-        .receipt::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4mm; background: var(--accent); }
-        .receipt-last { page-break-after: auto; }
-        .brand-row { min-height: 27mm; display: grid; grid-template-columns: 19mm 1fr 48mm; align-items: center; gap: 4mm; padding: 0 0 4.5mm; border-bottom: 2px solid var(--accent); }
-        .brand-mark { width: 17mm; height: 17mm; border-radius: 5mm; overflow: hidden; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-size: 22px; font-weight: 800; }
+        body { color: var(--ink); font-family: Arial, Helvetica, sans-serif; font-size: 9px; line-height: 1.25; }
+        .bill-slip { width: 210mm; height: 148.5mm; padding: 6mm 8mm 5mm; background: #fff; position: relative; overflow: hidden; page-break-after: always; break-after: page; }
+        .bill-slip-last { page-break-after: auto; break-after: auto; }
+        .accent-rule { position: absolute; top: 0; left: 0; right: 0; height: 4mm; background: var(--accent); }
+        .slip-header { min-height: 25mm; display: flex; align-items: center; justify-content: space-between; gap: 7mm; padding: 1.5mm 0 3mm; border-bottom: 1px solid var(--ink); }
+        .brand-block { min-width: 0; display: flex; align-items: center; gap: 3mm; }
+        .brand-mark { width: 15mm; height: 15mm; overflow: hidden; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-size: 19px; font-weight: 800; }
         .brand-mark img { width: 100%; height: 100%; object-fit: contain; }
-        .eyebrow, .section-label { display: block; color: var(--accent); font-size: 8px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
-        .brand-details h1 { margin: 1px 0; color: var(--ink); font-size: 18px; line-height: 1.1; letter-spacing: -.02em; }
-        .brand-details p { margin: 1px 0; color: var(--muted); font-size: 8.5px; }
-        .brand-details .registration { font-size: 7.5px; }
-        .receipt-identification { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 1px; color: var(--muted); font-size: 8px; }
-        .receipt-identification strong { color: var(--ink); font-size: 13px; letter-spacing: .02em; }
-        .copy-label { padding: 2px 5px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); font-size: 7px; font-weight: 800; letter-spacing: .08em; }
-        .receipt-label { color: var(--ink); font-size: 9px; font-weight: 700; text-transform: uppercase; }
-        .patient-strip { display: grid; grid-template-columns: 1.55fr 1.1fr 1.15fr auto; gap: 3.5mm; align-items: center; padding: 4mm 0; border-bottom: 1px solid var(--line); }
-        .patient-main h2 { margin: 1px 0; font-size: 14px; line-height: 1.1; }
-        .patient-main p, .patient-detail span { margin: 0; color: var(--muted); font-size: 8.5px; }
-        .patient-detail { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-        .patient-detail strong { font-size: 9.5px; overflow-wrap: anywhere; }
-        .portal-qr { min-width: 18mm; max-width: 20mm; display: flex; flex-direction: column; align-items: center; text-align: center; color: var(--muted); font-size: 6.5px; line-height: 1.15; }
-        .portal-qr img { width: 17mm; height: 17mm; padding: 1mm; background: #fff; border: 1px solid var(--ink); }
-        .continued, .next-page { margin: 3mm 0 2mm; color: var(--muted); font-size: 8px; text-align: center; }
-        .items-table { width: 100%; border-collapse: collapse; margin-top: 3mm; table-layout: fixed; }
-        .items-table th { padding: 2.4mm 2mm; background: var(--ink); color: #fff; font-size: 8px; font-weight: 700; letter-spacing: .04em; text-align: left; text-transform: uppercase; }
+        .brand-block h1 { margin: 0; color: var(--accent); font-size: 16px; line-height: 1.05; letter-spacing: -.01em; }
+        .brand-block p { margin: 1px 0 0; color: var(--muted); font-size: 7.5px; }
+        .slip-title { min-width: 62mm; display: flex; flex-direction: column; align-items: flex-end; text-align: right; gap: 1px; }
+        .slip-title span { color: var(--accent); font-size: 7px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+        .slip-title strong { font-size: 11px; line-height: 1.15; text-decoration: underline; }
+        .slip-title small { color: var(--muted); font-size: 6.8px; }
+        .booking-details { display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; padding: 2.5mm 0; border-bottom: 1px solid var(--line); }
+        .details-column { min-width: 0; }
+        .details-column p { display: grid; grid-template-columns: 28mm 1fr; gap: 1.5mm; margin: 0 0 1px; font-size: 8px; }
+        .details-column b { font-weight: 700; }
+        .details-column b::after { content: ":"; float: right; }
+        .details-column span { overflow-wrap: anywhere; }
+        .continued, .next-page { margin: 1.5mm 0; color: var(--muted); font-size: 7px; text-align: center; }
+        .items-table { width: 100%; border-collapse: collapse; margin-top: 2mm; table-layout: fixed; }
+        .items-table th { padding: 1.3mm 1.5mm; border: 1px solid var(--line); background: #f0f0f0; color: var(--ink); font-size: 7.5px; font-weight: 700; text-align: left; }
         .items-table th.serial, .items-table td.serial { width: 10mm; text-align: center; }
-        .items-table th.amount, .items-table td.amount { width: 35mm; text-align: right; white-space: nowrap; }
-        .items-table td { height: 5.5mm; padding: 1.6mm 2mm; border-bottom: 1px solid var(--line); vertical-align: middle; }
-        .items-table tbody tr:nth-child(even) { background: #f7faf9; }
-        .items-table td strong { font-size: 9.5px; }
-        .test-code { margin-left: 1.5mm; color: var(--muted); font-size: 7px; }
-        .items-table .filler td { height: 5.5mm; color: transparent; }
-        .settlement { display: grid; grid-template-columns: 1fr 67mm; gap: 7mm; align-items: end; margin-top: 4.5mm; }
-        .amount-words { align-self: stretch; padding: 3mm; border-left: 2px solid var(--accent); background: #f7faf9; }
-        .amount-words p { margin: 2px 0 4px; font-size: 9px; font-weight: 700; }
-        .amount-words small { color: var(--muted); font-size: 7.5px; }
-        .totals-card { border: 1px solid var(--line); border-radius: 2mm; overflow: hidden; }
-        .totals-card > div:not(.payment-state) { display: flex; justify-content: space-between; gap: 5mm; padding: 1.5mm 3mm; border-bottom: 1px solid var(--line); }
-        .totals-card .grand-total { padding-top: 2mm; padding-bottom: 2mm; background: var(--accent-soft); font-size: 10px; }
-        .totals-card .grand-total strong { font-size: 12px; }
-        .totals-card .due-row.due strong { color: var(--danger); }
-        .totals-card .due-row.partial strong { color: var(--warn); }
-        .payment-state { padding: 1.4mm 3mm; color: #fff; background: var(--accent); text-align: center; font-size: 8px; font-weight: 800; letter-spacing: .08em; }
-        .payment-state.partial { background: var(--warn); }
-        .payment-state.due { background: var(--danger); }
-        .receipt-footer { display: flex; justify-content: space-between; gap: 6mm; margin-top: 4mm; padding-top: 3mm; border-top: 1px solid var(--line); color: var(--muted); font-size: 7.5px; }
-        .receipt-footer p { margin: 1px 0; max-width: 100mm; }
-        .receipt-footer strong { color: var(--ink); }
-        .signatory { min-width: 50mm; padding-top: 7mm; border-bottom: 1px solid var(--ink); text-align: center; display: flex; flex-direction: column; gap: 1px; }
-        .signatory span { color: var(--muted); font-size: 7px; }
-        .signatory strong { font-size: 8px; }
-        @media screen { .receipt { margin: 10mm auto; box-shadow: 0 7px 28px rgba(21, 55, 46, .15); } }
-        @media print { html, body { background: #fff; } .receipt { margin: 0; box-shadow: none; border-bottom: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+        .items-table th.test-code, .items-table td.test-code { width: 25mm; }
+        .items-table th.amount, .items-table td.amount { width: 29mm; text-align: right; white-space: nowrap; }
+        .items-table td { min-height: 5mm; padding: 1.2mm 1.5mm; border: 1px solid var(--line); vertical-align: middle; font-size: 8px; }
+        .items-table td.service strong { font-size: 8px; }
+        .items-table td.test-code { color: var(--muted); font-size: 7px; }
+        .settlement { display: grid; grid-template-columns: 1fr 57mm; gap: 5mm; align-items: start; margin-top: 2.5mm; }
+        .receipt-notes { padding-top: 1mm; }
+        .receipt-notes p { margin: 0 0 1.5mm; font-size: 7.6px; }
+        .receipt-notes .report-note { margin-top: 2.5mm; color: var(--muted); }
+        .totals-table { width: 100%; border-collapse: collapse; font-size: 7.8px; }
+        .totals-table th, .totals-table td { padding: 1.05mm 1.5mm; border: 1px solid var(--line); text-align: left; }
+        .totals-table td { text-align: right; white-space: nowrap; }
+        .totals-table .total-row { background: var(--accent-soft); font-weight: 700; }
+        .totals-table .balance.due { color: var(--danger); font-weight: 700; }
+        .totals-table .balance.partial { color: var(--warn); font-weight: 700; }
+        .slip-footer { display: grid; grid-template-columns: 1fr auto 46mm; gap: 5mm; align-items: end; margin-top: 2.5mm; padding-top: 2mm; border-top: 1px solid var(--ink); color: var(--muted); font-size: 7px; }
+        .slip-footer p { margin: 1px 0 0; }
+        .slip-footer strong { color: var(--accent); font-size: 7.5px; }
+        .portal-qr { display: flex; align-items: center; gap: 1.5mm; max-width: 33mm; color: var(--muted); font-size: 6px; line-height: 1.1; }
+        .portal-qr img { width: 11mm; height: 11mm; padding: .5mm; background: #fff; border: 1px solid var(--line); }
+        .signatory { min-height: 10mm; padding-top: 4mm; border-bottom: 1px solid var(--ink); text-align: center; display: flex; flex-direction: column; gap: 1px; }
+        .signatory span { color: var(--muted); font-size: 6.5px; }
+        .signatory strong { color: var(--ink); font-size: 7.5px; }
+        @media screen { .bill-slip { margin: 10mm auto; box-shadow: 0 7px 28px rgba(30, 30, 30, .16); } }
+        @media print { html, body { background: #fff; } .bill-slip { margin: 0; box-shadow: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
       </style>
     </head>
     <body>${pagesHtml}</body>

@@ -16,3 +16,9 @@ node_modules/
 # Generated build output and local browser/PDF test artefacts
 release/
 tmp/
+.tmp-catalogue-ocr/
+
+# Local OCR support files and Python cache
+*.traineddata
+__pycache__/
+*.py[cod]

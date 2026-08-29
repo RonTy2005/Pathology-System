@@ -4,6 +4,8 @@ const { nextDailySequenceId } = require("../db/sequences");
 const { allowPermissions, allowRoles } = require("../middleware/auth");
 const { logAction } = require("../services/logService");
 const { ACCESS_CONTROLS, PAYMENT_MODES, PERMISSIONS, ROLES, TECHNICIAN_ROLES } = require("../config/constants");
+const { expandTestBundleConfigs } = require("../services/testBundleService");
+const { materializeRegistrationTests } = require("../services/registrationTestService");
 
 const patientRouter = express.Router();
 
@@ -47,7 +49,9 @@ async function savePatient({ name, age, gender, phone }, registrationTime) {
 
 async function createRegistrationVisit({ patientId, tests: testConfigs, user, amountPaid = 0, discount = 0, paymentMode = "cash", doctorId = null, associateId = null, associateName = null, sampleSource = "lab" }, registrationTime) {
   const tests = [];
-  for (const config of testConfigs) {
+  const materializedTests = await materializeRegistrationTests(testConfigs);
+  const expandedTestConfigs = await expandTestBundleConfigs(materializedTests.testConfigs);
+  for (const config of expandedTestConfigs) {
     if (config.isCustom) {
       tests.push({
         id: null,
@@ -396,13 +400,16 @@ patientRouter.patch("/:id", async (req, res, next) => {
 
     if (latestVisit) {
       // Add any new tests that are not already on this visit
+      let toAdd = [];
       if (testConfigs.length) {
         const existingTestIds = (await all(
           "SELECT test_id FROM visit_tests WHERE visit_id = ?",
           [latestVisit.id]
         )).map(r => r.test_id);
 
-        const toAdd = testConfigs.filter(t => t.isCustom || !existingTestIds.includes(t.id));
+        const materializedTests = await materializeRegistrationTests(testConfigs);
+        const expandedTestConfigs = await expandTestBundleConfigs(materializedTests.testConfigs);
+        toAdd = expandedTestConfigs.filter(t => t.isCustom || !existingTestIds.includes(t.id));
         if (toAdd.length) {
           let technicians = [];
           if (TECHNICIAN_ROLES.includes(req.user.role)) {

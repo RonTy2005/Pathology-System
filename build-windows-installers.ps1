@@ -5,7 +5,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $sourceRoot = $PSScriptRoot
 $driveRoot = [System.IO.Path]::GetPathRoot($sourceRoot)
-$buildRoot = Join-Path $driveRoot ("LabLMSBuild-" + [Guid]::NewGuid().ToString('N'))
+$buildRoot = Join-Path $driveRoot ("LabShieldBuild-" + [Guid]::NewGuid().ToString('N'))
 $releaseRoot = Join-Path $sourceRoot 'release'
 $packageVersion = (Get-Content -LiteralPath (Join-Path $sourceRoot 'package.json') -Raw | ConvertFrom-Json).version
 
@@ -28,6 +28,13 @@ try {
         throw "Unable to prepare the desktop build folder (robocopy exit code $LASTEXITCODE)."
     }
 
+    $catalogueSeedSource = Join-Path $sourceRoot 'lab-lms.db'
+    $catalogueSeedDestination = Join-Path $buildRoot 'labshield-catalogue.db'
+    & node (Join-Path $sourceRoot 'scripts\create-installation-catalogue.cjs') $catalogueSeedSource $catalogueSeedDestination
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Unable to create the LabShield catalogue-only installation seed.'
+    }
+
     Push-Location $buildRoot
     Invoke-BuildCommand 'npm ci --ignore-scripts'
     Invoke-BuildCommand 'npm run desktop:rebuild-native'
@@ -37,8 +44,8 @@ try {
 
     New-Item -ItemType Directory -Path $releaseRoot -Force | Out-Null
     $installers = @(
-        (Get-ChildItem -LiteralPath (Join-Path $buildRoot "release-server-$packageVersion") -Filter 'Lab-LMS-Server-Setup-*.exe' -File),
-        (Get-ChildItem -LiteralPath (Join-Path $buildRoot "release-client-$packageVersion") -Filter 'Lab-LMS-Client-Setup-*.exe' -File)
+        (Get-ChildItem -LiteralPath (Join-Path $buildRoot "release-server-$packageVersion") -Filter 'LabShield-Server-Setup-*.exe' -File),
+        (Get-ChildItem -LiteralPath (Join-Path $buildRoot "release-client-$packageVersion") -Filter 'LabShield-Client-Setup-*.exe' -File)
     ) | Where-Object { $_ }
 
     if ($installers.Count -ne 2) {

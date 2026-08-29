@@ -12,6 +12,13 @@ function normalizeText(value) {
   return String(value || "").trim();
 }
 
+function normalizeBusinessTime(value) {
+  const time = normalizeText(value);
+  if (!time) return "";
+  const match = time.match(/^(?:[01]\d|2[0-3]):[0-5]\d$/);
+  return match ? time : null;
+}
+
 function normalizeFacilityTypes(value) {
   return Array.from(new Set(
     normalizeText(value)
@@ -30,6 +37,8 @@ async function getBusinessSettings({ includeLetterhead = false, includeReportDoc
             email,
             registration_no,
             patient_portal_base_url,
+            business_opening_time,
+            business_closing_time,
             ${includeBusinessLogo ? "business_logo_data_url," : ""}
             report_doctor_name,
             report_doctor_qualification,
@@ -68,6 +77,8 @@ async function getBusinessSettings({ includeLetterhead = false, includeReportDoc
     email: normalizeText(settings?.email),
     registrationNo: normalizeText(settings?.registration_no),
     patientPortalBaseUrl: normalizeText(settings?.patient_portal_base_url),
+    businessOpeningTime: normalizeBusinessTime(settings?.business_opening_time) || "",
+    businessClosingTime: normalizeBusinessTime(settings?.business_closing_time) || "",
     hasBusinessLogo: Boolean(settings?.has_business_logo),
     reportDoctorName: normalizeText(settings?.report_doctor_name),
     reportDoctorQualification: normalizeText(settings?.report_doctor_qualification),
@@ -104,6 +115,9 @@ async function updateBusinessSettings(businessName, {
   updateFacilityProfile = false,
   patientPortalBaseUrl,
   updatePatientPortalBaseUrl = false,
+  businessOpeningTime,
+  businessClosingTime,
+  updateBusinessHours = false,
   setupCompleted,
   updateSetupCompleted = false,
   letterheadDataUrl,
@@ -144,6 +158,11 @@ async function updateBusinessSettings(businessName, {
   if (updatePatientPortalBaseUrl) {
     assignments.push("patient_portal_base_url = ?");
     params.push(patientPortalBaseUrl);
+  }
+
+  if (updateBusinessHours) {
+    assignments.push("business_opening_time = ?", "business_closing_time = ?");
+    params.push(businessOpeningTime, businessClosingTime);
   }
 
   if (updateLetterhead) {
@@ -196,6 +215,7 @@ module.exports = {
   getBusinessName,
   isBusinessSetupComplete,
   normalizeFacilityTypes,
+  normalizeBusinessTime,
   updateBusinessSettings,
   updateBusinessName,
 };

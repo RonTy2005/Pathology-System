@@ -8,6 +8,7 @@ const testRouter = express.Router();
 const { buildReportHtml } = require("../utils/reportFormatter");
 const { getBusinessSettings } = require("../services/businessSettingsService");
 const { getTestReportPreviewUrl } = require("../utils/patientPortal");
+const { getBundleComponentTests } = require("../services/testBundleService");
 
 function normalizeParameterDefinition(parameter = {}) {
   const entryMode = (parameter.entryMode || parameter.entry_mode) === "calculated"
@@ -33,6 +34,14 @@ function normalizeReportBody(value) {
   return String(value || "").trim().slice(0, 8000);
 }
 
+function getBundlePreviewValue(parameter = {}) {
+  const range = String(parameter.normal_range || "");
+  const numericRange = range.match(/(-?\d+(?:\.\d+)?)\s*(?:-|to)\s*(-?\d+(?:\.\d+)?)/i);
+  if (numericRange) return numericRange[1];
+  if (/negative|non-reactive|not detected/i.test(range)) return "Negative";
+  return "Normal";
+}
+
 testRouter.get("/:id/sample-report", allowRoles(ROLES.ADMIN), async (req, res, next) => {
   try {
     const test = await get("SELECT * FROM tests WHERE id = ?", [req.params.id]);
@@ -44,6 +53,7 @@ testRouter.get("/:id/sample-report", allowRoles(ROLES.ADMIN), async (req, res, n
       `SELECT parameter_name, unit, normal_range FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC`,
       [test.id]
     );
+    const bundleComponents = await getBundleComponentTests(test.id);
 
     // Construct mock report data
     const mockReportData = {
@@ -468,6 +478,26 @@ testRouter.get("/:id/sample-report", allowRoles(ROLES.ADMIN), async (req, res, n
       ]
     };
 
+    if (bundleComponents.length) {
+      mockReportData.tests = await Promise.all(bundleComponents.map(async (component) => {
+        const componentParameters = await all(
+          `SELECT parameter_name, unit, normal_range, entry_mode
+           FROM test_parameters
+           WHERE test_id = ?
+           ORDER BY display_order ASC, id ASC`,
+          [component.id]
+        );
+        return {
+          ...component,
+          test_id: component.id,
+          parameters: componentParameters.map((parameter) => ({
+            ...parameter,
+            value: getBundlePreviewValue(parameter),
+          })),
+        };
+      }));
+    }
+
     const businessSettings = await getBusinessSettings({ includeLetterhead: true, includeReportDoctorSignature: true });
     const includeLetterhead = req.query.letterhead === "0"
       ? false
@@ -504,11 +534,25 @@ testRouter.get("/", async (req, res, next) => {
     const query = `%${req.query.query || ""}%`;
     const tests = await all(
       `
-      SELECT *
-      FROM tests
-      WHERE active = 1
-        AND (name LIKE ? OR COALESCE(code, '') LIKE ? OR COALESCE(category, '') LIKE ?)
-      ORDER BY name ASC
+      SELECT t.*,
+             EXISTS(
+               SELECT 1 FROM test_bundle_items tbi
+               WHERE tbi.bundle_test_id = t.id
+             ) AS is_bundle,
+             (
+               SELECT COUNT(*) FROM test_bundle_items tbi
+               WHERE tbi.bundle_test_id = t.id
+             ) AS bundle_item_count,
+             (
+               SELECT COALESCE(SUM(component.price), 0)
+               FROM test_bundle_items tbi
+               JOIN tests component ON component.id = tbi.component_test_id
+               WHERE tbi.bundle_test_id = t.id
+             ) AS bundle_price
+      FROM tests t
+      WHERE t.active = 1
+        AND (t.name LIKE ? OR COALESCE(t.code, '') LIKE ? OR COALESCE(t.category, '') LIKE ?)
+      ORDER BY t.name ASC
       `,
       [query, query, query]
     );

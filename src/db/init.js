@@ -73,6 +73,8 @@ async function createTables() {
       email TEXT,
       registration_no TEXT,
       patient_portal_base_url TEXT,
+      business_opening_time TEXT,
+      business_closing_time TEXT,
       business_logo_data_url TEXT,
       setup_completed INTEGER NOT NULL DEFAULT 0,
       subscription_expires_on TEXT,
@@ -95,6 +97,8 @@ async function createTables() {
   await ensureColumn("business_settings", "email", "TEXT");
   await ensureColumn("business_settings", "registration_no", "TEXT");
   await ensureColumn("business_settings", "patient_portal_base_url", "TEXT");
+  await ensureColumn("business_settings", "business_opening_time", "TEXT");
+  await ensureColumn("business_settings", "business_closing_time", "TEXT");
   await ensureColumn("business_settings", "business_logo_data_url", "TEXT");
   await ensureColumn("business_settings", "setup_completed", "INTEGER NOT NULL DEFAULT 0");
   await ensureColumn("business_settings", "subscription_expires_on", "TEXT");
@@ -190,6 +194,17 @@ async function createTables() {
   await ensureColumn("test_parameters", "entry_mode", "TEXT NOT NULL DEFAULT 'manual'");
   await ensureColumn("test_parameters", "calculation_formula", "TEXT");
   await ensureColumn("test_parameters", "calculation_precision", "INTEGER DEFAULT 2");
+
+  await run(`
+    CREATE TABLE IF NOT EXISTS test_bundle_items (
+      bundle_test_id INTEGER NOT NULL,
+      component_test_id INTEGER NOT NULL,
+      display_order INTEGER NOT NULL DEFAULT 1,
+      PRIMARY KEY (bundle_test_id, component_test_id),
+      FOREIGN KEY (bundle_test_id) REFERENCES tests(id) ON DELETE CASCADE,
+      FOREIGN KEY (component_test_id) REFERENCES tests(id) ON DELETE CASCADE
+    )
+  `);
 
   await run(`
     CREATE TABLE IF NOT EXISTS visits (
@@ -2259,7 +2274,7 @@ async function ensureGroupBStrepTestConfiguration() {
     createName: "Group B Streptococcus (GBS)",
     createCode: "GBS",
     category: "Microbiology",
-    sampleType: "Vaginal / Rectal Swab",
+    sampleType: "Cardial",
     turnaroundHours: 24,
     parameterName: "Group B Streptococcus",
     parameterAliases: ["Streptococcus Group B Antigen Detection"],
@@ -4291,44 +4306,462 @@ async function ensureAbsoluteNeutrophilCountTestConfiguration() {
   }
 }
 
-async function ensureAbsoluteEosinophilCountTestConfiguration() {
-  const aecTest = await get(
-    "SELECT id FROM tests WHERE LOWER(name) = LOWER(?) ORDER BY id ASC LIMIT 1",
-    ["Absolute Eosinophils Count"]
-  ) || await get(
-    "SELECT id FROM tests WHERE LOWER(name) = LOWER(?) ORDER BY id ASC LIMIT 1",
-    ["Absolute Eosinophil Count"]
+async function ensureAbsoluteCountTestConfigurations() {
+  const definitions = [
+    {
+      name: "Absolute Lymphocyte Count (ALC)",
+      aliases: ["Absolute Lymphocyte Count", "Absolute Lymphocytes Count"],
+      code: "ABS6622",
+      parameterName: "ABSOLUTE LYMPHOCYTE COUNT (ALC)",
+      parameterSearch: "%lymphocyte%",
+      normalRange: "1300 - 3500",
+    },
+    {
+      name: "Absolute Eosinophil Count (AEC)",
+      aliases: ["Absolute Eosinophil Count", "Absolute Eosinophils Count"],
+      code: "ABS5177",
+      parameterName: "ABSOLUTE EOSINOPHIL COUNT (AEC)",
+      parameterSearch: "%eosinophil%",
+      normalRange: "0 - 500",
+    },
+    {
+      name: "Absolute Monocyte Count (AMC)",
+      aliases: ["Absolute Monocyte Count", "Absolute Monocytes Count"],
+      code: "AMC1005",
+      parameterName: "ABSOLUTE MONOCYTE COUNT (AMC)",
+      parameterSearch: "%monocyte%",
+      normalRange: "200 - 950",
+    },
+    {
+      name: "Absolute Basophil Count (ABC)",
+      aliases: ["Absolute Basophil Count", "Absolute Basophils Count"],
+      code: "ABC1004",
+      parameterName: "ABSOLUTE BASOPHIL COUNT (ABC)",
+      parameterSearch: "%basophil%",
+      normalRange: "0 - 300",
+    },
+  ];
+
+  for (const definition of definitions) {
+    const matchingNames = [definition.name, ...definition.aliases];
+    const placeholders = matchingNames.map(() => "LOWER(?)").join(", ");
+    let test = await get(
+      `SELECT id FROM tests
+       WHERE LOWER(name) IN (${placeholders})
+       ORDER BY id ASC LIMIT 1`,
+      matchingNames
+    );
+
+    if (!test) {
+      const created = await run(
+        `INSERT INTO tests (name, code, category, sample_type, price, turnaround_hours, active, created_at)
+         VALUES (?, ?, ?, ?, 0, ?, 1, ?)`,
+        [definition.name, definition.code, "Hematology", "Blood", 24, buildNow()]
+      );
+      test = { id: created.id };
+    }
+
+    await run(
+      `UPDATE tests
+       SET name = ?, code = ?, category = ?, sample_type = ?, turnaround_hours = ?, active = 1
+       WHERE id = ?`,
+      [definition.name, definition.code, "Hematology", "Blood", 24, test.id]
+    );
+
+    const parameter = await get(
+      `SELECT id FROM test_parameters
+       WHERE test_id = ? AND LOWER(parameter_name) LIKE ?
+       ORDER BY display_order ASC, id ASC LIMIT 1`,
+      [test.id, definition.parameterSearch]
+    ) || await get(
+      "SELECT id FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC LIMIT 1",
+      [test.id]
+    );
+
+    if (parameter) {
+      await run(
+        `UPDATE test_parameters
+         SET parameter_name = ?, unit = ?, normal_range = ?, display_order = 1
+         WHERE id = ?`,
+        [definition.parameterName, "cells/mcL", definition.normalRange, parameter.id]
+      );
+      continue;
+    }
+
+    await run(
+      `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, display_order)
+       VALUES (?, ?, ?, ?, 1)`,
+      [test.id, definition.parameterName, "cells/mcL", definition.normalRange]
+    );
+  }
+}
+
+async function ensureEsrTestConfiguration() {
+  const aliases = [
+    "ESR (Erythrocyte Sedimentation Rate)",
+    "Erythrocyte Sedimentation Rate",
+    "ESR",
+  ];
+  const placeholders = aliases.map(() => "LOWER(?)").join(", ");
+  let test = await get(
+    `SELECT id FROM tests
+     WHERE LOWER(name) IN (${placeholders})
+     ORDER BY id ASC LIMIT 1`,
+    aliases
   );
 
-  if (!aecTest) return;
+  if (!test) {
+    const created = await run(
+      `INSERT INTO tests (name, code, category, sample_type, price, turnaround_hours, active, created_at)
+       VALUES (?, ?, ?, ?, 0, ?, 1, ?)`,
+      ["ESR (Erythrocyte Sedimentation Rate)", "ESR7260", "Hematology", "Blood", 24, buildNow()]
+    );
+    test = { id: created.id };
+  }
 
   await run(
-    "UPDATE tests SET sample_type = ?, active = 1 WHERE id = ?",
-    ["Blood", aecTest.id]
+    `UPDATE tests
+     SET name = ?, code = ?, category = ?, sample_type = ?, turnaround_hours = ?, active = 1
+     WHERE id = ?`,
+    ["ESR (Erythrocyte Sedimentation Rate)", "ESR7260", "Hematology", "Blood", 24, test.id]
   );
 
-  const aecParameter = await get(
+  const parameter = await get(
     `SELECT id FROM test_parameters
-     WHERE test_id = ? AND LOWER(parameter_name) LIKE ?
+     WHERE test_id = ? AND LOWER(parameter_name) = LOWER(?)
      ORDER BY display_order ASC, id ASC LIMIT 1`,
-    [aecTest.id, "%eosinophil%"]
+    [test.id, "ESR"]
   ) || await get(
     "SELECT id FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC LIMIT 1",
-    [aecTest.id]
+    [test.id]
   );
 
-  if (aecParameter) {
+  if (parameter) {
     await run(
       `UPDATE test_parameters
        SET parameter_name = ?, unit = ?, normal_range = ?, display_order = 1
        WHERE id = ?`,
-      ["ABSOLUTE EOSINOPHIL COUNT (AEC)", "cells/mcL", "0 - 500", aecParameter.id]
+      ["ESR", "mm/hr", "0 - 15", parameter.id]
     );
-  } else {
+    return;
+  }
+
+  await run(
+    `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, display_order)
+     VALUES (?, ?, ?, ?, 1)`,
+    [test.id, "ESR", "mm/hr", "0 - 15"]
+  );
+}
+
+async function ensureIndividualHematologyReportTestConfigurations() {
+  const definitions = [
+    {
+      name: "Prothrombin Time Studies",
+      aliases: ["Prothrombin Time with INR", "Prothrombin Time (PT)", "Prothrombin Time", "PT"],
+      code: "PTM1097",
+      sampleType: "Citrated plasma",
+      parameters: [
+        { name: "Mean Normal Prothrombin Time (PT)", aliases: ["Mean Normal PT"], unit: "Sec", normalRange: "" },
+        { name: "Patient value", aliases: ["Patient Value", "Prothrombin Time"], unit: "Sec", normalRange: "9.60 - 11.70" },
+        { name: "Prothrombin Ratio (PR)", aliases: ["Prothrombin Ratio", "PR"], unit: "", normalRange: "" },
+        { name: "International Normalized Ratio (INR)", aliases: ["International Normalised Ratio (INR)", "INR"], unit: "", normalRange: "0.90 - 1.10" },
+      ],
+    },
+    {
+      name: "Direct Coombs Test",
+      aliases: ["Coombs Test, Direct, Serum", "Direct Antiglobulin Test", "DAT"],
+      code: "DCT1006",
+      sampleType: "EDTA Whole Blood",
+      parameters: [
+        { name: "COOMBS TEST, DIRECT, SERUM", aliases: ["Direct Coombs Test", "Result"], unit: "", normalRange: "" },
+      ],
+    },
+    {
+      name: "Indirect Coombs Test",
+      aliases: ["Coombs Test, Indirect, Serum", "Indirect Antiglobulin Test", "ICT"],
+      code: "ICT1008",
+      sampleType: "Serum",
+      parameters: [
+        { name: "Result", aliases: ["COOMBS TEST, INDIRECT, SERUM", "Indirect Coombs Test"], unit: "", normalRange: "" },
+        { name: "Titre", aliases: ["Titer"], unit: "", normalRange: "" },
+      ],
+    },
+    {
+      name: "Fibrinogen",
+      aliases: ["Fibrinogen, Clotting Activity"],
+      code: "FIB1007",
+      sampleType: "Citrated plasma",
+      parameters: [
+        { name: "FIBRINOGEN, CLOTTING ACTIVITY", aliases: ["Fibrinogen"], unit: "mg/dL", normalRange: "200.00 - 400.00" },
+      ],
+    },
+    {
+      name: "Reticulocyte Count",
+      aliases: ["RETICULOCYTE COUNT", "Reticulocyte Count (%)"],
+      code: "RETIC",
+      sampleType: "Whole Blood",
+      parameters: [
+        { name: "RETICULOCYTE COUNT", aliases: ["Reticulocyte Count"], unit: "%", normalRange: "0.5 - 2.5" },
+      ],
+    },
+    {
+      name: "Activated partial thromboplastin time, APTT",
+      aliases: ["APTT", "APTT (Activated Partial Thromboplastin Time)", "Activated Partial Thromboplastin Time (APTT)"],
+      code: "APTT1098",
+      sampleType: "Citrated plasma",
+      parameters: [
+        { name: "Patient Value", aliases: ["APTT Patient Value"], unit: "Sec", normalRange: "23.70 - 33.00" },
+        { name: "Control Value", aliases: ["APTT Control Value"], unit: "Sec", normalRange: "" },
+      ],
+    },
+    {
+      name: "Differential Leucocyte Count (DLC)",
+      aliases: ["DLC", "Differential Leucocyte Count", "Differential Leukocyte Count"],
+      code: "DLC1003",
+      sampleType: "Blood",
+      parameters: [
+        { name: "Neutrophils", aliases: ["Neutrophil"], unit: "%", normalRange: "50 - 62" },
+        { name: "Lymphocytes", aliases: ["Lymphocyte"], unit: "%", normalRange: "20 - 40" },
+        { name: "Eosinophils", aliases: ["Eosinophil"], unit: "%", normalRange: "00 - 06" },
+        { name: "Monocytes", aliases: ["Monocyte"], unit: "%", normalRange: "00 - 10" },
+        { name: "Basophils", aliases: ["Basophil"], unit: "%", normalRange: "00 - 02" },
+      ],
+    },
+    {
+      name: "Total Leucocyte Count (TLC / TC / WBC)",
+      aliases: ["Total Leucocyte Count (TLC)", "Total Leukocyte Count (TLC)", "TLC", "TC", "WBC", "WBC Count", "Total WBC Count", "White Blood Cell Count"],
+      code: "TLC",
+      sampleType: "Blood",
+      parameters: [
+        { name: "TOTAL LEUCOCYTE COUNT (TLC)", aliases: ["TLC", "TC", "WBC", "WBC Count", "Total WBC Count", "Total Leukocyte Count"], unit: "cumm", normalRange: "4000-11000" },
+      ],
+    },
+    {
+      name: "Red Blood Cell (RBC) Count",
+      aliases: ["RBC", "RBC Count", "Red Blood Cell Count"],
+      code: "RBC",
+      sampleType: "Blood",
+      parameters: [
+        { name: "Total RBC Count", aliases: ["RBC Count", "Erythrocytes"], unit: "mill/cumm", normalRange: "4.5 - 5.5" },
+      ],
+    },
+    {
+      name: "Hematocrit (HCT / PCV)",
+      aliases: ["Hematocrit (HCT)", "Haematocrit (HCT)", "HCT", "PCV", "Packed Cell Volume (PCV)", "Hematocrit", "Haematocrit"],
+      code: "HCT",
+      sampleType: "Blood",
+      parameters: [
+        {
+          name: "HCT / PCV",
+          aliases: ["HCT", "PCV", "Hematocrit (HCT)", "Haematocrit (HCT)", "Packed Cell Volume (PCV)", "Hematocrit", "Haematocrit"],
+          unit: "%",
+          normalRange: "40 - 50",
+        },
+      ],
+    },
+    {
+      name: "Mean Platelet Volume (MPV)",
+      aliases: ["MPV", "Mean Platelet Volume"],
+      code: "MPV",
+      sampleType: "Whole Blood",
+      parameters: [
+        { name: "Mean Platelet Volume (MPV)", aliases: ["MPV", "Result"], unit: "fL", normalRange: "6.50 - 12.00", entryMode: "manual" },
+      ],
+    },
+    {
+      name: "Mean Corpuscular Volume (MCV)",
+      aliases: ["MCV", "Mean Corpuscular Volume"],
+      code: "MCV",
+      sampleType: "Blood",
+      parameters: [
+        { name: "Hematocrit (HCT / PCV)", aliases: ["HCT", "PCV", "Hematocrit", "Haematocrit", "Packed Cell Volume"], unit: "%", normalRange: "", entryMode: "manual" },
+        { name: "Red Blood Cell (RBC) Count", aliases: ["RBC", "RBC Count", "Total RBC Count", "Erythrocytes"], unit: "mill/cumm", normalRange: "", entryMode: "manual" },
+        { name: "Mean Corpuscular Volume (MCV)", aliases: ["MCV"], unit: "fL", normalRange: "83.00 - 101.00", entryMode: "calculated", formula: "{Hematocrit (HCT / PCV)} * 10 / {Red Blood Cell (RBC) Count}", precision: 2 },
+      ],
+    },
+    {
+      name: "Mean Corpuscular Hemoglobin (MCH)",
+      aliases: ["MCH", "Mean Corpuscular Haemoglobin", "Mean Corpuscular Hemoglobin"],
+      code: "MCH",
+      sampleType: "Blood",
+      parameters: [
+        { name: "Hemoglobin (Hb)", aliases: ["Hb", "Hb(Haemoglobin)", "Hemoglobin", "Haemoglobin"], unit: "g/dL", normalRange: "", entryMode: "manual" },
+        { name: "Red Blood Cell (RBC) Count", aliases: ["RBC", "RBC Count", "Total RBC Count", "Erythrocytes"], unit: "mill/cumm", normalRange: "", entryMode: "manual" },
+        { name: "Mean Corpuscular Hemoglobin (MCH)", aliases: ["MCH", "Mean Corpuscular Haemoglobin"], unit: "pg", normalRange: "27.0 - 32.0", entryMode: "calculated", formula: "{Hemoglobin (Hb)} * 10 / {Red Blood Cell (RBC) Count}", precision: 1 },
+      ],
+    },
+    {
+      name: "Mean Corpuscular Hemoglobin Concentration (MCHC)",
+      aliases: ["MCHC", "Mean Corpuscular Hb. Concentration"],
+      code: "MCHC",
+      sampleType: "Blood",
+      parameters: [
+        { name: "Hemoglobin (Hb)", aliases: ["Hb", "Hb(Haemoglobin)", "Hemoglobin", "Haemoglobin"], unit: "g/dL", normalRange: "", entryMode: "manual" },
+        { name: "Hematocrit (HCT / PCV)", aliases: ["HCT", "PCV", "Hematocrit", "Haematocrit", "Packed Cell Volume"], unit: "%", normalRange: "", entryMode: "manual" },
+        { name: "MCHC", aliases: ["Mean Corpuscular Hemoglobin Concentration", "Mean Corpuscular Hb. Concentration"], unit: "g/dL", normalRange: "32.5 - 34.5", entryMode: "calculated", formula: "{Hemoglobin (Hb)} * 100 / {Hematocrit (HCT / PCV)}", precision: 1 },
+      ],
+    },
+    {
+      name: "Platelet Count",
+      aliases: ["Platelets Count", "Platelet Cell Count"],
+      code: "PLT1001",
+      sampleType: "Blood",
+      parameters: [
+        { name: "Platelet Count", aliases: ["PLATELET COUNT", "Platelets"], unit: "cumm", normalRange: "150000 - 410000" },
+      ],
+    },
+    {
+      name: "TORCH Profile",
+      aliases: ["TORCH Panel", "TORCH Profile, IgG & IgM", "TORCH PANEL, IgG & IgM, SERUM"],
+      code: "TORCH",
+      category: "Serology",
+      sampleType: "Serum",
+      parameters: [
+        { name: "Toxoplasma IgG", aliases: ["Toxo IgG"], unit: "IU/mL", normalRange: "< 7.20" },
+        { name: "Toxoplasma IgM", aliases: ["Toxo IgM"], unit: "AU/mL", normalRange: "< 10.00" },
+        { name: "Rubella IgG", aliases: [], unit: "IU/mL", normalRange: "< 7.00" },
+        { name: "Rubella IgM", aliases: [], unit: "AU/mL", normalRange: "< 20.00" },
+        { name: "Cytomegalovirus IgG", aliases: ["CMV IgG"], unit: "U/mL", normalRange: "< 12.00" },
+        { name: "Cytomegalovirus IgM", aliases: ["CMV IgM"], unit: "U/mL", normalRange: "< 18.00" },
+        { name: "Herpes simplex virus 1+2 IgG", aliases: ["HSV 1+2 IgG", "HSV IgG"], unit: "Index", normalRange: "< 0.90" },
+        { name: "Herpes simplex virus 1+2 IgM", aliases: ["HSV 1+2 IgM", "HSV IgM"], unit: "Index", normalRange: "< 0.90" },
+      ],
+    },
+    {
+      name: "Tumour Necrosis Factor (TNF), Alpha",
+      aliases: ["Tumor Necrosis Factor (TNF), Alpha", "TNF Alpha", "TNF-α"],
+      code: "TNFA",
+      category: "Immunology",
+      sampleType: "Plasma (1 ml)",
+      parameters: [
+        { name: "TUMOUR NECROSIS FACTOR (TNF), ALPHA", aliases: ["TNF Alpha", "TNF-α", "Tumor Necrosis Factor Alpha"], unit: "pg/mL", normalRange: "< = 2.80" },
+      ],
+    },
+    {
+      name: "Hb(Haemoglobin)",
+      aliases: ["Hemoglobin (Hb)", "Haemoglobin (Hb)", "Hemoglobin", "Haemoglobin"],
+      code: "HBX3289",
+      sampleType: "Blood",
+      parameters: [
+        { name: "Hemoglobin (Hb)", aliases: ["Hemoglobin", "Haemoglobin", "Hb"], unit: "g/dL", normalRange: "13.5 - 17.5" },
+      ],
+    },
+  ];
+
+  for (const definition of definitions) {
+    const matchingNames = [definition.name, ...definition.aliases];
+    const namePlaceholders = matchingNames.map(() => "LOWER(?)").join(", ");
+    let test = await get(
+      `SELECT id FROM tests
+       WHERE LOWER(name) IN (${namePlaceholders})
+       ORDER BY id ASC LIMIT 1`,
+      matchingNames
+    );
+
+    if (!test) {
+      const created = await run(
+        `INSERT INTO tests (name, code, category, sample_type, price, turnaround_hours, active, created_at)
+         VALUES (?, ?, ?, ?, 0, ?, 1, ?)`,
+        [definition.name, definition.code, definition.category || "Hematology", definition.sampleType, 24, buildNow()]
+      );
+      test = { id: created.id };
+    }
+
     await run(
-      `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, display_order)
-       VALUES (?, ?, ?, ?, 1)`,
-      [aecTest.id, "ABSOLUTE EOSINOPHIL COUNT (AEC)", "cells/mcL", "0 - 500"]
+      `UPDATE tests
+       SET name = ?, code = ?, category = ?, sample_type = ?, turnaround_hours = ?, active = 1
+       WHERE id = ?`,
+      [definition.name, definition.code, definition.category || "Hematology", definition.sampleType, 24, test.id]
+    );
+
+    for (const [index, parameterDefinition] of definition.parameters.entries()) {
+      const parameterNames = [parameterDefinition.name, ...(parameterDefinition.aliases || [])];
+      const parameterPlaceholders = parameterNames.map(() => "LOWER(?)").join(", ");
+      let parameter = await get(
+        `SELECT id FROM test_parameters
+         WHERE test_id = ? AND LOWER(parameter_name) IN (${parameterPlaceholders})
+         ORDER BY display_order ASC, id ASC LIMIT 1`,
+        [test.id, ...parameterNames]
+      );
+
+      if (!parameter && index === 0) {
+        parameter = await get(
+          "SELECT id FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC LIMIT 1",
+          [test.id]
+        );
+      }
+
+      if (parameter) {
+        const entryMode = parameterDefinition.entryMode === "calculated" ? "calculated" : "manual";
+        const formula = entryMode === "calculated" ? (parameterDefinition.formula || null) : null;
+        const precision = Number.isInteger(parameterDefinition.precision) ? parameterDefinition.precision : 2;
+        await run(
+          `UPDATE test_parameters
+           SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = ?, calculation_formula = ?, calculation_precision = ?, display_order = ?
+           WHERE id = ?`,
+          [parameterDefinition.name, parameterDefinition.unit, parameterDefinition.normalRange, entryMode, formula, precision, index + 1, parameter.id]
+        );
+        continue;
+      }
+
+      const entryMode = parameterDefinition.entryMode === "calculated" ? "calculated" : "manual";
+      const formula = entryMode === "calculated" ? (parameterDefinition.formula || null) : null;
+      const precision = Number.isInteger(parameterDefinition.precision) ? parameterDefinition.precision : 2;
+      await run(
+        `INSERT INTO test_parameters (
+           test_id, parameter_name, unit, normal_range,
+           entry_mode, calculation_formula, calculation_precision, display_order
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [test.id, parameterDefinition.name, parameterDefinition.unit, parameterDefinition.normalRange, entryMode, formula, precision, index + 1]
+      );
+    }
+  }
+}
+
+async function ensureHbTlcDlcEsrProfileBundle() {
+  const profileName = "Hb + TLC/TC/WBC + DLC + ESR Profile";
+  let profile = await get(
+    "SELECT id FROM tests WHERE LOWER(name) = LOWER(?) OR LOWER(code) = LOWER(?) ORDER BY id ASC LIMIT 1",
+    [profileName, "HBTLCDLCESR"]
+  );
+
+  if (!profile) {
+    const created = await run(
+      `INSERT INTO tests (name, code, category, sample_type, price, turnaround_hours, active, created_at)
+       VALUES (?, ?, ?, ?, 0, ?, 1, ?)`,
+      [profileName, "HBTLCDLCESR", "Profile", "Whole Blood", 24, buildNow()]
+    );
+    profile = { id: created.id };
+  }
+
+  await run(
+    `UPDATE tests
+     SET name = ?, code = ?, category = ?, sample_type = ?, turnaround_hours = ?, active = 1
+     WHERE id = ?`,
+    [profileName, "HBTLCDLCESR", "Profile", "Whole Blood", 24, profile.id]
+  );
+
+  const componentNames = [
+    "Hb(Haemoglobin)",
+    "Total Leucocyte Count (TLC / TC / WBC)",
+    "Differential Leucocyte Count (DLC)",
+    "ESR (Erythrocyte Sedimentation Rate)",
+  ];
+
+  for (const [index, componentName] of componentNames.entries()) {
+    const component = await get(
+      "SELECT id FROM tests WHERE LOWER(name) = LOWER(?) AND active = 1 ORDER BY id ASC LIMIT 1",
+      [componentName]
+    );
+    if (!component) {
+      throw new Error(`Unable to configure ${profileName}: missing component ${componentName}`);
+    }
+
+    await run(
+      `INSERT INTO test_bundle_items (bundle_test_id, component_test_id, display_order)
+       VALUES (?, ?, ?)
+       ON CONFLICT(bundle_test_id, component_test_id) DO UPDATE SET display_order = excluded.display_order`,
+      [profile.id, component.id, index + 1]
     );
   }
 }
@@ -5281,7 +5714,10 @@ async function initializeDatabase() {
     await applyOneTimeMigration("cbc-calculation-defaults-v2", upgradeCbcCalculationDefaults);
     await applyOneTimeMigration("cbc-catalog-normalization-v3", normalizeCbcCatalogParameters);
     await ensureAbsoluteNeutrophilCountTestConfiguration();
-    await ensureAbsoluteEosinophilCountTestConfiguration();
+    await ensureAbsoluteCountTestConfigurations();
+    await ensureEsrTestConfiguration();
+    await ensureIndividualHematologyReportTestConfigurations();
+    await ensureHbTlcDlcEsrProfileBundle();
     await ensureBloodGroupTestConfiguration();
     await ensureDDimerTestConfiguration();
     await ensureSickleCellMutationAnalysisTestConfiguration();
@@ -5438,7 +5874,10 @@ async function initializeDatabase() {
     await applyOneTimeMigration("cbc-calculation-defaults-v2", upgradeCbcCalculationDefaults);
     await applyOneTimeMigration("cbc-catalog-normalization-v3", normalizeCbcCatalogParameters);
     await ensureAbsoluteNeutrophilCountTestConfiguration();
-    await ensureAbsoluteEosinophilCountTestConfiguration();
+    await ensureAbsoluteCountTestConfigurations();
+    await ensureEsrTestConfiguration();
+    await ensureIndividualHematologyReportTestConfigurations();
+    await ensureHbTlcDlcEsrProfileBundle();
     await ensureBloodGroupTestConfiguration();
     await ensureDDimerTestConfiguration();
     await ensureSickleCellMutationAnalysisTestConfiguration();

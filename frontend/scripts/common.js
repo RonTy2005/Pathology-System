@@ -454,7 +454,7 @@ async function downloadBillPdf(visitId, billNo = "") {
 
     await new Promise((resolve) => setTimeout(resolve, 500));
     const billContent = documentFrame.body;
-    if (!billContent?.querySelector(".receipt")) throw new Error("The bill layout could not be prepared.");
+    if (!billContent?.querySelector(".bill-slip, .receipt")) throw new Error("The bill layout could not be prepared.");
 
     const cleanBillNo = String(billNo || `visit-${visitId}`).replace(/[^a-z0-9_-]/gi, "_");
     await html2pdf()

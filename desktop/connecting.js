@@ -7,7 +7,7 @@ const serverUrlInput = document.querySelector("#serverUrl");
 const manualMessage = document.querySelector("#manualMessage");
 
 function renderStatus(status) {
-  message.textContent = status.message || "Preparing Lab LMS…";
+  message.textContent = status.message || "Preparing LabShield…";
   retryButton.disabled = status.phase === "searching";
   choices.replaceChildren();
   choices.hidden = !status.servers?.length;

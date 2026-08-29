@@ -3,8 +3,8 @@ const isServer = mode === "server";
 const packageVersion = require("../package.json").version;
 
 module.exports = {
-  appId: isServer ? "xyz.nexorawebstudios.lablms.server" : "xyz.nexorawebstudios.lablms.client",
-  productName: isServer ? "Lab LMS Server" : "Lab LMS",
+  appId: isServer ? "xyz.nexorawebstudios.labshield.server" : "xyz.nexorawebstudios.labshield.client",
+  productName: isServer ? "LabShield Server" : "LabShield",
   asar: false,
   directories: {
     output: `release-${mode}-${packageVersion}`,
@@ -20,11 +20,18 @@ module.exports = {
     main: "desktop/main.js",
     labLmsMode: mode,
   },
+  extraResources: isServer ? [
+    {
+      from: "labshield-catalogue.db",
+      to: "labshield-catalogue.db",
+    },
+  ] : [],
   win: {
+    icon: "desktop/assets/labshield-icon.ico",
     target: [{ target: "nsis", arch: ["x64"] }],
     artifactName: isServer
-      ? "Lab-LMS-Server-Setup-${version}.${ext}"
-      : "Lab-LMS-Client-Setup-${version}.${ext}",
+      ? "LabShield-Server-Setup-${version}-win10-x64.${ext}"
+      : "LabShield-Client-Setup-${version}-win10-x64.${ext}",
   },
   nsis: {
     oneClick: false,
@@ -32,7 +39,7 @@ module.exports = {
     allowElevation: true,
     perMachine: isServer,
     createDesktopShortcut: true,
-    shortcutName: isServer ? "Lab LMS Server" : "Lab LMS",
+    shortcutName: isServer ? "LabShield Server" : "LabShield",
     include: isServer ? "desktop/installer/server-firewall.nsh" : undefined,
   },
 };

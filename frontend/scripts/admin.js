@@ -49,6 +49,8 @@ const businessPhoneInput = document.getElementById("businessPhone");
 const businessEmailInput = document.getElementById("businessEmail");
 const registrationNoInput = document.getElementById("registrationNo");
 const patientPortalBaseUrlInput = document.getElementById("patientPortalBaseUrl");
+const businessOpeningTimeInput = document.getElementById("businessOpeningTime");
+const businessClosingTimeInput = document.getElementById("businessClosingTime");
 const businessLogoFileInput = document.getElementById("businessLogoFile");
 const businessLogoPreview = document.getElementById("businessLogoPreview");
 const businessLogoPreviewEmpty = document.getElementById("businessLogoPreviewEmpty");
@@ -369,6 +371,8 @@ async function loadBusinessSettings() {
   if (businessEmailInput) businessEmailInput.value = settings.email || "";
   if (registrationNoInput) registrationNoInput.value = settings.registrationNo || "";
   if (patientPortalBaseUrlInput) patientPortalBaseUrlInput.value = settings.patientPortalBaseUrl || "";
+  if (businessOpeningTimeInput) businessOpeningTimeInput.value = settings.businessOpeningTime || "";
+  if (businessClosingTimeInput) businessClosingTimeInput.value = settings.businessClosingTime || "";
   ID_CARD_ADDRESS = settings.address || "";
   ID_CARD_PHONE = settings.phone || "";
   if (defaultReportOutputStyle) {
@@ -404,6 +408,8 @@ async function saveBusinessSettings(event) {
     email: businessEmailInput?.value.trim() || "",
     registrationNo: registrationNoInput?.value.trim() || "",
     patientPortalBaseUrl: patientPortalBaseUrlInput?.value.trim() || "",
+    businessOpeningTime: businessOpeningTimeInput?.value || "",
+    businessClosingTime: businessClosingTimeInput?.value || "",
     defaultReportIncludesLetterhead: defaultReportOutputStyle?.value !== "plain",
     reportHeaderSpaceMm: headerSpaceMm,
     reportFooterSpaceMm: footerSpaceMm,

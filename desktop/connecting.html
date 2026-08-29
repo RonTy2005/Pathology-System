@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Connecting to Lab LMS</title>
+  <title>Connecting to LabShield</title>
   <link rel="stylesheet" href="connecting.css" />
 </head>
 <body>
   <main class="connection-card">
-    <div class="mark" aria-hidden="true">+</div>
-    <div class="eyebrow">Lab LMS desktop</div>
+    <div class="mark" aria-hidden="true"><img src="assets/labshield-icon.png" alt="" /></div>
+    <div class="eyebrow">LabShield desktop</div>
     <h1>Connecting to your laboratory</h1>
-    <p id="connectionMessage" class="message" aria-live="polite">Preparing Lab LMS…</p>
+    <p id="connectionMessage" class="message" aria-live="polite">Preparing LabShield…</p>
     <div id="serverChoices" class="server-choices" hidden></div>
     <div class="actions">
       <button id="retryButton" type="button">Search again</button>
@@ -25,7 +25,7 @@
       <button type="submit">Connect</button>
       <p id="manualMessage" class="manual-message" aria-live="polite"></p>
     </form>
-    <p class="note">Staff PCs automatically find the central Lab LMS server on the same private network.</p>
+    <p class="note">Staff PCs automatically find the central LabShield server on the same private network.</p>
   </main>
   <script src="connecting.js"></script>
 </body>

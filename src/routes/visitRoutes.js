@@ -9,6 +9,8 @@ const { buildBillHtml } = require("../utils/billFormatter");
 const { getBusinessSettings } = require("../services/businessSettingsService");
 const { createPatientPortalToken, getPatientPortalUrl, getPatientPortalReportUrl, getPatientPortalBillUrl } = require("../utils/patientPortal");
 const { applyCalculatedParameters } = require("../utils/resultCalculations");
+const { expandTestBundleConfigs, expandBundleReportTests } = require("../services/testBundleService");
+const { materializeRegistrationTests } = require("../services/registrationTestService");
 
 const visitRouter = express.Router();
 const MAX_IMAGING_REPORT_BYTES = 6 * 1024 * 1024;
@@ -519,6 +521,7 @@ async function getReportBundle(visitId) {
     `
     SELECT
       vt.id AS visit_test_id,
+      vt.test_id AS test_id,
       COALESCE(vt.custom_test_name, t.name) AS name,
       t.category,
       t.code,
@@ -531,7 +534,7 @@ async function getReportBundle(visitId) {
     FROM visit_tests vt
     LEFT JOIN tests t ON t.id = vt.test_id
     WHERE vt.visit_id = ?
-    ORDER BY name ASC
+    ORDER BY vt.id ASC
     `,
     [visitId]
   );
@@ -561,13 +564,15 @@ async function getReportBundle(visitId) {
     );
   }
 
+  const reportTests = await expandBundleReportTests(tests);
+
   return {
     report,
     visit,
     patient,
     doctor,
     associate,
-    tests,
+    tests: reportTests,
     generatedBy: generatedByUser?.full_name,
   };
 }
@@ -1161,7 +1166,9 @@ visitRouter.post(
     }
 
     const tests = [];
-    const testConfigs = Array.isArray(req.body.tests) ? req.body.tests : (testIds || []).map(id => ({ id }));
+    const requestedTestConfigs = Array.isArray(req.body.tests) ? req.body.tests : (testIds || []).map(id => ({ id }));
+    const materializedTests = await materializeRegistrationTests(requestedTestConfigs);
+    const testConfigs = await expandTestBundleConfigs(materializedTests.testConfigs);
     
     for (const config of testConfigs) {
       if (config.isCustom) {
@@ -1264,6 +1271,7 @@ visitRouter.post(
       meta: {
         patient: patient.name,
         tests: tests.map((test) => test.name),
+        newlyAddedCatalogueTests: materializedTests.createdTests.map((test) => test.name),
         sampleSource,
         associate: associateRecord?.name || "Direct at lab",
       },
