@@ -1568,13 +1568,80 @@ async function ensureAdditionalClinicalPathologyReportTestConfigurations() {
   });
 
   await ensureReportTableTestConfiguration({
-    names: ["Thyroid Stimulating Hormone (TSH)", "TSH", "TSH, Serum"],
+    names: ["Thyroid Stimulating Hormone (TSH)", "TSH (Thyroid Stimulating Hormone)", "TSH", "TSH, Serum"],
     createName: "Thyroid Stimulating Hormone (TSH)",
     createCode: "TSH001",
     category: "Endocrinology",
     sampleType: "Serum",
     turnaroundHours: 24,
     parameters: [
+      { name: "TSH, Serum", aliases: ["TSH", "Thyroid Stimulating Hormone"], unit: "mU/L", normalRange: "0.40 - 4.00", entryMode: "manual" },
+    ],
+  });
+
+  // The imported hormone catalogue uses these FT3/FT4/TSH names.  Give each
+  // test its real report fields instead of leaving the import placeholder
+  // ("Result", N/A) in place, which otherwise produces an empty report.
+  await ensureReportTableTestConfiguration({
+    names: ["FT4 (Free Thyroxine)", "FT4", "Free T4", "Free Thyroxine"],
+    createName: "FT4 (Free Thyroxine)",
+    createCode: "FT4001",
+    category: "Endocrinology",
+    sampleType: "Serum",
+    turnaroundHours: 24,
+    parameters: [
+      { name: "FT4, Serum", aliases: ["FT4", "Free T4", "Free Thyroxine", "Result"], unit: "ng/dL", normalRange: "0.90 - 1.70", entryMode: "manual" },
+    ],
+  });
+
+  await ensureReportTableTestConfiguration({
+    names: ["FT3 (Free Tri-iodothyronine)", "FT3", "Free T3", "Free Tri-iodothyronine"],
+    createName: "FT3 (Free Tri-iodothyronine)",
+    createCode: "FT3001",
+    category: "Endocrinology",
+    sampleType: "Serum",
+    turnaroundHours: 24,
+    parameters: [
+      { name: "FT3, Serum", aliases: ["FT3", "Free T3", "Free Tri-iodothyronine", "Result"], unit: "pg/mL", normalRange: "2.00 - 4.40", entryMode: "manual" },
+    ],
+  });
+
+  await ensureReportTableTestConfiguration({
+    names: ["FT3 & TSH", "FT3 and TSH"],
+    createName: "FT3 & TSH",
+    createCode: "FT3TSH001",
+    category: "Endocrinology",
+    sampleType: "Serum",
+    turnaroundHours: 24,
+    parameters: [
+      { name: "FT3, Serum", aliases: ["FT3", "Free T3", "Free Tri-iodothyronine", "Result"], unit: "pg/mL", normalRange: "2.00 - 4.40", entryMode: "manual" },
+      { name: "TSH, Serum", aliases: ["TSH", "Thyroid Stimulating Hormone"], unit: "mU/L", normalRange: "0.40 - 4.00", entryMode: "manual" },
+    ],
+  });
+
+  await ensureReportTableTestConfiguration({
+    names: ["FT4 & TSH", "FT4 and TSH"],
+    createName: "FT4 & TSH",
+    createCode: "FT4TSH001",
+    category: "Endocrinology",
+    sampleType: "Serum",
+    turnaroundHours: 24,
+    parameters: [
+      { name: "FT4, Serum", aliases: ["FT4", "Free T4", "Free Thyroxine", "Result"], unit: "ng/dL", normalRange: "0.90 - 1.70", entryMode: "manual" },
+      { name: "TSH, Serum", aliases: ["TSH", "Thyroid Stimulating Hormone"], unit: "mU/L", normalRange: "0.40 - 4.00", entryMode: "manual" },
+    ],
+  });
+
+  await ensureReportTableTestConfiguration({
+    names: ["FT3, FT4 & TSH", "FT3, FT4 and TSH"],
+    createName: "FT3, FT4 & TSH",
+    createCode: "FT3FT4TSH001",
+    category: "Endocrinology",
+    sampleType: "Serum",
+    turnaroundHours: 24,
+    parameters: [
+      { name: "FT3, Serum", aliases: ["FT3", "Free T3", "Free Tri-iodothyronine", "Result"], unit: "pg/mL", normalRange: "2.00 - 4.40", entryMode: "manual" },
+      { name: "FT4, Serum", aliases: ["FT4", "Free T4", "Free Thyroxine"], unit: "ng/dL", normalRange: "0.90 - 1.70", entryMode: "manual" },
       { name: "TSH, Serum", aliases: ["TSH", "Thyroid Stimulating Hormone"], unit: "mU/L", normalRange: "0.40 - 4.00", entryMode: "manual" },
     ],
   });
@@ -2322,6 +2389,26 @@ async function ensureSputumAfbTestConfiguration() {
       { name: "Auramine Grade" },
       { name: "Ziehl Neelsen Result", aliases: ["Ziehl-Neelsen Result"] },
       { name: "Ziehl Neelsen Grade", aliases: ["Ziehl-Neelsen Grade"] },
+    ],
+  });
+
+  await ensureReportTableTestConfiguration({
+    names: [
+      "AFB Culture & Sensitivity",
+      "AFB Culture and Sensitivity",
+      "AFB Culture & Sensitivity (Bactec method)",
+      "AFB Culture and Sensitivity (Bactec Method)",
+    ],
+    createName: "AFB Culture & Sensitivity",
+    createCode: "AFBCULTURESENS",
+    category: "Microbiology",
+    sampleType: "Sputum/Pus",
+    turnaroundHours: 1008,
+    parameters: [
+      { name: "AFB Culture Result", aliases: ["Culture Result", "AFB Culture", "Result"], normalRange: "No growth" },
+      { name: "Organism Isolated", aliases: ["Organism", "Isolate"] },
+      { name: "Drug Sensitivity", aliases: ["Drug Susceptibility", "Sensitivity", "Susceptibility"] },
+      { name: "Comments", aliases: ["Comment", "Remarks"] },
     ],
   });
 }

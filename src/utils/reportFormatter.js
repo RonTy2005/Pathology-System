@@ -491,6 +491,12 @@ function isSputumAfbTest(test) {
   return code === "sputumafb" || name === "sputumexaminationafb" || name.includes("sputumafbstain") || name.includes("sputumexaminationafb");
 }
 
+function isAfbCultureSensitivityTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return name === "afbculturesensitivity" || name === "afbcultureandsensitivity"
+    || name === "afbculturesensitivitybactecmethod" || name === "afbcultureandsensitivitybactecmethod";
+}
+
 function isStoolCultureTest(test) {
   const name = normalizeParameterName(test?.name);
   const code = normalizeParameterName(test?.code);
@@ -4908,6 +4914,30 @@ function buildSputumAfbReportBody(test) {
   `;
 }
 
+function buildAfbCultureSensitivityReportBody(test) {
+  const valueFor = (aliases, fallback = "-") => {
+    const parameter = findReportParameter(test, aliases) || {};
+    return String(parameter.value || "").trim() || fallback;
+  };
+  const cultureResult = valueFor(["AFB Culture Result", "Culture Result", "AFB Culture", "Result"]);
+  const organism = valueFor(["Organism Isolated", "Organism", "Isolate"]);
+  const sensitivity = valueFor(["Drug Sensitivity", "Drug Susceptibility", "Sensitivity", "Susceptibility"]);
+  const comments = valueFor(["Comments", "Comment", "Remarks"], "");
+  const status = getCultureStatus(cultureResult);
+
+  return `
+    <table class="results-table culture-table afb-culture-table">
+      <thead><tr><th style="width: 38%">Investigation</th><th style="width: 25%">Result</th><th style="width: 25%">Reference Value</th><th style="width: 12%">Unit</th></tr></thead>
+      <tbody>
+        <tr><td><strong>AFB CULTURE &amp; SENSITIVITY</strong><div class="single-analyte-method">Culture, identification and susceptibility testing</div></td><td><span class="${status?.className || ""}">${escapeHtml(status?.label || cultureResult)}</span></td><td>No growth</td><td></td></tr>
+        <tr><td>Organism Isolated</td><td colspan="3">${escapeHtml(organism)}</td></tr>
+        <tr><td>Drug Sensitivity</td><td colspan="3">${escapeHtml(sensitivity)}</td></tr>
+      </tbody>
+    </table>
+    ${comments ? `<div class="single-analyte-notes culture-notes"><div class="report-note-heading">Comments:</div><p>${escapeHtml(comments)}</p></div>` : ""}
+  `;
+}
+
 function buildCultureReportBody(test, { cultureName, aliases, defaultComment }) {
   const result = findReportParameter(test, aliases) || {};
   const status = getCultureStatus(result.value);
@@ -8104,6 +8134,7 @@ function buildBunReportBody(test) {
   if (isGroupBStrepTest(test)) return buildGroupBStrepReportBody(test);
   if (isFungusKohPreparationTest(test)) return buildFungusKohPreparationReportBody(test);
   if (isSputumAfbTest(test)) return buildSputumAfbReportBody(test);
+  if (isAfbCultureSensitivityTest(test)) return buildAfbCultureSensitivityReportBody(test);
   if (isStoolCultureTest(test)) return buildCultureReportBody(test, {
     cultureName: "CULTURE, STOOL",
     aliases: ["Culture, Stool", "Culture Result", "Stool Culture", "Result"],
@@ -9213,7 +9244,7 @@ function buildReportHtml(reportData) {
   const globulinTest = singleTest && isGlobulinTest(singleTest) ? singleTest : null;
   const albuminTest = singleTest && isAlbuminTest(singleTest) ? singleTest : null;
   const digoxinTest = singleTest && isDigoxinTest(singleTest) ? singleTest : null;
-  const bunTest = singleTest && (isBunTest(singleTest) || isGroupBStrepTest(singleTest) || isFungusKohPreparationTest(singleTest) || isSputumAfbTest(singleTest) || isStoolCultureTest(singleTest) || isUrineCultureTest(singleTest) || isMalariaParasiteIdentificationTest(singleTest) || isMycobacteriumCombinedPanelTest(singleTest) || isOvaAndParasiteTest(singleTest) || isTripleMarkerTest(singleTest) || isDoubleMarkerTest(singleTest) || isPax8Test(singleTest) || isGalectin3Test(singleTest) || isHer2Test(singleTest) || isDcpTest(singleTest) || isAfpTumorMarkerTest(singleTest) || isCa199Test(singleTest) || isCa153Test(singleTest) || isCa125Test(singleTest) || isTroponinITest(singleTest) || isTroponinTTest(singleTest) || isDengueNs1Test(singleTest) || isDengueIggTest(singleTest) || isDengueIgmTest(singleTest) || isRastTest(singleTest) || isWidalTest(singleTest) || isCrpTest(singleTest) || isSodiumTest(singleTest) || isIronTest(singleTest) || isLacticAcidTest(singleTest) || isMagnesiumTest(singleTest) || isLipaseTest(singleTest) || isAmylaseTest(singleTest) || isGgtTest(singleTest) || isChlorideTest(singleTest) || isCreatinine24HourUrineTest(singleTest) || isSemenAnalysisTest(singleTest) || isUrineCotinineTest(singleTest) || isUrineGlucoseTest(singleTest) || isPorphyrinsTest(singleTest) || isOccultBloodStoolTest(singleTest) || isCsfAnalysisTest(singleTest) || isTshTest(singleTest) || isThyroidProfileTest(singleTest) || isThyroidAntibodiesTest(singleTest) || isTriiodothyronineTotalTest(singleTest) || isTestosteroneTotalTest(singleTest) || isProgesteroneTest(singleTest) || isCortisoneTest(singleTest) || isBetaHcgPregnancyTest(singleTest) || isProlactinTest(singleTest) || isDheaTest(singleTest) || isEstradiolTest(singleTest) || isLuteinizingHormoneTest(singleTest) || isFollicleStimulatingHormoneTest(singleTest) || isThyroxineTotalTest(singleTest) || isCalcitoninTest(singleTest) || isInhibinATest(singleTest) || isInhibinBTest(singleTest) || isPappATest(singleTest) || isDheasTest(singleTest) || isHistopathologyReportTest(singleTest) || isCreatinineTest(singleTest) || isIonizedCalciumTest(singleTest) || isFlecainideTest(singleTest) || isPhenobarbitalTest(singleTest) || isKetoneBodyTest(singleTest) || isUricAcidTest(singleTest) || isTibcTest(singleTest) || isSerumOsmolalityTest(singleTest) || isArterialBloodGasTest(singleTest) || isManganeseBloodTest(singleTest) || isSeleniumSerumTest(singleTest))
+  const bunTest = singleTest && (isBunTest(singleTest) || isGroupBStrepTest(singleTest) || isFungusKohPreparationTest(singleTest) || isSputumAfbTest(singleTest) || isAfbCultureSensitivityTest(singleTest) || isStoolCultureTest(singleTest) || isUrineCultureTest(singleTest) || isMalariaParasiteIdentificationTest(singleTest) || isMycobacteriumCombinedPanelTest(singleTest) || isOvaAndParasiteTest(singleTest) || isTripleMarkerTest(singleTest) || isDoubleMarkerTest(singleTest) || isPax8Test(singleTest) || isGalectin3Test(singleTest) || isHer2Test(singleTest) || isDcpTest(singleTest) || isAfpTumorMarkerTest(singleTest) || isCa199Test(singleTest) || isCa153Test(singleTest) || isCa125Test(singleTest) || isTroponinITest(singleTest) || isTroponinTTest(singleTest) || isDengueNs1Test(singleTest) || isDengueIggTest(singleTest) || isDengueIgmTest(singleTest) || isRastTest(singleTest) || isWidalTest(singleTest) || isCrpTest(singleTest) || isSodiumTest(singleTest) || isIronTest(singleTest) || isLacticAcidTest(singleTest) || isMagnesiumTest(singleTest) || isLipaseTest(singleTest) || isAmylaseTest(singleTest) || isGgtTest(singleTest) || isChlorideTest(singleTest) || isCreatinine24HourUrineTest(singleTest) || isSemenAnalysisTest(singleTest) || isUrineCotinineTest(singleTest) || isUrineGlucoseTest(singleTest) || isPorphyrinsTest(singleTest) || isOccultBloodStoolTest(singleTest) || isCsfAnalysisTest(singleTest) || isTshTest(singleTest) || isThyroidProfileTest(singleTest) || isThyroidAntibodiesTest(singleTest) || isTriiodothyronineTotalTest(singleTest) || isTestosteroneTotalTest(singleTest) || isProgesteroneTest(singleTest) || isCortisoneTest(singleTest) || isBetaHcgPregnancyTest(singleTest) || isProlactinTest(singleTest) || isDheaTest(singleTest) || isEstradiolTest(singleTest) || isLuteinizingHormoneTest(singleTest) || isFollicleStimulatingHormoneTest(singleTest) || isThyroxineTotalTest(singleTest) || isCalcitoninTest(singleTest) || isInhibinATest(singleTest) || isInhibinBTest(singleTest) || isPappATest(singleTest) || isDheasTest(singleTest) || isHistopathologyReportTest(singleTest) || isCreatinineTest(singleTest) || isIonizedCalciumTest(singleTest) || isFlecainideTest(singleTest) || isPhenobarbitalTest(singleTest) || isKetoneBodyTest(singleTest) || isUricAcidTest(singleTest) || isTibcTest(singleTest) || isSerumOsmolalityTest(singleTest) || isArterialBloodGasTest(singleTest) || isManganeseBloodTest(singleTest) || isSeleniumSerumTest(singleTest))
     ? singleTest
     : null;
   const typhidotTest = singleTest && (isTyphidotTest(singleTest) || isHbsAgTest(singleTest) || isAntiHbcIgmTest(singleTest) || isHepatitisBProfileTest(singleTest) || isMantouxTest(singleTest) || isHiv12ScreeningTest(singleTest) || isAntiBTitreTest(singleTest) || isAntiATitreTest(singleTest) || isDustAllergyTest(singleTest) || isDengueFeverPanelTest(singleTest) || isG6PdTest(singleTest) || isAntiHbsTest(singleTest) || isGangliosideGm1IggTest(singleTest) || isGangliosideGm1IgmTest(singleTest) || isGangliosideGd1aIggTest(singleTest) || isGangliosideGd1aIgmTest(singleTest) || isGangliosideGd1bIggTest(singleTest) || isGangliosideGq1bIggTest(singleTest) || isAntiHistoneAntibodiesTest(singleTest) || isRibosomePAntibodiesTest(singleTest) || isAntiCcpTest(singleTest) || isImmunoglobulinIggTest(singleTest) || isImmunoglobulinIgeTest(singleTest) || isImmunoglobulinIgmTest(singleTest) || isImmunoglobulinIgaTest(singleTest))
@@ -9371,6 +9402,7 @@ function buildReportHtml(reportData) {
         if (reportData.tests.length === 1 && isGroupBStrepTest(t)) return "GROUP B STREP (GBS)";
         if (reportData.tests.length === 1 && isFungusKohPreparationTest(t)) return "FUNGUS ROUTINE, KOH PREPARATION";
         if (reportData.tests.length === 1 && isSputumAfbTest(t)) return "SPUTUM EXAMINATION, AFB";
+        if (reportData.tests.length === 1 && isAfbCultureSensitivityTest(t)) return "AFB CULTURE & SENSITIVITY";
         if (reportData.tests.length === 1 && isStoolCultureTest(t)) return "STOOL CULTURE";
         if (reportData.tests.length === 1 && isUrineCultureTest(t)) return "URINE CULTURE";
         if (reportData.tests.length === 1 && isMalariaParasiteIdentificationTest(t)) return "MALARIA PARASITE IDENTIFICATION";
@@ -10357,6 +10389,15 @@ function buildReportHtml(reportData) {
         .sickle-cell-mutation-notes li { margin: 0 0 2px; }
         .sickle-cell-mutation-notes p { margin: 2px 0; text-align: justify; }
         .sickle-cell-mutation-report .report-footer { margin-top: 3px; padding-top: 3px; font-size: 10px; }
+
+        /* Keep the actual reported values legible.  This deliberately applies
+           only to result tables, not to the clinical notes and descriptions. */
+        table.results-table > thead > tr > th,
+        table.results-table > tbody > tr > td {
+          font-size: 14px !important;
+          line-height: 1.2 !important;
+        }
+
         @media print {
           /* Chromium clips page-margin content, including fixed letterhead
              artwork. Keep the page edge-to-edge and reserve the header/footer
