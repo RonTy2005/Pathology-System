@@ -2715,7 +2715,8 @@ function copyQuoteToClipboard() {
     if (hasPermission("manage_tests") && openTestCatalogBtn) {
       openTestCatalogBtn.hidden = false;
       openTestCatalogBtn.addEventListener("click", () => {
-        window.location.href = "test-catalog.html";
+        const returnTo = `${window.location.pathname.split("/").pop() || "reception.html"}${window.location.hash || ""}`;
+        window.location.href = `test-catalog.html?returnTo=${encodeURIComponent(returnTo)}`;
       });
     }
 

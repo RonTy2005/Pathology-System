@@ -24,6 +24,15 @@ const resetTestBtn = document.getElementById("resetTestBtn");
 const previewTestBtn = document.getElementById("previewTestBtn");
 const testList = document.getElementById("testList");
 const reportPreview = document.getElementById("reportPreview");
+const reportPreviewViewport = document.getElementById("reportPreviewViewport");
+const reportPreviewStatus = document.getElementById("reportPreviewStatus");
+const backToOriginBtn = document.getElementById("backToOriginBtn");
+
+const A4_PREVIEW_WIDTH_PX = 794;
+const A4_PREVIEW_HEIGHT_PX = 1123;
+let previewRequestId = 0;
+let previewRenderTimer;
+let previewAbortController;
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -39,6 +48,30 @@ function setFormMessage(message, isError = false) {
   if (!element) return;
   element.textContent = message;
   element.style.color = isError ? "#b91c1c" : "#115e59";
+}
+
+function setPreviewStatus(message, isError = false) {
+  if (!reportPreviewStatus) return;
+  reportPreviewStatus.textContent = message;
+  reportPreviewStatus.style.color = isError ? "#b91c1c" : "#53716a";
+}
+
+function getSafeReturnTarget(value) {
+  if (!value) return "";
+
+  try {
+    const target = new URL(value, window.location.origin);
+    if (target.origin !== window.location.origin || target.pathname === window.location.pathname) return "";
+    return `${target.pathname}${target.search}${target.hash}`;
+  } catch (_error) {
+    return "";
+  }
+}
+
+function returnToOrigin() {
+  const requestedReturnTarget = getSafeReturnTarget(new URLSearchParams(window.location.search).get("returnTo"));
+  const referrerReturnTarget = getSafeReturnTarget(document.referrer);
+  window.location.href = requestedReturnTarget || referrerReturnTarget || "reception.html";
 }
 
 function getParameterRows() {
@@ -142,52 +175,79 @@ function setParameterRows(parameters = []) {
   values.forEach(createParameterRow);
 }
 
-function formatPreviewBody(value) {
-  const paragraphs = String(value || "")
-    .trim()
-    .split(/\r?\n\s*\r?\n/)
-    .map((paragraph) => paragraph.trim())
-    .filter(Boolean);
+function resizeReportPreview() {
+  if (!reportPreview || !reportPreviewViewport) return;
 
-  if (!paragraphs.length) return "";
-  return `
-    <section class="report-preview-notes">
-      <h4>Report notes</h4>
-      ${paragraphs.map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\r?\n/g, "<br />")}</p>`).join("")}
-    </section>
-  `;
+  const previewFrame = reportPreviewViewport.parentElement;
+  const frameStyle = previewFrame ? window.getComputedStyle(previewFrame) : null;
+  const framePadding = frameStyle
+    ? Number.parseFloat(frameStyle.paddingLeft) + Number.parseFloat(frameStyle.paddingRight)
+    : 0;
+  const availableWidth = Math.max(
+    1,
+    (previewFrame?.clientWidth || A4_PREVIEW_WIDTH_PX) - framePadding
+  );
+  const scale = Math.min(1, Math.max(0.25, availableWidth / A4_PREVIEW_WIDTH_PX));
+  reportPreviewViewport.style.width = `${Math.round(A4_PREVIEW_WIDTH_PX * scale)}px`;
+  reportPreviewViewport.style.height = `${Math.round(A4_PREVIEW_HEIGHT_PX * scale)}px`;
+  reportPreview.style.transform = `scale(${scale})`;
 }
 
-function renderReportPreview() {
-  const testName = testNameInput.value.trim() || "New laboratory test";
-  const sampleType = testSampleTypeInput.value.trim() || "Sample type not set";
-  const category = testCategoryInput.value.trim() || "General";
-  const parameters = readParameters();
-  const parameterRowsMarkup = parameters.length
-    ? parameters.map((parameter) => `
-        <tr>
-          <td>${escapeHtml(parameter.parameterName)}</td>
-          <td>${parameter.entryMode === "calculated" ? "Auto-calculated" : "Sample result"}</td>
-          <td>${escapeHtml(parameter.normalRange || "-")}</td>
-          <td>${escapeHtml(parameter.unit || "-")}</td>
-        </tr>
-      `).join("")
-    : `<tr><td colspan="4" class="report-preview-empty">Add one or more result fields to preview them here.</td></tr>`;
+function getPreviewPayload() {
+  return {
+    name: testNameInput.value.trim(),
+    code: testCodeInput.value.trim(),
+    category: testCategoryInput.value.trim(),
+    sampleType: testSampleTypeInput.value.trim(),
+    turnaroundHours: Number(turnaroundHoursInput.value || 24),
+    parameters: readParameters(),
+    reportBody: testReportBodyInput.value.trim(),
+  };
+}
 
-  reportPreview.innerHTML = `
-    <div class="report-preview-patient">
-      <div><strong>Sample Patient</strong><span>Age: 30 years | Sex: Female</span></div>
-      <div><span>Sample report</span><span>Registered: Today</span></div>
-    </div>
-    <h3>${escapeHtml(testName)}</h3>
-    <div class="report-preview-meta"><span>${escapeHtml(category)}</span><span>Sample: ${escapeHtml(sampleType)}</span></div>
-    <table>
-      <thead><tr><th>Investigation</th><th>Result</th><th>Reference value</th><th>Unit</th></tr></thead>
-      <tbody>${parameterRowsMarkup}</tbody>
-    </table>
-    ${formatPreviewBody(testReportBodyInput.value)}
-    <div class="report-preview-footer">Preview only - values are not stored until the test is saved.</div>
-  `;
+async function loadReportPreview() {
+  if (!reportPreview) return;
+
+  const requestId = previewRequestId;
+  const controller = new AbortController();
+  previewAbortController = controller;
+  setPreviewStatus("Updating live preview…");
+
+  try {
+    const html = await API.request("/api/tests/builder-report-preview", {
+      method: "POST",
+      body: JSON.stringify(getPreviewPayload()),
+      signal: controller.signal,
+    });
+    if (requestId !== previewRequestId) return;
+
+    reportPreview.srcdoc = html;
+    resizeReportPreview();
+    setPreviewStatus("Live preview is up to date.");
+  } catch (error) {
+    if (requestId !== previewRequestId) return;
+    reportPreview.srcdoc = `<!doctype html><html><body style="margin:0;padding:36px;font:16px Arial;color:#991b1b;background:#fff7f7">Unable to load the generated report preview: ${escapeHtml(error.message)}</body></html>`;
+    resizeReportPreview();
+    setPreviewStatus("Unable to update the live preview.", true);
+  } finally {
+    if (previewAbortController === controller) previewAbortController = null;
+  }
+}
+
+function renderReportPreview({ immediate = false } = {}) {
+  previewRequestId += 1;
+  previewAbortController?.abort();
+  if (previewRenderTimer) clearTimeout(previewRenderTimer);
+  previewRenderTimer = null;
+  if (immediate) {
+    void loadReportPreview();
+    return;
+  }
+
+  previewRenderTimer = setTimeout(() => {
+    previewRenderTimer = null;
+    void loadReportPreview();
+  }, 180);
 }
 
 function resetForm() {
@@ -338,13 +398,18 @@ function init() {
   testCatalogForm.addEventListener("submit", submitTestForm);
   testCatalogForm.addEventListener("input", renderReportPreview);
   resetTestBtn.addEventListener("click", resetForm);
-  previewTestBtn.addEventListener("click", renderReportPreview);
+  backToOriginBtn?.addEventListener("click", (event) => {
+    event.preventDefault();
+    returnToOrigin();
+  });
+  previewTestBtn.addEventListener("click", () => renderReportPreview({ immediate: true }));
   addParameterBtn.addEventListener("click", () => {
     createParameterRow();
     renderReportPreview();
   });
   setParameterRows();
-  renderReportPreview();
+  renderReportPreview({ immediate: true });
+  window.addEventListener("resize", resizeReportPreview);
   loadTests();
 }
 

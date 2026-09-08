@@ -1,5 +1,6 @@
 param(
-    [switch]$KeepBuildFiles
+    [switch]$KeepBuildFiles,
+    [switch]$Publish
 )
 
 $ErrorActionPreference = 'Stop'
@@ -38,8 +39,10 @@ try {
     Push-Location $buildRoot
     Invoke-BuildCommand 'npm ci --ignore-scripts'
     Invoke-BuildCommand 'npm run desktop:rebuild-native'
-    Invoke-BuildCommand 'npm run build:server-installer'
-    Invoke-BuildCommand 'npm run build:client-installer'
+    $serverBuildCommand = if ($Publish) { 'npm run build:server-installer -- --publish always' } else { 'npm run build:server-installer' }
+    $clientBuildCommand = if ($Publish) { 'npm run build:client-installer -- --publish always' } else { 'npm run build:client-installer' }
+    Invoke-BuildCommand $serverBuildCommand
+    Invoke-BuildCommand $clientBuildCommand
     Pop-Location
 
     New-Item -ItemType Directory -Path $releaseRoot -Force | Out-Null

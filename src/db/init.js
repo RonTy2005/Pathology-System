@@ -8,6 +8,7 @@ const { DEFAULT_BUSINESS_NAME, DEFAULT_SUPERADMIN_USERNAME, DEFAULT_SUPERADMIN_P
 const { PATHOLOGY_REPORT_CATALOG } = require("./pathologyReportCatalog");
 const { CBC_COMMON_PARAMETERS, CBC_REPORT_TESTS } = require("../config/cbc");
 const { createPatientPortalToken } = require("../utils/patientPortal");
+const { getCanonicalSchemaTargetForLegacyTest, getFallbackReportParameters } = require("../services/reportSchemaService");
 
 function buildNow() {
   return new Date().toISOString();
@@ -4094,6 +4095,84 @@ async function applyOneTimeMigration(name, work) {
   await run("INSERT INTO app_migrations (name) VALUES (?)", [name]);
 }
 
+async function repairImportedLegacyReportSchemas() {
+  const testsWithoutParameters = await all(`
+    SELECT t.id, t.name, t.sample_type
+    FROM tests t
+    WHERE LOWER(TRIM(COALESCE(t.category, ''))) = 'imported legacy catalogue'
+      AND NOT EXISTS (
+        SELECT 1 FROM test_parameters parameter
+        WHERE parameter.test_id = t.id
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM test_bundle_items item
+        WHERE item.bundle_test_id = t.id
+      )
+    ORDER BY t.id ASC
+  `);
+  const canonicalSchemaCache = new Map();
+
+  for (const test of testsWithoutParameters) {
+    const canonicalName = getCanonicalSchemaTargetForLegacyTest(test.name);
+    let parameters = [];
+
+    if (canonicalName) {
+      if (!canonicalSchemaCache.has(canonicalName)) {
+        const canonicalTest = await get(
+          `SELECT id
+           FROM tests
+           WHERE LOWER(name) = LOWER(?)
+             AND LOWER(TRIM(COALESCE(category, ''))) <> 'imported legacy catalogue'
+           ORDER BY id ASC
+           LIMIT 1`,
+          [canonicalName]
+        );
+        const canonicalParameters = canonicalTest
+          ? await all(
+            `SELECT parameter_name, unit, normal_range, entry_mode, calculation_formula, calculation_precision
+             FROM test_parameters
+             WHERE test_id = ?
+             ORDER BY display_order ASC, id ASC`,
+            [canonicalTest.id]
+          )
+          : [];
+        canonicalSchemaCache.set(canonicalName, canonicalParameters);
+      }
+      parameters = canonicalSchemaCache.get(canonicalName);
+    }
+
+    if (!parameters.length) {
+      parameters = getFallbackReportParameters(test).map((parameter) => ({
+        parameter_name: parameter.parameterName,
+        unit: parameter.unit,
+        normal_range: parameter.normalRange,
+        entry_mode: parameter.entryMode,
+        calculation_formula: parameter.calculationFormula,
+        calculation_precision: parameter.calculationPrecision,
+      }));
+    }
+
+    for (const [index, parameter] of parameters.entries()) {
+      await run(
+        `INSERT INTO test_parameters (
+           test_id, parameter_name, unit, normal_range,
+           entry_mode, calculation_formula, calculation_precision, display_order
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          test.id,
+          parameter.parameter_name,
+          parameter.unit || "",
+          parameter.normal_range || "",
+          parameter.entry_mode === "calculated" ? "calculated" : "manual",
+          parameter.entry_mode === "calculated" ? (parameter.calculation_formula || null) : null,
+          Number.isInteger(parameter.calculation_precision) ? parameter.calculation_precision : 2,
+          index + 1,
+        ]
+      );
+    }
+  }
+}
+
 async function upgradeCbcCalculationDefaults() {
   const cbcTests = await all(
     "SELECT id FROM tests WHERE LOWER(name) LIKE '%complete blood count%' OR LOWER(code) = 'cbc'"
@@ -5820,6 +5899,7 @@ async function initializeDatabase() {
     await ensureFactorXiiAndXiiiTestConfigurations();
     await ensurePeripheralBloodSmearTestConfiguration();
     await configureDefaultCalculatedParameters();
+    await applyOneTimeMigration("legacy-report-schema-repair-v1", repairImportedLegacyReportSchemas);
     await ensureUserDefaults();
   } catch (error) {
     if (error.code !== "SQLITE_IOERR") {
@@ -5980,6 +6060,7 @@ async function initializeDatabase() {
     await ensureFactorXiiAndXiiiTestConfigurations();
     await ensurePeripheralBloodSmearTestConfiguration();
     await configureDefaultCalculatedParameters();
+    await applyOneTimeMigration("legacy-report-schema-repair-v1", repairImportedLegacyReportSchemas);
     await ensureUserDefaults();
   }
 }

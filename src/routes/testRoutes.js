@@ -9,6 +9,7 @@ const { buildReportHtml } = require("../utils/reportFormatter");
 const { getBusinessSettings } = require("../services/businessSettingsService");
 const { getTestReportPreviewUrl } = require("../utils/patientPortal");
 const { getBundleComponentTests } = require("../services/testBundleService");
+const { getFallbackReportParameters } = require("../services/reportSchemaService");
 
 function normalizeParameterDefinition(parameter = {}) {
   const entryMode = (parameter.entryMode || parameter.entry_mode) === "calculated"
@@ -34,6 +35,16 @@ function normalizeReportBody(value) {
   return String(value || "").trim().slice(0, 8000);
 }
 
+function resolveTestParameters(parameters, test = {}) {
+  const configuredParameters = (Array.isArray(parameters) ? parameters : [])
+    .map(normalizeParameterDefinition)
+    .filter((parameter) => parameter.parameterName);
+
+  return configuredParameters.length
+    ? configuredParameters
+    : getFallbackReportParameters(test);
+}
+
 function getBundlePreviewValue(parameter = {}) {
   const range = String(parameter.normal_range || "");
   const numericRange = range.match(/(-?\d+(?:\.\d+)?)\s*(?:-|to)\s*(-?\d+(?:\.\d+)?)/i);
@@ -41,6 +52,85 @@ function getBundlePreviewValue(parameter = {}) {
   if (/negative|non-reactive|not detected/i.test(range)) return "Negative";
   return "Normal";
 }
+
+function buildUnsavedTestPreview(testInput = {}) {
+  const rawParameters = Array.isArray(testInput.parameters) ? testInput.parameters.slice(0, 200) : [];
+  const parameters = resolveTestParameters(rawParameters, testInput)
+    .map((parameter) => ({
+      parameter_name: parameter.parameterName,
+      unit: parameter.unit,
+      normal_range: parameter.normalRange,
+      value: getBundlePreviewValue({ normal_range: parameter.normalRange }),
+    }));
+
+  return {
+    name: String(testInput.name || "").trim().slice(0, 160) || "New laboratory test",
+    code: String(testInput.code || "").trim().slice(0, 80),
+    category: String(testInput.category || "").trim().slice(0, 120),
+    sample_type: String(testInput.sampleType || testInput.sample_type || "").trim().slice(0, 120),
+    turnaround_hours: Math.max(1, Math.min(720, Number(testInput.turnaroundHours) || 24)),
+    report_body: normalizeReportBody(testInput.reportBody ?? testInput.report_body),
+    parameters,
+  };
+}
+
+testRouter.post(
+  "/builder-report-preview",
+  allowRoles(ROLES.ADMIN, ROLES.MANAGER, ROLES.RECEPTIONIST),
+  allowPermissions(PERMISSIONS.MANAGE_TESTS),
+  async (req, res, next) => {
+    try {
+      const test = buildUnsavedTestPreview(req.body);
+      const businessSettings = await getBusinessSettings({ includeLetterhead: true, includeReportDoctorSignature: true });
+      const mockReportData = {
+        patient: {
+          id: "SAMPLE-P-001",
+          name: "SAMPLE PATIENT",
+          age: "30",
+          gender: "Male",
+          phone: "9999999999",
+        },
+        visit: {
+          bill_no: "SAMPLE-001",
+          created_at: new Date().toISOString(),
+          associate_label: "Direct at lab",
+        },
+        report: {
+          report_no: "SAMPLE-R-001",
+          finalized_at: new Date().toISOString(),
+        },
+        doctor: {
+          name: "Dr. Sample Doctor",
+          specialization: "General Physician",
+        },
+        associate: null,
+        tests: [test],
+      };
+
+      res.type("html");
+      res.send(buildReportHtml({
+        ...mockReportData,
+        isPreview: true,
+        embeddedPreview: true,
+        businessName: businessSettings.businessName,
+        facilityType: businessSettings.facilityType,
+        address: businessSettings.address,
+        phone: businessSettings.phone,
+        email: businessSettings.email,
+        registrationNo: businessSettings.registrationNo,
+        letterheadDataUrl: businessSettings.defaultReportIncludesLetterhead ? businessSettings.letterheadDataUrl : null,
+        reportHeaderSpaceMm: businessSettings.reportHeaderSpaceMm,
+        reportFooterSpaceMm: businessSettings.reportFooterSpaceMm,
+        reportDoctorName: businessSettings.reportDoctorName,
+        reportDoctorQualification: businessSettings.reportDoctorQualification,
+        reportDoctorRegistrationNo: businessSettings.reportDoctorRegistrationNo,
+        reportDoctorSignatureDataUrl: businessSettings.reportDoctorSignatureDataUrl,
+      }));
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 testRouter.get("/:id/sample-report", allowRoles(ROLES.ADMIN), async (req, res, next) => {
   try {
@@ -586,8 +676,9 @@ testRouter.get("/categories", async (req, res, next) => {
 
 testRouter.post("/", allowRoles(ROLES.ADMIN, ROLES.MANAGER, ROLES.RECEPTIONIST), allowPermissions(PERMISSIONS.MANAGE_TESTS), async (req, res, next) => {
   try {
-    const { name, code, category, sampleType, price, turnaroundHours, parameters = [] } = req.body;
+    const { name, code, category, sampleType, price, turnaroundHours, parameters: requestedParameters = [] } = req.body;
     const reportBody = normalizeReportBody(req.body.reportBody ?? req.body.report_body);
+    const parameters = resolveTestParameters(requestedParameters, { name, category, sampleType });
     const created = await run(
       `INSERT INTO tests (name, code, category, sample_type, price, turnaround_hours, report_body, active, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)`,
@@ -595,7 +686,7 @@ testRouter.post("/", allowRoles(ROLES.ADMIN, ROLES.MANAGER, ROLES.RECEPTIONIST),
     );
 
     for (let index = 0; index < parameters.length; index += 1) {
-      const parameter = normalizeParameterDefinition(parameters[index]);
+      const parameter = parameters[index];
       await run(
         `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, calculation_formula, calculation_precision, display_order)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -656,7 +747,7 @@ testRouter.post(
         const price = Number(testData.price || 0);
         const turnaroundHours = Number(testData.turnaroundHours || 24);
         const reportBody = normalizeReportBody(testData.reportBody ?? testData.report_body);
-        const parameters = Array.isArray(testData.parameters) ? testData.parameters : [];
+        const parameters = resolveTestParameters(testData.parameters, { name, category, sampleType });
 
         let test = await get(`SELECT * FROM tests WHERE name = ? OR code = ?`, [name, code]);
 
@@ -677,7 +768,7 @@ testRouter.post(
         await run("DELETE FROM test_parameters WHERE test_id = ?", [testId]);
 
         for (let index = 0; index < parameters.length; index += 1) {
-          const parameter = normalizeParameterDefinition(parameters[index]);
+          const parameter = parameters[index];
           await run(
             `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, calculation_formula, calculation_precision, display_order)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -697,8 +788,9 @@ testRouter.post(
 
 testRouter.put("/:id", allowRoles(ROLES.ADMIN, ROLES.MANAGER, ROLES.RECEPTIONIST), allowPermissions(PERMISSIONS.MANAGE_TESTS), async (req, res, next) => {
   try {
-    const { name, code, category, sampleType, price, turnaroundHours, active, parameters = [] } = req.body;
+    const { name, code, category, sampleType, price, turnaroundHours, active, parameters: requestedParameters = [] } = req.body;
     const reportBody = normalizeReportBody(req.body.reportBody ?? req.body.report_body);
+    const parameters = resolveTestParameters(requestedParameters, { name, category, sampleType });
     await run(
       `UPDATE tests
        SET name = ?, code = ?, category = ?, sample_type = ?, price = ?, turnaround_hours = ?, report_body = ?, active = ?
@@ -708,7 +800,7 @@ testRouter.put("/:id", allowRoles(ROLES.ADMIN, ROLES.MANAGER, ROLES.RECEPTIONIST
     await run("DELETE FROM test_parameters WHERE test_id = ?", [req.params.id]);
 
     for (let index = 0; index < parameters.length; index += 1) {
-      const parameter = normalizeParameterDefinition(parameters[index]);
+      const parameter = parameters[index];
       await run(
         `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, calculation_formula, calculation_precision, display_order)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,

@@ -15,7 +15,7 @@
       </div>
       <nav class="sidebar-nav">
         <a href="test-catalog.html" class="active">Catalog</a>
-        <a href="reception.html">Back to Reception</a>
+        <a href="reception.html" id="backToOriginBtn">Back</a>
       </nav>
       <button class="secondary-btn" id="logoutBtn">Logout</button>
     </aside>
@@ -101,13 +101,16 @@
           <div class="section-title">
             <div>
               <h2>Report preview</h2>
-              <span>A4 portrait visual guide before you save. Sample values are for layout only.</span>
+              <span>The same A4 report layout used for generated reports. Sample values are for layout only.</span>
             </div>
             <span class="catalog-step-pill">Step 2</span>
           </div>
           <div class="report-preview-frame">
-            <article id="reportPreview" class="report-preview-sheet" aria-live="polite"></article>
+            <div id="reportPreviewViewport" class="report-preview-viewport" aria-live="polite">
+              <iframe id="reportPreview" class="report-preview-sheet" title="Generated report preview" sandbox></iframe>
+            </div>
           </div>
+          <p id="reportPreviewStatus" class="helper" aria-live="polite">Live preview: type in the builder to update this report.</p>
           <p class="helper">This preview uses an A4 portrait page (210 × 297 mm). After saving, use <strong>Printable preview</strong> from the catalog list to open the complete sample report. Its QR code opens a safe, non-patient web preview for the same test.</p>
         </section>
       </div>
@@ -123,6 +126,6 @@
   </div>
 
   <script src="scripts/common.js"></script>
-  <script src="scripts/testCatalog.js?v=3"></script>
+  <script src="scripts/testCatalog.js?v=5"></script>
 </body>
 </html>

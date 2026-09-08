@@ -9111,6 +9111,7 @@ function buildReportHtml(reportData) {
   }
 
   const businessName = String(reportData.businessName || "Your Diagnostic Centre");
+  const embeddedPreview = reportData.embeddedPreview === true;
   const showPrintControls = reportData.showPrintControls === true;
   const readOnlyView = reportData.readOnlyView === true;
   const reportPrintEndpoint = String(reportData.reportPrintEndpoint || "");
@@ -9582,8 +9583,8 @@ function buildReportHtml(reportData) {
         @media screen {
           html {
             min-height: 100%;
-            padding: 16px;
-            background: #e9efee;
+            padding: ${embeddedPreview ? "0" : "16px"};
+            background: ${embeddedPreview ? "#ffffff" : "#e9efee"};
             /* Prevent mobile browsers from selectively enlarging note and
                description text when a report is opened through its QR link. */
             -webkit-text-size-adjust: none;
@@ -9593,9 +9594,9 @@ function buildReportHtml(reportData) {
             position: relative;
             width: 210mm;
             min-height: 297mm;
-            margin: 0 auto;
+            margin: ${embeddedPreview ? "0" : "0 auto"};
             padding: ${reportHeaderSpaceMm}mm 10mm ${reportFooterSpaceMm}mm;
-            box-shadow: 0 14px 34px rgba(15, 23, 42, 0.18);
+            box-shadow: ${embeddedPreview ? "none" : "0 14px 34px rgba(15, 23, 42, 0.18)"};
           }
         }
         /* Android browsers may otherwise boost only selected paragraphs in
@@ -10546,6 +10547,7 @@ function buildReportHtml(reportData) {
           <tbody>
             ${reportData.tests.flatMap(test => {
               const rows = [];
+              const parameters = Array.isArray(test.parameters) ? test.parameters : [];
               
               if (test.name.toUpperCase().includes("COOMBS TEST")) {
                 rows.push(`
@@ -10558,7 +10560,18 @@ function buildReportHtml(reportData) {
                 `);
               }
 
-              test.parameters.forEach(param => {
+              if (!parameters.length) {
+                rows.push(`
+                  <tr class="empty-result-row">
+                    <td>Result</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td></td>
+                  </tr>
+                `);
+              }
+
+              parameters.forEach(param => {
                 if (param.parameter_name.toUpperCase() === "PROTHROMBIN TIME STUDIES") {
                   rows.push(`
                     <tr>

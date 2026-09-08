@@ -2001,18 +2001,20 @@ body:has(.app-shell) {
 }
 
 .app-shell .report-preview-sheet {
-  box-sizing: border-box;
-  width: min(100%, 680px);
-  min-height: 0;
-  aspect-ratio: 210 / 297;
-  margin: 0 auto;
-  padding: 5.8% 5.2%;
+  display: block;
+  width: 794px;
+  height: 1123px;
+  margin: 0;
+  border: 0;
+  background: #ffffff;
+  transform-origin: top left;
+}
+
+.app-shell .report-preview-viewport {
+  overflow: hidden;
+  max-width: 100%;
   background: #ffffff;
   box-shadow: 0 16px 35px rgba(15, 50, 43, 0.16);
-  color: #1f2937;
-  font-family: Arial, sans-serif;
-  font-size: 0.76rem;
-  line-height: 1.35;
 }
 
 .app-shell .report-preview-patient {
@@ -2197,7 +2199,9 @@ body:has(.app-shell) {
   }
 
   .app-shell .report-preview-sheet {
-    padding: 24px 17px;
+    width: 794px;
+    height: 1123px;
+    padding: 0;
   }
 }
 

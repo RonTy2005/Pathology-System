@@ -642,8 +642,26 @@ function renderResultParameterField(parameter, savedResults = []) {
   const attributes = `data-parameter-row data-parameter-name="${escapeResultFieldHtml(parameterName)}" data-unit="${escapeResultFieldHtml(parameter.unit || "")}" data-range="${escapeResultFieldHtml(parameter.normal_range || "")}" data-entry-mode="${entryMode}" data-calculation-formula="${escapeResultFieldHtml(parameter.calculation_formula || "")}" data-calculation-precision="${escapeResultFieldHtml(parameter.calculation_precision ?? 2)}"`;
   const headerStyle = "grid-column: 1 / -1; background: #f8fafc; padding: 10px; border-radius: 4px; font-weight: bold; margin-top: 10px; border-bottom: 2px solid #ddd;";
   const isLongText = parameterName.toLowerCase().includes("peripheral smear")
-    || ["clinical data", "clinical history", "specimen", "diagnosis", "final diagnosis", "note", "comment", "gross description", "microscopic description"]
-      .includes(parameterName.toLowerCase());
+    || [
+      "clinical data",
+      "clinical details",
+      "clinical history",
+      "specimen",
+      "diagnosis",
+      "final diagnosis",
+      "note",
+      "comment",
+      "comments",
+      "gross description",
+      "microscopic description",
+      "findings",
+      "result / findings",
+      "impression",
+      "advice",
+      "organism isolated",
+      "antibiotic sensitivity",
+      "drug sensitivity",
+    ].includes(parameterName.toLowerCase());
 
   return `
     <label class="result-parameter ${isHeader ? "header-param" : ""}" ${attributes} style="${isHeader ? headerStyle : ""}">

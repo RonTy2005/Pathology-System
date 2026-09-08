@@ -1,6 +1,10 @@
-const { app, BrowserWindow, dialog, ipcMain } = require("electron");
+const { app, BrowserWindow, dialog, ipcMain, net, powerMonitor } = require("electron");
+const { autoUpdater } = require("electron-updater");
 const fs = require("fs/promises");
 const path = require("path");
+
+const INITIAL_UPDATE_CHECK_DELAY_MS = 20 * 1000;
+const UPDATE_CHECK_INTERVAL_MS = 30 * 60 * 1000;
 
 const appRoot = app.isPackaged
   ? path.join(process.resourcesPath, "app")
@@ -15,11 +19,67 @@ const desktopProductName = appMode === "server" ? "LabShield Server" : "LabShiel
 let mainWindow;
 let serverInstance;
 let retryTimer;
+let updateCheckTimer;
+let delayedUpdateCheckTimer;
+let updateCheckInProgress = false;
 let connectionStatus = {
   phase: "starting",
   message: "Preparing LabShield…",
   servers: [],
 };
+
+function clearAutomaticUpdateTimers() {
+  if (updateCheckTimer) clearInterval(updateCheckTimer);
+  if (delayedUpdateCheckTimer) clearTimeout(delayedUpdateCheckTimer);
+  updateCheckTimer = null;
+  delayedUpdateCheckTimer = null;
+}
+
+async function checkForDesktopUpdate() {
+  if (updateCheckInProgress || (typeof net.isOnline === "function" && !net.isOnline())) return;
+
+  updateCheckInProgress = true;
+  try {
+    await autoUpdater.checkForUpdates();
+  } catch (error) {
+    // Updates are optional while offline. Keep the desktop app usable and retry later.
+    console.warn("Automatic update check failed:", error?.message || error);
+  } finally {
+    updateCheckInProgress = false;
+  }
+}
+
+function scheduleAutomaticUpdateCheck(delay = INITIAL_UPDATE_CHECK_DELAY_MS) {
+  if (delayedUpdateCheckTimer) clearTimeout(delayedUpdateCheckTimer);
+  delayedUpdateCheckTimer = setTimeout(() => {
+    delayedUpdateCheckTimer = null;
+    void checkForDesktopUpdate();
+  }, delay);
+}
+
+function startAutomaticUpdates() {
+  // Development launches have no release metadata. Packaged Windows apps
+  // obtain their mode-specific channel from electron-builder's app-update.yml.
+  if (!app.isPackaged || process.platform !== "win32") return;
+
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.autoRunAppAfterInstall = true;
+
+  autoUpdater.on("update-available", (update) => {
+    console.info(`Downloading LabShield ${update.version} in the background.`);
+  });
+  autoUpdater.on("update-downloaded", (update) => {
+    console.info(`LabShield ${update.version} will install automatically when the app closes.`);
+  });
+  autoUpdater.on("error", (error) => {
+    console.warn("Automatic updater error:", error?.message || error);
+  });
+
+  scheduleAutomaticUpdateCheck();
+  updateCheckTimer = setInterval(() => void checkForDesktopUpdate(), UPDATE_CHECK_INTERVAL_MS);
+  powerMonitor.on("resume", () => scheduleAutomaticUpdateCheck());
+}
 
 function getConnectionPath() {
   return path.join(app.getPath("userData"), "server-connection.json");
@@ -195,6 +255,7 @@ app.whenReady().then(async () => {
   app.setName(desktopProductName);
   createMainWindow();
   await mainWindow.loadFile(path.join(__dirname, "connecting.html"));
+  startAutomaticUpdates();
 
   try {
     if (appMode === "server") {
@@ -222,6 +283,7 @@ app.on("window-all-closed", () => {
 
 app.on("before-quit", () => {
   clearRetryTimer();
+  clearAutomaticUpdateTimers();
   serverInstance?.labLmsDiscovery?.stop?.();
   serverInstance?.close?.();
 });
