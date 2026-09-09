@@ -1,6 +1,7 @@
 const path = require("path");
 const sqlite3 = require("sqlite3").verbose();
 const { buildReportHtml } = require("../src/utils/reportFormatter");
+const { isBillingOnlyTest } = require('../frontend/scripts/reportEligibility');
 
 const suppliedDatabasePath = process.argv[2];
 const dataDirectory = process.env.LAB_LMS_DATA_DIR || process.cwd();
@@ -43,7 +44,7 @@ async function main() {
     ORDER BY t.category, t.name
   `);
   const missingSchemas = tests
-    .filter((test) => !test.has_parameters && !test.is_bundle)
+    .filter((test) => !isBillingOnlyTest(test) && !test.has_parameters && !test.is_bundle)
     .map((test) => ({ ...test, issue: classifyRenderedReport(test) }));
   const categorySummary = new Map();
 
@@ -55,6 +56,7 @@ async function main() {
   console.log(`Database: ${databasePath}`);
   console.table([
     { metric: "Active tests", count: tests.length },
+    { metric: "Billing only (no report required)", count: tests.filter(isBillingOnlyTest).length },
     { metric: "Tests with result parameters", count: tests.filter((test) => test.has_parameters).length },
     { metric: "Bundles", count: tests.filter((test) => test.is_bundle).length },
     { metric: "Reports with missing result schema", count: missingSchemas.length },

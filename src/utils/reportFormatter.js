@@ -2,6 +2,7 @@ const { getCbcHeading, getCbcParameters, getCbcVariant } = require("../config/cb
 const { supplementReportHtml } = require("../services/reportContentService");
 const { getCombinationDefinition } = require("../services/reportCombinationRepair");
 const { getCellReportDefinition } = require("../services/cellReportService");
+const { isBillingOnlyTest, BILLING_ONLY_MESSAGE } = require('../../frontend/scripts/reportEligibility');
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -9182,7 +9183,14 @@ function buildCustomReportNarratives(tests) {
 }
 
 function buildReportHtml(reportData) {
-  const reportTests = Array.isArray(reportData.tests) ? reportData.tests : [];
+  const suppliedTests = Array.isArray(reportData.tests) ? reportData.tests : [];
+  const reportTests = suppliedTests.filter(test => !isBillingOnlyTest(test));
+  if (!reportTests.length) {
+    const error = new Error(suppliedTests.length ? BILLING_ONLY_MESSAGE : 'No laboratory tests are available for this report.');
+    error.statusCode = 400;
+    throw error;
+  }
+  reportData = { ...reportData, tests: reportTests };
   if (reportTests.length > 1 && !reportData._singleTestPage) {
     return buildMultiTestReportHtml(reportData, reportTests);
   }

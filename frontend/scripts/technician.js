@@ -1,17 +1,5 @@
 protectPage(["blood_sample_technician", "usg_technician", "mri_technician", "ct_technician"]);
 
-function isPathologyTest(testName = "", testCategory = "") {
-  const name = testName.toLowerCase();
-  const cat = testCategory.toLowerCase();
-  const exclusions = [
-    "ct scan", "mri", "x-ray", "xray", "radiology", "imaging",
-    "cardiology", "neurology", "uroflowmetry", "tmt", "eeg", "ecg",
-    "endoscopy", "coloscopy", "colonoscopy", "usg", "ultrasound",
-    "biopsy", "histopathology", "cytology"
-  ];
-  return !exclusions.some(ex => name.includes(ex) || cat.includes(ex));
-}
-
 const receptionLink = document.getElementById("receptionLink");
 if (hasPermission("manage_patients") || hasPermission("manage_billing")) {
   receptionLink.href = hasPermission("manage_patients")

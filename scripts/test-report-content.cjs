@@ -11,6 +11,7 @@ const { COMBINATIONS, getCombinationDefinition, repairKnownCombinationSchemas } 
 const { CELL_REPORT_DEFINITIONS, getCellReportDefinition, getCellReportParameters, getCellReportPreviewValue, repairCellReportSchemas } = require('../src/services/cellReportService');
 const { getFallbackReportParameters } = require('../src/services/reportSchemaService');
 const { sampleReport } = require('./audit-report-content.cjs');
+const { isBillingOnlyTest } = require('../frontend/scripts/reportEligibility');
 
 test('all content has exact identities and traceable medical sources', () => {
   assert.equal(new Set(REPORT_CONTENT.map(c => c.key)).size, REPORT_CONTENT.length);
@@ -102,10 +103,14 @@ test('local catalogue: restored styles and existing formats stay unchanged', asy
   const db = new sqlite3.Database(databasePath, sqlite3.OPEN_READONLY);
   const query = sql => new Promise((resolve, reject) => db.all(sql, (err, rows) => err ? reject(err) : resolve(rows)));
   try {
-    const tests = await query('SELECT id,name,code,sample_type,report_body FROM tests WHERE active=1');
+    const tests = await query('SELECT id,name,code,category,sample_type,report_body FROM tests WHERE active=1');
     const params = await query('SELECT * FROM test_parameters ORDER BY display_order,id');
     for (const t of tests) {
       const input = { ...t, parameters: params.filter(p => p.test_id === t.id).map(p => ({ ...p, value: '' })) };
+      if (isBillingOnlyTest(input)) {
+        assert.throws(() => buildReportHtml(sampleReport(input)), /Billing only/);
+        continue;
+      }
       const oldHtml = baseline.exports.buildReportHtml(sampleReport(input));
       const newHtml = buildReportHtml(sampleReport(input));
       assert.equal(newHtml.match(/<style>[\s\S]*?<\/style>/)[0], oldHtml.match(/<style>[\s\S]*?<\/style>/)[0]);

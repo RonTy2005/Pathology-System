@@ -71,7 +71,8 @@
               </label>
             </div>
 
-            <section class="parameter-builder">
+            <p id="billingOnlyNotice" class="helper" hidden>Billing only: this service stays available for registration and billing. No laboratory report format is required.</p>
+            <section class="parameter-builder" id="reportParameterSection">
               <div class="parameter-builder-header">
                 <div>
                   <strong>Report parameters</strong>
@@ -83,7 +84,7 @@
               <p class="helper">Choose Calculated only when the formula uses another parameter name in braces, for example <code>{Bilirubin Total} - {Bilirubin Direct}</code>.</p>
             </section>
 
-            <label class="field">
+            <label class="field" id="reportBodySection">
               <span>Report body text</span>
               <textarea id="testReportBody" rows="6" maxlength="8000" placeholder="Add an interpretation, method, note, or any text that should appear below this test's results in the final report."></textarea>
               <small class="helper">Plain text only. New lines and paragraphs are kept in printed and QR reports.</small>
@@ -97,7 +98,7 @@
           </form>
         </section>
 
-        <section class="panel catalog-preview-panel">
+        <section class="panel catalog-preview-panel" id="reportPreviewPanel">
           <div class="section-title">
             <div>
               <h2>Report preview</h2>
@@ -125,7 +126,8 @@
     </main>
   </div>
 
+  <script src="scripts/reportEligibility.js"></script>
   <script src="scripts/common.js"></script>
-  <script src="scripts/testCatalog.js?v=5"></script>
+  <script src="scripts/testCatalog.js?v=6"></script>
 </body>
 </html>

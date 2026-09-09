@@ -10,6 +10,7 @@ const { getPatientPortalReportUrl, getPatientPortalUrl, getTestReportPreviewUrl 
 const { getReportBundle, getBillBundle } = require("./visitRoutes");
 const { getBundleComponentTests } = require("../services/testBundleService");
 const { getCellReportPreviewValue } = require("../services/cellReportService");
+const { isBillingOnlyTest, BILLING_ONLY_MESSAGE } = require('../../frontend/scripts/reportEligibility');
 
 const patientPortalRouter = express.Router();
 
@@ -155,6 +156,7 @@ patientPortalRouter.get("/sample/test/:testId/report", async (req, res, next) =>
     if (!test) {
       return res.status(404).send("Sample report not found.");
     }
+    if (isBillingOnlyTest(test)) return res.status(400).send(BILLING_ONLY_MESSAGE);
 
     const parameters = await all(
       `SELECT parameter_name, unit, normal_range

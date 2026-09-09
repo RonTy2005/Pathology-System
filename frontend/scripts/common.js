@@ -271,15 +271,7 @@ function formatDate(dateString) {
 }
 
 function isPathologyTest(testName = "", testCategory = "") {
-  const name = (testName || "").toLowerCase();
-  const cat = (testCategory || "").toLowerCase();
-  const exclusions = [
-    "ct scan", "mri", "x-ray", "xray", "radiology", "imaging",
-    "cardiology", "neurology", "uroflowmetry", "tmt", "eeg", "ecg",
-    "endoscopy", "coloscopy", "colonoscopy", "usg", "ultrasound",
-    "biopsy", "histopathology", "cytology"
-  ];
-  return !exclusions.some(ex => name.includes(ex) || cat.includes(ex));
+  return ReportEligibility.isPathologyTest(testName, testCategory);
 }
 
 function showMessage(elementId, message, isError = false) {

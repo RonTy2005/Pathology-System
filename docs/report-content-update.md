@@ -1,5 +1,40 @@
 # Report content update — 9 September 2026
 
+## Follow-up — 10 September 2026: imaging is billing-only
+
+Per the lab's clarified scope, X-ray, MRI, CT scan and USG/ultrasound services
+do not need generated report formats. A shared browser/server policy now
+identifies **279 active billing-only entries**, including imported spellings
+such as `CTScan` and `CTPNS`. `CT (Clotting Time)` and image-guided specimen
+examinations are not classified as billing-only scans.
+
+These entries stay active in the billing catalogue with their existing prices.
+The catalogue labels them “Billing only”; report-preview buttons are hidden,
+and the full builder hides report-only controls while allowing billing edits.
+New imaging entries no longer receive automatic result placeholders. Existing
+parameters, notes, patient results and previously uploaded files are not deleted.
+
+Imaging services are excluded from laboratory result entry, generated report
+pages and pathology-finalization requirements. Sample and builder-preview
+endpoints return a clear billing-only message. No existing report CSS or
+pathology format is redesigned. Existing non-imaging workflow exclusions are
+unchanged; this is not a broader change to histopathology or cardiology.
+
+Both audit scripts now exclude billing-only services from missing-format counts.
+The updated read-only content audit (`tmp/report-content/billing-only-audit.json`)
+reports **907 active entries, 279 billing-only, 628 remaining review entries,
+313 generic placeholders and 39 supplemented reports**. This is reclassification,
+not repair of 279 reports. Other counts remain structural review indicators,
+not clinical completeness checks.
+
+Verification: **27 automated checks passed**, including original report styling,
+bills retaining all four imaging types and prices, browser/server classification,
+builder control visibility and preview/result endpoint guards against an isolated
+in-memory database. Visual browser verification was unavailable in this session.
+After restarting the local server, live sample endpoints for one X-ray, MRI,
+CT and USG entry each returned the billing-only response; Abnormal Cells still
+returned its complete preview, and the updated catalogue page was served.
+
 ## Follow-up — 10 September 2026: blank cell reports
 
 The Abnormal Cells entry (225) still had only a generic `Result` field. It now

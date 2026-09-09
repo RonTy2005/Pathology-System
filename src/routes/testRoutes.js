@@ -11,6 +11,7 @@ const { getTestReportPreviewUrl } = require("../utils/patientPortal");
 const { getBundleComponentTests } = require("../services/testBundleService");
 const { getFallbackReportParameters } = require("../services/reportSchemaService");
 const { getCellReportPreviewValue } = require("../services/cellReportService");
+const { isBillingOnlyTest, BILLING_ONLY_MESSAGE } = require('../../frontend/scripts/reportEligibility');
 
 function normalizeParameterDefinition(parameter = {}) {
   const entryMode = (parameter.entryMode || parameter.entry_mode) === "calculated"
@@ -82,6 +83,7 @@ testRouter.post(
   async (req, res, next) => {
     try {
       const test = buildUnsavedTestPreview(req.body);
+      if (isBillingOnlyTest(test)) return res.status(400).json({ message: BILLING_ONLY_MESSAGE });
       const businessSettings = await getBusinessSettings({ includeLetterhead: true, includeReportDoctorSignature: true });
       const mockReportData = {
         patient: {
@@ -139,6 +141,7 @@ testRouter.get("/:id/sample-report", allowRoles(ROLES.ADMIN), async (req, res, n
     if (!test) {
       return res.status(404).json({ message: "Test not found" });
     }
+    if (isBillingOnlyTest(test)) return res.status(400).json({ message: BILLING_ONLY_MESSAGE });
 
     const parameters = await all(
       `SELECT parameter_name, unit, normal_range FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC`,
@@ -649,6 +652,7 @@ testRouter.get("/", async (req, res, next) => {
     );
 
     for (const test of tests) {
+      test.billing_only = isBillingOnlyTest(test);
       test.parameters = await all(
         `SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula, calculation_precision, display_order
          FROM test_parameters

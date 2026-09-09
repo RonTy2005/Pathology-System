@@ -1,4 +1,5 @@
 const { getCellReportParameters } = require('./cellReportService');
+const { isBillingOnlyTest } = require('../../frontend/scripts/reportEligibility');
 
 function normalizeSchemaName(value) {
   return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -22,6 +23,7 @@ function createParameter(parameterName, { unit = "", normalRange = "" } = {}) {
  * clinical analytes or reference ranges that were not supplied by the lab.
  */
 function getFallbackReportParameters(test = {}) {
+  if (isBillingOnlyTest(test)) return [];
   const cellParameters = getCellReportParameters(test);
   if (cellParameters) return cellParameters;
   const normalizedName = normalizeSchemaName(test.name);

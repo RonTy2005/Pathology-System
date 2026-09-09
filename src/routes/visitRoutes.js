@@ -11,6 +11,7 @@ const { createPatientPortalToken, getPatientPortalUrl, getPatientPortalReportUrl
 const { applyCalculatedParameters } = require("../utils/resultCalculations");
 const { expandTestBundleConfigs, expandBundleReportTests } = require("../services/testBundleService");
 const { materializeRegistrationTests } = require("../services/registrationTestService");
+const { isPathologyTest, isBillingOnlyTest, BILLING_ONLY_MESSAGE } = require('../../frontend/scripts/reportEligibility');
 
 const visitRouter = express.Router();
 const MAX_IMAGING_REPORT_BYTES = 6 * 1024 * 1024;
@@ -539,18 +540,7 @@ async function getReportBundle(visitId) {
     [visitId]
   );
 
-  const exclusions = [
-    "ct scan", "mri", "x-ray", "xray", "radiology", "imaging",
-    "cardiology", "neurology", "uroflowmetry", "tmt", "eeg", "ecg",
-    "endoscopy", "coloscopy", "colonoscopy", "usg", "ultrasound",
-    "biopsy", "histopathology", "cytology"
-  ];
-  
-  const tests = all_tests.filter(vt => {
-    const name = (vt.name || "").toLowerCase();
-    const cat = (vt.category || "").toLowerCase();
-    return !exclusions.some(ex => name.includes(ex) || cat.includes(ex));
-  });
+  const tests = all_tests.filter(vt => isPathologyTest(vt.name, vt.category));
 
   for (const test of tests) {
     test.parameters = await all(
@@ -1305,6 +1295,7 @@ visitRouter.post(
     if (!visitTest) {
       return res.status(404).json({ message: "Assigned test not found" });
     }
+    if (isBillingOnlyTest(visitTest)) return res.status(400).json({ message: BILLING_ONLY_MESSAGE });
 
     if (TECHNICIAN_ROLES.includes(req.user.role) && visitTest.assigned_to && visitTest.assigned_to !== req.user.id) {
       return res.status(403).json({ message: "This test is not assigned to you" });
@@ -1414,18 +1405,7 @@ visitRouter.post(
       return res.status(400).json({ message: "No tests on this visit" });
     }
 
-    const exclusions = [
-      "ct scan", "mri", "x-ray", "xray", "radiology", "imaging",
-      "cardiology", "neurology", "uroflowmetry", "tmt", "eeg", "ecg",
-      "endoscopy", "coloscopy", "colonoscopy", "usg", "ultrasound",
-      "biopsy", "histopathology", "cytology"
-    ];
-    
-    const pathTests = visitTests.filter(vt => {
-      const name = (vt.custom_test_name || vt.name || "").toLowerCase();
-      const cat = (vt.category || "").toLowerCase();
-      return !exclusions.some(ex => name.includes(ex) || cat.includes(ex));
-    });
+    const pathTests = visitTests.filter(vt => isPathologyTest(vt.custom_test_name || vt.name, vt.category));
 
     if (!pathTests.length) {
       return res.status(400).json({ message: "No pathology tests to finalize on this visit" });

@@ -3,6 +3,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const sqlite3 = require('sqlite3');
 const { buildReportHtml } = require('../src/utils/reportFormatter');
+const { isBillingOnlyTest } = require('../frontend/scripts/reportEligibility');
 
 function sampleReport(test) {
   return {
@@ -13,7 +14,14 @@ function sampleReport(test) {
   };
 }
 
-function inspectReport(test) {
+function inspectReport(test, { billingOnly = isBillingOnlyTest(test) } = {}) {
+  if (billingOnly) return {
+    id: test.id, name: test.name, code: test.code, specimen: test.sample_type || '',
+    billingOnly: true, reviewCategory: 'billing-only-no-report-required',
+    parameterCount: (test.parameters || []).length,
+    placeholderOnly: false, hasNotes: false, hasCustomNotes: Boolean(String(test.report_body || '').trim()),
+    numericalReferenceCount: 0, referenceCount: 0, contentKeys: [],
+  };
   const html = buildReportHtml(sampleReport(test));
   const body = html.replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '')
     .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
@@ -28,7 +36,7 @@ function inspectReport(test) {
   const narrativeTest = /(histopath|histology|biopsy|cytology|fnac|smear|stain|culture|scan|ultrasound|usg|xray|mri|doppler|holter|echo|uroflow)/i.test(test.name.replace(/[^a-z]/gi, ''));
   return {
     id: test.id, name: test.name, code: test.code, specimen: test.sample_type || '',
-    parameterCount: parameters.length, placeholderOnly, hasNotes,
+    billingOnly: false, parameterCount: parameters.length, placeholderOnly, hasNotes,
     hasCustomNotes: Boolean(String(test.report_body || '').trim()),
     numericalReferenceCount,
     reviewCategory: placeholderOnly ? 'placeholder-schema' : !hasNotes ? (narrativeTest ? 'narrative-or-qualitative-review' : 'missing-explanatory-section') : 'existing-content-review',
@@ -49,19 +57,25 @@ async function audit(databasePath) {
       const entry = byId.get(test.id);
       const components = bundles.filter(b => b.bundle_test_id === test.id).map(b => byId.get(b.component_test_id)).filter(Boolean);
       // Bundle schemas are supplied by components, not the parent's optional fields.
-      if (components.length) entry.parameters = components.flatMap(c => c.parameters);
+      if (components.length) {
+        const reportComponents = components.filter(c => !isBillingOnlyTest(c));
+        if (!reportComponents.length) return { ...inspectReport(entry, { billingOnly: true }), componentCount: components.length };
+        entry.parameters = reportComponents.flatMap(c => c.parameters);
+      }
       return { ...inspectReport(entry), componentCount: components.length };
     });
     return {
       summary: {
         activeTests: rows.length,
+        billingOnly: rows.filter(r => r.billingOnly).length,
+        reportableTests: rows.filter(r => !r.billingOnly).length,
         placeholderOnly: rows.filter(r => r.placeholderOnly).length,
-        withoutExplanatorySections: rows.filter(r => !r.hasNotes).length,
-        withoutConfiguredReferences: rows.filter(r => !r.referenceCount).length,
+        withoutExplanatorySections: rows.filter(r => !r.billingOnly && !r.hasNotes).length,
+        withoutConfiguredReferences: rows.filter(r => !r.billingOnly && !r.referenceCount).length,
         supplementedReports: rows.filter(r => r.contentKeys.length).length,
         reviewCategories: Object.fromEntries([...new Set(rows.map(r => r.reviewCategory))].map(key => [key, rows.filter(r => r.reviewCategory === key).length])),
       },
-      caveat: 'Missing reference ranges are review candidates, not necessarily errors: narrative, culture, imaging and method-dependent tests may not use numerical intervals. Notes detection checks rendered markup, not clinical completeness.',
+      caveat: 'X-ray, MRI, CT and USG entries are billing-only and excluded from missing-content counts. Missing reference ranges are review candidates, not necessarily errors: narrative, culture and method-dependent tests may not use numerical intervals. Notes detection checks rendered markup, not clinical completeness.',
       tests: rows,
     };
   } finally {
@@ -78,7 +92,7 @@ if (require.main === module) {
       await fs.writeFile(output, JSON.stringify(result, null, 2) + '\n');
     }
     console.log(JSON.stringify(result.summary, null, 2));
-    if (args.includes('--missing')) console.log(result.tests.filter(r => !r.hasNotes && !r.placeholderOnly).map(r => `${r.id} | ${r.name} | ${r.specimen}`).join('\n'));
+    if (args.includes('--missing')) console.log(result.tests.filter(r => !r.billingOnly && !r.hasNotes && !r.placeholderOnly).map(r => `${r.id} | ${r.name} | ${r.specimen}`).join('\n'));
   }).catch(error => { console.error(error); process.exitCode = 1; });
 }
 

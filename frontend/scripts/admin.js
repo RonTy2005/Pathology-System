@@ -2163,6 +2163,7 @@ function renderTestList(query = "") {
 
   testList.innerHTML = filteredTests
     .map((test) => {
+      const billingOnly = ReportEligibility.isBillingOnlyTest(test);
       const parameterSummary = (test.parameters || []).length
         ? test.parameters
             .map((parameter) => `${parameter.parameter_name}${parameter.unit ? ` (${parameter.unit})` : ""}${parameter.normal_range ? ` - ${parameter.normal_range}` : ""}${parameter.entry_mode === "calculated" ? " • Auto-calculated" : ""}`)
@@ -2174,10 +2175,10 @@ function renderTestList(query = "") {
           <strong>${test.name}</strong><br />
           <span>${test.code || "No code"} • ${test.category || "General"} • ${test.sample_type || "Sample type not set"}</span><br />
           <span>Price: ${currency(test.price)} • Process: ${test.turnaround_hours || 24} hours</span><br />
-          <span>${parameterSummary}</span>
-          ${test.report_body ? '<br /><span class="catalog-report-text-badge">Custom report text included</span>' : ""}
+          <span>${billingOnly ? 'Billing only - no report format required' : parameterSummary}</span>
+          ${!billingOnly && test.report_body ? '<br /><span class="catalog-report-text-badge">Custom report text included</span>' : ""}
           <div class="actions-row">
-            <button class="secondary-btn" data-preview-test="${test.id}" type="button">Preview Report</button>
+            ${!billingOnly ? `<button class="secondary-btn" data-preview-test="${test.id}" type="button">Preview Report</button>` : ''}
             ${canEditTests
               ? `
                 <button class="secondary-btn" data-edit-test="${test.id}" type="button">Edit test</button>

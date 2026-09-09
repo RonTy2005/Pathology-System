@@ -239,6 +239,17 @@ function renderReportPreview({ immediate = false } = {}) {
   previewAbortController?.abort();
   if (previewRenderTimer) clearTimeout(previewRenderTimer);
   previewRenderTimer = null;
+  const billingOnly = ReportEligibility.isBillingOnlyTest(getPreviewPayload());
+  document.getElementById('billingOnlyNotice').hidden = !billingOnly;
+  for (const id of ['reportParameterSection', 'reportBodySection', 'reportPreviewPanel']) {
+    document.getElementById(id).hidden = billingOnly;
+  }
+  previewTestBtn.hidden = billingOnly;
+  if (billingOnly) {
+    reportPreview.srcdoc = '';
+    setPreviewStatus(ReportEligibility.BILLING_ONLY_MESSAGE);
+    return;
+  }
   if (immediate) {
     void loadReportPreview();
     return;
@@ -284,6 +295,7 @@ function renderTests(tests) {
   const isAdmin = isAdministrativeRole();
   testList.innerHTML = tests
     .map((test) => {
+      const billingOnly = ReportEligibility.isBillingOnlyTest(test);
       const parameterSummary = (test.parameters || [])
         .map((parameter) => `${escapeHtml(parameter.parameter_name)}${parameter.unit ? ` (${escapeHtml(parameter.unit)})` : ""}${parameter.normal_range ? ` - ${escapeHtml(parameter.normal_range)}` : ""}${parameter.entry_mode === "calculated" ? " - auto-calculated" : ""}`)
         .join(", ");
@@ -293,11 +305,11 @@ function renderTests(tests) {
             <strong>${escapeHtml(test.name)}</strong>
             <span>${escapeHtml(test.code || "No code")} | ${escapeHtml(test.category || "General")} | ${escapeHtml(test.sample_type || "Sample type not set")}</span>
             <span>Price: ${currency(test.price)} | ${escapeHtml(test.turnaround_hours || 24)} hrs</span>
-            <span>${parameterSummary || "No result fields added"}</span>
-            ${test.report_body ? `<span class="catalog-report-text-badge">Custom report text included</span>` : ""}
+            <span>${billingOnly ? 'Billing only - no report format required' : parameterSummary || "No result fields added"}</span>
+            ${!billingOnly && test.report_body ? `<span class="catalog-report-text-badge">Custom report text included</span>` : ""}
           </div>
           <div class="actions-row">
-            ${isAdmin ? `<button class="secondary-btn" data-preview-test="${test.id}" type="button">Printable preview</button>` : ""}
+            ${isAdmin && !billingOnly ? `<button class="secondary-btn" data-preview-test="${test.id}" type="button">Printable preview</button>` : ""}
             <button class="secondary-btn" data-edit-test="${test.id}" type="button">Edit</button>
             <button class="danger-btn" data-delete-test="${test.id}" type="button">Delete</button>
           </div>
