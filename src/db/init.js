@@ -4229,6 +4229,76 @@ async function repairImportedLegacyReportSchemas() {
   }
 }
 
+/**
+ * The report-format import intentionally retained its original names.  Some
+ * of those names are only spelling/formatting variants of a maintained test
+ * which was subsequently added with a proper code, specimen and report
+ * schema.  Keeping both active makes the catalogue needlessly confusing.
+ *
+ * This list is deliberately narrow.  It contains only aliases reviewed as
+ * the same examination; specimen-specific and site-specific examinations
+ * (for example, urine versus serum tests, or FNAC by anatomical site) are
+ * not consolidated.  We deactivate rather than delete the older entry, and
+ * only when it has never appeared on a visit or test bundle, so historical
+ * reports are always preserved.
+ */
+async function retireDuplicateCatalogueTests() {
+  const duplicates = [
+    { duplicateName: "Des-gamma-carboxy Prothrombin (DCP)", duplicateCode: "PF033", canonicalName: "Des-Gamma Carboxy Prothrombin (DCP)" },
+    { duplicateName: "25-OHVitaminD(TOTAL)", canonicalName: "Vitamin D, 25 - Hydroxy", legacyOnly: true },
+    { duplicateName: "AFBCulture&Sensitivity", canonicalName: "AFB Culture & Sensitivity", legacyOnly: true },
+    { duplicateName: "CT(Clotting Time)", canonicalName: "Clotting Time", legacyOnly: true },
+    { duplicateName: "ElectrolyteProfile", canonicalName: "Electrolytes", legacyOnly: true },
+    { duplicateName: "FT3&TSH", canonicalName: "FT3 & TSH", legacyOnly: true },
+    { duplicateName: "FT3,FT4&TSH", canonicalName: "FT3, FT4 & TSH", legacyOnly: true },
+    { duplicateName: "GlucosePp(PostPrandial)", canonicalName: "Post Prandial Blood Sugar (PPBS)", legacyOnly: true },
+    { duplicateName: "Hepatitis B surface Antibody (HBsAb)", canonicalName: "Hepatitis B Surface Antibody (Anti-HBs)", legacyOnly: true },
+    { duplicateName: "LFT (Liver Function Test)", canonicalName: "Liver Function Test (LFT)", legacyOnly: true },
+    { duplicateName: "Mantoux Test", canonicalName: "Mantoux Test (Tuberculin Skin Test)", legacyOnly: true },
+    { duplicateName: "RA (Rheumatoid Factor) Test. 1", canonicalName: "Rheumatoid Factor, RA", legacyOnly: true },
+    { duplicateName: "SerumVitaminB12Estimation", canonicalName: "Vitamin B12", legacyOnly: true },
+    { duplicateName: "Skin Biopsy", canonicalName: "Histopathology Skin Biopsy", legacyOnly: true },
+    { duplicateName: "SputumAFBStain", canonicalName: "Sputum Examination, AFB", legacyOnly: true },
+    { duplicateName: "Stool Culture & Sensitivity", canonicalName: "Stool Culture", legacyOnly: true },
+    { duplicateName: "TIBC (Total Iron Binding Capacity)", canonicalName: "Total Iron Binding Capacity (TIBC)", legacyOnly: true },
+    { duplicateName: "Typhi DotIgG&IgM", canonicalName: "Typhidot", legacyOnly: true },
+    { duplicateName: "VitaminDTotal-25OH", canonicalName: "Vitamin D, 25 - Hydroxy", legacyOnly: true },
+  ];
+
+  for (const duplicate of duplicates) {
+    const duplicateCriteria = ["LOWER(name) = LOWER(?)"];
+    const duplicateValues = [duplicate.duplicateName];
+    if (duplicate.duplicateCode) {
+      duplicateCriteria.push("UPPER(COALESCE(code, '')) = UPPER(?)");
+      duplicateValues.push(duplicate.duplicateCode);
+    }
+    if (duplicate.legacyOnly) {
+      duplicateCriteria.push("LOWER(TRIM(COALESCE(category, ''))) = 'imported legacy catalogue'");
+    }
+
+    const duplicateTest = await get(
+      `SELECT id FROM tests WHERE ${duplicateCriteria.join(" AND ")} ORDER BY id ASC LIMIT 1`,
+      duplicateValues
+    );
+    const canonicalTest = await get(
+      "SELECT id FROM tests WHERE LOWER(name) = LOWER(?) ORDER BY id ASC LIMIT 1",
+      [duplicate.canonicalName]
+    );
+
+    if (!duplicateTest || !canonicalTest || duplicateTest.id === canonicalTest.id) continue;
+
+    const usage = await get(
+      `SELECT
+         EXISTS(SELECT 1 FROM visit_tests WHERE test_id = ?) AS has_visit_use,
+         EXISTS(SELECT 1 FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ?) AS has_bundle_use`,
+      [duplicateTest.id, duplicateTest.id, duplicateTest.id]
+    );
+
+    if (usage.has_visit_use || usage.has_bundle_use) continue;
+    await run("UPDATE tests SET active = 0 WHERE id = ?", [duplicateTest.id]);
+  }
+}
+
 async function upgradeCbcCalculationDefaults() {
   const cbcTests = await all(
     "SELECT id FROM tests WHERE LOWER(name) LIKE '%complete blood count%' OR LOWER(code) = 'cbc'"
@@ -5957,6 +6027,7 @@ async function initializeDatabase() {
     await ensurePeripheralBloodSmearTestConfiguration();
     await configureDefaultCalculatedParameters();
     await applyOneTimeMigration("legacy-report-schema-repair-v1", repairImportedLegacyReportSchemas);
+    await retireDuplicateCatalogueTests();
     await ensureUserDefaults();
   } catch (error) {
     if (error.code !== "SQLITE_IOERR") {
@@ -6119,6 +6190,7 @@ async function initializeDatabase() {
     await ensurePeripheralBloodSmearTestConfiguration();
     await configureDefaultCalculatedParameters();
     await applyOneTimeMigration("legacy-report-schema-repair-v1", repairImportedLegacyReportSchemas);
+    await retireDuplicateCatalogueTests();
     await ensureUserDefaults();
   }
 }
