@@ -1,4 +1,5 @@
 const { getCbcHeading, getCbcParameters, getCbcVariant } = require("../config/cbc");
+const { REPORT_PRESENTATION_CSS } = require("./reportPresentation");
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -9176,6 +9177,22 @@ function buildCustomReportNarratives(tests) {
     .join("");
 }
 
+function buildGenericNarrativeBody(test) {
+  const parameters = Array.isArray(test?.parameters) ? test.parameters : [];
+  const narrativeNames = /^(clinical (details|data|history)|specimen|findings|result\s*\/\s*findings|impression|diagnosis|gross description|microscopic description|advice|note|comments?|organism isolated|drug sensitivity|antibiotic sensitivity|culture result)$/i;
+  if (parameters.length < 2 || !parameters.every(parameter =>
+    narrativeNames.test(String(parameter.parameter_name || '').trim())
+      && !String(parameter.unit || '').trim()
+      && !String(parameter.normal_range || '').trim()
+  )) return '';
+
+  return `<div class="narrative-findings">${parameters.map(parameter => `
+    <section class="narrative-finding">
+      <h2>${escapeHtml(parameter.parameter_name)}</h2>
+      <div>${escapeHtml(parameter.value || '-').replace(/\r?\n/g, '<br>')}</div>
+    </section>`).join('')}</div>`;
+}
+
 function buildReportHtml(reportData) {
   const reportTests = Array.isArray(reportData.tests) ? reportData.tests : [];
   if (reportTests.length > 1 && !reportData._singleTestPage) {
@@ -9231,7 +9248,7 @@ function buildReportHtml(reportData) {
   const sex = escapeHtml(reportData.patient.gender);
   const doctorName = escapeHtml(reportData.doctor?.name || "Self");
   const billNoStr = String(reportData.visit.bill_no || "");
-  const patientId = billNoStr.split("-").pop() || escapeHtml(reportData.patient.id);
+  const patientId = escapeHtml(billNoStr.split("-").pop() || reportData.patient.id);
   
   const registeredOn = formatDateStr(reportData.visit.created_at);
   const reportedOn = formatDateStr(reportData.report.finalized_at || new Date());
@@ -9249,6 +9266,9 @@ function buildReportHtml(reportData) {
   const barcodeUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(billNo)}&scale=2&height=10&includetext`;
 
   const singleTest = reportData.tests.length === 1 ? reportData.tests[0] : null;
+  const reportDepartment = singleTest?.category && singleTest.category !== "Imported legacy catalogue"
+    ? singleTest.category : "Laboratory report";
+  const genericNarrativeBody = buildGenericNarrativeBody(singleTest);
   const customReportNarratives = buildCustomReportNarratives(reportData.tests);
   const beta2GlycoproteinPanelTest = singleTest && (
     isBeta2GlycoproteinPanelTest(singleTest)
@@ -9628,7 +9648,7 @@ function buildReportHtml(reportData) {
         if (reportData.tests.length === 1 && isFactorXiiTest(t)) return "FACTOR XII";
         if (reportData.tests.length === 1 && isFactorXiiiTest(t)) return "FACTOR XIII";
         if (name.includes("PROTHROMBIN TIME") || name.includes("PTIME") || name.includes("P-TIME") || name === "PT") return "PROTHROMBIN TIME STUDIES";
-        return "LABORATORY REPORT";
+        return escapeHtml(t.name || "Laboratory report");
       }).filter((v, i, a) => a.indexOf(v) === i).join(", ")
     : "LABORATORY REPORT";
 
@@ -9639,6 +9659,7 @@ function buildReportHtml(reportData) {
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <style>
+        :root { --report-header-space: ${reportHeaderSpaceMm}mm; --report-footer-space: ${reportFooterSpaceMm}mm; }
         @page {
           size: A4;
           margin: 0;
@@ -10573,6 +10594,7 @@ function buildReportHtml(reportData) {
         .custom-report-body p:last-child { margin-bottom: 0; }
  
         tr { page-break-inside: avoid; }
+        ${REPORT_PRESENTATION_CSS}
       </style>
     </head>
     <body class="${readOnlyView ? "report-read-only" : ""}">
@@ -10587,27 +10609,31 @@ function buildReportHtml(reportData) {
       ${reportActionControls}
       ${readOnlyView ? `<div class="view-only-print-notice">Printing is disabled while viewing a report. Please return to Lab LMS and use the Print Report button.</div>` : ""}
       <div class="main-content${rtPcrTest ? " rt-pcr-report" : tpmtTest ? " tpmt-report" : cysticFibrosisNewbornTest ? " cystic-fibrosis-newborn-report" : kftTest ? " kft-report" : factorIiTest ? " factor-ii-report" : karyotypeTest ? " karyotype-report" : lipidProfileTest ? " lipid-profile-report" : lftTest ? " lft-report" : hba1cTest ? " hba1c-report" : vitaminDTest ? " vitamin-d-report" : vitaminCTest ? " vitamin-c-report" : vitaminB12Test ? " vitamin-b12-report" : randomBloodSugarTest ? " rbs-report" : fastingBloodSugarTest ? " fbs-report" : bTypeNatriureticPeptideTest ? " bnp-report" : creatineKinaseTest ? " creatine-kinase-report" : beta2MicroglobulinTest ? " beta2-microglobulin-report" : altSgptTest ? " alt-sgpt-report" : dnphTest ? " dnph-report" : prealbuminTest ? " prealbumin-report" : haptoglobinTest ? " haptoglobin-report" : gramStainBacterialVaginosisTest ? " gram-bv-report" : aldolaseTest ? " aldolase-report" : urineProteinCreatinineRatioTest ? " upcr-report" : albuminCreatinineRatioTest ? " acr-report" : postPrandialBloodSugarTest ? " ppbs-report" : tacrolimusTest ? " tacrolimus-report" : phosphorusTest ? " phosphorus-report" : alkalinePhosphataseTest ? " alkaline-phosphatase-report" : clotRetractionTest ? " clot-retraction-report" : vitaminETest ? " vitamin-e-report" : vitaminB9Test ? " vitamin-b9-report" : vitaminKTest ? " vitamin-k-report" : ldlCholesterolTest ? " ldl-cholesterol-report" : hdlCholesterolTest ? " hdl-cholesterol-report" : indirectBilirubinTest ? " indirect-bilirubin-report" : calciumTest ? " calcium-report" : ferritinTest ? " ferritin-report" : cPeptideTest ? " c-peptide-report" : vldlCholesterolTest ? " vldl-cholesterol-report" : comprehensiveMetabolicPanelTest ? " cmp-report" : electrolyteProfileTest ? " electrolytes-report" : potassiumTest ? " potassium-report" : astSgotTest ? " ast-sgot-report" : globulinTest ? " globulin-report" : albuminTest ? " albumin-report" : digoxinTest ? " digoxin-report" : bunTest ? " bun-report" : cbcTest ? " cbc-report" : bloodGroupTest ? " blood-group-report" : dDimerTest ? " d-dimer-report" : sickleCellMutationTest ? " sickle-cell-mutation-report" : rbcTest ? " rbc-report" : plateletTest ? " platelet-report" : tlcTest ? " tlc-report" : absoluteCountTest ? " absolute-count-report" : mchcTest ? " mchc-report" : mchTest ? " mch-report" : mcvTest ? " mcv-report" : mpvTest ? " mpv-report" : hctPcvTest ? " hct-pcv-report" : esrTest ? " esr-report" : pdwTest ? " pdw-report" : hemoglobinTest ? " hemoglobin-report" : ptTest ? " pt-report" : apttTest ? " aptt-report" : dlcTest ? " dlc-report" : indirectCoombsTest ? " indirect-coombs-report" : directCoombsTest ? " direct-coombs-report" : fibrinogenTest ? " fibrinogen-report" : reticulocyteTest ? " reticulocyte-report" : clottingTimeTest ? " clotting-time-report" : bleedingTimeTest ? " bleeding-time-report" : coagulationProfileTest ? " coagulation-profile-report" : factorVTest ? " factor-v-report" : factorViiTest ? " factor-vii-report" : factorIxTest ? " factor-ix-report" : factorXTest ? " factor-x-report" : factorXiTest ? " factor-xi-report" : factorViiiTest ? " factor-viii-report" : peripheralSmearTest ? " peripheral-smear-report" : factorXiiTest ? " factor-xii-report" : factorXiiiTest ? " factor-xiii-report" : ""}">
+        <table class="report-page-layout" role="presentation">
+          <thead class="report-page-spacer" aria-hidden="true"><tr><td></td></tr></thead>
+          <tbody><tr class="report-page-row"><td class="report-page-cell">
         <table class="header-table">
           <tr>
             <td style="width: 39%;">
               <div class="patient-overview">
                 <div class="patient-meta">
                   <div class="patient-name">${patientName}</div>
-                  <div class="info-row">Age : ${age} Years</div>
-                  <div class="info-row">Sex : ${sex}</div>
-                  <div class="info-row">PID : ${patientId}</div>
+                  <div class="info-row"><span class="info-label">Age</span> ${age} Years</div>
+                  <div class="info-row"><span class="info-label">Sex</span> ${sex}</div>
+                  <div class="info-row"><span class="info-label">PID</span> ${patientId}</div>
                 </div>
                 <div class="header-qr">
-                  <div class="qr-frame"><img src="${qrUrl}" class="qr-img" /></div>
+                  <div class="qr-frame"><img src="${qrUrl}" class="qr-img" alt="Report QR code" /></div>
                 </div>
               </div>
             </td>
             <td style="width: 35%;">
-              <div class="collection-heading">Sample Collected At:</div>
+              <div class="collection-heading">Collection centre</div>
               <div class="collection-location">${escapeHtml(collectionLocation)}</div>
               <div class="referral-row">Ref. By: <strong>${doctorName}</strong></div>
             </td>
             <td style="width: 26%;" class="header-barcode">
+              <div class="report-accession">${billNo}</div>
               <div>
                 <img src="${barcodeUrl}" class="barcode-img" />
               </div>
@@ -10617,9 +10643,19 @@ function buildReportHtml(reportData) {
           </tr>
         </table>
 
-        <div class="test-title">${testTitle}</div>
+        <header class="report-heading">
+          <div class="report-heading-meta">
+            <div class="report-department">${escapeHtml(reportDepartment)}</div>
+            ${reportData.isPreview ? '<span class="report-preview-label">SAMPLE REPORT</span>' : ''}
+          </div>
+          <h1 class="test-title">${testTitle}</h1>
+          ${singleTest?.sample_type ? `<div class="report-specimen">Specimen <strong>${escapeHtml(singleTest.sample_type)}</strong></div>` : ''}
+        </header>
+
+        <section class="report-findings">
 
         ${beta2GlycoproteinPanelTest ? buildBeta2GlycoproteinPanelReportBody(beta2GlycoproteinPanelTest) : toxoplasmaAntibodiesPanelTest ? buildToxoplasmaAntibodiesPanelReportBody(toxoplasmaAntibodiesPanelTest) : torchProfileTest ? buildTorchProfileReportBody(torchProfileTest) : tnfAlphaTest ? buildTnfAlphaReportBody(tnfAlphaTest) : rheumatoidFactorTest ? buildRheumatoidFactorReportBody(rheumatoidFactorTest) : asoTiterTest ? buildAsoTiterReportBody(asoTiterTest) : hsCrpTest ? buildHsCrpReportBody(hsCrpTest) : typhidotTest ? buildTyphidotReportBody(typhidotTest) : vdrlTest ? buildVdrlReportBody(vdrlTest) : havIggTest ? buildHavIggReportBody(havIggTest) : havIgmTest ? buildHavIgmReportBody(havIgmTest) : hcvRapidScreeningTest ? buildHcvRapidScreeningReportBody(hcvRapidScreeningTest) : rtPcrTest ? buildRtPcrReportBody(rtPcrTest) : tpmtTest ? buildTpmtGenotypingReportBody(tpmtTest) : cysticFibrosisNewbornTest ? buildCysticFibrosisNewbornScreenReportBody(cysticFibrosisNewbornTest) : kftTest ? buildKftReportBody(kftTest) : factorIiTest ? buildFactorIiReportBody(factorIiTest) : karyotypeTest ? buildKaryotypeReportBody(karyotypeTest) : lipidProfileTest ? buildLipidProfileReportBody(lipidProfileTest) : lftTest ? buildLftReportBody(lftTest) : hba1cTest ? buildHba1cReportBody(hba1cTest) : vitaminDTest ? buildVitaminDReportBody(vitaminDTest) : vitaminCTest ? buildVitaminCReportBody(vitaminCTest) : vitaminB12Test ? buildVitaminB12ReportBody(vitaminB12Test) : randomBloodSugarTest ? buildRandomBloodSugarReportBody(randomBloodSugarTest) : fastingBloodSugarTest ? buildFastingBloodSugarReportBody(fastingBloodSugarTest) : bTypeNatriureticPeptideTest ? buildBTypeNatriureticPeptideReportBody(bTypeNatriureticPeptideTest) : creatineKinaseTest ? buildCreatineKinaseReportBody(creatineKinaseTest) : beta2MicroglobulinTest ? buildBeta2MicroglobulinReportBody(beta2MicroglobulinTest) : altSgptTest ? buildAltSgptReportBody(altSgptTest) : dnphTest ? buildDnphReportBody(dnphTest) : prealbuminTest ? buildPrealbuminReportBody(prealbuminTest) : haptoglobinTest ? buildHaptoglobinReportBody(haptoglobinTest) : gramStainBacterialVaginosisTest ? buildGramStainBacterialVaginosisReportBody(gramStainBacterialVaginosisTest) : aldolaseTest ? buildAldolaseReportBody(aldolaseTest) : urineProteinCreatinineRatioTest ? buildUrineProteinCreatinineRatioReportBody(urineProteinCreatinineRatioTest) : albuminCreatinineRatioTest ? buildAlbuminCreatinineRatioReportBody(albuminCreatinineRatioTest) : postPrandialBloodSugarTest ? buildPostPrandialBloodSugarReportBody(postPrandialBloodSugarTest) : tacrolimusTest ? buildTacrolimusReportBody(tacrolimusTest) : phosphorusTest ? buildPhosphorusReportBody(phosphorusTest) : alkalinePhosphataseTest ? buildAlkalinePhosphataseReportBody(alkalinePhosphataseTest) : clotRetractionTest ? buildClotRetractionReportBody(clotRetractionTest) : vitaminETest ? buildVitaminEReportBody(vitaminETest) : vitaminB9Test ? buildVitaminB9ReportBody(vitaminB9Test) : vitaminKTest ? buildVitaminKReportBody(vitaminKTest) : ldlCholesterolTest ? buildLdlCholesterolReportBody(ldlCholesterolTest) : hdlCholesterolTest ? buildHdlCholesterolReportBody(hdlCholesterolTest) : indirectBilirubinTest ? buildIndirectBilirubinReportBody(indirectBilirubinTest) : calciumTest ? buildCalciumReportBody(calciumTest) : ferritinTest ? buildFerritinReportBody(ferritinTest) : cPeptideTest ? buildCPeptideReportBody(cPeptideTest) : vldlCholesterolTest ? buildVldlCholesterolReportBody(vldlCholesterolTest) : comprehensiveMetabolicPanelTest ? buildComprehensiveMetabolicPanelReportBody(comprehensiveMetabolicPanelTest) : electrolyteProfileTest ? buildElectrolyteProfileReportBody(electrolyteProfileTest) : potassiumTest ? buildPotassiumReportBody(potassiumTest) : astSgotTest ? buildAstSgotReportBody(astSgotTest) : globulinTest ? buildGlobulinReportBody(globulinTest) : albuminTest ? buildAlbuminReportBody(albuminTest) : digoxinTest ? buildDigoxinReportBody(digoxinTest) : bunTest ? buildBunReportBody(bunTest) : cbcTest ? buildCbcReportBody(cbcTest, cbcVariant) : bloodGroupTest ? buildBloodGroupReportBody(bloodGroupTest) : dDimerTest ? buildDDimerReportBody(dDimerTest) : sickleCellMutationTest ? buildSickleCellMutationAnalysisReportBody(sickleCellMutationTest) : rbcTest ? buildRbcReportBody(rbcTest) : plateletTest ? buildPlateletReportBody(plateletTest) : tlcTest ? buildTlcReportBody(tlcTest) : absoluteCountTest ? buildAbsoluteCountReportBody(absoluteCountTest, absoluteCountTemplate) : mchcTest ? buildMchcReportBody(mchcTest) : mchTest ? buildMchReportBody(mchTest) : mcvTest ? buildMcvReportBody(mcvTest) : mpvTest ? buildMpvReportBody(mpvTest) : hctPcvTest ? buildHctPcvReportBody(hctPcvTest) : esrTest ? buildEsrReportBody(esrTest) : pdwTest ? buildPdwReportBody(pdwTest) : hemoglobinTest ? buildHemoglobinReportBody(hemoglobinTest, reportData.patient.gender) : ptTest ? buildProthrombinTimeReportBody(ptTest) : apttTest ? buildApttReportBody(apttTest) : dlcTest ? buildDlcReportBody(dlcTest) : indirectCoombsTest ? buildIndirectCoombsReportBody(indirectCoombsTest) : directCoombsTest ? buildDirectCoombsReportBody(directCoombsTest) : fibrinogenTest ? buildFibrinogenReportBody(fibrinogenTest) : reticulocyteTest ? buildReticulocyteReportBody(reticulocyteTest) : clottingTimeTest ? buildClottingTimeReportBody(clottingTimeTest) : bleedingTimeTest ? buildBleedingTimeReportBody(bleedingTimeTest) : coagulationProfileTest ? buildCoagulationProfileReportBody(coagulationProfileTest) : factorVTest ? buildFactorVReportBody(factorVTest) : factorViiTest ? buildFactorViiReportBody(factorViiTest) : factorIxTest ? buildFactorIxReportBody(factorIxTest) : factorXTest ? buildFactorXReportBody(factorXTest) : factorXiTest ? buildFactorXiReportBody(factorXiTest) : factorViiiTest ? buildFactorViiiReportBody(factorViiiTest) : peripheralSmearTest ? buildPeripheralBloodSmearReportBody(peripheralSmearTest) : factorXiiTest ? buildFactorXiiReportBody(factorXiiTest) : factorXiiiTest ? buildFactorXiiiReportBody(factorXiiiTest) : `
+        ${genericNarrativeBody || `
         <table class="results-table">
           <thead>
             <tr>
@@ -10670,10 +10706,10 @@ function buildReportHtml(reportData) {
                 }
 
                 const { isAbnormal, colorClass } = checkResultRange(param.value, param.normal_range);
-                let valDisplay = escapeHtml(param.value || "-");
+                let valDisplay = escapeHtml(param.value || "-").replace(/\r?\n/g, '<br>');
                 if (isAbnormal) {
                   const label = colorClass === 'high-val' ? 'High' : 'Low';
-                  valDisplay = `<span class="${colorClass}">${valDisplay}</span> &nbsp; <span class="${colorClass}" style="font-size: 13px; font-weight: bold;">${label}</span>`;
+                  valDisplay = `<span class="${colorClass}">${valDisplay}</span> <span class="report-result-status ${colorClass}">${label}</span>`;
                 }
                 
                 const needsIndentation = [
@@ -10685,7 +10721,7 @@ function buildReportHtml(reportData) {
                 rows.push(`
                   <tr>
                     <td style="padding-left: ${paddingLeft}">${escapeHtml(param.parameter_name)}</td>
-                    <td style="font-weight: ${isAbnormal ? 'bold' : 'normal'}">${valDisplay}</td>
+                    <td class="entered-result-text" style="font-weight: ${isAbnormal ? 'bold' : 'normal'}">${valDisplay}</td>
                     <td>${escapeHtml(param.normal_range || "-")}</td>
                     <td>${escapeHtml(param.unit || "")}</td>
                   </tr>
@@ -10695,6 +10731,7 @@ function buildReportHtml(reportData) {
             }).join('')}
           </tbody>
         </table>
+        `}
         `}
 
         ${customReportNarratives}
@@ -10803,10 +10840,11 @@ function buildReportHtml(reportData) {
           </div>
         ` : ''}
 
+        </section>
         <div class="report-footer">
-          <div>Thanks for Reference</div>
-          <div style="font-weight: bold;">****End of Report****</div>
-          <div style="width: 100px;"></div>
+          <div>${billNo}</div>
+          <div>End of report</div>
+          <div>${reportData.isPreview ? 'Sample / preview' : ''}</div>
         </div>
 
         <div class="signature-wrapper legacy-signature">
@@ -10819,6 +10857,9 @@ function buildReportHtml(reportData) {
           </div>
         </div>
         ${reportDoctorSignatureMarkup}
+          </td></tr></tbody>
+          <tfoot class="report-page-spacer" aria-hidden="true"><tr><td></td></tr></tfoot>
+        </table>
       </div>
       ${showPrintControls ? `
         <script>
