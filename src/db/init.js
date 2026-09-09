@@ -2261,6 +2261,62 @@ async function ensureUrineProteinCreatinineRatioTestConfiguration() {
   }
 }
 
+async function ensureAlbuminCreatinineRatioTestConfiguration() {
+  const tests = await all(
+    `SELECT id FROM tests
+     WHERE LOWER(name) IN (LOWER(?), LOWER(?), LOWER(?), LOWER(?))
+        OR LOWER(name) LIKE '%albumin%creatinine%ratio%'
+        OR LOWER(COALESCE(code, '')) = 'acr'
+     ORDER BY id ASC`,
+    [
+      "ACR (Albumin-Creatinine Ratio)",
+      "Albumin Creatinine Ratio",
+      "Urine Albumin Creatinine Ratio",
+      "ACR",
+    ]
+  );
+
+  const parameters = [
+    { name: "Urine Albumin", aliases: ["Albumin", "Microalbumin", "Urinary Albumin", "Result"], unit: "mg/L", range: "", entryMode: "manual", formula: null, precision: null },
+    { name: "Urine Creatinine", aliases: ["Creatinine", "Urinary Creatinine"], unit: "mg/dL", range: "", entryMode: "manual", formula: null, precision: null },
+    { name: "Albumin Creatinine Ratio (ACR)", aliases: ["Albumin Creatinine Ratio", "ACR", "UACR"], unit: "mg/g creatinine", range: "< 30.00", entryMode: "calculated", formula: "{Urine Albumin} / {Urine Creatinine} * 100", precision: 1 },
+  ];
+
+  for (const test of tests) {
+    await run(
+      "UPDATE tests SET category = ?, sample_type = ?, turnaround_hours = ?, active = 1 WHERE id = ?",
+      ["Biochemistry", "Spot Urine", 24, test.id]
+    );
+
+    for (const [index, definition] of parameters.entries()) {
+      const names = [definition.name, ...definition.aliases];
+      const placeholders = names.map(() => "LOWER(?)").join(", ");
+      const parameter = await get(
+        `SELECT id FROM test_parameters
+         WHERE test_id = ? AND LOWER(parameter_name) IN (${placeholders})
+         ORDER BY display_order ASC, id ASC LIMIT 1`,
+        [test.id, ...names]
+      );
+
+      if (parameter) {
+        await run(
+          `UPDATE test_parameters
+           SET parameter_name = ?, unit = ?, normal_range = ?, display_order = ?, entry_mode = ?, calculation_formula = ?, calculation_precision = ?
+           WHERE id = ?`,
+          [definition.name, definition.unit, definition.range, index + 1, definition.entryMode, definition.formula, definition.precision, parameter.id]
+        );
+        continue;
+      }
+
+      await run(
+        `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, display_order, entry_mode, calculation_formula, calculation_precision)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [test.id, definition.name, definition.unit, definition.range, index + 1, definition.entryMode, definition.formula, definition.precision]
+      );
+    }
+  }
+}
+
 async function ensurePostPrandialBloodSugarTestConfiguration() {
   await ensureSingleParameterTestConfiguration({
     names: ["Glucose PP (Post Prandial)", "Post Prandial Blood Sugar (PPBS)", "Post Prandial Blood Sugar", "PPBS"],
@@ -5779,6 +5835,7 @@ async function initializeDatabase() {
     await ensureGramStainBacterialVaginosisTestConfiguration();
     await ensureAldolaseTestConfiguration();
     await ensureUrineProteinCreatinineRatioTestConfiguration();
+    await ensureAlbuminCreatinineRatioTestConfiguration();
     await ensurePostPrandialBloodSugarTestConfiguration();
     await ensureTacrolimusTestConfiguration();
     await ensurePhosphorusTestConfiguration();
@@ -5940,6 +5997,7 @@ async function initializeDatabase() {
     await ensureGramStainBacterialVaginosisTestConfiguration();
     await ensureAldolaseTestConfiguration();
     await ensureUrineProteinCreatinineRatioTestConfiguration();
+    await ensureAlbuminCreatinineRatioTestConfiguration();
     await ensurePostPrandialBloodSugarTestConfiguration();
     await ensureTacrolimusTestConfiguration();
     await ensurePhosphorusTestConfiguration();

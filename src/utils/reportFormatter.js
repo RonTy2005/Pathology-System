@@ -426,6 +426,15 @@ function isUrineProteinCreatinineRatioTest(test) {
     || name.includes("urineproteincreatinine");
 }
 
+function isAlbuminCreatinineRatioTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "acr" || code === "uacr"
+    || name === "acr"
+    || name.includes("albumincreatinineratio")
+    || name.includes("urinealbumincreatinineratio");
+}
+
 function isPostPrandialBloodSugarTest(test) {
   const name = normalizeParameterName(test?.name);
   const code = normalizeParameterName(test?.code);
@@ -4683,6 +4692,69 @@ function buildUrineProteinCreatinineRatioReportBody(test) {
       <ul><li>Kidney disease with protein leak from glomeruli.</li><li>Nephrotic syndrome with protein loss in urine.</li></ul>
       <div class="report-note-heading">UPCR Low Levels cause:</div>
       <ul><li>Healthy kidneys with protein reabsorption.</li><li>Dehydration or low urine output.</li></ul>
+    </div>
+  `;
+}
+
+function getAlbuminCreatinineRatioCategory(value) {
+  const numericValue = Number(String(value || "").replace(/,/g, ""));
+  if (!Number.isFinite(numericValue)) return null;
+  if (numericValue < 30) {
+    return { code: "A1", label: "Normal to mildly increased", className: "normal-val" };
+  }
+  if (numericValue <= 300) {
+    return { code: "A2", label: "Moderately increased", className: "high-val" };
+  }
+  return { code: "A3", label: "Severely increased", className: "high-val" };
+}
+
+function buildAlbuminCreatinineRatioReportBody(test) {
+  const albumin = findReportParameter(test, ["Urine Albumin", "Albumin", "Microalbumin", "Urinary Albumin"]) || {};
+  const creatinine = findReportParameter(test, ["Urine Creatinine", "Creatinine", "Urinary Creatinine"]) || {};
+  const ratio = findReportParameter(test, ["Albumin Creatinine Ratio (ACR)", "Albumin Creatinine Ratio", "ACR", "UACR"]) || {};
+  const displayValue = (value) => String(value ?? "").trim() || "-";
+  const ratioValue = displayValue(ratio.value);
+  const category = getAlbuminCreatinineRatioCategory(ratioValue);
+  const rows = [
+    { label: "Urine Albumin", value: displayValue(albumin.value), range: albumin.normal_range || "-", unit: albumin.unit || "mg/L" },
+    { label: "Urine Creatinine", value: displayValue(creatinine.value), range: creatinine.normal_range || "-", unit: creatinine.unit || "mg/dL" },
+  ].map((definition) => `
+    <tr>
+      <td>${escapeHtml(definition.label)}</td>
+      <td>${escapeHtml(definition.value)}</td>
+      <td>${escapeHtml(definition.range)}</td>
+      <td>${escapeHtml(definition.unit)}</td>
+    </tr>
+  `).join("");
+
+  return `
+    <table class="results-table acr-table">
+      <thead><tr><th style="width: 34%">Investigation</th><th style="width: 27%">Result</th><th style="width: 25%">Reference Value</th><th style="width: 14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="acr-meta-row"><td><strong>Sample Type</strong></td><td>${escapeHtml(test.sample_type || "Spot Urine")}</td><td colspan="2"></td></tr>
+        <tr class="acr-meta-row"><td><strong>Calculation</strong></td><td colspan="3">Urine albumin-to-creatinine ratio</td></tr>
+        <tr class="acr-section"><td colspan="4">URINE ALBUMIN / CREATININE</td></tr>
+        ${rows}
+        <tr class="acr-ratio-row">
+          <td><strong>Albumin Creatinine Ratio (ACR)</strong></td>
+          <td><span class="${category?.className || ""}">${escapeHtml(ratioValue)}</span>${category ? ` <span class="single-analyte-status ${category.className}">${escapeHtml(category.code)}</span>` : ""}</td>
+          <td>&lt; 30.00</td>
+          <td>${escapeHtml(ratio.unit || "mg/g creatinine")}</td>
+        </tr>
+        <tr class="acr-category-row"><td><strong>Albuminuria Category</strong></td><td colspan="3">${category ? `<strong class="${category.className}">${escapeHtml(category.code)} - ${escapeHtml(category.label)}</strong>` : "-"}</td></tr>
+      </tbody>
+    </table>
+    <div class="single-analyte-notes acr-notes">
+      <div class="report-note-heading">Albuminuria Classification (ACR, mg/g creatinine)</div>
+      <table class="acr-interpretation-table">
+        <thead><tr><th>Category</th><th>ACR</th><th>Interpretation</th></tr></thead>
+        <tbody>
+          <tr><td>A1</td><td>&lt; 30</td><td>Normal to mildly increased</td></tr>
+          <tr><td>A2</td><td>30 - 300</td><td>Moderately increased</td></tr>
+          <tr><td>A3</td><td>&gt; 300</td><td>Severely increased</td></tr>
+        </tbody>
+      </table>
+      <p>ACR is calculated from urine albumin and urine creatinine concentrations to reduce the effect of urine dilution. Interpret results with the patient's clinical history and other renal findings; persistent elevation should be clinically evaluated.</p>
     </div>
   `;
 }
@@ -9215,6 +9287,7 @@ function buildReportHtml(reportData) {
   const gramStainBacterialVaginosisTest = singleTest && isGramStainBacterialVaginosisTest(singleTest) ? singleTest : null;
   const aldolaseTest = singleTest && isAldolaseTest(singleTest) ? singleTest : null;
   const urineProteinCreatinineRatioTest = singleTest && isUrineProteinCreatinineRatioTest(singleTest) ? singleTest : null;
+  const albuminCreatinineRatioTest = singleTest && isAlbuminCreatinineRatioTest(singleTest) ? singleTest : null;
   const postPrandialBloodSugarTest = singleTest && isPostPrandialBloodSugarTest(singleTest) ? singleTest : null;
   const tacrolimusTest = singleTest && isTacrolimusTest(singleTest) ? singleTest : null;
   const phosphorusTest = singleTest && isPhosphorusTest(singleTest) ? singleTest : null;
@@ -9395,6 +9468,7 @@ function buildReportHtml(reportData) {
         if (reportData.tests.length === 1 && isGramStainBacterialVaginosisTest(t)) return "GRAM STAIN FOR BACTERIAL VAGINOSIS (BV)";
         if (reportData.tests.length === 1 && isAldolaseTest(t)) return "ALDOLASE";
         if (reportData.tests.length === 1 && isUrineProteinCreatinineRatioTest(t)) return "URINE PROTEIN - CREATININE RATIO (UPCR)";
+        if (reportData.tests.length === 1 && isAlbuminCreatinineRatioTest(t)) return "URINE ALBUMIN - CREATININE RATIO (ACR)";
         if (reportData.tests.length === 1 && isPostPrandialBloodSugarTest(t)) return "POST PRANDIAL BLOOD SUGAR (PPBS)";
         if (reportData.tests.length === 1 && isTacrolimusTest(t)) return "TACROLIMUS";
         if (reportData.tests.length === 1 && isPhosphorusTest(t)) return "PHOSPHORUS";
@@ -10289,6 +10363,17 @@ function buildReportHtml(reportData) {
         .gram-bv-notes p, .upcr-notes p, .prealbumin-notes p, .haptoglobin-notes p, .aldolase-notes p, .ppbs-notes p { margin: 2px 0 5px; }
         .gram-bv-notes ul, .upcr-notes ul, .prealbumin-notes ul, .haptoglobin-notes ul, .aldolase-notes ul, .ppbs-notes ul { margin: 2px 0 5px; }
         .gram-bv-report .report-footer, .upcr-report .report-footer, .prealbumin-report .report-footer, .haptoglobin-report .report-footer, .aldolase-report .report-footer, .ppbs-report .report-footer { margin-top: 3px; padding-top: 3px; font-size: 10px; }
+        .acr-table { margin-bottom: 6px; }
+        .acr-meta-row td { padding-top: 3px !important; padding-bottom: 3px !important; }
+        .acr-section td { font-weight: bold; padding-top: 5px !important; padding-bottom: 4px !important; }
+        .acr-ratio-row td { font-weight: bold; border-top: 1.5px solid #000; }
+        .acr-category-row td { padding-top: 5px !important; padding-bottom: 5px !important; }
+        .acr-interpretation-table { width: 76%; border-collapse: collapse; margin: 4px 0 7px; font-size: 10px; }
+        .acr-interpretation-table th, .acr-interpretation-table td { border: 1px solid #888; padding: 4px 5px; text-align: left; vertical-align: middle; }
+        .acr-interpretation-table th { font-weight: bold; text-transform: uppercase; }
+        .acr-notes { font-size: 10px; line-height: 1.25; margin-top: 5px; }
+        .acr-notes p { margin: 3px 0 5px; text-align: justify; }
+        .acr-report .report-footer { margin-top: 3px; padding-top: 3px; font-size: 10px; }
         .tacrolimus-table { margin-bottom: 6px; }
         .tacrolimus-interpretation-table { border-collapse: collapse; width: 90%; margin: 4px 0 7px; font-size: 8px; }
         .tacrolimus-interpretation-table th, .tacrolimus-interpretation-table td { border: 1px solid #777; padding: 3px 4px; text-align: center; vertical-align: middle; }
@@ -10501,7 +10586,7 @@ function buildReportHtml(reportData) {
       ` : ""}
       ${reportActionControls}
       ${readOnlyView ? `<div class="view-only-print-notice">Printing is disabled while viewing a report. Please return to Lab LMS and use the Print Report button.</div>` : ""}
-      <div class="main-content${rtPcrTest ? " rt-pcr-report" : tpmtTest ? " tpmt-report" : cysticFibrosisNewbornTest ? " cystic-fibrosis-newborn-report" : kftTest ? " kft-report" : factorIiTest ? " factor-ii-report" : karyotypeTest ? " karyotype-report" : lipidProfileTest ? " lipid-profile-report" : lftTest ? " lft-report" : hba1cTest ? " hba1c-report" : vitaminDTest ? " vitamin-d-report" : vitaminCTest ? " vitamin-c-report" : vitaminB12Test ? " vitamin-b12-report" : randomBloodSugarTest ? " rbs-report" : fastingBloodSugarTest ? " fbs-report" : bTypeNatriureticPeptideTest ? " bnp-report" : creatineKinaseTest ? " creatine-kinase-report" : beta2MicroglobulinTest ? " beta2-microglobulin-report" : altSgptTest ? " alt-sgpt-report" : dnphTest ? " dnph-report" : prealbuminTest ? " prealbumin-report" : haptoglobinTest ? " haptoglobin-report" : gramStainBacterialVaginosisTest ? " gram-bv-report" : aldolaseTest ? " aldolase-report" : urineProteinCreatinineRatioTest ? " upcr-report" : postPrandialBloodSugarTest ? " ppbs-report" : tacrolimusTest ? " tacrolimus-report" : phosphorusTest ? " phosphorus-report" : alkalinePhosphataseTest ? " alkaline-phosphatase-report" : clotRetractionTest ? " clot-retraction-report" : vitaminETest ? " vitamin-e-report" : vitaminB9Test ? " vitamin-b9-report" : vitaminKTest ? " vitamin-k-report" : ldlCholesterolTest ? " ldl-cholesterol-report" : hdlCholesterolTest ? " hdl-cholesterol-report" : indirectBilirubinTest ? " indirect-bilirubin-report" : calciumTest ? " calcium-report" : ferritinTest ? " ferritin-report" : cPeptideTest ? " c-peptide-report" : vldlCholesterolTest ? " vldl-cholesterol-report" : comprehensiveMetabolicPanelTest ? " cmp-report" : electrolyteProfileTest ? " electrolytes-report" : potassiumTest ? " potassium-report" : astSgotTest ? " ast-sgot-report" : globulinTest ? " globulin-report" : albuminTest ? " albumin-report" : digoxinTest ? " digoxin-report" : bunTest ? " bun-report" : cbcTest ? " cbc-report" : bloodGroupTest ? " blood-group-report" : dDimerTest ? " d-dimer-report" : sickleCellMutationTest ? " sickle-cell-mutation-report" : rbcTest ? " rbc-report" : plateletTest ? " platelet-report" : tlcTest ? " tlc-report" : absoluteCountTest ? " absolute-count-report" : mchcTest ? " mchc-report" : mchTest ? " mch-report" : mcvTest ? " mcv-report" : mpvTest ? " mpv-report" : hctPcvTest ? " hct-pcv-report" : esrTest ? " esr-report" : pdwTest ? " pdw-report" : hemoglobinTest ? " hemoglobin-report" : ptTest ? " pt-report" : apttTest ? " aptt-report" : dlcTest ? " dlc-report" : indirectCoombsTest ? " indirect-coombs-report" : directCoombsTest ? " direct-coombs-report" : fibrinogenTest ? " fibrinogen-report" : reticulocyteTest ? " reticulocyte-report" : clottingTimeTest ? " clotting-time-report" : bleedingTimeTest ? " bleeding-time-report" : coagulationProfileTest ? " coagulation-profile-report" : factorVTest ? " factor-v-report" : factorViiTest ? " factor-vii-report" : factorIxTest ? " factor-ix-report" : factorXTest ? " factor-x-report" : factorXiTest ? " factor-xi-report" : factorViiiTest ? " factor-viii-report" : peripheralSmearTest ? " peripheral-smear-report" : factorXiiTest ? " factor-xii-report" : factorXiiiTest ? " factor-xiii-report" : ""}">
+      <div class="main-content${rtPcrTest ? " rt-pcr-report" : tpmtTest ? " tpmt-report" : cysticFibrosisNewbornTest ? " cystic-fibrosis-newborn-report" : kftTest ? " kft-report" : factorIiTest ? " factor-ii-report" : karyotypeTest ? " karyotype-report" : lipidProfileTest ? " lipid-profile-report" : lftTest ? " lft-report" : hba1cTest ? " hba1c-report" : vitaminDTest ? " vitamin-d-report" : vitaminCTest ? " vitamin-c-report" : vitaminB12Test ? " vitamin-b12-report" : randomBloodSugarTest ? " rbs-report" : fastingBloodSugarTest ? " fbs-report" : bTypeNatriureticPeptideTest ? " bnp-report" : creatineKinaseTest ? " creatine-kinase-report" : beta2MicroglobulinTest ? " beta2-microglobulin-report" : altSgptTest ? " alt-sgpt-report" : dnphTest ? " dnph-report" : prealbuminTest ? " prealbumin-report" : haptoglobinTest ? " haptoglobin-report" : gramStainBacterialVaginosisTest ? " gram-bv-report" : aldolaseTest ? " aldolase-report" : urineProteinCreatinineRatioTest ? " upcr-report" : albuminCreatinineRatioTest ? " acr-report" : postPrandialBloodSugarTest ? " ppbs-report" : tacrolimusTest ? " tacrolimus-report" : phosphorusTest ? " phosphorus-report" : alkalinePhosphataseTest ? " alkaline-phosphatase-report" : clotRetractionTest ? " clot-retraction-report" : vitaminETest ? " vitamin-e-report" : vitaminB9Test ? " vitamin-b9-report" : vitaminKTest ? " vitamin-k-report" : ldlCholesterolTest ? " ldl-cholesterol-report" : hdlCholesterolTest ? " hdl-cholesterol-report" : indirectBilirubinTest ? " indirect-bilirubin-report" : calciumTest ? " calcium-report" : ferritinTest ? " ferritin-report" : cPeptideTest ? " c-peptide-report" : vldlCholesterolTest ? " vldl-cholesterol-report" : comprehensiveMetabolicPanelTest ? " cmp-report" : electrolyteProfileTest ? " electrolytes-report" : potassiumTest ? " potassium-report" : astSgotTest ? " ast-sgot-report" : globulinTest ? " globulin-report" : albuminTest ? " albumin-report" : digoxinTest ? " digoxin-report" : bunTest ? " bun-report" : cbcTest ? " cbc-report" : bloodGroupTest ? " blood-group-report" : dDimerTest ? " d-dimer-report" : sickleCellMutationTest ? " sickle-cell-mutation-report" : rbcTest ? " rbc-report" : plateletTest ? " platelet-report" : tlcTest ? " tlc-report" : absoluteCountTest ? " absolute-count-report" : mchcTest ? " mchc-report" : mchTest ? " mch-report" : mcvTest ? " mcv-report" : mpvTest ? " mpv-report" : hctPcvTest ? " hct-pcv-report" : esrTest ? " esr-report" : pdwTest ? " pdw-report" : hemoglobinTest ? " hemoglobin-report" : ptTest ? " pt-report" : apttTest ? " aptt-report" : dlcTest ? " dlc-report" : indirectCoombsTest ? " indirect-coombs-report" : directCoombsTest ? " direct-coombs-report" : fibrinogenTest ? " fibrinogen-report" : reticulocyteTest ? " reticulocyte-report" : clottingTimeTest ? " clotting-time-report" : bleedingTimeTest ? " bleeding-time-report" : coagulationProfileTest ? " coagulation-profile-report" : factorVTest ? " factor-v-report" : factorViiTest ? " factor-vii-report" : factorIxTest ? " factor-ix-report" : factorXTest ? " factor-x-report" : factorXiTest ? " factor-xi-report" : factorViiiTest ? " factor-viii-report" : peripheralSmearTest ? " peripheral-smear-report" : factorXiiTest ? " factor-xii-report" : factorXiiiTest ? " factor-xiii-report" : ""}">
         <table class="header-table">
           <tr>
             <td style="width: 39%;">
@@ -10534,7 +10619,7 @@ function buildReportHtml(reportData) {
 
         <div class="test-title">${testTitle}</div>
 
-        ${beta2GlycoproteinPanelTest ? buildBeta2GlycoproteinPanelReportBody(beta2GlycoproteinPanelTest) : toxoplasmaAntibodiesPanelTest ? buildToxoplasmaAntibodiesPanelReportBody(toxoplasmaAntibodiesPanelTest) : torchProfileTest ? buildTorchProfileReportBody(torchProfileTest) : tnfAlphaTest ? buildTnfAlphaReportBody(tnfAlphaTest) : rheumatoidFactorTest ? buildRheumatoidFactorReportBody(rheumatoidFactorTest) : asoTiterTest ? buildAsoTiterReportBody(asoTiterTest) : hsCrpTest ? buildHsCrpReportBody(hsCrpTest) : typhidotTest ? buildTyphidotReportBody(typhidotTest) : vdrlTest ? buildVdrlReportBody(vdrlTest) : havIggTest ? buildHavIggReportBody(havIggTest) : havIgmTest ? buildHavIgmReportBody(havIgmTest) : hcvRapidScreeningTest ? buildHcvRapidScreeningReportBody(hcvRapidScreeningTest) : rtPcrTest ? buildRtPcrReportBody(rtPcrTest) : tpmtTest ? buildTpmtGenotypingReportBody(tpmtTest) : cysticFibrosisNewbornTest ? buildCysticFibrosisNewbornScreenReportBody(cysticFibrosisNewbornTest) : kftTest ? buildKftReportBody(kftTest) : factorIiTest ? buildFactorIiReportBody(factorIiTest) : karyotypeTest ? buildKaryotypeReportBody(karyotypeTest) : lipidProfileTest ? buildLipidProfileReportBody(lipidProfileTest) : lftTest ? buildLftReportBody(lftTest) : hba1cTest ? buildHba1cReportBody(hba1cTest) : vitaminDTest ? buildVitaminDReportBody(vitaminDTest) : vitaminCTest ? buildVitaminCReportBody(vitaminCTest) : vitaminB12Test ? buildVitaminB12ReportBody(vitaminB12Test) : randomBloodSugarTest ? buildRandomBloodSugarReportBody(randomBloodSugarTest) : fastingBloodSugarTest ? buildFastingBloodSugarReportBody(fastingBloodSugarTest) : bTypeNatriureticPeptideTest ? buildBTypeNatriureticPeptideReportBody(bTypeNatriureticPeptideTest) : creatineKinaseTest ? buildCreatineKinaseReportBody(creatineKinaseTest) : beta2MicroglobulinTest ? buildBeta2MicroglobulinReportBody(beta2MicroglobulinTest) : altSgptTest ? buildAltSgptReportBody(altSgptTest) : dnphTest ? buildDnphReportBody(dnphTest) : prealbuminTest ? buildPrealbuminReportBody(prealbuminTest) : haptoglobinTest ? buildHaptoglobinReportBody(haptoglobinTest) : gramStainBacterialVaginosisTest ? buildGramStainBacterialVaginosisReportBody(gramStainBacterialVaginosisTest) : aldolaseTest ? buildAldolaseReportBody(aldolaseTest) : urineProteinCreatinineRatioTest ? buildUrineProteinCreatinineRatioReportBody(urineProteinCreatinineRatioTest) : postPrandialBloodSugarTest ? buildPostPrandialBloodSugarReportBody(postPrandialBloodSugarTest) : tacrolimusTest ? buildTacrolimusReportBody(tacrolimusTest) : phosphorusTest ? buildPhosphorusReportBody(phosphorusTest) : alkalinePhosphataseTest ? buildAlkalinePhosphataseReportBody(alkalinePhosphataseTest) : clotRetractionTest ? buildClotRetractionReportBody(clotRetractionTest) : vitaminETest ? buildVitaminEReportBody(vitaminETest) : vitaminB9Test ? buildVitaminB9ReportBody(vitaminB9Test) : vitaminKTest ? buildVitaminKReportBody(vitaminKTest) : ldlCholesterolTest ? buildLdlCholesterolReportBody(ldlCholesterolTest) : hdlCholesterolTest ? buildHdlCholesterolReportBody(hdlCholesterolTest) : indirectBilirubinTest ? buildIndirectBilirubinReportBody(indirectBilirubinTest) : calciumTest ? buildCalciumReportBody(calciumTest) : ferritinTest ? buildFerritinReportBody(ferritinTest) : cPeptideTest ? buildCPeptideReportBody(cPeptideTest) : vldlCholesterolTest ? buildVldlCholesterolReportBody(vldlCholesterolTest) : comprehensiveMetabolicPanelTest ? buildComprehensiveMetabolicPanelReportBody(comprehensiveMetabolicPanelTest) : electrolyteProfileTest ? buildElectrolyteProfileReportBody(electrolyteProfileTest) : potassiumTest ? buildPotassiumReportBody(potassiumTest) : astSgotTest ? buildAstSgotReportBody(astSgotTest) : globulinTest ? buildGlobulinReportBody(globulinTest) : albuminTest ? buildAlbuminReportBody(albuminTest) : digoxinTest ? buildDigoxinReportBody(digoxinTest) : bunTest ? buildBunReportBody(bunTest) : cbcTest ? buildCbcReportBody(cbcTest, cbcVariant) : bloodGroupTest ? buildBloodGroupReportBody(bloodGroupTest) : dDimerTest ? buildDDimerReportBody(dDimerTest) : sickleCellMutationTest ? buildSickleCellMutationAnalysisReportBody(sickleCellMutationTest) : rbcTest ? buildRbcReportBody(rbcTest) : plateletTest ? buildPlateletReportBody(plateletTest) : tlcTest ? buildTlcReportBody(tlcTest) : absoluteCountTest ? buildAbsoluteCountReportBody(absoluteCountTest, absoluteCountTemplate) : mchcTest ? buildMchcReportBody(mchcTest) : mchTest ? buildMchReportBody(mchTest) : mcvTest ? buildMcvReportBody(mcvTest) : mpvTest ? buildMpvReportBody(mpvTest) : hctPcvTest ? buildHctPcvReportBody(hctPcvTest) : esrTest ? buildEsrReportBody(esrTest) : pdwTest ? buildPdwReportBody(pdwTest) : hemoglobinTest ? buildHemoglobinReportBody(hemoglobinTest, reportData.patient.gender) : ptTest ? buildProthrombinTimeReportBody(ptTest) : apttTest ? buildApttReportBody(apttTest) : dlcTest ? buildDlcReportBody(dlcTest) : indirectCoombsTest ? buildIndirectCoombsReportBody(indirectCoombsTest) : directCoombsTest ? buildDirectCoombsReportBody(directCoombsTest) : fibrinogenTest ? buildFibrinogenReportBody(fibrinogenTest) : reticulocyteTest ? buildReticulocyteReportBody(reticulocyteTest) : clottingTimeTest ? buildClottingTimeReportBody(clottingTimeTest) : bleedingTimeTest ? buildBleedingTimeReportBody(bleedingTimeTest) : coagulationProfileTest ? buildCoagulationProfileReportBody(coagulationProfileTest) : factorVTest ? buildFactorVReportBody(factorVTest) : factorViiTest ? buildFactorViiReportBody(factorViiTest) : factorIxTest ? buildFactorIxReportBody(factorIxTest) : factorXTest ? buildFactorXReportBody(factorXTest) : factorXiTest ? buildFactorXiReportBody(factorXiTest) : factorViiiTest ? buildFactorViiiReportBody(factorViiiTest) : peripheralSmearTest ? buildPeripheralBloodSmearReportBody(peripheralSmearTest) : factorXiiTest ? buildFactorXiiReportBody(factorXiiTest) : factorXiiiTest ? buildFactorXiiiReportBody(factorXiiiTest) : `
+        ${beta2GlycoproteinPanelTest ? buildBeta2GlycoproteinPanelReportBody(beta2GlycoproteinPanelTest) : toxoplasmaAntibodiesPanelTest ? buildToxoplasmaAntibodiesPanelReportBody(toxoplasmaAntibodiesPanelTest) : torchProfileTest ? buildTorchProfileReportBody(torchProfileTest) : tnfAlphaTest ? buildTnfAlphaReportBody(tnfAlphaTest) : rheumatoidFactorTest ? buildRheumatoidFactorReportBody(rheumatoidFactorTest) : asoTiterTest ? buildAsoTiterReportBody(asoTiterTest) : hsCrpTest ? buildHsCrpReportBody(hsCrpTest) : typhidotTest ? buildTyphidotReportBody(typhidotTest) : vdrlTest ? buildVdrlReportBody(vdrlTest) : havIggTest ? buildHavIggReportBody(havIggTest) : havIgmTest ? buildHavIgmReportBody(havIgmTest) : hcvRapidScreeningTest ? buildHcvRapidScreeningReportBody(hcvRapidScreeningTest) : rtPcrTest ? buildRtPcrReportBody(rtPcrTest) : tpmtTest ? buildTpmtGenotypingReportBody(tpmtTest) : cysticFibrosisNewbornTest ? buildCysticFibrosisNewbornScreenReportBody(cysticFibrosisNewbornTest) : kftTest ? buildKftReportBody(kftTest) : factorIiTest ? buildFactorIiReportBody(factorIiTest) : karyotypeTest ? buildKaryotypeReportBody(karyotypeTest) : lipidProfileTest ? buildLipidProfileReportBody(lipidProfileTest) : lftTest ? buildLftReportBody(lftTest) : hba1cTest ? buildHba1cReportBody(hba1cTest) : vitaminDTest ? buildVitaminDReportBody(vitaminDTest) : vitaminCTest ? buildVitaminCReportBody(vitaminCTest) : vitaminB12Test ? buildVitaminB12ReportBody(vitaminB12Test) : randomBloodSugarTest ? buildRandomBloodSugarReportBody(randomBloodSugarTest) : fastingBloodSugarTest ? buildFastingBloodSugarReportBody(fastingBloodSugarTest) : bTypeNatriureticPeptideTest ? buildBTypeNatriureticPeptideReportBody(bTypeNatriureticPeptideTest) : creatineKinaseTest ? buildCreatineKinaseReportBody(creatineKinaseTest) : beta2MicroglobulinTest ? buildBeta2MicroglobulinReportBody(beta2MicroglobulinTest) : altSgptTest ? buildAltSgptReportBody(altSgptTest) : dnphTest ? buildDnphReportBody(dnphTest) : prealbuminTest ? buildPrealbuminReportBody(prealbuminTest) : haptoglobinTest ? buildHaptoglobinReportBody(haptoglobinTest) : gramStainBacterialVaginosisTest ? buildGramStainBacterialVaginosisReportBody(gramStainBacterialVaginosisTest) : aldolaseTest ? buildAldolaseReportBody(aldolaseTest) : urineProteinCreatinineRatioTest ? buildUrineProteinCreatinineRatioReportBody(urineProteinCreatinineRatioTest) : albuminCreatinineRatioTest ? buildAlbuminCreatinineRatioReportBody(albuminCreatinineRatioTest) : postPrandialBloodSugarTest ? buildPostPrandialBloodSugarReportBody(postPrandialBloodSugarTest) : tacrolimusTest ? buildTacrolimusReportBody(tacrolimusTest) : phosphorusTest ? buildPhosphorusReportBody(phosphorusTest) : alkalinePhosphataseTest ? buildAlkalinePhosphataseReportBody(alkalinePhosphataseTest) : clotRetractionTest ? buildClotRetractionReportBody(clotRetractionTest) : vitaminETest ? buildVitaminEReportBody(vitaminETest) : vitaminB9Test ? buildVitaminB9ReportBody(vitaminB9Test) : vitaminKTest ? buildVitaminKReportBody(vitaminKTest) : ldlCholesterolTest ? buildLdlCholesterolReportBody(ldlCholesterolTest) : hdlCholesterolTest ? buildHdlCholesterolReportBody(hdlCholesterolTest) : indirectBilirubinTest ? buildIndirectBilirubinReportBody(indirectBilirubinTest) : calciumTest ? buildCalciumReportBody(calciumTest) : ferritinTest ? buildFerritinReportBody(ferritinTest) : cPeptideTest ? buildCPeptideReportBody(cPeptideTest) : vldlCholesterolTest ? buildVldlCholesterolReportBody(vldlCholesterolTest) : comprehensiveMetabolicPanelTest ? buildComprehensiveMetabolicPanelReportBody(comprehensiveMetabolicPanelTest) : electrolyteProfileTest ? buildElectrolyteProfileReportBody(electrolyteProfileTest) : potassiumTest ? buildPotassiumReportBody(potassiumTest) : astSgotTest ? buildAstSgotReportBody(astSgotTest) : globulinTest ? buildGlobulinReportBody(globulinTest) : albuminTest ? buildAlbuminReportBody(albuminTest) : digoxinTest ? buildDigoxinReportBody(digoxinTest) : bunTest ? buildBunReportBody(bunTest) : cbcTest ? buildCbcReportBody(cbcTest, cbcVariant) : bloodGroupTest ? buildBloodGroupReportBody(bloodGroupTest) : dDimerTest ? buildDDimerReportBody(dDimerTest) : sickleCellMutationTest ? buildSickleCellMutationAnalysisReportBody(sickleCellMutationTest) : rbcTest ? buildRbcReportBody(rbcTest) : plateletTest ? buildPlateletReportBody(plateletTest) : tlcTest ? buildTlcReportBody(tlcTest) : absoluteCountTest ? buildAbsoluteCountReportBody(absoluteCountTest, absoluteCountTemplate) : mchcTest ? buildMchcReportBody(mchcTest) : mchTest ? buildMchReportBody(mchTest) : mcvTest ? buildMcvReportBody(mcvTest) : mpvTest ? buildMpvReportBody(mpvTest) : hctPcvTest ? buildHctPcvReportBody(hctPcvTest) : esrTest ? buildEsrReportBody(esrTest) : pdwTest ? buildPdwReportBody(pdwTest) : hemoglobinTest ? buildHemoglobinReportBody(hemoglobinTest, reportData.patient.gender) : ptTest ? buildProthrombinTimeReportBody(ptTest) : apttTest ? buildApttReportBody(apttTest) : dlcTest ? buildDlcReportBody(dlcTest) : indirectCoombsTest ? buildIndirectCoombsReportBody(indirectCoombsTest) : directCoombsTest ? buildDirectCoombsReportBody(directCoombsTest) : fibrinogenTest ? buildFibrinogenReportBody(fibrinogenTest) : reticulocyteTest ? buildReticulocyteReportBody(reticulocyteTest) : clottingTimeTest ? buildClottingTimeReportBody(clottingTimeTest) : bleedingTimeTest ? buildBleedingTimeReportBody(bleedingTimeTest) : coagulationProfileTest ? buildCoagulationProfileReportBody(coagulationProfileTest) : factorVTest ? buildFactorVReportBody(factorVTest) : factorViiTest ? buildFactorViiReportBody(factorViiTest) : factorIxTest ? buildFactorIxReportBody(factorIxTest) : factorXTest ? buildFactorXReportBody(factorXTest) : factorXiTest ? buildFactorXiReportBody(factorXiTest) : factorViiiTest ? buildFactorViiiReportBody(factorViiiTest) : peripheralSmearTest ? buildPeripheralBloodSmearReportBody(peripheralSmearTest) : factorXiiTest ? buildFactorXiiReportBody(factorXiiTest) : factorXiiiTest ? buildFactorXiiiReportBody(factorXiiiTest) : `
         <table class="results-table">
           <thead>
             <tr>

@@ -22,6 +22,19 @@ function createParameter(parameterName, { unit = "", normalRange = "" } = {}) {
 function getFallbackReportParameters(test = {}) {
   const normalizedName = normalizeSchemaName(test.name);
 
+  if (normalizedName === "acr" || normalizedName.includes("albumincreatinineratio")) {
+    return [
+      createParameter("Urine Albumin", { unit: "mg/L" }),
+      createParameter("Urine Creatinine", { unit: "mg/dL" }),
+      {
+        ...createParameter("Albumin Creatinine Ratio (ACR)", { unit: "mg/g creatinine", normalRange: "< 30.00" }),
+        entryMode: "calculated",
+        calculationFormula: "{Urine Albumin} / {Urine Creatinine} * 100",
+        calculationPrecision: 1,
+      },
+    ];
+  }
+
   if (/(afbculture.*sensitivity|culture.*sensitivity)/.test(normalizedName)) {
     return [
       createParameter("AFB Culture Result"),
