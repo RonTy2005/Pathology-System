@@ -1,4 +1,6 @@
 const { getCbcHeading, getCbcParameters, getCbcVariant } = require("../config/cbc");
+const { supplementReportHtml } = require("../services/reportContentService");
+const { getCombinationDefinition } = require("../services/reportCombinationRepair");
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -1732,6 +1734,8 @@ function isPlateletCountTest(test) {
 }
 
 function isTlcCountTest(test) {
+  // A TLC component must not turn an explicitly named panel into a TLC-only report.
+  if (getCombinationDefinition(test)) return false;
   const name = normalizeParameterName(test?.name);
   const code = String(test?.code || "").toLowerCase();
   const hasTlcParameter = (test?.parameters || []).some(parameter => {
@@ -9431,6 +9435,7 @@ function buildReportHtml(reportData) {
 
   const testTitle = reportData.tests.length > 0 
     ? reportData.tests.map(t => {
+        if (getCombinationDefinition(t)) return escapeHtml(t.name);
         const name = t.name.toUpperCase();
         if (name.includes("INDIRECT COOMBS TEST") || name.includes("COOMBS TEST, INDIRECT")) return "INDIRECT COOMBS TEST";
         if (reportData.tests.length === 1 && isDirectCoombsTest(t)) return "DIRECT COOMBS TEST";
@@ -9632,7 +9637,7 @@ function buildReportHtml(reportData) {
       }).filter((v, i, a) => a.indexOf(v) === i).join(", ")
     : "LABORATORY REPORT";
 
-  return `
+  return supplementReportHtml(`
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -10697,6 +10702,7 @@ function buildReportHtml(reportData) {
         </table>
         `}
 
+        <!-- supplemental-report-content -->
         ${customReportNarratives}
 
         ${!indirectCoombsTest && reportData.tests.some(t => t.name.toUpperCase().includes("COOMBS TEST") && t.name.toUpperCase().includes("INDIRECT")) ? `
@@ -10885,7 +10891,7 @@ function buildReportHtml(reportData) {
       ` : ""}
     </body>
     </html>
-  `;
+  `, singleTest);
 }
 
 function buildReportActionControls({ show, visitId, patientPhone = "", canDownload, canShareWhatsApp }) {

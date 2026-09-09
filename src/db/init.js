@@ -1,7 +1,7 @@
 const fs = require("fs/promises");
 const path = require("path");
 
-const { all, ensureColumn, get, run } = require("./helpers");
+const { all, ensureColumn, get, run, transaction } = require("./helpers");
 const { switchDatabasePath, getDatabasePath } = require("./connection");
 const { hashPassword } = require("../services/authService");
 const { DEFAULT_BUSINESS_NAME, DEFAULT_SUPERADMIN_USERNAME, DEFAULT_SUPERADMIN_PASSWORD, PERMISSIONS, ROLES, ROLE_ACCESS_CONTROL_DEFAULTS, ROLE_PERMISSION_DEFAULTS, isAdministrativeRole } = require("../config/constants");
@@ -9,6 +9,7 @@ const { PATHOLOGY_REPORT_CATALOG } = require("./pathologyReportCatalog");
 const { CBC_COMMON_PARAMETERS, CBC_REPORT_TESTS } = require("../config/cbc");
 const { createPatientPortalToken } = require("../utils/patientPortal");
 const { getCanonicalSchemaTargetForLegacyTest, getFallbackReportParameters } = require("../services/reportSchemaService");
+const { repairKnownCombinationSchemas } = require("../services/reportCombinationRepair");
 
 function buildNow() {
   return new Date().toISOString();
@@ -6030,6 +6031,7 @@ async function initializeDatabase() {
     await ensurePeripheralBloodSmearTestConfiguration();
     await configureDefaultCalculatedParameters();
     await applyOneTimeMigration("legacy-report-schema-repair-v1", repairImportedLegacyReportSchemas);
+    await applyOneTimeMigration("explicit-combination-report-content-v1", () => repairKnownCombinationSchemas({ all, get, run, transaction }));
     await retireDuplicateCatalogueTests();
     await ensureUserDefaults();
   } catch (error) {
@@ -6193,6 +6195,7 @@ async function initializeDatabase() {
     await ensurePeripheralBloodSmearTestConfiguration();
     await configureDefaultCalculatedParameters();
     await applyOneTimeMigration("legacy-report-schema-repair-v1", repairImportedLegacyReportSchemas);
+    await applyOneTimeMigration("explicit-combination-report-content-v1", () => repairKnownCombinationSchemas({ all, get, run, transaction }));
     await retireDuplicateCatalogueTests();
     await ensureUserDefaults();
   }
