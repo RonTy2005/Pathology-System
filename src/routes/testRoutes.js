@@ -10,6 +10,7 @@ const { getBusinessSettings } = require("../services/businessSettingsService");
 const { getTestReportPreviewUrl } = require("../utils/patientPortal");
 const { getBundleComponentTests } = require("../services/testBundleService");
 const { getFallbackReportParameters } = require("../services/reportSchemaService");
+const { getCellReportPreviewValue } = require("../services/cellReportService");
 
 function normalizeParameterDefinition(parameter = {}) {
   const entryMode = (parameter.entryMode || parameter.entry_mode) === "calculated"
@@ -60,7 +61,7 @@ function buildUnsavedTestPreview(testInput = {}) {
       parameter_name: parameter.parameterName,
       unit: parameter.unit,
       normal_range: parameter.normalRange,
-      value: getBundlePreviewValue({ normal_range: parameter.normalRange }),
+      value: getCellReportPreviewValue(testInput, parameter) ?? getBundlePreviewValue({ normal_range: parameter.normalRange }),
     }));
 
   return {
@@ -561,7 +562,7 @@ testRouter.get("/:id/sample-report", allowRoles(ROLES.ADMIN), async (req, res, n
               parameter_name: p.parameter_name,
               unit: p.unit,
               normal_range: p.normal_range,
-              value: value
+              value: getCellReportPreviewValue(test, p) ?? value
             };
           })
         }
@@ -582,7 +583,7 @@ testRouter.get("/:id/sample-report", allowRoles(ROLES.ADMIN), async (req, res, n
           test_id: component.id,
           parameters: componentParameters.map((parameter) => ({
             ...parameter,
-            value: getBundlePreviewValue(parameter),
+            value: getCellReportPreviewValue(component, parameter) ?? getBundlePreviewValue(parameter),
           })),
         };
       }));

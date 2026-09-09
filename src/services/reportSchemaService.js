@@ -1,3 +1,5 @@
+const { getCellReportParameters } = require('./cellReportService');
+
 function normalizeSchemaName(value) {
   return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
@@ -20,6 +22,8 @@ function createParameter(parameterName, { unit = "", normalRange = "" } = {}) {
  * clinical analytes or reference ranges that were not supplied by the lab.
  */
 function getFallbackReportParameters(test = {}) {
+  const cellParameters = getCellReportParameters(test);
+  if (cellParameters) return cellParameters;
   const normalizedName = normalizeSchemaName(test.name);
 
   if (normalizedName === "acr" || normalizedName.includes("albumincreatinineratio")) {

@@ -8,6 +8,8 @@ const sqlite3 = require('sqlite3');
 const { buildReportHtml } = require('../src/utils/reportFormatter');
 const { REPORT_CONTENT, getReportContent, buildSupplementaryNotes, supplementReportHtml } = require('../src/services/reportContentService');
 const { COMBINATIONS, getCombinationDefinition, repairKnownCombinationSchemas } = require('../src/services/reportCombinationRepair');
+const { CELL_REPORT_DEFINITIONS, getCellReportDefinition, getCellReportParameters, getCellReportPreviewValue, repairCellReportSchemas } = require('../src/services/cellReportService');
+const { getFallbackReportParameters } = require('../src/services/reportSchemaService');
 const { sampleReport } = require('./audit-report-content.cjs');
 
 test('all content has exact identities and traceable medical sources', () => {
@@ -108,7 +110,7 @@ test('local catalogue: restored styles and existing formats stay unchanged', asy
       const newHtml = buildReportHtml(sampleReport(input));
       assert.equal(newHtml.match(/<style>[\s\S]*?<\/style>/)[0], oldHtml.match(/<style>[\s\S]*?<\/style>/)[0]);
       // Named combinations now display all requested components, not TLC alone.
-      if (getCombinationDefinition(input)) {
+      if (getCombinationDefinition(input) || getCellReportDefinition(input)) {
         const table = newHtml.match(/<table class="results-table">[\s\S]*?<\/table>/)[0];
         for (const parameter of input.parameters) {
           const escaped = parameter.parameter_name.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
@@ -205,4 +207,119 @@ test('missing source and failed writes never create a partial combination', asyn
     assert.equal((await broken.get('SELECT parameter_name FROM test_parameters WHERE test_id=100')).parameter_name, 'Result');
     assert.equal((await broken.get('SELECT sample_type FROM tests WHERE id=100')).sample_type, null);
   } finally { await broken.close(); }
+});
+
+test('new cell tests get useful fields without guessed fluid reference intervals', () => {
+  for (const definition of CELL_REPORT_DEFINITIONS) {
+    const fields = getFallbackReportParameters({ name: definition.names[0], sample_type: definition.sampleType });
+    assert.deepEqual(fields, definition.parameters);
+    assert.ok(fields.every(p => p.parameterName !== 'Result' && p.entryMode === 'manual'));
+    assert.ok(fields.some(p => p.parameterName === 'Microscopic Findings'));
+    assert.ok(fields.some(p => p.parameterName === 'Impression'));
+    if (definition.key !== 'abnormal-cells') assert.ok(fields.every(p => p.normalRange === ''));
+  }
+  assert.equal(getCellReportDefinition({ name: 'Abnormal Cells', sample_type: 'Urine' }), null);
+  assert.equal(getCellReportDefinition({ name: 'BodyFluids (Cell Type&Cell Count)', sample_type: 'CSF' }), null);
+  assert.equal(getCellReportDefinition({ name: 'Ascitic Fluid (Cell Count,Biochemistry..)' }), null);
+  assert.equal(getCellReportDefinition({ name: 'Abnormal Cells', sampleType: 'Blood' }).key, 'abnormal-cells');
+});
+
+test('Abnormal Cells displays blank clinical fields, meaningful notes and a proper title', () => {
+  const input = { name: 'Abnormal Cells', sample_type: 'Blood', parameters: getCellReportParameters({ name: 'Abnormal Cells' }).map(p => ({
+    parameter_name: p.parameterName, unit: p.unit, normal_range: p.normalRange, value: '',
+  })) };
+  const original = JSON.stringify(input);
+  const html = buildReportHtml({ ...sampleReport(input), isPreview: false });
+  assert.match(html, /<div class="test-title">Abnormal Cells<\/div>/);
+  assert.match(html, /data-report-content="abnormal-cells"/);
+  const rows = html.match(/<table class="results-table">[\s\S]*?<\/table>/)[0];
+  assert.match(rows, />Abnormal Cells<\/td>\s*<td[^>]*>-<\/td>/);
+  assert.doesNotMatch(rows, />Sample|>Normal<|>Negative<|>0<|>Seen</);
+  assert.equal(JSON.stringify(input), original);
+});
+
+test('cell report preserves multiline observations, zero counts and lab-defined reference text', () => {
+  const input = { name: 'Joint Fluid for Cell Count & Cell Type', sample_type: 'Joint Fluid', parameters: [
+    { parameter_name: 'Total Nucleated Cell Count', value: '0', unit: 'cells/µL', normal_range: 'Lab-specific interval' },
+    { parameter_name: 'Microscopic Findings', value: 'First line\nSecond line <script>unsafe</script>', unit: '', normal_range: '' },
+  ] };
+  const html = buildReportHtml(sampleReport(input));
+  assert.match(html, />0<\/td>/);
+  assert.match(html, /Lab-specific interval/);
+  assert.match(html, /First line<br \/>Second line &lt;script&gt;unsafe&lt;\/script&gt;/);
+  assert.doesNotMatch(html, /<script>unsafe/);
+});
+
+test('cell preview examples are labelled samples, not invented negative findings', () => {
+  for (const definition of CELL_REPORT_DEFINITIONS) {
+    for (const field of definition.parameters) {
+      const value = getCellReportPreviewValue({ name: definition.names[0], sample_type: definition.sampleType }, field);
+      assert.ok(value);
+      if (field.parameterName !== 'Specimen / Site') assert.match(value, /^Sample /);
+    }
+  }
+  assert.equal(getCellReportPreviewValue({ name: 'Unrelated test' }, { parameterName: 'Impression' }), null);
+});
+
+async function cellFixture() {
+  const db = await fixture();
+  for (const [index, definition] of CELL_REPORT_DEFINITIONS.entries()) {
+    await db.run('INSERT INTO tests (id,name,category) VALUES (?,?,?)', [225 + index, definition.names[0], 'Imported legacy catalogue']);
+    await db.run('INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,?,?,?,?,?)', [225 + index, 'Result', '', '', 'manual', 1]);
+  }
+  return db;
+}
+
+test('cell migration repairs all five unused placeholders and keeps recoverable originals', async () => {
+  const db = await cellFixture();
+  try {
+    await db.run('DELETE FROM test_parameters WHERE test_id=229'); // Also cover a truly empty imported schema.
+    assert.deepEqual(await repairCellReportSchemas(db), [225, 226, 227, 228, 229]);
+    for (const [index, definition] of CELL_REPORT_DEFINITIONS.entries()) {
+      const fields = await db.all('SELECT * FROM test_parameters WHERE test_id=? ORDER BY display_order', [225 + index]);
+      assert.deepEqual(fields.map(p => p.parameter_name), definition.parameters.map(p => p.parameterName));
+      const backup = await db.get('SELECT * FROM cell_report_schema_backups WHERE test_id=?', [225 + index]);
+      assert.equal(JSON.parse(backup.old_parameters_json).length, index === 4 ? 0 : 1);
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [225 + index])).sample_type, definition.sampleType);
+    }
+    await db.run("UPDATE test_parameters SET normal_range='Lab override' WHERE test_id=225 AND parameter_name='Abnormal Cells'");
+    assert.deepEqual(await repairCellReportSchemas(db), []);
+    assert.equal((await db.get("SELECT normal_range FROM test_parameters WHERE test_id=225 AND parameter_name='Abnormal Cells'")).normal_range, 'Lab override');
+  } finally { await db.close(); }
+});
+
+test('cell migration preserves used tests, bundles, custom fields and manually written notes', async () => {
+  const db = await cellFixture();
+  try {
+    await db.run('INSERT INTO visit_tests VALUES (225)');
+    await db.run('INSERT INTO test_bundle_items VALUES (226, 999)');
+    await db.run('INSERT INTO test_bundle_items VALUES (999, 227)');
+    await db.run("UPDATE test_parameters SET parameter_name='Custom findings' WHERE test_id=228");
+    await db.run("UPDATE tests SET report_body='My report content' WHERE id=229");
+    assert.deepEqual(await repairCellReportSchemas(db), []);
+    assert.equal((await db.get('SELECT parameter_name FROM test_parameters WHERE test_id=225')).parameter_name, 'Result');
+  } finally { await db.close(); }
+});
+
+test('cell migration preserves customized ranges/formulas and incompatible specimens', async () => {
+  const db = await cellFixture();
+  try {
+    await db.run("UPDATE test_parameters SET normal_range='custom' WHERE test_id=225");
+    await db.run("UPDATE test_parameters SET unit='custom' WHERE test_id=226");
+    await db.run("UPDATE test_parameters SET entry_mode='calculated',calculation_formula='1+1' WHERE test_id=227");
+    await db.run("UPDATE tests SET sample_type='Urine' WHERE id=228");
+    await db.run("UPDATE tests SET category='My catalogue' WHERE id=229");
+    assert.deepEqual(await repairCellReportSchemas(db), []);
+  } finally { await db.close(); }
+});
+
+test('cell migration rolls back placeholder deletion if a write fails', async () => {
+  const db = await cellFixture();
+  try {
+    const originalRun = db.run;
+    db.run = (sql, params) => /^INSERT INTO test_parameters/.test(sql) ? Promise.reject(new Error('cell write failed')) : originalRun(sql, params);
+    await assert.rejects(repairCellReportSchemas(db), /cell write failed/);
+    assert.equal((await db.get('SELECT parameter_name FROM test_parameters WHERE test_id=225')).parameter_name, 'Result');
+    assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=225')).sample_type, null);
+  } finally { await db.close(); }
 });

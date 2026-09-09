@@ -9,6 +9,7 @@ const { buildBillHtml } = require("../utils/billFormatter");
 const { getPatientPortalReportUrl, getPatientPortalUrl, getTestReportPreviewUrl } = require("../utils/patientPortal");
 const { getReportBundle, getBillBundle } = require("./visitRoutes");
 const { getBundleComponentTests } = require("../services/testBundleService");
+const { getCellReportPreviewValue } = require("../services/cellReportService");
 
 const patientPortalRouter = express.Router();
 
@@ -177,7 +178,7 @@ patientPortalRouter.get("/sample/test/:testId/report", async (req, res, next) =>
             test_id: component.id,
             parameters: componentParameters.map((parameter) => ({
               ...parameter,
-              value: getSampleParameterValue(parameter),
+              value: getCellReportPreviewValue(component, parameter) ?? getSampleParameterValue(parameter),
             })),
           };
         }))
@@ -185,7 +186,7 @@ patientPortalRouter.get("/sample/test/:testId/report", async (req, res, next) =>
           ...test,
           parameters: parameters.map((parameter) => ({
             ...parameter,
-            value: getSampleParameterValue(parameter),
+            value: getCellReportPreviewValue(test, parameter) ?? getSampleParameterValue(parameter),
           })),
         }];
     const businessSettings = await getBusinessSettings({

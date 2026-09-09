@@ -10,6 +10,7 @@ const { CBC_COMMON_PARAMETERS, CBC_REPORT_TESTS } = require("../config/cbc");
 const { createPatientPortalToken } = require("../utils/patientPortal");
 const { getCanonicalSchemaTargetForLegacyTest, getFallbackReportParameters } = require("../services/reportSchemaService");
 const { repairKnownCombinationSchemas } = require("../services/reportCombinationRepair");
+const { repairCellReportSchemas } = require("../services/cellReportService");
 
 function buildNow() {
   return new Date().toISOString();
@@ -6032,6 +6033,7 @@ async function initializeDatabase() {
     await configureDefaultCalculatedParameters();
     await applyOneTimeMigration("legacy-report-schema-repair-v1", repairImportedLegacyReportSchemas);
     await applyOneTimeMigration("explicit-combination-report-content-v1", () => repairKnownCombinationSchemas({ all, get, run, transaction }));
+    await applyOneTimeMigration("cell-report-schemas-v1", () => repairCellReportSchemas({ all, get, run, transaction }));
     await retireDuplicateCatalogueTests();
     await ensureUserDefaults();
   } catch (error) {
@@ -6196,6 +6198,7 @@ async function initializeDatabase() {
     await configureDefaultCalculatedParameters();
     await applyOneTimeMigration("legacy-report-schema-repair-v1", repairImportedLegacyReportSchemas);
     await applyOneTimeMigration("explicit-combination-report-content-v1", () => repairKnownCombinationSchemas({ all, get, run, transaction }));
+    await applyOneTimeMigration("cell-report-schemas-v1", () => repairCellReportSchemas({ all, get, run, transaction }));
     await retireDuplicateCatalogueTests();
     await ensureUserDefaults();
   }

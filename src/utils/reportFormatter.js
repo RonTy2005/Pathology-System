@@ -1,6 +1,7 @@
 const { getCbcHeading, getCbcParameters, getCbcVariant } = require("../config/cbc");
 const { supplementReportHtml } = require("../services/reportContentService");
 const { getCombinationDefinition } = require("../services/reportCombinationRepair");
+const { getCellReportDefinition } = require("../services/cellReportService");
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -9436,6 +9437,7 @@ function buildReportHtml(reportData) {
   const testTitle = reportData.tests.length > 0 
     ? reportData.tests.map(t => {
         if (getCombinationDefinition(t)) return escapeHtml(t.name);
+        if (getCellReportDefinition(t)) return escapeHtml(t.name);
         const name = t.name.toUpperCase();
         if (name.includes("INDIRECT COOMBS TEST") || name.includes("COOMBS TEST, INDIRECT")) return "INDIRECT COOMBS TEST";
         if (reportData.tests.length === 1 && isDirectCoombsTest(t)) return "DIRECT COOMBS TEST";
@@ -10676,6 +10678,7 @@ function buildReportHtml(reportData) {
 
                 const { isAbnormal, colorClass } = checkResultRange(param.value, param.normal_range);
                 let valDisplay = escapeHtml(param.value || "-");
+                if (getCellReportDefinition(test)) valDisplay = valDisplay.replace(/\r?\n/g, "<br />");
                 if (isAbnormal) {
                   const label = colorClass === 'high-val' ? 'High' : 'Low';
                   valDisplay = `<span class="${colorClass}">${valDisplay}</span> &nbsp; <span class="${colorClass}" style="font-size: 13px; font-weight: bold;">${label}</span>`;

@@ -1,9 +1,14 @@
 // CONTENT only: reuse the formatter's existing CSS and preserve bespoke notes.
 // Numeric intervals are lab-owned parameter data, never website defaults.
+const { CELL_REPORT_DEFINITIONS } = require('./cellReportService');
 const normalize = value => String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 const medline = slug => `https://medlineplus.gov/lab-tests/${slug}/`;
 const rangeNote = 'Compare with the laboratory interval and unit alongside each result. Intervals depend on the assay and patient population; adult intervals may not apply to children or pregnancy. An out-of-range result is not, by itself, a diagnosis.';
 const REPORT_CONTENT = [
+  ...CELL_REPORT_DEFINITIONS.map(definition => ({
+    key: definition.key, names: definition.names, specimens: definition.specimens,
+    allowMissingSpecimen: true, exactSpecimens: true, ...definition.content,
+  })),
   {
     key: 'thyroid-function',
     names: ['FT3 (Free Tri-iodothyronine)', 'FT4 (Free Thyroxine)', 'FT3 & TSH', 'FT4 & TSH', 'FT3, FT4 & TSH', 'T3&TSH', 'T3,T4&TSH', 'T4&TSH'],
@@ -169,7 +174,8 @@ function getReportContent(test = {}) {
   const name = normalize(test.name), code = normalize(test.code), specimen = normalize(test.sample_type);
   return REPORT_CONTENT.find(entry =>
     (entry.names.some(alias => normalize(alias) === name) || (code && (entry.codes || []).some(alias => normalize(alias) === code)))
-    && (!entry.specimens || entry.specimens.some(allowed => specimen.startsWith(allowed)))
+    && (!entry.specimens || (!specimen && entry.allowMissingSpecimen)
+      || entry.specimens.some(allowed => entry.exactSpecimens ? specimen === allowed : specimen.startsWith(allowed)))
     && (!entry.requiredParameter || (test.parameters || []).some(p => normalize(p.parameter_name) === normalize(entry.requiredParameter)))) || null;
 }
 

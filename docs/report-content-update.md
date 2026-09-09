@@ -1,5 +1,46 @@
 # Report content update — 9 September 2026
 
+## Follow-up — 10 September 2026: blank cell reports
+
+The Abnormal Cells entry (225) still had only a generic `Result` field. It now
+has Abnormal Cells, Microscopic Findings, Impression and Comments, with a
+qualitative reference and a lower interpretation section. The four explicitly
+named cell-count tests for ascitic fluid (274), body fluid (288), CSF (349) and
+joint fluid (670) now have specimen/site, cell counts, differential findings,
+microscopic findings, impression and comments.
+
+The specimen identities were recovered from the existing import scripts.
+No numerical fluid intervals were guessed; the lab must configure intervals
+appropriate to its specimen and method. The truncated ascitic
+"Cell Count, Biochemistry" profile is deliberately not treated as a cell-count
+only test. New/imported tests with these exact identities also receive the
+structured schema when no fields have been supplied.
+
+Preview examples are labelled sample observations. Actual reports do not
+automatically receive a negative finding, a zero count or an interpretation.
+Multiline findings retain their line breaks. The report title identifies the
+actual test, and all existing CSS remains unchanged.
+
+All five repaired entries had no visit or bundle history. Their old placeholders
+and specimens are retained in `cell_report_schema_backups`; custom fields, notes,
+ranges, formulas and used tests are protected from automatic replacement. A
+local pre-change database backup is also kept under the ignored
+`tmp/report-content/` directory and is not committed.
+
+Verification: **19 checks passed**, including the complete local catalogue's
+style regression, migration rollback and preservation tests. All five live
+public sample previews returned the new fields and explanatory sections.
+The latest read-only audit is `tmp/report-content/after-cell-repair.json`:
+**39 supplemented reports; 314 placeholder-only entries remain**. Counts below
+describe the earlier 9 September pass, not completion of every catalogue format.
+
+The added explanatory prose is informed by [MedlinePlus blood-smear guidance](https://medlineplus.gov/lab-tests/blood-smear/),
+[Mayo Clinic Laboratories' body-fluid cell-count guidance](https://www.mayocliniclabs.com/test-catalog/Overview/608873)
+and [MedlinePlus CSF guidance](https://medlineplus.gov/lab-tests/cerebrospinal-fluid-csf-analysis/).
+Definitions and source links are maintained in `src/services/cellReportService.js`.
+
+## Original 9 September update
+
 This update adds lower explanatory content, not a visual redesign. The restored
 fonts, CSS, letterhead, patient header, footer and existing bespoke descriptions
 are preserved. The shared formatter supplies the same additions to generated
