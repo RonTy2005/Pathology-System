@@ -1,5 +1,26 @@
 # Report content update — 9 September 2026
 
+## Desktop update policy — 11 September 2026
+
+Installed Windows desktop apps check the mode-specific LabShield GitHub Release
+about 20 seconds after launch, every 30 minutes while online, and after a PC
+resumes. A push to `main` starts the GitHub Action that allocates a newer
+version, builds both installers and publishes their update metadata/assets.
+A plain push is therefore detected after that release job succeeds, not before.
+
+When an update has downloaded, LabShield prompts the user to restart and install
+it now. Choosing **Later** or closing the prompt does not cancel it: the app
+automatically closes, installs and relaunches within six hours. Closing the app
+earlier also installs the already-downloaded update. The deadline is checked
+again after a sleeping computer resumes.
+
+The client installer is per-user and can install silently. The central server
+installer is per-machine; Windows may display its required UAC permission prompt
+when installation begins. LabShield cannot bypass that OS security confirmation.
+
+Verification is in `scripts/test-desktop-update.cjs`: prompt choice, ignored
+deadline, repeat events, resume and the server/client installation modes.
+
 ## Follow-up — 10 September 2026: imaging is billing-only
 
 Per the lab's clarified scope, X-ray, MRI, CT scan and USG/ultrasound services

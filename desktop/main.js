@@ -2,6 +2,7 @@ const { app, BrowserWindow, dialog, ipcMain, net, powerMonitor } = require("elec
 const { autoUpdater } = require("electron-updater");
 const fs = require("fs/promises");
 const path = require("path");
+const { createMandatoryUpdateController } = require("./mandatoryUpdateController");
 
 const INITIAL_UPDATE_CHECK_DELAY_MS = 20 * 1000;
 const UPDATE_CHECK_INTERVAL_MS = 30 * 60 * 1000;
@@ -22,6 +23,7 @@ let retryTimer;
 let updateCheckTimer;
 let delayedUpdateCheckTimer;
 let updateCheckInProgress = false;
+let mandatoryUpdateController;
 let connectionStatus = {
   phase: "starting",
   message: "Preparing LabShield…",
@@ -62,23 +64,21 @@ function startAutomaticUpdates() {
   // obtain their mode-specific channel from electron-builder's app-update.yml.
   if (!app.isPackaged || process.platform !== "win32") return;
 
-  autoUpdater.autoDownload = true;
-  autoUpdater.autoInstallOnAppQuit = true;
-  autoUpdater.autoRunAppAfterInstall = true;
-
-  autoUpdater.on("update-available", (update) => {
-    console.info(`Downloading LabShield ${update.version} in the background.`);
+  mandatoryUpdateController = createMandatoryUpdateController({
+    autoUpdater,
+    dialog,
+    getWindow: () => mainWindow,
+    appMode,
+    productName: desktopProductName,
   });
-  autoUpdater.on("update-downloaded", (update) => {
-    console.info(`LabShield ${update.version} will install automatically when the app closes.`);
-  });
-  autoUpdater.on("error", (error) => {
-    console.warn("Automatic updater error:", error?.message || error);
-  });
+  mandatoryUpdateController.start();
 
   scheduleAutomaticUpdateCheck();
   updateCheckTimer = setInterval(() => void checkForDesktopUpdate(), UPDATE_CHECK_INTERVAL_MS);
-  powerMonitor.on("resume", () => scheduleAutomaticUpdateCheck());
+  powerMonitor.on("resume", () => {
+    mandatoryUpdateController?.enforceDeadline();
+    scheduleAutomaticUpdateCheck();
+  });
 }
 
 function getConnectionPath() {
@@ -284,6 +284,7 @@ app.on("window-all-closed", () => {
 app.on("before-quit", () => {
   clearRetryTimer();
   clearAutomaticUpdateTimers();
+  mandatoryUpdateController?.stop();
   serverInstance?.labLmsDiscovery?.stop?.();
   serverInstance?.close?.();
 });

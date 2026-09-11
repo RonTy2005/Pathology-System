@@ -5,6 +5,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "test:report-content": "node --test scripts/test-report-content.cjs scripts/test-billing-only.cjs",
+    "test:desktop-update": "node --test scripts/test-desktop-update.cjs",
     "audit:report-content": "node scripts/audit-report-content.cjs",
     "start": "node server.js",
     "start:lan": "node server.js",
