@@ -1,5 +1,13 @@
 # Report content update — 9 September 2026
 
+## Bill print layout — 11 September 2026
+
+Bills remain a deliberate upper-half A4 patient slip (210 mm x 148.5 mm), but
+the printed body text is now 11.5 px, service rows 11.2 px and headings/totals
+are enlarged proportionally. A bill with more than five services starts a new
+upper-half slip instead of reducing text size. Reports and their styling are
+unchanged.
+
 ## Desktop update policy — 11 September 2026
 
 Installed Windows desktop apps check the mode-specific LabShield GitHub Release

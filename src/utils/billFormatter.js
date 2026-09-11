@@ -72,9 +72,10 @@ function buildBillHtml(billData) {
   const portalQrUrl = portalUrl ? getPatientPortalQrUrl(portalUrl) : "";
   const tests = billData.tests || [];
 
-  // Each bill is an intentional half-A4 slip. A conservative item count keeps
-  // the entire booking receipt above the horizontal fold on every page.
-  const testsPerPage = 6;
+  // Every receipt stays in the upper half of an A4 sheet. Five services leave
+  // enough vertical room for a clearly readable patient copy instead of
+  // compressing the type to fit a sixth line item.
+  const testsPerPage = 5;
   const totalPages = Math.max(1, Math.ceil(tests.length / testsPerPage));
   const doctorName = billData.doctor ? escapeHtml(billData.doctor.name) : "Not specified";
   const associateName = escapeHtml(billData.visit.associate_label || "Direct at facility");
@@ -188,53 +189,53 @@ function buildBillHtml(billData) {
         * { box-sizing: border-box; }
         @page { size: A4 portrait; margin: 0 !important; }
         html, body { margin: 0; padding: 0; background: #edf3f1; }
-        body { color: var(--ink); font-family: Arial, Helvetica, sans-serif; font-size: 9px; line-height: 1.25; }
-        .bill-slip { width: 210mm; height: 148.5mm; padding: 6mm 8mm 5mm; background: #fff; position: relative; overflow: hidden; page-break-after: always; break-after: page; }
+        body { color: var(--ink); font-family: Arial, Helvetica, sans-serif; font-size: 11.5px; line-height: 1.3; }
+        .bill-slip { width: 210mm; height: 148.5mm; padding: 5mm 8mm 4mm; background: #fff; position: relative; overflow: hidden; page-break-after: always; break-after: page; }
         .bill-slip-last { page-break-after: auto; break-after: auto; }
         .accent-rule { position: absolute; top: 0; left: 0; right: 0; height: 4mm; background: var(--accent); }
-        .slip-header { min-height: 25mm; display: flex; align-items: center; justify-content: space-between; gap: 7mm; padding: 1.5mm 0 3mm; border-bottom: 1px solid var(--ink); }
+        .slip-header { min-height: 26mm; display: flex; align-items: center; justify-content: space-between; gap: 7mm; padding: 1.5mm 0 3mm; border-bottom: 1px solid var(--ink); }
         .brand-block { min-width: 0; display: flex; align-items: center; gap: 3mm; }
-        .brand-mark { width: 15mm; height: 15mm; overflow: hidden; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-size: 19px; font-weight: 800; }
+        .brand-mark { width: 16mm; height: 16mm; overflow: hidden; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-size: 21px; font-weight: 800; }
         .brand-mark img { width: 100%; height: 100%; object-fit: contain; }
-        .brand-block h1 { margin: 0; color: var(--accent); font-size: 16px; line-height: 1.05; letter-spacing: -.01em; }
-        .brand-block p { margin: 1px 0 0; color: var(--muted); font-size: 7.5px; }
+        .brand-block h1 { margin: 0; color: var(--accent); font-size: 19px; line-height: 1.05; letter-spacing: -.01em; }
+        .brand-block p { margin: 1px 0 0; color: var(--muted); font-size: 9px; }
         .slip-title { min-width: 62mm; display: flex; flex-direction: column; align-items: flex-end; text-align: right; gap: 1px; }
-        .slip-title span { color: var(--accent); font-size: 7px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
-        .slip-title strong { font-size: 11px; line-height: 1.15; text-decoration: underline; }
-        .slip-title small { color: var(--muted); font-size: 6.8px; }
+        .slip-title span { color: var(--accent); font-size: 8.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+        .slip-title strong { font-size: 14px; line-height: 1.15; text-decoration: underline; }
+        .slip-title small { color: var(--muted); font-size: 8px; }
         .booking-details { display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; padding: 2.5mm 0; border-bottom: 1px solid var(--line); }
         .details-column { min-width: 0; }
-        .details-column p { display: grid; grid-template-columns: 28mm 1fr; gap: 1.5mm; margin: 0 0 1px; font-size: 8px; }
+        .details-column p { display: grid; grid-template-columns: 29mm 1fr; gap: 1.5mm; margin: 0 0 1px; font-size: 10.5px; }
         .details-column b { font-weight: 700; }
         .details-column b::after { content: ":"; float: right; }
         .details-column span { overflow-wrap: anywhere; }
-        .continued, .next-page { margin: 1.5mm 0; color: var(--muted); font-size: 7px; text-align: center; }
+        .continued, .next-page { margin: 1.5mm 0; color: var(--muted); font-size: 8.5px; text-align: center; }
         .items-table { width: 100%; border-collapse: collapse; margin-top: 2mm; table-layout: fixed; }
-        .items-table th { padding: 1.3mm 1.5mm; border: 1px solid var(--line); background: #f0f0f0; color: var(--ink); font-size: 7.5px; font-weight: 700; text-align: left; }
+        .items-table th { padding: 1.35mm 1.5mm; border: 1px solid var(--line); background: #f0f0f0; color: var(--ink); font-size: 10px; font-weight: 700; text-align: left; }
         .items-table th.serial, .items-table td.serial { width: 10mm; text-align: center; }
         .items-table th.test-code, .items-table td.test-code { width: 25mm; }
         .items-table th.amount, .items-table td.amount { width: 29mm; text-align: right; white-space: nowrap; }
-        .items-table td { min-height: 5mm; padding: 1.2mm 1.5mm; border: 1px solid var(--line); vertical-align: middle; font-size: 8px; }
-        .items-table td.service strong { font-size: 8px; }
-        .items-table td.test-code { color: var(--muted); font-size: 7px; }
+        .items-table td { min-height: 7mm; padding: 1.3mm 1.5mm; border: 1px solid var(--line); vertical-align: middle; font-size: 11.2px; }
+        .items-table td.service strong { font-size: 11.2px; }
+        .items-table td.test-code { color: var(--muted); font-size: 9px; }
         .settlement { display: grid; grid-template-columns: 1fr 57mm; gap: 5mm; align-items: start; margin-top: 2.5mm; }
         .receipt-notes { padding-top: 1mm; }
-        .receipt-notes p { margin: 0 0 1.5mm; font-size: 7.6px; }
+        .receipt-notes p { margin: 0 0 1.5mm; font-size: 9.5px; }
         .receipt-notes .report-note { margin-top: 2.5mm; color: var(--muted); }
-        .totals-table { width: 100%; border-collapse: collapse; font-size: 7.8px; }
-        .totals-table th, .totals-table td { padding: 1.05mm 1.5mm; border: 1px solid var(--line); text-align: left; }
+        .totals-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+        .totals-table th, .totals-table td { padding: 1.1mm 1.5mm; border: 1px solid var(--line); text-align: left; }
         .totals-table td { text-align: right; white-space: nowrap; }
         .totals-table .total-row { background: var(--accent-soft); font-weight: 700; }
         .totals-table .balance.due { color: var(--danger); font-weight: 700; }
         .totals-table .balance.partial { color: var(--warn); font-weight: 700; }
-        .slip-footer { display: grid; grid-template-columns: 1fr auto 46mm; gap: 5mm; align-items: end; margin-top: 2.5mm; padding-top: 2mm; border-top: 1px solid var(--ink); color: var(--muted); font-size: 7px; }
+        .slip-footer { display: grid; grid-template-columns: 1fr auto 46mm; gap: 5mm; align-items: end; margin-top: 2.5mm; padding-top: 2mm; border-top: 1px solid var(--ink); color: var(--muted); font-size: 8.5px; }
         .slip-footer p { margin: 1px 0 0; }
-        .slip-footer strong { color: var(--accent); font-size: 7.5px; }
-        .portal-qr { display: flex; align-items: center; gap: 1.5mm; max-width: 33mm; color: var(--muted); font-size: 6px; line-height: 1.1; }
+        .slip-footer strong { color: var(--accent); font-size: 9.5px; }
+        .portal-qr { display: flex; align-items: center; gap: 1.5mm; max-width: 33mm; color: var(--muted); font-size: 7.5px; line-height: 1.1; }
         .portal-qr img { width: 11mm; height: 11mm; padding: .5mm; background: #fff; border: 1px solid var(--line); }
         .signatory { min-height: 10mm; padding-top: 4mm; border-bottom: 1px solid var(--ink); text-align: center; display: flex; flex-direction: column; gap: 1px; }
-        .signatory span { color: var(--muted); font-size: 6.5px; }
-        .signatory strong { color: var(--ink); font-size: 7.5px; }
+        .signatory span { color: var(--muted); font-size: 8px; }
+        .signatory strong { color: var(--ink); font-size: 9.5px; }
         @media screen { .bill-slip { margin: 10mm auto; box-shadow: 0 7px 28px rgba(30, 30, 30, .16); } }
         @media print { html, body { background: #fff; } .bill-slip { margin: 0; box-shadow: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
       </style>
