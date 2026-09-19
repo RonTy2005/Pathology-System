@@ -8,6 +8,7 @@ const {
   prepareServerDatabase: migrateServerDatabase,
   recoverClientConnection,
 } = require("./dataMigration");
+const { createReportPdfHandler } = require("./reportPdf");
 
 const INITIAL_UPDATE_CHECK_DELAY_MS = 20 * 1000;
 const UPDATE_CHECK_INTERVAL_MS = 30 * 60 * 1000;
@@ -250,6 +251,20 @@ function createMainWindow() {
 ipcMain.handle("lab-lms:connection-status", () => connectionStatus);
 ipcMain.handle("lab-lms:retry-connection", () => connectToLanServer({ forceDiscovery: true }));
 ipcMain.handle("lab-lms:use-server", async (_event, serverUrl) => useServer(serverUrl));
+const saveReportPdf = createReportPdfHandler({
+  BrowserWindow,
+  dialog,
+  fs,
+  path,
+  app,
+  getParentWindow: () => mainWindow,
+});
+ipcMain.handle("lab-lms:save-report-pdf", (event, payload) => {
+  if (!mainWindow || event.sender.id !== mainWindow.webContents.id) {
+    throw new Error("PDF requests are only accepted from the LabShield window.");
+  }
+  return saveReportPdf(event, payload);
+});
 
 app.whenReady().then(async () => {
   createMainWindow();

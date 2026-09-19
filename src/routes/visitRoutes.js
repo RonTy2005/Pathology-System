@@ -973,6 +973,7 @@ visitRouter.get(
   allowRoles(ROLES.ADMIN, ROLES.RECEPTIONIST, ...TECHNICIAN_ROLES),
   (req, res, next) => {
     const printMode = req.query.print === "1";
+    const pdfMode = req.query.pdf === "1";
     const whatsappPdfMode = req.query.whatsapp === "1";
     const canViewReports = hasPermission(req.user, PERMISSIONS.VIEW_REPORTS);
     // PDF permissions include access to the report itself. This keeps View Report
@@ -984,7 +985,9 @@ visitRouter.get(
       ? hasPermission(req.user, PERMISSIONS.PRINT_REPORTS)
       : whatsappPdfMode
         ? canShareWhatsAppPdf
-        : canAccessReport;
+        : pdfMode
+          ? canDownloadReportPdf
+          : canAccessReport;
 
     if (!allowed) {
       return res.status(403).json({ message: "Permission denied for this action" });
@@ -1014,6 +1017,7 @@ visitRouter.get(
             ? true
             : businessSettings.defaultReportIncludesLetterhead;
         const printMode = req.query.print === "1";
+        const pdfMode = req.query.pdf === "1";
         const canDownloadReportPdf = hasPermission(req.user, PERMISSIONS.DOWNLOAD_REPORTS);
         const canShareWhatsAppPdf = hasPermission(req.user, PERMISSIONS.SHARE_WHATSAPP_PDF);
         return res.send(buildReportHtml({
@@ -1036,7 +1040,7 @@ visitRouter.get(
           reportDoctorRegistrationNo: businessSettings.reportDoctorRegistrationNo,
           reportDoctorSignatureDataUrl: businessSettings.reportDoctorSignatureDataUrl,
           showPrintControls: false,
-          readOnlyView: !printMode,
+          readOnlyView: !printMode && !pdfMode,
           showReportActions: !printMode && req.query.actions !== "0" && (canDownloadReportPdf || canShareWhatsAppPdf),
           reportActionVisitId: req.params.id,
           reportActionPatientPhone: report.patient.phone,

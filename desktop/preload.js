@@ -10,3 +10,7 @@ contextBridge.exposeInMainWorld("labLmsConnection", {
     return () => ipcRenderer.removeListener("lab-lms:connection-changed", handler);
   },
 });
+
+contextBridge.exposeInMainWorld("labLmsDesktop", {
+  saveReportPdf: (html, fileName) => ipcRenderer.invoke("lab-lms:save-report-pdf", { html, fileName }),
+});

@@ -493,6 +493,7 @@ async function shareAndDownloadReport(visitId, includeLetterhead = null, shareVi
     const hasPathology = tests.some(t => isPathologyTest(t.name, t.category));
     if (!hasPathology) return alert("WhatsApp Sharing is only for Pathology/Blood reports.");
 
+    let whatsappShare = null;
     if (shareViaWhatsApp) {
       let patientPhone = String(patientPhoneInput || visit.phone || "").trim();
       if (!patientPhone) {
@@ -515,21 +516,33 @@ async function shareAndDownloadReport(visitId, includeLetterhead = null, shareVi
         throw new Error("Enter a valid patient WhatsApp number.");
       }
 
-      const message = [
-        `Dear ${contact.patientName || patientName || "Patient"},`,
-        `Your lab report for Bill ${contact.billNo || billNo || ""} is ready.`,
-        `Open or download it securely here: ${contact.reportUrl}`,
-      ].join("\n");
-      window.open(`https://wa.me/${whatsappPhone}?text=${encodeURIComponent(message)}`, "_blank", "noopener");
-      return;
+      whatsappShare = {
+        phone: whatsappPhone,
+        message: [
+          `Dear ${contact.patientName || patientName || "Patient"},`,
+          `Your lab report for Bill ${contact.billNo || billNo || ""} is ready.`,
+          `The PDF has been saved to this computer. Attach it in WhatsApp, or open the secure report here: ${contact.reportUrl}`,
+        ].join("\n"),
+      };
     }
 
     const letterheadQuery = includeLetterhead === false ? "&letterhead=0" : includeLetterhead === true ? "&letterhead=1" : "";
-    const reportHtml = await API.request(`/api/visits/${visitId}/report?format=html${letterheadQuery}&actions=0`);
+    const whatsappQuery = shareViaWhatsApp ? "&whatsapp=1" : "";
+    const reportHtml = await API.request(`/api/visits/${visitId}/report?format=html&pdf=1${whatsappQuery}${letterheadQuery}&actions=0`);
+    const pdfFileName = `Report_${billNo}_${patientName.replace(/\s+/g, '_')}.pdf`;
+
+    if (window.labLmsDesktop?.saveReportPdf) {
+      const saved = await window.labLmsDesktop.saveReportPdf(reportHtml, pdfFileName);
+      if (saved?.canceled) return;
+      if (whatsappShare) {
+        window.open(`https://wa.me/${whatsappShare.phone}?text=${encodeURIComponent(whatsappShare.message)}`, "_blank", "noopener");
+      }
+      return;
+    }
 
     const opt = {
       margin: 0,
-      filename: `Report_${billNo}_${patientName.replace(/\s+/g, '_')}.pdf`,
+      filename: pdfFileName,
       image: { type: 'jpeg', quality: 1.0 },
       html2canvas: {
         scale: 2,
@@ -545,7 +558,7 @@ async function shareAndDownloadReport(visitId, includeLetterhead = null, shareVi
     };
 
     const iframe = document.createElement('iframe');
-    iframe.style.cssText = 'position:fixed;left:-10000px;top:0;width:210mm;height:297mm;border:none;visibility:hidden;';
+    iframe.style.cssText = 'position:fixed;left:-10000px;top:0;width:210mm;height:297mm;border:none;';
     document.body.appendChild(iframe);
 
     try {
@@ -562,10 +575,29 @@ async function shareAndDownloadReport(visitId, includeLetterhead = null, shareVi
       iframeDoc.write(reportHtml.replace(/<\/head>/i, `${pdfLayoutOverrides}</head>`));
       iframeDoc.close();
 
-      await new Promise(resolve => setTimeout(resolve, 1500)); // wait for external images to load
+      await Promise.race([
+        Promise.all(Array.from(iframeDoc.images).map((image) => image.complete
+          ? Promise.resolve()
+          : new Promise((resolve) => {
+              image.addEventListener("load", resolve, { once: true });
+              image.addEventListener("error", resolve, { once: true });
+            }))),
+        new Promise((resolve) => setTimeout(resolve, 5000)),
+      ]);
+
+      // html2pdf clones only the supplied body into the parent document. Carry
+      // the report's own styles with that body so A4, letterhead and signature
+      // sizing survive the clone in ordinary web browsers.
+      Array.from(iframeDoc.head.querySelectorAll("style")).forEach((style) => {
+        iframeDoc.body.insertBefore(style.cloneNode(true), iframeDoc.body.firstChild);
+      });
       await html2pdf().from(iframeDoc.body).set(opt).save();
     } finally {
       document.body.removeChild(iframe);
+    }
+
+    if (whatsappShare) {
+      window.open(`https://wa.me/${whatsappShare.phone}?text=${encodeURIComponent(whatsappShare.message)}`, "_blank", "noopener");
     }
 
   } catch (error) {
