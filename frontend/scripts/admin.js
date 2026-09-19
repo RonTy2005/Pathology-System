@@ -677,10 +677,35 @@ async function setReportDoctorSignatureSource(dataUrl, { markPending = false } =
 
 async function getPdfJs() {
   if (!reportDoctorPdfJsPromise) {
-    reportDoctorPdfJsPromise = import("/vendor/pdfjs/pdf.mjs").then((pdfjsLib) => {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = "/vendor/pdfjs/pdf.worker.mjs";
-      return pdfjsLib;
-    });
+    reportDoctorPdfJsPromise = import("/vendor/pdfjs/pdf.mjs")
+      .then((pdfjsLib) => {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = "/vendor/pdfjs/pdf.worker.mjs";
+        return pdfjsLib;
+      })
+      .catch(() => new Promise((resolve, reject) => {
+        // Electron 22 is the final runtime compatible with Windows 7. Its
+        // PDF.js dependency exposes the classic browser bundle rather than
+        // the modern module bundle used by current Windows installations.
+        const existingLibrary = window.pdfjsLib;
+        if (existingLibrary) {
+          existingLibrary.GlobalWorkerOptions.workerSrc = "/vendor/pdfjs/pdf.worker.js";
+          resolve(existingLibrary);
+          return;
+        }
+
+        const script = document.createElement("script");
+        script.src = "/vendor/pdfjs/pdf.js";
+        script.onload = () => {
+          if (!window.pdfjsLib) {
+            reject(new Error("The PDF reader could not be loaded."));
+            return;
+          }
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = "/vendor/pdfjs/pdf.worker.js";
+          resolve(window.pdfjsLib);
+        };
+        script.onerror = () => reject(new Error("The PDF reader could not be loaded."));
+        document.head.appendChild(script);
+      }));
   }
   return reportDoctorPdfJsPromise;
 }

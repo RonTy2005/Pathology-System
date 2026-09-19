@@ -1,14 +1,23 @@
 const mode = process.env.LAB_LMS_BUILD_MODE === "server" ? "server" : "client";
 const isServer = mode === "server";
-const updaterChannel = isServer ? "server" : "client";
+const windowsFamily = process.env.LAB_LMS_WINDOWS_FAMILY === "win7" ? "win7" : "win10";
+const isWindows7Build = windowsFamily === "win7";
+const buildArch = process.env.LAB_LMS_BUILD_ARCH === "ia32" ? "ia32" : "x64";
+const architectureLabel = buildArch === "ia32" ? "x86" : "x64";
+const updaterChannel = isWindows7Build
+  ? `${mode}-win7-${architectureLabel}`
+  : (isServer ? "server" : "client");
 const packageVersion = require("../package.json").version;
 
 module.exports = {
   appId: isServer ? "xyz.nexorawebstudios.labshield.server" : "xyz.nexorawebstudios.labshield.client",
   productName: isServer ? "LabShield Server" : "LabShield",
   asar: false,
+  ...(isWindows7Build ? { electronVersion: "22.3.27" } : {}),
   directories: {
-    output: `release-${mode}-${packageVersion}`,
+    output: isWindows7Build
+      ? `release-${mode}-${packageVersion}-win7-${architectureLabel}`
+      : `release-${mode}-${packageVersion}`,
   },
   files: [
     "desktop/**/*",
@@ -41,10 +50,10 @@ module.exports = {
   ] : [],
   win: {
     icon: "desktop/assets/labshield-icon.ico",
-    target: [{ target: "nsis", arch: ["x64"] }],
+    target: [{ target: "nsis", arch: [buildArch] }],
     artifactName: isServer
-      ? "LabShield-Server-Setup-${version}-win10-x64.${ext}"
-      : "LabShield-Client-Setup-${version}-win10-x64.${ext}",
+      ? `LabShield-Server-Setup-\${version}-${windowsFamily}-${architectureLabel}.\${ext}`
+      : `LabShield-Client-Setup-\${version}-${windowsFamily}-${architectureLabel}.\${ext}`,
   },
   nsis: {
     oneClick: false,

@@ -41,8 +41,18 @@ jobs:
           git push origin "v$version"
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
-      - name: Build installers and publish the update assets
+      - name: Build current Windows installers
+        shell: pwsh
+        run: .\build-windows-installers.ps1
+
+      - name: Build Windows 7 x64 and x86 installers
+        shell: pwsh
+        run: .\build-windows-7-installers.ps1
+
+      - name: Publish every desktop update channel in one release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-        run: .\build-windows-installers.ps1 -Publish
+        run: |
+          $assets = Get-ChildItem -LiteralPath .\release -File | ForEach-Object { $_.FullName }
+          gh release create "v${{ steps.version.outputs.version }}" @assets --title "${{ steps.version.outputs.version }}" --verify-tag --latest
