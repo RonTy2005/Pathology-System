@@ -1024,7 +1024,12 @@ visitRouter.get(
           phone: businessSettings.phone,
           email: businessSettings.email,
           registrationNo: businessSettings.registrationNo,
-          digitalReportUrl: getPatientPortalReportUrl(req, report.visit.patient_portal_token, businessSettings.patientPortalBaseUrl),
+          digitalReportUrl: getPatientPortalReportUrl(
+            req,
+            report.visit.patient_portal_token,
+            businessSettings.patientPortalBaseUrl,
+            includeLetterhead
+          ),
           letterheadDataUrl: includeLetterhead ? businessSettings.letterheadDataUrl : null,
           businessLogoDataUrl: includeLetterhead && businessSettings.letterheadDataUrl
             ? null

@@ -6,7 +6,12 @@ const { logAction } = require("../services/logService");
 const { getPublicPortalAvailability } = require("../services/publicPortalAvailabilityService");
 const { buildReportHtml } = require("../utils/reportFormatter");
 const { buildBillHtml } = require("../utils/billFormatter");
-const { getPatientPortalReportUrl, getPatientPortalUrl, getTestReportPreviewUrl } = require("../utils/patientPortal");
+const {
+  getPatientPortalReportUrl,
+  getPatientPortalUrl,
+  getTestReportPreviewUrl,
+  shouldIncludePortalLetterhead,
+} = require("../utils/patientPortal");
 const { getReportBundle, getBillBundle } = require("./visitRoutes");
 const { getBundleComponentTests } = require("../services/testBundleService");
 const { getCellReportPreviewValue } = require("../services/cellReportService");
@@ -196,7 +201,7 @@ patientPortalRouter.get("/sample/test/:testId/report", async (req, res, next) =>
       includeBusinessLogo: true,
       includeReportDoctorSignature: true,
     });
-    const includeLetterhead = businessSettings.defaultReportIncludesLetterhead;
+    const includeLetterhead = shouldIncludePortalLetterhead(req.query.letterhead, businessSettings.letterheadDataUrl);
 
     setPrivateHeaders(res);
     res.set("X-Robots-Tag", "noindex, nofollow");
@@ -329,7 +334,7 @@ patientPortalRouter.get("/:token/report", async (req, res, next) => {
       includeBusinessLogo: true,
       includeReportDoctorSignature: true,
     });
-    const includeLetterhead = businessSettings.defaultReportIncludesLetterhead;
+    const includeLetterhead = shouldIncludePortalLetterhead(req.query.letterhead, businessSettings.letterheadDataUrl);
     await logAction({
       action: "patient_portal_report_viewed",
       entityType: "visit",
@@ -346,7 +351,12 @@ patientPortalRouter.get("/:token/report", async (req, res, next) => {
       phone: businessSettings.phone,
       email: businessSettings.email,
       registrationNo: businessSettings.registrationNo,
-      digitalReportUrl: getPatientPortalReportUrl(req, visit.patient_portal_token, businessSettings.patientPortalBaseUrl),
+      digitalReportUrl: getPatientPortalReportUrl(
+        req,
+        visit.patient_portal_token,
+        businessSettings.patientPortalBaseUrl,
+        includeLetterhead
+      ),
       letterheadDataUrl: includeLetterhead ? businessSettings.letterheadDataUrl : null,
       businessLogoDataUrl: includeLetterhead && businessSettings.letterheadDataUrl ? null : businessSettings.businessLogoDataUrl,
       reportHeaderSpaceMm: businessSettings.reportHeaderSpaceMm,
