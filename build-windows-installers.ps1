@@ -29,11 +29,24 @@ try {
         throw "Unable to prepare the desktop build folder (robocopy exit code $LASTEXITCODE)."
     }
 
-    $catalogueSeedSource = Join-Path $sourceRoot 'lab-lms.db'
     $catalogueSeedDestination = Join-Path $buildRoot 'labshield-catalogue.db'
-    & node (Join-Path $sourceRoot 'scripts\create-installation-catalogue.cjs') $catalogueSeedSource $catalogueSeedDestination
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Unable to create the LabShield catalogue-only installation seed.'
+    $localCatalogueSource = Join-Path $sourceRoot 'lab-lms.db'
+    $trackedCatalogueSeed = Join-Path $sourceRoot 'desktop\assets\labshield-catalogue.db'
+
+    if (Test-Path -LiteralPath $localCatalogueSource) {
+        # Developer builds use the latest local catalogue after stripping all
+        # operational and clinical data. The source checkout already has its
+        # dependencies in this path.
+        & node (Join-Path $sourceRoot 'scripts\create-installation-catalogue.cjs') $localCatalogueSource $catalogueSeedDestination
+        if ($LASTEXITCODE -ne 0) {
+            throw 'Unable to create the LabShield catalogue-only installation seed.'
+        }
+    } elseif (Test-Path -LiteralPath $trackedCatalogueSeed) {
+        # GitHub Actions deliberately has no live lab database. Use the
+        # reviewed, catalogue-only seed committed for reproducible releases.
+        Copy-Item -LiteralPath $trackedCatalogueSeed -Destination $catalogueSeedDestination
+    } else {
+        throw 'No sanitized LabShield installation catalogue is available.'
     }
 
     Push-Location $buildRoot

@@ -88,6 +88,8 @@ async function createCatalogueOnlySeed() {
       DELETE FROM salary_payments;
       DELETE FROM associate_payments;
       DELETE FROM app_migrations;
+      DELETE FROM report_schema_repair_backups;
+      DELETE FROM cell_report_schema_backups;
       DELETE FROM sqlite_sequence
         WHERE name NOT IN ('tests', 'test_parameters', 'test_bundle_items');
       COMMIT;
@@ -95,17 +97,22 @@ async function createCatalogueOnlySeed() {
     `);
     await execute(seed, "VACUUM");
 
-    const [tests, parameters, bundles, patients, visits, results] = await Promise.all([
+    const [tests, parameters, bundles, patients, visits, results, users, businessSettings, doctors, associates, expenses] = await Promise.all([
       fetchOne(seed, "SELECT COUNT(*) AS count FROM tests"),
       fetchOne(seed, "SELECT COUNT(*) AS count FROM test_parameters"),
       fetchOne(seed, "SELECT COUNT(*) AS count FROM test_bundle_items"),
       fetchOne(seed, "SELECT COUNT(*) AS count FROM patients"),
       fetchOne(seed, "SELECT COUNT(*) AS count FROM visits"),
       fetchOne(seed, "SELECT COUNT(*) AS count FROM results"),
+      fetchOne(seed, "SELECT COUNT(*) AS count FROM users"),
+      fetchOne(seed, "SELECT COUNT(*) AS count FROM business_settings"),
+      fetchOne(seed, "SELECT COUNT(*) AS count FROM doctors"),
+      fetchOne(seed, "SELECT COUNT(*) AS count FROM associates"),
+      fetchOne(seed, "SELECT COUNT(*) AS count FROM expenses"),
     ]);
 
-    if (patients.count || visits.count || results.count) {
-      throw new Error("The installation seed still contains clinical records.");
+    if ([patients, visits, results, users, businessSettings, doctors, associates, expenses].some(({ count }) => count)) {
+      throw new Error("The installation seed still contains operational, clinical, or financial records.");
     }
 
     console.log(`Created catalogue-only seed: ${tests.count} tests, ${parameters.count} parameters, ${bundles.count} bundle items.`);

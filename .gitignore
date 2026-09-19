@@ -5,6 +5,7 @@ node_modules/
 *.db
 *.db-journal
 *.sqlite
+!desktop/assets/labshield-catalogue.db
 
 # Environment variables / Configs
 .env
