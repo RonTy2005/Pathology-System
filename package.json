@@ -5,7 +5,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "test:report-content": "node --test scripts/test-report-content.cjs scripts/test-billing-only.cjs",
-    "test:desktop-update": "node --test scripts/test-desktop-update.cjs",
+    "test:desktop-update": "node --test scripts/test-desktop-update.cjs scripts/test-desktop-data-migration.cjs",
     "test:bill-layout": "node --test scripts/test-bill-layout.cjs",
     "render:bill-layout": "cmd /d /s /c \"set ELECTRON_RUN_AS_NODE=&& electron scripts/render-bill-layout-pdf.cjs\"",
     "audit:report-content": "node scripts/audit-report-content.cjs",

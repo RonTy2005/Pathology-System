@@ -3,6 +3,11 @@ const { autoUpdater } = require("electron-updater");
 const fs = require("fs/promises");
 const path = require("path");
 const { createMandatoryUpdateController } = require("./mandatoryUpdateController");
+const {
+  configureStableUserDataPath,
+  prepareServerDatabase: migrateServerDatabase,
+  recoverClientConnection,
+} = require("./dataMigration");
 
 const INITIAL_UPDATE_CHECK_DELAY_MS = 20 * 1000;
 const UPDATE_CHECK_INTERVAL_MS = 30 * 60 * 1000;
@@ -16,6 +21,7 @@ const commandLineMode = process.argv.includes("--server")
   : (process.argv.includes("--client") ? "client" : null);
 const appMode = commandLineMode || packageMetadata.labLmsMode || "client";
 const desktopProductName = appMode === "server" ? "LabShield Server" : "LabShield";
+const stableUserDataPath = configureStableUserDataPath(app, appMode);
 
 let mainWindow;
 let serverInstance;
@@ -85,32 +91,16 @@ function getConnectionPath() {
   return path.join(app.getPath("userData"), "server-connection.json");
 }
 
-async function pathExists(candidatePath) {
-  try {
-    await fs.access(candidatePath);
-    return true;
-  } catch (_error) {
-    return false;
-  }
-}
-
 async function prepareServerDatabase() {
-  const dataDirectory = app.getPath("userData");
-  const databasePath = path.join(dataDirectory, "lab-lms.db");
-  if (await pathExists(databasePath)) return;
-
-  // Preserve data from an earlier Lab LMS Server installation when upgrading
-  // to the renamed LabShield desktop application.
-  const legacyDatabasePath = path.join(app.getPath("appData"), "Lab LMS Server", "lab-lms.db");
   const packagedCataloguePath = path.join(process.resourcesPath || appRoot, "labshield-catalogue.db");
-  const seedSource = (await pathExists(legacyDatabasePath))
-    ? legacyDatabasePath
-    : ((await pathExists(packagedCataloguePath)) ? packagedCataloguePath : null);
-
-  if (!seedSource) return;
-
-  await fs.mkdir(dataDirectory, { recursive: true });
-  await fs.copyFile(seedSource, databasePath);
+  const sqlite3 = require(path.join(appRoot, "node_modules", "sqlite3")).verbose();
+  return migrateServerDatabase({
+    appDataDirectory: app.getPath("appData"),
+    dataDirectory: stableUserDataPath,
+    packagedCataloguePath,
+    sqlite3,
+    appVersion: app.getVersion(),
+  });
 }
 
 async function readSavedServerUrl() {
@@ -207,7 +197,7 @@ async function connectToLanServer({ forceDiscovery = false } = {}) {
 }
 
 async function startLocalServer() {
-  await prepareServerDatabase();
+  const databasePreparation = await prepareServerDatabase();
   process.env.LAB_LMS_APP_ROOT = appRoot;
   process.env.LAB_LMS_DATA_DIR = app.getPath("userData");
 
@@ -220,6 +210,16 @@ async function startLocalServer() {
   for (let attempt = 0; attempt < 20; attempt += 1) {
     if (await isLabServer(localUrl, 800)) {
       await mainWindow.loadURL(`${localUrl}/login.html`);
+      if (databasePreparation?.recoveredFrom) {
+        await dialog.showMessageBox(mainWindow, {
+          type: "info",
+          title: "Previous laboratory data restored",
+          message: "LabShield found and restored the database from your earlier installation.",
+          detail: "Registered users, patients, visits, results, settings, and report data remain in the restored database. A safety backup was also created before this version started.",
+          buttons: ["OK"],
+          noLink: true,
+        });
+      }
       return;
     }
     await new Promise((resolve) => setTimeout(resolve, 250));
@@ -252,7 +252,6 @@ ipcMain.handle("lab-lms:retry-connection", () => connectToLanServer({ forceDisco
 ipcMain.handle("lab-lms:use-server", async (_event, serverUrl) => useServer(serverUrl));
 
 app.whenReady().then(async () => {
-  app.setName(desktopProductName);
   createMainWindow();
   await mainWindow.loadFile(path.join(__dirname, "connecting.html"));
   startAutomaticUpdates();
@@ -261,6 +260,10 @@ app.whenReady().then(async () => {
     if (appMode === "server") {
       await startLocalServer();
     } else {
+      await recoverClientConnection({
+        appDataDirectory: app.getPath("appData"),
+        dataDirectory: stableUserDataPath,
+      });
       await connectToLanServer();
     }
   } catch (error) {
