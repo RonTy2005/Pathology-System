@@ -2,6 +2,7 @@ const assert = require("node:assert/strict");
 const { EventEmitter } = require("node:events");
 const { test } = require("node:test");
 const { SIX_HOURS_MS, createMandatoryUpdateController } = require("../desktop/mandatoryUpdateController");
+const packageMetadata = require("../package.json");
 
 function loadBuilderConfig({ mode, family, arch }) {
   const configPath = require.resolve("../desktop/electron-builder.config.cjs");
@@ -110,6 +111,8 @@ test("a resumed computer installs an overdue downloaded update immediately", asy
 });
 
 test("Windows 7 and 32-bit installers use compatible runtimes and isolated update channels", () => {
+  assert.match(packageMetadata.scripts["build:server-installer"], /--publish never/);
+  assert.match(packageMetadata.scripts["build:client-installer"], /--publish never/);
   const modern = loadBuilderConfig({ mode: "server" });
   assert.equal(modern.electronVersion, undefined);
   assert.equal(modern.publish[0].channel, "server");

@@ -14,8 +14,8 @@
     "desktop:server": "electron . --server",
     "desktop:client": "electron . --client",
     "desktop:rebuild-native": "electron-builder install-app-deps",
-    "build:server-installer": "cmd /d /s /c \"set LAB_LMS_BUILD_MODE=server&& electron-builder --config desktop/electron-builder.config.cjs\"",
-    "build:client-installer": "cmd /d /s /c \"set LAB_LMS_BUILD_MODE=client&& electron-builder --config desktop/electron-builder.config.cjs\""
+    "build:server-installer": "cmd /d /s /c \"set LAB_LMS_BUILD_MODE=server&& electron-builder --config desktop/electron-builder.config.cjs --publish never\"",
+    "build:client-installer": "cmd /d /s /c \"set LAB_LMS_BUILD_MODE=client&& electron-builder --config desktop/electron-builder.config.cjs --publish never\""
   },
   "keywords": [],
   "author": "",
