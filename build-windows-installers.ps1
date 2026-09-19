@@ -52,28 +52,42 @@ try {
     Push-Location $buildRoot
     Invoke-BuildCommand 'npm ci --ignore-scripts'
     Invoke-BuildCommand 'npm run desktop:rebuild-native'
-    $serverBuildCommand = if ($Publish) { 'npm run build:server-installer -- --publish always' } else { 'npm run build:server-installer' }
-    $clientBuildCommand = if ($Publish) { 'npm run build:client-installer -- --publish always' } else { 'npm run build:client-installer' }
-    Invoke-BuildCommand $serverBuildCommand
-    Invoke-BuildCommand $clientBuildCommand
+    # Build both channels completely before publishing. Letting electron-builder
+    # create a release while uploading assets in parallel can create duplicate
+    # GitHub releases for the same tag and split server/client metadata.
+    Invoke-BuildCommand 'npm run build:server-installer'
+    Invoke-BuildCommand 'npm run build:client-installer'
     Pop-Location
 
     New-Item -ItemType Directory -Path $releaseRoot -Force | Out-Null
-    $installers = @(
+    $releaseAssets = @(
         (Get-ChildItem -LiteralPath (Join-Path $buildRoot "release-server-$packageVersion") -Filter 'LabShield-Server-Setup-*.exe' -File),
-        (Get-ChildItem -LiteralPath (Join-Path $buildRoot "release-client-$packageVersion") -Filter 'LabShield-Client-Setup-*.exe' -File)
+        (Get-ChildItem -LiteralPath (Join-Path $buildRoot "release-server-$packageVersion") -Filter 'LabShield-Server-Setup-*.exe.blockmap' -File),
+        (Get-Item -LiteralPath (Join-Path $buildRoot "release-server-$packageVersion\server.yml")),
+        (Get-ChildItem -LiteralPath (Join-Path $buildRoot "release-client-$packageVersion") -Filter 'LabShield-Client-Setup-*.exe' -File),
+        (Get-ChildItem -LiteralPath (Join-Path $buildRoot "release-client-$packageVersion") -Filter 'LabShield-Client-Setup-*.exe.blockmap' -File),
+        (Get-Item -LiteralPath (Join-Path $buildRoot "release-client-$packageVersion\client.yml"))
     ) | Where-Object { $_ }
 
-    if ($installers.Count -ne 2) {
-        throw 'The server and client installers were not both produced.'
+    if ($releaseAssets.Count -ne 6) {
+        throw 'The complete server and client update asset set was not produced.'
     }
 
-    foreach ($installer in $installers) {
-        $destination = Join-Path $releaseRoot $installer.Name
+    $publishedAssetPaths = @()
+    foreach ($asset in $releaseAssets) {
+        $destination = Join-Path $releaseRoot $asset.Name
         if (Test-Path -LiteralPath $destination) {
-            throw "The installer already exists and was not overwritten: $destination"
+            throw "The release asset already exists and was not overwritten: $destination"
         }
-        Copy-Item -LiteralPath $installer.FullName -Destination $destination
+        Copy-Item -LiteralPath $asset.FullName -Destination $destination
+        $publishedAssetPaths += $destination
+    }
+
+    if ($Publish) {
+        & gh release create "v$packageVersion" @publishedAssetPaths --title $packageVersion --verify-tag --latest
+        if ($LASTEXITCODE -ne 0) {
+            throw "Unable to publish GitHub Release v$packageVersion."
+        }
     }
 
     Write-Host "`nInstallers are ready in: $releaseRoot" -ForegroundColor Green
