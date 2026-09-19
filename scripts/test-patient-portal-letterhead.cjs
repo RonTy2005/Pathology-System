@@ -17,25 +17,12 @@ function request() {
   };
 }
 
-test("patient portal displays an uploaded pad for legacy QR links", () => {
-  assert.equal(shouldIncludePortalLetterhead(undefined, "data:image/png;base64,AAAA"), true);
-  assert.equal(shouldIncludePortalLetterhead(undefined, ""), false);
+test("patient portal displays an uploaded pad for every QR report", () => {
+  assert.equal(shouldIncludePortalLetterhead("data:image/png;base64,AAAA"), true);
+  assert.equal(shouldIncludePortalLetterhead(""), false);
 });
 
-test("an explicit report style is preserved in the public QR URL", () => {
-  assert.equal(shouldIncludePortalLetterhead("0", "data:image/png;base64,AAAA"), false);
-  assert.equal(shouldIncludePortalLetterhead("1", ""), true);
-  assert.equal(
-    getPatientPortalReportUrl(request(), "patient-token", "https://reports.example.test", true),
-    "https://reports.example.test/api/patient-reports/patient-token/report?letterhead=1"
-  );
-  assert.equal(
-    getPatientPortalReportUrl(request(), "patient-token", "https://reports.example.test", false),
-    "https://reports.example.test/api/patient-reports/patient-token/report?letterhead=0"
-  );
-});
-
-test("status-page report links without a style remain backward compatible", () => {
+test("public QR URL remains independent of the staff print style", () => {
   assert.equal(
     getPatientPortalReportUrl(request(), "patient-token", "https://reports.example.test"),
     "https://reports.example.test/api/patient-reports/patient-token/report"

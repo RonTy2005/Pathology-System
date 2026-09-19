@@ -53,19 +53,14 @@ function getPatientPortalUrl(req, token, savedBaseUrl) {
   return `${getPatientPortalBaseUrl(req, savedBaseUrl)}/report-status.html?token=${encodeURIComponent(token)}`;
 }
 
-function getPatientPortalReportUrl(req, token, savedBaseUrl, includeLetterhead) {
-  const url = `${getPatientPortalBaseUrl(req, savedBaseUrl)}/api/patient-reports/${encodeURIComponent(token)}/report`;
-  if (typeof includeLetterhead !== "boolean") return url;
-  return `${url}?letterhead=${includeLetterhead ? "1" : "0"}`;
+function getPatientPortalReportUrl(req, token, savedBaseUrl) {
+  return `${getPatientPortalBaseUrl(req, savedBaseUrl)}/api/patient-reports/${encodeURIComponent(token)}/report`;
 }
 
-function shouldIncludePortalLetterhead(requestedStyle, letterheadDataUrl) {
-  if (requestedStyle === "0") return false;
-  if (requestedStyle === "1") return true;
-
-  // Older printed QR codes do not carry a style parameter. Patient-facing
-  // reports should still show the laboratory pad whenever one is available,
-  // regardless of the staff-facing default print selection.
+function shouldIncludePortalLetterhead(letterheadDataUrl) {
+  // Public patient reports always carry the laboratory's uploaded pad. This is
+  // intentionally independent of the staff-facing print style, which may be
+  // switched between letterhead and plain output for each printed copy.
   return Boolean(String(letterheadDataUrl || "").trim());
 }
 

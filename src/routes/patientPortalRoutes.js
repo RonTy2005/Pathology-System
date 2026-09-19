@@ -201,7 +201,7 @@ patientPortalRouter.get("/sample/test/:testId/report", async (req, res, next) =>
       includeBusinessLogo: true,
       includeReportDoctorSignature: true,
     });
-    const includeLetterhead = shouldIncludePortalLetterhead(req.query.letterhead, businessSettings.letterheadDataUrl);
+    const includeLetterhead = shouldIncludePortalLetterhead(businessSettings.letterheadDataUrl);
 
     setPrivateHeaders(res);
     res.set("X-Robots-Tag", "noindex, nofollow");
@@ -334,7 +334,7 @@ patientPortalRouter.get("/:token/report", async (req, res, next) => {
       includeBusinessLogo: true,
       includeReportDoctorSignature: true,
     });
-    const includeLetterhead = shouldIncludePortalLetterhead(req.query.letterhead, businessSettings.letterheadDataUrl);
+    const includeLetterhead = shouldIncludePortalLetterhead(businessSettings.letterheadDataUrl);
     await logAction({
       action: "patient_portal_report_viewed",
       entityType: "visit",
@@ -351,12 +351,7 @@ patientPortalRouter.get("/:token/report", async (req, res, next) => {
       phone: businessSettings.phone,
       email: businessSettings.email,
       registrationNo: businessSettings.registrationNo,
-      digitalReportUrl: getPatientPortalReportUrl(
-        req,
-        visit.patient_portal_token,
-        businessSettings.patientPortalBaseUrl,
-        includeLetterhead
-      ),
+      digitalReportUrl: getPatientPortalReportUrl(req, visit.patient_portal_token, businessSettings.patientPortalBaseUrl),
       letterheadDataUrl: includeLetterhead ? businessSettings.letterheadDataUrl : null,
       businessLogoDataUrl: includeLetterhead && businessSettings.letterheadDataUrl ? null : businessSettings.businessLogoDataUrl,
       reportHeaderSpaceMm: businessSettings.reportHeaderSpaceMm,
