@@ -41,7 +41,82 @@ function getFallbackReportParameters(test = {}) {
     ];
   }
 
-  if (/(afbculture.*sensitivity|culture.*sensitivity)/.test(normalizedName)) {
+  if (normalizedName === "bloodculturesensitivity" || normalizedName === "bloodcultureandsensitivity") {
+    return [
+      createParameter("Culture Status / Result", { normalRange: "No growth" }),
+      createParameter("Specimen / Collection Site"),
+      createParameter("Collection Date / Time"),
+      createParameter("Bottle / Set"),
+      createParameter("Culture System / Method"),
+      createParameter("Report Status"),
+      createParameter("Gram Stain"),
+      createParameter("Time to Positivity"),
+      createParameter("Organism Isolated"),
+      createParameter("Identification Method"),
+      createParameter("Antimicrobial Susceptibility"),
+      createParameter("Resistance Markers / Alerts"),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (["bodyfluidculturesensitivity", "bodyfluidcultureandsensitivity", "sterilebodyfluidculturesensitivity", "sterilebodyfluidcultureandsensitivity"].includes(normalizedName)) {
+    return [
+      createParameter("Culture Status / Result", { normalRange: "No growth" }),
+      createParameter("Fluid Type / Source"),
+      createParameter("Anatomic Site / Collection Procedure"),
+      createParameter("Collection Date / Time"),
+      createParameter("Report Status"),
+      createParameter("Direct Gram Stain", { normalRange: "No organisms seen" }),
+      createParameter("Aerobic Culture", { normalRange: "No growth" }),
+      createParameter("Anaerobic Culture", { normalRange: "No growth" }),
+      createParameter("Organism(s) Isolated", { normalRange: "No growth" }),
+      createParameter("Identification Method"),
+      createParameter("Antimicrobial Susceptibility"),
+      createParameter("Resistance Markers / Alerts"),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (["bodyfluidsforchloride", "bodyfluidforchloride", "chloridebodyfluid", "bodyfluidchloride"].includes(normalizedName)) {
+    return [
+      createParameter("Chloride, Body Fluid", { unit: "mmol/L", normalRange: "Interpretive / fluid-specific" }),
+      createParameter("Fluid Type / Source"),
+      createParameter("Collection Date / Time"),
+      createParameter("Appearance"),
+      createParameter("Method / Analyzer"),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (normalizedName === "bonemarrowcytology") {
+    return [
+      createParameter("Specimen / Aspirate Site"),
+      createParameter("Collection Date / Time"),
+      createParameter("Clinical Details / Indication"),
+      createParameter("Aspirate Quality / Adequacy"),
+      createParameter("Peripheral Blood Counts"),
+      createParameter("Peripheral Blood Smear"),
+      createParameter("Marrow Particles / Cellularity"),
+      createParameter("Nucleated Differential / Myelogram"),
+      createParameter("Total Nucleated Cells Counted", { unit: "cells" }),
+      createParameter("Myeloid : Erythroid Ratio", { normalRange: "Laboratory-validated / age-specific" }),
+      createParameter("Blasts (%)", { unit: "%", normalRange: "Laboratory-validated / classification-specific" }),
+      createParameter("Erythropoiesis"),
+      createParameter("Granulopoiesis / Myelopoiesis"),
+      createParameter("Megakaryocytes"),
+      createParameter("Lymphocytes / Plasma Cells"),
+      createParameter("Other / Abnormal Cells or Infiltrates"),
+      createParameter("Detailed Morphologic Description"),
+      createParameter("Iron Stain / Stores"),
+      createParameter("Cytochemistry / Ancillary Studies"),
+      createParameter("Interpretation / Morphologic Diagnosis"),
+      createParameter("Recommendations / Pending Studies"),
+      createParameter("Limitations / Notes"),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (/afb.*culture.*sensitivity/.test(normalizedName)) {
     return [
       createParameter("AFB Culture Result"),
       createParameter("Organism Isolated"),

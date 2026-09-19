@@ -1177,6 +1177,1069 @@ async function ensureLftTestConfiguration() {
   }
 }
 
+async function ensureAgRatioTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "AGRatio",
+      "A G Ratio",
+      "A/G Ratio",
+      "A : G Ratio",
+      "Albumin/Globulin Ratio",
+      "Albumin Globulin Ratio",
+    ],
+    createName: "A/G Ratio",
+    createCode: "AGRATIO001",
+    category: "Biochemistry",
+    sampleType: "Serum",
+    turnaroundHours: 24,
+    parameters: [
+      { name: "Total Protein", aliases: [], unit: "g/dL", normalRange: "5.70 - 8.20", entryMode: "manual" },
+      { name: "Albumin", aliases: [], unit: "g/dL", normalRange: "3.20 - 4.80", entryMode: "manual" },
+      { name: "Globulin", aliases: [], unit: "g/dL", normalRange: "2.00 - 3.50", entryMode: "calculated", formula: "{Total Protein} - {Albumin}", precision: 2 },
+      { name: "A : G Ratio", aliases: ["A/G Ratio", "A G Ratio", "A:G Ratio"], unit: "", normalRange: "0.90 - 2.00", entryMode: "calculated", formula: "{Albumin} / {Globulin}", precision: 2 },
+    ],
+  });
+}
+
+async function ensureAnfQualitativeTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "ANF (AntiNuclearFactor) Qualitative",
+      "ANF(AntiNudearFactor)Qualitative",
+      "ANF (Anti Nuclear Factor) Qualitative",
+      "Antinuclear Factor (ANF), Qualitative",
+      "ANA / ANF (Anti Nuclear Antibody) - Qualitative",
+    ],
+    createName: "ANF (Anti Nuclear Factor) Qualitative",
+    createCode: "ANFQUAL001",
+    category: "Immunology",
+    sampleType: "Serum",
+    turnaroundHours: 24,
+    parameters: [
+      {
+        name: "ANF (Anti Nuclear Factor), Qualitative",
+        aliases: ["ANA / ANF", "Antinuclear Antibody", "ANA, Qualitative"],
+        unit: "",
+        normalRange: "Negative",
+        entryMode: "manual",
+      },
+    ],
+  });
+}
+
+async function ensureProstaticAcidPhosphataseTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "AcidPhosphataseProstate/PAP",
+      "Acid Phosphatase Prostate / PAP",
+      "Acid Phosphatase, Prostatic",
+      "Prostatic Acid Phosphatase",
+      "Prostatic Acid Phosphatase (PAP)",
+    ],
+    createName: "Prostatic Acid Phosphatase (PAP)",
+    createCode: "PAP001",
+    category: "Biochemistry",
+    sampleType: "Serum",
+    turnaroundHours: 24,
+    parameters: [
+      {
+        name: "Prostatic Acid Phosphatase (PAP), Serum",
+        aliases: ["Prostatic Acid Phosphatase", "Acid Phosphatase Prostate", "PAP"],
+        unit: "ng/mL",
+        normalRange: "0.00 - 3.50",
+        entryMode: "manual",
+      },
+    ],
+  });
+}
+
+async function ensureTotalAcidPhosphataseTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "AcidPhosphataseTotal",
+      "Acid Phosphatase Total",
+      "Acid Phosphatase, Total",
+      "Acid Phosphatase, Total, Serum",
+      "Total Acid Phosphatase",
+    ],
+    createName: "Acid Phosphatase, Total",
+    createCode: "ACPT001",
+    category: "Biochemistry",
+    sampleType: "Serum",
+    turnaroundHours: 24,
+    parameters: [
+      {
+        name: "Acid Phosphatase, Total, Serum",
+        aliases: ["Acid Phosphatase, Total", "Acid Phosphatase Total", "Total Acid Phosphatase"],
+        unit: "U/L",
+        normalRange: "0.00 - 4.30",
+        entryMode: "manual",
+      },
+    ],
+  });
+}
+
+async function ensureAldehydeTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "Aldehyde Test (AT)",
+      "Aldehyde Test",
+      "Napier's Aldehyde Test",
+      "Napier Aldehyde Test",
+      "Formol-Gel Test",
+      "Formol Gel Test",
+    ],
+    createName: "Aldehyde Test (AT)",
+    createCode: "ALDEHYDEAT001",
+    category: "Microbiology",
+    sampleType: "Serum",
+    turnaroundHours: 24,
+    parameters: [
+      {
+        name: "Aldehyde Test Result",
+        aliases: ["Napier's Aldehyde Test Result", "Formol-Gel Result"],
+        unit: "",
+        normalRange: "Negative / No jellification",
+        entryMode: "manual",
+      },
+      {
+        name: "Reaction Time",
+        aliases: ["Jellification Time", "Gelation Time"],
+        unit: "",
+        normalRange: "",
+        entryMode: "manual",
+      },
+      {
+        name: "Reaction Grade",
+        aliases: ["Grade", "Reaction Intensity"],
+        unit: "",
+        normalRange: "+ / ++ / +++ / ++++",
+        entryMode: "manual",
+      },
+      {
+        name: "Comments",
+        aliases: ["Comment", "Remarks"],
+        unit: "",
+        normalRange: "",
+        entryMode: "manual",
+      },
+    ],
+  });
+}
+
+async function ensureAldosteroneTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: ["Aldosterone", "Aldosterone, Serum", "Serum Aldosterone"],
+    createName: "Aldosterone",
+    createCode: "ALDOSTERONE001",
+    category: "Biochemistry",
+    sampleType: "Serum",
+    turnaroundHours: 24,
+    parameters: [
+      {
+        name: "Aldosterone, Serum",
+        aliases: ["Serum Aldosterone", "Aldosterone"],
+        unit: "ng/dL",
+        normalRange: "≤ 21.0 (≥ 11 years, a.m.)",
+        entryMode: "manual",
+      },
+      {
+        name: "Collection Posture",
+        aliases: ["Posture", "Patient Position"],
+        unit: "",
+        normalRange: "",
+        entryMode: "manual",
+      },
+      {
+        name: "Collection Time",
+        aliases: ["Time of Collection"],
+        unit: "",
+        normalRange: "",
+        entryMode: "manual",
+      },
+      {
+        name: "Comments",
+        aliases: ["Comment", "Remarks"],
+        unit: "",
+        normalRange: "",
+        entryMode: "manual",
+      },
+    ],
+  });
+}
+
+async function ensureBloodAllergyTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "Allergy (Blood)",
+      "Allergy Blood",
+      "Blood Allergy",
+      "Allergen-Specific IgE Panel",
+    ],
+    createName: "Allergy (Blood)",
+    createCode: "ALLERGYBLOOD001",
+    category: "Immunology",
+    sampleType: "Serum",
+    turnaroundHours: 24,
+    parameters: [
+      {
+        name: "Allergen-Specific IgE Result / Findings",
+        aliases: ["Allergen-Specific IgE Result", "Specific IgE Result", "Result / Findings"],
+        unit: "kUA/L",
+        normalRange: "Class 0 / < 0.10 per allergen",
+        entryMode: "manual",
+      },
+      {
+        name: "Allergen / Panel Tested",
+        aliases: ["Allergen Tested", "Panel Tested", "Allergen"],
+        unit: "",
+        normalRange: "",
+        entryMode: "manual",
+      },
+      {
+        name: "Reported Class",
+        aliases: ["IgE Class", "Class"],
+        unit: "",
+        normalRange: "Class 0 - 6",
+        entryMode: "manual",
+      },
+      {
+        name: "Comments",
+        aliases: ["Comment", "Remarks", "Clinical Interpretation"],
+        unit: "",
+        normalRange: "",
+        entryMode: "manual",
+      },
+    ],
+  });
+}
+
+async function ensureDrugAllergyTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "Allergy (Drug)",
+      "Allergy Drug",
+      "Drug Allergy",
+      "Drug-Specific IgE",
+    ],
+    createName: "Allergy (Drug)",
+    createCode: "ALLERGYDRUG001",
+    category: "Immunology",
+    sampleType: "Serum",
+    turnaroundHours: 72,
+    parameters: [
+      {
+        name: "Drug-Specific IgE Result / Findings",
+        aliases: ["Drug-Specific IgE Result", "Specific IgE Result", "Result / Findings"],
+        unit: "kUA/L",
+        normalRange: "Class 0 / < 0.10",
+        entryMode: "manual",
+      },
+      {
+        name: "Drug / Determinant Tested",
+        aliases: ["Drug Tested", "Drug", "Drug Allergen"],
+        unit: "",
+        normalRange: "",
+        entryMode: "manual",
+      },
+      {
+        name: "Reported Class",
+        aliases: ["IgE Class", "Class"],
+        unit: "",
+        normalRange: "Class 0 - 6",
+        entryMode: "manual",
+      },
+      {
+        name: "Reaction History / Clinical Details",
+        aliases: ["Reaction History", "Clinical Details"],
+        unit: "",
+        normalRange: "",
+        entryMode: "manual",
+      },
+      {
+        name: "Comments",
+        aliases: ["Comment", "Remarks", "Clinical Interpretation"],
+        unit: "",
+        normalRange: "",
+        entryMode: "manual",
+      },
+    ],
+  });
+}
+
+async function ensureRandomUrineAlphaAmylaseTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "Alpha Amylase (Urine)",
+      "Alpha Amylase, Urine",
+      "Alpha Amylase (Random Urine)",
+      "Amylase, Random Urine",
+      "Random Urine Amylase",
+    ],
+    createName: "Alpha Amylase (Urine)",
+    createCode: "UALPHAAMY001",
+    category: "Biochemistry",
+    sampleType: "Random Urine",
+    turnaroundHours: 24,
+    parameters: [
+      {
+        name: "Alpha Amylase, Random Urine",
+        aliases: ["Alpha Amylase, Urine", "Urine Amylase", "Amylase, Random Urine"],
+        unit: "U/L",
+        normalRange: "Male: 16 - 491; Female: 21 - 447",
+        entryMode: "manual",
+      },
+      {
+        name: "Comments",
+        aliases: ["Comment", "Remarks"],
+        unit: "",
+        normalRange: "",
+        entryMode: "manual",
+      },
+    ],
+  });
+}
+
+async function ensureTimedUrineAmylaseTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "Amylase (24 hrs. urine)",
+      "Amylase (24 hrs urine)",
+      "Amylase (24-hour Urine)",
+      "Amylase, 24-Hour Urine",
+      "24-Hour Urine Amylase",
+    ],
+    createName: "Amylase (24 hrs. urine)",
+    createCode: "UAMY24H001",
+    category: "Biochemistry",
+    sampleType: "24-Hour Urine",
+    turnaroundHours: 24,
+    parameters: [
+      {
+        name: "Amylase Excretion, 24-Hour Urine",
+        aliases: ["Amylase Excretion, Timed Urine", "Amylase, 24-Hour Urine", "Urine Amylase Excretion"],
+        unit: "U/hour",
+        normalRange: "Male: 0 - 18; Female: 0 - 17",
+        entryMode: "manual",
+      },
+      {
+        name: "Amylase Concentration, Urine",
+        aliases: ["Urine Amylase Concentration", "Amylase, Urine, Per Volume"],
+        unit: "U/L",
+        normalRange: "Not established",
+        entryMode: "manual",
+      },
+      {
+        name: "Total Urine Volume",
+        aliases: ["Urine Volume", "Total Volume"],
+        unit: "mL",
+        normalRange: "",
+        entryMode: "manual",
+      },
+      {
+        name: "Collection Duration",
+        aliases: ["Collection Time", "Timing Interval"],
+        unit: "hours",
+        normalRange: "24",
+        entryMode: "manual",
+      },
+      {
+        name: "Comments",
+        aliases: ["Comment", "Remarks"],
+        unit: "",
+        normalRange: "",
+        entryMode: "manual",
+      },
+    ],
+  });
+}
+
+async function ensureAmmoniaTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: ["Ammonia", "Ammonia, Plasma", "Plasma Ammonia", "NH3 (Ammonia), Plasma"],
+    createName: "Ammonia",
+    createCode: "AMMONIA001",
+    category: "Biochemistry",
+    sampleType: "EDTA Plasma",
+    turnaroundHours: 24,
+    parameters: [
+      {
+        name: "Ammonia, Plasma",
+        aliases: ["Plasma Ammonia", "Ammonia", "NH3"],
+        unit: "µmol/L",
+        normalRange: "≤ 30",
+        entryMode: "manual",
+      },
+      {
+        name: "Specimen Handling / Processing Note",
+        aliases: ["Specimen Handling", "Processing Note", "Specimen Condition"],
+        unit: "",
+        normalRange: "",
+        entryMode: "manual",
+      },
+      {
+        name: "Comments",
+        aliases: ["Comment", "Remarks"],
+        unit: "",
+        normalRange: "",
+        entryMode: "manual",
+      },
+    ],
+  });
+}
+
+async function ensureAndrogenPanelTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "Androgens (Testosterone &DHEAS)",
+      "Androgens (Testosterone & DHEA-S)",
+      "Androgens (Testosterone & DHEAS)",
+      "Testosterone & DHEA-S",
+      "Testosterone and DHEA-S Panel",
+    ],
+    createName: "Androgens (Testosterone & DHEA-S)",
+    createCode: "ANDROGENPANEL001",
+    category: "Biochemistry",
+    sampleType: "Serum",
+    turnaroundHours: 24,
+    parameters: [
+      {
+        name: "Testosterone, Total, Serum",
+        aliases: ["Testosterone, Total", "Total Testosterone", "Testosterone"],
+        unit: "ng/dL",
+        normalRange: "Male >=19 y: 240 - 950; Female >=19 y: 8 - 60",
+        entryMode: "manual",
+      },
+      {
+        name: "DHEA-S, Serum",
+        aliases: ["DHEAS, Serum", "DHEA-S", "DHEAS", "Dehydroepiandrosterone Sulfate", "Dehydroepiandrosterone Sulphate"],
+        unit: "\u00b5g/dL",
+        normalRange: "Age- and sex-specific (see report table)",
+        entryMode: "manual",
+      },
+      {
+        name: "Collection Time",
+        aliases: ["Time of Collection"],
+        unit: "",
+        normalRange: "",
+        entryMode: "manual",
+      },
+      {
+        name: "Comments",
+        aliases: ["Comment", "Remarks"],
+        unit: "",
+        normalRange: "",
+        entryMode: "manual",
+      },
+    ],
+  });
+}
+
+async function ensureAndrostenedioneTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "Androsteindione(A4)",
+      "Androsteindione (A4)",
+      "Androstenedione(A4)",
+      "Androstenedione (A4)",
+      "Androstenedione",
+      "4-Androstenedione",
+      "Delta-4-Androstenedione",
+    ],
+    createName: "Androstenedione (A4)",
+    createCode: "ANDROSTENEDIONE001",
+    category: "Biochemistry",
+    sampleType: "Serum",
+    turnaroundHours: 24,
+    parameters: [
+      {
+        name: "Androstenedione (A4), Serum",
+        aliases: ["Androstenedione, Serum", "Androstenedione (A4)", "Androsteindione (A4)", "4-Androstenedione", "Delta-4-Androstenedione", "A4"],
+        unit: "ng/dL",
+        normalRange: "Adult male: 40 - 150; Adult female: 30 - 200",
+        entryMode: "manual",
+      },
+      {
+        name: "Collection Time",
+        aliases: ["Time of Collection"],
+        unit: "",
+        normalRange: "",
+        entryMode: "manual",
+      },
+      {
+        name: "Comments",
+        aliases: ["Comment", "Remarks"],
+        unit: "",
+        normalRange: "",
+        entryMode: "manual",
+      },
+    ],
+  });
+}
+
+async function ensureComprehensiveAnemiaProfileTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "AnemiaComprehenssiveProfilefd",
+      "Anemia Comprehensive Profile",
+      "Anaemia Comprehensive Profile",
+      "Comprehensive Anemia Profile",
+      "Comprehensive Anaemia Profile",
+    ],
+    createName: "Anemia Comprehensive Profile",
+    createCode: "ANEMIACOMPREHENSIVE001",
+    category: "Hematology",
+    sampleType: "EDTA Whole Blood and Serum",
+    turnaroundHours: 24,
+    parameters: [
+      { name: "Haemoglobin (Hb)", aliases: ["Hemoglobin (Hb)", "Haemoglobin", "Hemoglobin", "Hb"], unit: "g/dL", normalRange: "Male: 13.5 - 17.5; Female: 12.0 - 15.5", entryMode: "manual" },
+      { name: "Red Blood Cell (RBC) Count", aliases: ["Total RBC Count", "RBC Count", "RBC"], unit: "mill/cumm", normalRange: "Male: 4.5 - 5.9; Female: 4.1 - 5.1", entryMode: "manual" },
+      { name: "Hematocrit (HCT / PCV)", aliases: ["Haematocrit", "Hematocrit", "HCT", "PCV"], unit: "%", normalRange: "Male: 41 - 53; Female: 36 - 46", entryMode: "manual" },
+      { name: "Mean Corpuscular Volume (MCV)", aliases: ["MCV"], unit: "fL", normalRange: "80 - 100", entryMode: "manual" },
+      { name: "Mean Corpuscular Haemoglobin (MCH)", aliases: ["Mean Corpuscular Hemoglobin (MCH)", "MCH"], unit: "pg", normalRange: "27 - 32", entryMode: "manual" },
+      { name: "Mean Corpuscular Haemoglobin Concentration (MCHC)", aliases: ["Mean Corpuscular Hemoglobin Concentration (MCHC)", "MCHC"], unit: "g/dL", normalRange: "32 - 36", entryMode: "manual" },
+      { name: "Red Cell Distribution Width (RDW-CV)", aliases: ["RDW-CV", "RDW"], unit: "%", normalRange: "11.5 - 14.5", entryMode: "manual" },
+      { name: "Total Leucocyte Count (TLC)", aliases: ["Total Leukocyte Count (TLC)", "TLC", "WBC Count"], unit: "cells/cumm", normalRange: "4,000 - 11,000", entryMode: "manual" },
+      { name: "Platelet Count", aliases: ["Platelets"], unit: "cells/cumm", normalRange: "150,000 - 450,000", entryMode: "manual" },
+      { name: "Reticulocyte Count", aliases: ["Reticulocytes"], unit: "%", normalRange: "0.5 - 2.5", entryMode: "manual" },
+      { name: "Peripheral Smear / RBC Morphology", aliases: ["Peripheral Smear", "RBC Morphology", "Result / Findings", "Findings"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Serum Iron", aliases: ["Iron, Serum", "Iron"], unit: "mcg/dL", normalRange: "Male: 50 - 150; Female: 35 - 145", entryMode: "manual" },
+      { name: "Total Iron Binding Capacity (TIBC)", aliases: ["TIBC", "Total Iron Binding Capacity"], unit: "mcg/dL", normalRange: "250 - 400", entryMode: "manual" },
+      { name: "Transferrin Saturation", aliases: ["Percent Saturation", "Iron Saturation"], unit: "%", normalRange: "14 - 50", entryMode: "calculated", formula: "{Serum Iron} / {Total Iron Binding Capacity (TIBC)} * 100", precision: 1 },
+      { name: "Ferritin, Serum", aliases: ["Serum Ferritin", "Ferritin"], unit: "ng/mL", normalRange: "22 - 322", entryMode: "manual" },
+      { name: "Vitamin B12, Serum", aliases: ["Serum Vitamin B12", "Vitamin B12", "Cobalamin"], unit: "pg/mL", normalRange: "200 - 900", entryMode: "manual" },
+      { name: "Folate, Serum", aliases: ["Serum Folate", "Folate", "Folic Acid"], unit: "ng/mL", normalRange: "> 5.38", entryMode: "manual" },
+      { name: "Comments", aliases: ["Comment", "Remarks"], unit: "", normalRange: "", entryMode: "manual" },
+    ],
+  });
+}
+
+async function ensureAnemiaScreeningProfileTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: ["AnemiaScreeningProfile", "Anemia Screening Profile", "Anaemia Screening Profile", "Anemia Screen", "Anaemia Screen"],
+    createName: "Anemia Screening Profile",
+    createCode: "ANEMIASCREENING001",
+    category: "Hematology",
+    sampleType: "EDTA Whole Blood and Serum",
+    turnaroundHours: 24,
+    parameters: [
+      { name: "Haemoglobin (Hb)", aliases: ["Hemoglobin (Hb)", "Haemoglobin", "Hemoglobin", "Hb"], unit: "g/dL", normalRange: "Male: 13.5 - 17.5; Female: 12.0 - 15.5", entryMode: "manual" },
+      { name: "Red Blood Cell (RBC) Count", aliases: ["Total RBC Count", "RBC Count", "RBC"], unit: "mill/cumm", normalRange: "Male: 4.5 - 5.9; Female: 4.1 - 5.1", entryMode: "manual" },
+      { name: "Hematocrit (HCT / PCV)", aliases: ["Haematocrit", "Hematocrit", "HCT", "PCV"], unit: "%", normalRange: "Male: 41 - 53; Female: 36 - 46", entryMode: "manual" },
+      { name: "Mean Corpuscular Volume (MCV)", aliases: ["MCV"], unit: "fL", normalRange: "80 - 100", entryMode: "manual" },
+      { name: "Mean Corpuscular Haemoglobin (MCH)", aliases: ["Mean Corpuscular Hemoglobin (MCH)", "MCH"], unit: "pg", normalRange: "27 - 32", entryMode: "manual" },
+      { name: "Mean Corpuscular Haemoglobin Concentration (MCHC)", aliases: ["Mean Corpuscular Hemoglobin Concentration (MCHC)", "MCHC"], unit: "g/dL", normalRange: "32 - 36", entryMode: "manual" },
+      { name: "Red Cell Distribution Width (RDW-CV)", aliases: ["RDW-CV", "RDW"], unit: "%", normalRange: "11.5 - 14.5", entryMode: "manual" },
+      { name: "Total Leucocyte Count (TLC)", aliases: ["Total Leukocyte Count (TLC)", "TLC", "WBC Count"], unit: "cells/cumm", normalRange: "4,000 - 11,000", entryMode: "manual" },
+      { name: "Platelet Count", aliases: ["Platelets"], unit: "cells/cumm", normalRange: "150,000 - 450,000", entryMode: "manual" },
+      { name: "Serum Iron", aliases: ["Iron, Serum", "Iron"], unit: "mcg/dL", normalRange: "Male: 50 - 150; Female: 35 - 145", entryMode: "manual" },
+      { name: "Total Iron Binding Capacity (TIBC)", aliases: ["TIBC", "Total Iron Binding Capacity"], unit: "mcg/dL", normalRange: "250 - 400", entryMode: "manual" },
+      { name: "Transferrin Saturation", aliases: ["Percent Saturation", "Iron Saturation"], unit: "%", normalRange: "14 - 50", entryMode: "calculated", formula: "{Serum Iron} / {Total Iron Binding Capacity (TIBC)} * 100", precision: 1 },
+      { name: "Ferritin, Serum", aliases: ["Serum Ferritin", "Ferritin"], unit: "ng/mL", normalRange: "22 - 322", entryMode: "manual" },
+      { name: "Screening Findings", aliases: ["Result / Findings", "Findings"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Comments", aliases: ["Comment", "Remarks"], unit: "", normalRange: "", entryMode: "manual" },
+    ],
+  });
+}
+
+async function ensureAntiTpoTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "Anti TPO (Anti ThyroidPeroxidase)",
+      "Anti TPO (Anti Thyroid Peroxidase)",
+      "Anti-TPO Antibody",
+      "Anti Thyroid Peroxidase Antibody",
+      "Thyroid Peroxidase Antibody",
+      "Thyroperoxidase Antibodies",
+    ],
+    createName: "Anti TPO (Anti Thyroid Peroxidase)",
+    createCode: "ANTITPO001",
+    category: "Immunology",
+    sampleType: "Serum",
+    turnaroundHours: 24,
+    parameters: [
+      {
+        name: "Anti-TPO Antibody, Serum",
+        aliases: ["Anti TPO, Serum", "Anti Thyroid Peroxidase Antibody", "Anti TPO (Anti Thyroid Peroxidase)", "Thyroperoxidase Antibodies, Serum", "TPOAb"],
+        unit: "U/mL",
+        normalRange: "< 60.00",
+        entryMode: "manual",
+      },
+      { name: "Comments", aliases: ["Comment", "Remarks"], unit: "", normalRange: "", entryMode: "manual" },
+    ],
+  });
+}
+
+async function ensureAntiTgTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "Anti Tg (Anti Thyroglobulin)",
+      "Anti-Tg Antibody",
+      "Anti Thyroglobulin Antibody",
+      "Thyroglobulin Antibody",
+      "Thyroglobulin Antibodies",
+    ],
+    createName: "Anti Tg (Anti Thyroglobulin)",
+    createCode: "ANTITG001",
+    category: "Immunology",
+    sampleType: "Serum",
+    turnaroundHours: 24,
+    parameters: [
+      {
+        name: "Anti-Tg Antibody, Serum",
+        aliases: ["Anti - Tg, Serum", "Anti Tg, Serum", "Anti Thyroglobulin Antibody", "Anti Tg (Anti Thyroglobulin)", "Thyroglobulin Antibody, Serum", "TgAb"],
+        unit: "U/mL",
+        normalRange: "< 60.00",
+        entryMode: "manual",
+      },
+      { name: "Comments", aliases: ["Comment", "Remarks"], unit: "", normalRange: "", entryMode: "manual" },
+    ],
+  });
+}
+
+async function ensureAnticardiolipinIggTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "AntiCardiolipinAntibodyIgG",
+      "Anti Cardiolipin Antibody IgG",
+      "Anticardiolipin Antibody IgG",
+      "Anticardiolipin IgG",
+      "Cardiolipin Antibody IgG",
+      "Phospholipid (Cardiolipin) Antibodies, IgG",
+    ],
+    createName: "Anti Cardiolipin Antibody IgG",
+    createCode: "ACLIGG001",
+    category: "Immunology",
+    sampleType: "Serum",
+    turnaroundHours: 24,
+    parameters: [
+      {
+        name: "Anticardiolipin Antibody IgG, Serum",
+        aliases: ["Anti Cardiolipin Antibody IgG", "AntiCardiolipinAntibodyIgG", "Cardiolipin Antibody IgG", "Phospholipid (Cardiolipin) Antibodies, IgG", "aCL IgG"],
+        unit: "GPL-U/mL",
+        normalRange: "< 15.0",
+        entryMode: "manual",
+      },
+      { name: "Comments", aliases: ["Comment", "Remarks"], unit: "", normalRange: "", entryMode: "manual" },
+    ],
+  });
+}
+
+async function ensureAnticardiolipinIgmTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "AntiCardiolipinAntibodyIgM",
+      "Anti Cardiolipin Antibody IgM",
+      "Anticardiolipin Antibody IgM",
+      "Anticardiolipin IgM",
+      "Cardiolipin Antibody IgM",
+      "Phospholipid (Cardiolipin) Antibodies, IgM",
+    ],
+    createName: "Anti Cardiolipin Antibody IgM",
+    createCode: "ACLIGM001",
+    category: "Immunology",
+    sampleType: "Serum",
+    turnaroundHours: 24,
+    parameters: [
+      {
+        name: "Anticardiolipin Antibody IgM, Serum",
+        aliases: ["Anti Cardiolipin Antibody IgM", "AntiCardiolipinAntibodyIgM", "Cardiolipin Antibody IgM", "Phospholipid (Cardiolipin) Antibodies, IgM", "aCL IgM"],
+        unit: "MPL-U/mL",
+        normalRange: "< 15.0",
+        entryMode: "manual",
+      },
+      { name: "Comments", aliases: ["Comment", "Remarks"], unit: "", normalRange: "", entryMode: "manual" },
+    ],
+  });
+}
+
+async function ensureApolipoproteinBTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "Apolipoprotein B",
+      "Apolipoprotein B-100",
+      "ApolipoproteinB",
+      "Apo B",
+      "ApoB",
+      "ApoB-100",
+    ],
+    createName: "Apolipoprotein B",
+    createCode: "APOLB001",
+    category: "Biochemistry",
+    sampleType: "Serum",
+    turnaroundHours: 24,
+    parameters: [
+      {
+        name: "Apolipoprotein B, Serum",
+        aliases: ["Apolipoprotein B", "Apolipoprotein B-100", "Apo B", "ApoB", "ApoB-100"],
+        unit: "mg/dL",
+        normalRange: "< 90",
+        entryMode: "manual",
+      },
+      { name: "Comments", aliases: ["Comment", "Remarks"], unit: "", normalRange: "", entryMode: "manual" },
+    ],
+  });
+}
+
+async function ensureAsciticFluidAnalysisTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "Ascitic Fluid (Cell Count,Biochemistry..)",
+      "Ascitic Fluid (Cell Count, Biochemistry)",
+      "Ascitic Fluid Analysis (Cell Count & Biochemistry)",
+      "Peritoneal Fluid (Cell Count, Biochemistry)",
+    ],
+    createName: "Ascitic Fluid Analysis (Cell Count & Biochemistry)",
+    createCode: "ASCFULL001",
+    category: "Biochemistry",
+    sampleType: "Ascitic Fluid",
+    turnaroundHours: 24,
+    parameters: [
+      { name: "Specimen / Site", aliases: ["Specimen", "Site"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Appearance", aliases: ["Physical Appearance"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Colour", aliases: ["Color"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Total Nucleated Cell Count", aliases: ["Total Cell Count", "Total WBC Count", "WBC Count"], unit: "cells/\u00b5L", normalRange: "", entryMode: "manual" },
+      { name: "Red Blood Cell Count", aliases: ["RBC Count"], unit: "cells/\u00b5L", normalRange: "", entryMode: "manual" },
+      { name: "Neutrophils", aliases: ["Polymorphs", "PMN Percent", "PMN %"], unit: "%", normalRange: "", entryMode: "manual" },
+      { name: "Lymphocytes", aliases: ["Lymphocyte Percent", "Lymphocyte %"], unit: "%", normalRange: "", entryMode: "manual" },
+      { name: "Monocytes / Macrophages", aliases: ["Monocytes", "Macrophages"], unit: "%", normalRange: "", entryMode: "manual" },
+      { name: "Other Cells / Mesothelial Cells", aliases: ["Other Cells", "Mesothelial Cells"], unit: "%", normalRange: "", entryMode: "manual" },
+      {
+        name: "Absolute PMN Count",
+        aliases: ["Absolute Neutrophil Count", "PMN Count"],
+        unit: "cells/\u00b5L",
+        normalRange: "< 250 (clinical decision limit)",
+        entryMode: "calculated",
+        formula: "{Total Nucleated Cell Count} * {Neutrophils} / 100",
+        precision: 0,
+      },
+      { name: "Ascitic Fluid Albumin", aliases: ["Fluid Albumin", "Albumin, Ascitic Fluid"], unit: "g/dL", normalRange: "", entryMode: "manual" },
+      { name: "Serum Albumin, Paired", aliases: ["Paired Serum Albumin", "Serum Albumin"], unit: "g/dL", normalRange: "", entryMode: "manual" },
+      {
+        name: "Serum-Ascites Albumin Gradient (SAAG)",
+        aliases: ["Serum Ascites Albumin Gradient", "SAAG"],
+        unit: "g/dL",
+        normalRange: "",
+        entryMode: "calculated",
+        formula: "{Serum Albumin, Paired} - {Ascitic Fluid Albumin}",
+        precision: 2,
+      },
+      { name: "Ascitic Fluid Total Protein", aliases: ["Fluid Total Protein", "Total Protein, Ascitic Fluid", "Protein"], unit: "g/dL", normalRange: "", entryMode: "manual" },
+      { name: "Ascitic Fluid Glucose", aliases: ["Fluid Glucose", "Glucose"], unit: "mg/dL", normalRange: "", entryMode: "manual" },
+      { name: "Ascitic Fluid LDH", aliases: ["Fluid LDH", "LDH"], unit: "U/L", normalRange: "", entryMode: "manual" },
+      { name: "Ascitic Fluid Amylase", aliases: ["Fluid Amylase", "Amylase"], unit: "U/L", normalRange: "", entryMode: "manual" },
+      { name: "Impression", aliases: ["Interpretation"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Comments", aliases: ["Comment", "Remarks"], unit: "", normalRange: "", entryMode: "manual" },
+    ],
+  });
+}
+
+async function ensureSerumBicarbonateTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "Bicarbonate (Hco3)",
+      "Bicarbonate (HCO3)",
+      "Bicarbonate, Serum",
+      "Serum Bicarbonate",
+      "Total CO2, Serum",
+    ],
+    createName: "Bicarbonate (HCO3)",
+    createCode: "BICARB001",
+    category: "Biochemistry",
+    sampleType: "Serum",
+    turnaroundHours: 24,
+    parameters: [
+      {
+        name: "Bicarbonate (HCO3), Serum",
+        aliases: ["Bicarbonate, Serum", "Bicarbonate (HCO3)", "Bicarbonate", "Total CO2, Serum", "Serum Total CO2", "HCO3"],
+        unit: "mmol/L",
+        normalRange: "22 - 29",
+        entryMode: "manual",
+      },
+      { name: "Comments", aliases: ["Comment", "Remarks"], unit: "", normalRange: "", entryMode: "manual" },
+    ],
+  });
+}
+
+async function ensureBilirubinFractionationTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "Bilirubin Total, Direct & Indirect",
+      "Bilirubin Total Direct Indirect",
+      "Total, Direct & Indirect Bilirubin",
+      "Bilirubin Fractionation",
+    ],
+    createName: "Bilirubin Total, Direct & Indirect",
+    createCode: "BILIFRAC001",
+    category: "Biochemistry",
+    sampleType: "Serum",
+    turnaroundHours: 24,
+    parameters: [
+      {
+        name: "Bilirubin Total, Serum",
+        aliases: ["Bilirubin Total", "Total Bilirubin", "Total Bilirubin, Serum"],
+        unit: "mg/dL",
+        normalRange: "0.30 - 1.20",
+        entryMode: "manual",
+      },
+      {
+        name: "Bilirubin Direct, Serum",
+        aliases: ["Bilirubin Direct", "Direct Bilirubin", "Direct Bilirubin, Serum"],
+        unit: "mg/dL",
+        normalRange: "< 0.30",
+        entryMode: "manual",
+      },
+      {
+        name: "Bilirubin Indirect, Serum",
+        aliases: ["Bilirubin Indirect", "Indirect Bilirubin", "Indirect Bilirubin, Serum"],
+        unit: "mg/dL",
+        normalRange: "< 1.10",
+        entryMode: "calculated",
+        formula: "{Bilirubin Total, Serum} - {Bilirubin Direct, Serum}",
+        precision: 2,
+      },
+      { name: "Comments", aliases: ["Comment", "Remarks"], unit: "", normalRange: "", entryMode: "manual" },
+    ],
+  });
+}
+
+async function ensureMediumSectionBiopsyTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "Biopsy (Medium section)",
+      "Biopsy (Medium Section)",
+      "Biopsy Medium Section",
+      "Medium Section Biopsy",
+    ],
+    createName: "Biopsy (Medium Section)",
+    createCode: "BIOPSYMED001",
+    category: "Histopathology",
+    sampleType: "Tissue",
+    turnaroundHours: 24,
+    parameters: [
+      { name: "Clinical History", aliases: ["Clinical Data"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Specimen / Site", aliases: ["Specimen", "Site"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Procedure", aliases: ["Biopsy Procedure", "Type of Biopsy"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Fixative", aliases: ["Specimen Received In", "Received In"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Gross Description", aliases: ["Gross"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Blocks Submitted", aliases: ["Sections Submitted", "Cassettes / Blocks"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Microscopic Description", aliases: ["Microscopy", "Microscopic Findings"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Final Diagnosis", aliases: ["Diagnosis", "Histopathological Diagnosis"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Margins (If Applicable)", aliases: ["Margins", "Margin Status"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Special Stains / IHC", aliases: ["Ancillary Studies", "Special Stains", "Immunohistochemistry"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Comment", aliases: ["Comments", "Note", "Remarks"], unit: "", normalRange: "", entryMode: "manual" },
+    ],
+  });
+}
+
+async function ensureSmallSectionBiopsyTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "Biopsy(SmallSection)",
+      "Biopsy (Small Section)",
+      "Biopsy Small Section",
+      "Small Section Biopsy",
+    ],
+    createName: "Biopsy (Small Section)",
+    createCode: "BIOPSYSMALL001",
+    category: "Histopathology",
+    sampleType: "Tissue",
+    turnaroundHours: 24,
+    parameters: [
+      { name: "Clinical History", aliases: ["Clinical Data"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Specimen / Site", aliases: ["Specimen", "Site"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Procedure", aliases: ["Biopsy Procedure", "Type of Biopsy"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Fixative", aliases: ["Specimen Received In", "Received In"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Gross Description", aliases: ["Gross"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Blocks Submitted", aliases: ["Sections Submitted", "Cassettes / Blocks"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Microscopic Description", aliases: ["Microscopy", "Microscopic Findings"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Final Diagnosis", aliases: ["Diagnosis", "Histopathological Diagnosis"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Adequacy / Limitations", aliases: ["Specimen Adequacy", "Limitations", "Adequacy"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Margins (If Applicable)", aliases: ["Margins", "Margin Status"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Special Stains / IHC", aliases: ["Ancillary Studies", "Special Stains", "Immunohistochemistry"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Comment", aliases: ["Comments", "Note", "Remarks"], unit: "", normalRange: "", entryMode: "manual" },
+    ],
+  });
+}
+
+async function ensureBloodCultureSensitivityTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "BloodCulture&Sensitivity",
+      "Blood Culture & Sensitivity",
+      "Blood Culture and Sensitivity",
+    ],
+    createName: "Blood Culture & Sensitivity",
+    createCode: "BLOODCULTURESENS001",
+    category: "Microbiology",
+    sampleType: "Blood",
+    turnaroundHours: 24,
+    parameters: [
+      {
+        name: "Culture Status / Result",
+        aliases: ["Blood Culture Result", "Culture Result", "AFB Culture Result", "Result"],
+        unit: "",
+        normalRange: "No growth",
+        entryMode: "manual",
+      },
+      { name: "Specimen / Collection Site", aliases: ["Specimen", "Collection Site"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Collection Date / Time", aliases: ["Collection Date and Time", "Collection Time"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Bottle / Set", aliases: ["Culture Bottle / Set", "Bottle Type", "Set Number"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Culture System / Method", aliases: ["Culture Method", "Method"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Report Status", aliases: ["Culture Report Status"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Gram Stain", aliases: ["Gram Stain from Positive Bottle", "Preliminary Gram Stain"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Time to Positivity", aliases: ["TTP"], unit: "hours", normalRange: "", entryMode: "manual" },
+      { name: "Organism Isolated", aliases: ["Organism", "Isolate"], unit: "", normalRange: "No growth", entryMode: "manual" },
+      { name: "Identification Method", aliases: ["Organism Identification Method"], unit: "", normalRange: "", entryMode: "manual" },
+      {
+        name: "Antimicrobial Susceptibility",
+        aliases: ["Antibiotic Sensitivity", "Drug Sensitivity", "Drug Susceptibility", "Sensitivity", "Susceptibility"],
+        unit: "",
+        normalRange: "",
+        entryMode: "manual",
+      },
+      { name: "Resistance Markers / Alerts", aliases: ["Resistance Markers", "Resistance Alert", "Alerts"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Comments", aliases: ["Comment", "Final Comments", "Remarks"], unit: "", normalRange: "", entryMode: "manual" },
+    ],
+  });
+}
+
+async function ensureBodyFluidCultureSensitivityTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "BodyFluid Culture &Sensitivity",
+      "Body Fluid Culture & Sensitivity",
+      "Body Fluid Culture and Sensitivity",
+      "Sterile Body Fluid Culture & Sensitivity",
+    ],
+    createName: "Body Fluid Culture & Sensitivity",
+    createCode: "BODYFLUIDCULTURESENS001",
+    category: "Microbiology",
+    sampleType: "Body Fluid",
+    turnaroundHours: 24,
+    parameters: [
+      { name: "Culture Status / Result", aliases: ["Body Fluid Culture Result", "Culture Result", "AFB Culture Result", "Result"], unit: "", normalRange: "No growth", entryMode: "manual" },
+      { name: "Fluid Type / Source", aliases: ["Fluid Type", "Specimen / Site", "Specimen", "Source"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Anatomic Site / Collection Procedure", aliases: ["Anatomic Site", "Collection Site", "Collection Procedure"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Collection Date / Time", aliases: ["Collection Date and Time", "Collection Time"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Report Status", aliases: ["Culture Report Status"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Direct Gram Stain", aliases: ["Gram Stain", "Direct Smear"], unit: "", normalRange: "No organisms seen", entryMode: "manual" },
+      { name: "Aerobic Culture", aliases: ["Aerobic Culture Result"], unit: "", normalRange: "No growth", entryMode: "manual" },
+      { name: "Anaerobic Culture", aliases: ["Anaerobic Culture Result"], unit: "", normalRange: "No growth", entryMode: "manual" },
+      { name: "Organism(s) Isolated", aliases: ["Organism Isolated", "Organism", "Isolate"], unit: "", normalRange: "No growth", entryMode: "manual" },
+      { name: "Identification Method", aliases: ["Organism Identification Method"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Antimicrobial Susceptibility", aliases: ["Antibiotic Sensitivity", "Drug Sensitivity", "Drug Susceptibility", "Sensitivity", "Susceptibility"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Resistance Markers / Alerts", aliases: ["Resistance Markers", "Resistance Alert", "Alerts"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Comments", aliases: ["Comment", "Final Comments", "Remarks"], unit: "", normalRange: "", entryMode: "manual" },
+    ],
+  });
+}
+
+async function ensureBodyFluidTotalProteinTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "Body Fluides for Proein",
+      "Body Fluids for Protein",
+      "Body Fluid for Protein",
+      "Total Protein, Body Fluid",
+    ],
+    createName: "Total Protein, Body Fluid",
+    createCode: "BODYFLUIDPROTEIN001",
+    category: "Biochemistry",
+    sampleType: "Body Fluid",
+    turnaroundHours: 24,
+    parameters: [
+      {
+        name: "Total Protein, Body Fluid",
+        aliases: ["Protein, Total, Body Fluid", "Body Fluid Total Protein", "Body Fluid Protein", "Result"],
+        unit: "g/dL",
+        normalRange: "Interpretive / fluid-specific",
+        entryMode: "manual",
+      },
+      { name: "Fluid Type / Source", aliases: ["Fluid Type", "Specimen / Site", "Specimen", "Source"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Collection Date / Time", aliases: ["Collection Date and Time", "Collection Time"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Appearance", aliases: ["Fluid Appearance"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Paired Serum Total Protein", aliases: ["Serum Total Protein", "Total Protein, Serum"], unit: "g/dL", normalRange: "", entryMode: "manual" },
+      {
+        name: "Fluid / Serum Protein Ratio",
+        aliases: ["Fluid-to-Serum Protein Ratio", "Protein Ratio"],
+        unit: "",
+        normalRange: "Pleural fluid: > 0.50 supports exudate (one Light criterion)",
+        entryMode: "calculated",
+        formula: "{Total Protein, Body Fluid} / {Paired Serum Total Protein}",
+        precision: 2,
+      },
+      { name: "Comments", aliases: ["Comment", "Remarks"], unit: "", normalRange: "", entryMode: "manual" },
+    ],
+  });
+}
+
+async function ensureBodyFluidChlorideTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "Body Fluids for Chloride",
+      "Body Fluid for Chloride",
+      "Chloride, Body Fluid",
+      "Body Fluid Chloride",
+    ],
+    createName: "Chloride, Body Fluid",
+    createCode: "BODYFLUIDCHLORIDE001",
+    category: "Biochemistry",
+    sampleType: "Body Fluid",
+    turnaroundHours: 24,
+    parameters: [
+      {
+        name: "Chloride, Body Fluid",
+        aliases: ["Body Fluid Chloride", "Chloride Fluid", "Chloride", "Result"],
+        unit: "mmol/L",
+        normalRange: "Interpretive / fluid-specific",
+        entryMode: "manual",
+      },
+      { name: "Fluid Type / Source", aliases: ["Fluid Type", "Specimen / Site", "Specimen", "Source"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Collection Date / Time", aliases: ["Collection Date and Time", "Collection Time"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Appearance", aliases: ["Fluid Appearance"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Method / Analyzer", aliases: ["Method", "Analyzer"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Comments", aliases: ["Comment", "Remarks", "Clinical Interpretation"], unit: "", normalRange: "", entryMode: "manual" },
+    ],
+  });
+}
+
+async function ensureBoneMarrowCytologyTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: ["Bone Marrow Cytology"],
+    createName: "Bone Marrow Cytology",
+    createCode: "BONEMARROWCYTOLOGY001",
+    category: "Haematology",
+    sampleType: "Bone Marrow Aspirate",
+    turnaroundHours: 24,
+    parameters: [
+      { name: "Specimen / Aspirate Site", aliases: ["Specimen", "Aspirate Site"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Collection Date / Time", aliases: ["Collection Date and Time", "Collection Time"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Clinical Details / Indication", aliases: ["Clinical History", "Clinical Details", "Indication"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Aspirate Quality / Adequacy", aliases: ["Aspirate Adequacy", "Gross Description", "Adequacy"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Peripheral Blood Counts", aliases: ["Blood Counts", "CBC Findings"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Peripheral Blood Smear", aliases: ["Peripheral Smear", "Blood Smear Description"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Marrow Particles / Cellularity", aliases: ["Particles / Cellularity", "Cellularity"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Nucleated Differential / Myelogram", aliases: ["Differential Count / Myelogram", "Myelogram", "Differential Count"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Total Nucleated Cells Counted", aliases: ["Total Cells Counted", "Cells Counted"], unit: "cells", normalRange: "", entryMode: "manual" },
+      { name: "Myeloid : Erythroid Ratio", aliases: ["M:E Ratio", "Myeloid Erythroid Ratio"], unit: "", normalRange: "Laboratory-validated / age-specific", entryMode: "manual" },
+      { name: "Blasts (%)", aliases: ["Blast Percentage", "Blasts"], unit: "%", normalRange: "Laboratory-validated / classification-specific", entryMode: "manual" },
+      { name: "Erythropoiesis", aliases: ["Erythroid Series"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Granulopoiesis / Myelopoiesis", aliases: ["Granulopoiesis", "Myelopoiesis", "Myeloid Series"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Megakaryocytes", aliases: ["Megakaryopoiesis"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Lymphocytes / Plasma Cells", aliases: ["Lymphocytes and Plasma Cells", "Lymphocytes", "Plasma Cells"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Other / Abnormal Cells or Infiltrates", aliases: ["Abnormal Cells", "Other Cells", "Infiltrates"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Detailed Morphologic Description", aliases: ["Morphologic Description", "Microscopic Description", "Microscopy"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Iron Stain / Stores", aliases: ["Iron Stain", "Iron Stores"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Cytochemistry / Ancillary Studies", aliases: ["Cytochemistry", "Ancillary Studies", "Flow Cytometry Summary"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Interpretation / Morphologic Diagnosis", aliases: ["Morphologic Diagnosis", "Impression", "Conclusion"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Recommendations / Pending Studies", aliases: ["Recommendations", "Pending Studies", "Advice", "Advised"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Limitations / Notes", aliases: ["Limitations", "Note"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Comments", aliases: ["Comment", "Remarks"], unit: "", normalRange: "", entryMode: "manual" },
+    ],
+  });
+}
+
 async function ensureHba1cTestConfiguration() {
   let hba1cTests = await all(
     `SELECT id FROM tests
@@ -1504,6 +2567,30 @@ async function ensureAdditionalClinicalPathologyReportTestConfigurations() {
   });
 
   await ensureReportTableTestConfiguration({
+    names: [
+      "Alcohol (urine)",
+      "Alcohol, Urine",
+      "Urine Alcohol",
+      "Ethanol, Urine",
+      "Ethyl Alcohol, Urine",
+    ],
+    createName: "Ethanol (Alcohol), Urine",
+    createCode: "UETHANOL001",
+    category: "Toxicology",
+    sampleType: "Random Urine",
+    turnaroundHours: 24,
+    parameters: [
+      {
+        name: "Ethanol (Alcohol), Urine",
+        aliases: ["Alcohol, Urine", "Urine Alcohol", "Ethanol, Urine", "Ethyl Alcohol, Urine"],
+        unit: "mg/dL",
+        normalRange: "Not detected (cutoff: 10 mg/dL)",
+        entryMode: "manual",
+      },
+    ],
+  });
+
+  await ensureReportTableTestConfiguration({
     names: ["Urine Glucose", "Glucose, Urine"],
     createName: "Urine Glucose",
     createCode: "PF055",
@@ -1721,6 +2808,44 @@ async function ensureAdditionalClinicalPathologyReportTestConfigurations() {
     turnaroundHours: 24,
     parameters: [
       { name: "Cortisone, Serum", aliases: ["Cortisone"], unit: "nmol/L", normalRange: "16.62 - 74.79", entryMode: "manual" },
+    ],
+  });
+
+  await ensureReportTableTestConfiguration({
+    names: [
+      "ACTH (AdrenocorticoproticHormone)",
+      "ACTH (Adrenocorticoprotic Hormone)",
+      "ACTH (Adrenocorticotropic Hormone)",
+      "Adrenocorticotropic Hormone (ACTH)",
+      "Adrenocorticotropic Hormone",
+      "ACTH",
+      "ACTH, Plasma",
+    ],
+    createName: "Adrenocorticotropic Hormone (ACTH)",
+    createCode: "ACTH001",
+    category: "Endocrinology",
+    sampleType: "EDTA Plasma",
+    turnaroundHours: 24,
+    parameters: [
+      { name: "ACTH, Plasma", aliases: ["ACTH", "Adrenocorticotropic Hormone", "Corticotropin", "Result"], unit: "pg/mL", normalRange: "7.2 - 63.0", entryMode: "manual" },
+    ],
+  });
+
+  await ensureReportTableTestConfiguration({
+    names: [
+      "ADA(AdenosineDeaminaseActivity)",
+      "ADA (Adenosine Deaminase Activity)",
+      "Adenosine Deaminase Activity",
+      "Adenosine Deaminase",
+      "ADA",
+    ],
+    createName: "Adenosine Deaminase (ADA) Activity",
+    createCode: "ADA001",
+    category: "Biochemistry",
+    sampleType: "Serum / Body Fluid",
+    turnaroundHours: 24,
+    parameters: [
+      { name: "ADA Activity", aliases: ["Adenosine Deaminase Activity", "Adenosine Deaminase", "ADA", "Result"], unit: "U/L", normalRange: "Specimen-dependent", entryMode: "manual" },
     ],
   });
 
@@ -2434,6 +3559,39 @@ async function ensureFungusKohPreparationTestConfiguration() {
   });
 }
 
+async function ensureAlbertStainKlbTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "Albert Stain of Smears for KLB",
+      "Albert Stain of Smear for KLB",
+      "Albert Stain for KLB",
+    ],
+    createName: "Albert Stain of Smears for KLB",
+    createCode: "ALBERTKLB001",
+    category: "Microbiology",
+    sampleType: "Throat Swab",
+    turnaroundHours: 24,
+    parameters: [
+      {
+        name: "Albert Stain Microscopy",
+        aliases: ["Albert Stain Findings", "Microscopy Findings", "Findings"],
+        unit: "",
+        normalRange: "No bacilli morphologically suggestive of KLB seen",
+        entryMode: "manual",
+      },
+      {
+        name: "Metachromatic Granules",
+        aliases: ["Metachromatic Granules Result", "Granules"],
+        unit: "",
+        normalRange: "Not seen",
+        entryMode: "manual",
+      },
+      { name: "Impression", aliases: ["Interpretation", "Result / Impression"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Comments", aliases: ["Comment", "Remarks"], unit: "", normalRange: "", entryMode: "manual" },
+    ],
+  });
+}
+
 async function ensureSputumAfbTestConfiguration() {
   await ensureReportTableTestConfiguration({
     names: ["Sputum AFB Stain", "Sputum Examination, AFB", "Sputum AFB Examination"],
@@ -2448,6 +3606,26 @@ async function ensureSputumAfbTestConfiguration() {
       { name: "Auramine Grade" },
       { name: "Ziehl Neelsen Result", aliases: ["Ziehl-Neelsen Result"] },
       { name: "Ziehl Neelsen Grade", aliases: ["Ziehl-Neelsen Grade"] },
+    ],
+  });
+
+  await ensureReportTableTestConfiguration({
+    names: [
+      "AFB(Z-NStain)",
+      "AFB (Z-N Stain)",
+      "AFB Z-N Stain",
+      "AFB Ziehl-Neelsen Stain",
+      "AFB Ziehl Neelsen Stain",
+    ],
+    createName: "AFB (Z-N Stain)",
+    createCode: "AFBZN",
+    category: "Microbiology",
+    sampleType: "Sputum / Pus",
+    turnaroundHours: 24,
+    parameters: [
+      { name: "AFB Smear Result", aliases: ["Ziehl Neelsen Result", "Ziehl-Neelsen Result", "Findings", "Result"], normalRange: "No acid-fast bacilli seen" },
+      { name: "AFB Smear Grade", aliases: ["Ziehl Neelsen Grade", "Ziehl-Neelsen Grade", "Grade", "Impression"], normalRange: "Scanty / 1+ / 2+ / 3+" },
+      { name: "Comments", aliases: ["Comment", "Remarks"] },
     ],
   });
 
@@ -4249,6 +5427,8 @@ async function retireDuplicateCatalogueTests() {
     { duplicateName: "Des-gamma-carboxy Prothrombin (DCP)", duplicateCode: "PF033", canonicalName: "Des-Gamma Carboxy Prothrombin (DCP)" },
     { duplicateName: "25-OHVitaminD(TOTAL)", canonicalName: "Vitamin D, 25 - Hydroxy", legacyOnly: true },
     { duplicateName: "AFBCulture&Sensitivity", canonicalName: "AFB Culture & Sensitivity", legacyOnly: true },
+    { duplicateName: "ANF(AntiNudearFactor)Qualitative", canonicalName: "ANF (AntiNuclearFactor) Qualitative", legacyOnly: true },
+    { duplicateName: "ANF(AntiNudearFactor)Quantitative", canonicalName: "ANF(AntiNuclearFactor)Quantitative", legacyOnly: true },
     { duplicateName: "CT(Clotting Time)", canonicalName: "Clotting Time", legacyOnly: true },
     { duplicateName: "Creatinine", canonicalName: "Creatinine (Serum)", legacyOnly: true },
     { duplicateName: "ElectrolyteProfile", canonicalName: "Electrolytes", legacyOnly: true },
@@ -5893,6 +7073,36 @@ async function initializeDatabase() {
     await ensureKaryotypeTestConfiguration();
     await ensureLipidProfileTestConfiguration();
     await ensureLftTestConfiguration();
+    await ensureAgRatioTestConfiguration();
+    await ensureAnfQualitativeTestConfiguration();
+    await ensureProstaticAcidPhosphataseTestConfiguration();
+    await ensureTotalAcidPhosphataseTestConfiguration();
+    await ensureAldehydeTestConfiguration();
+    await ensureAldosteroneTestConfiguration();
+    await ensureBloodAllergyTestConfiguration();
+    await ensureDrugAllergyTestConfiguration();
+    await ensureRandomUrineAlphaAmylaseTestConfiguration();
+    await ensureTimedUrineAmylaseTestConfiguration();
+    await ensureAmmoniaTestConfiguration();
+    await ensureAndrogenPanelTestConfiguration();
+    await ensureAndrostenedioneTestConfiguration();
+    await ensureComprehensiveAnemiaProfileTestConfiguration();
+    await ensureAnemiaScreeningProfileTestConfiguration();
+    await ensureAntiTpoTestConfiguration();
+    await ensureAntiTgTestConfiguration();
+    await ensureAnticardiolipinIggTestConfiguration();
+    await ensureAnticardiolipinIgmTestConfiguration();
+    await ensureApolipoproteinBTestConfiguration();
+    await ensureAsciticFluidAnalysisTestConfiguration();
+    await ensureSerumBicarbonateTestConfiguration();
+    await ensureBilirubinFractionationTestConfiguration();
+    await ensureMediumSectionBiopsyTestConfiguration();
+    await ensureSmallSectionBiopsyTestConfiguration();
+    await ensureBloodCultureSensitivityTestConfiguration();
+    await ensureBodyFluidCultureSensitivityTestConfiguration();
+    await ensureBodyFluidTotalProteinTestConfiguration();
+    await ensureBodyFluidChlorideTestConfiguration();
+    await ensureBoneMarrowCytologyTestConfiguration();
     await ensureHba1cTestConfiguration();
     await ensureVitaminDTestConfiguration();
     await ensureVitaminCTestConfiguration();
@@ -5918,6 +7128,7 @@ async function initializeDatabase() {
     await ensureClotRetractionTestConfiguration();
     await ensureGroupBStrepTestConfiguration();
     await ensureFungusKohPreparationTestConfiguration();
+    await ensureAlbertStainKlbTestConfiguration();
     await ensureSputumAfbTestConfiguration();
     await ensureStoolCultureTestConfiguration();
     await ensureUrineCultureTestConfiguration();
@@ -6058,6 +7269,36 @@ async function initializeDatabase() {
     await ensureKaryotypeTestConfiguration();
     await ensureLipidProfileTestConfiguration();
     await ensureLftTestConfiguration();
+    await ensureAgRatioTestConfiguration();
+    await ensureAnfQualitativeTestConfiguration();
+    await ensureProstaticAcidPhosphataseTestConfiguration();
+    await ensureTotalAcidPhosphataseTestConfiguration();
+    await ensureAldehydeTestConfiguration();
+    await ensureAldosteroneTestConfiguration();
+    await ensureBloodAllergyTestConfiguration();
+    await ensureDrugAllergyTestConfiguration();
+    await ensureRandomUrineAlphaAmylaseTestConfiguration();
+    await ensureTimedUrineAmylaseTestConfiguration();
+    await ensureAmmoniaTestConfiguration();
+    await ensureAndrogenPanelTestConfiguration();
+    await ensureAndrostenedioneTestConfiguration();
+    await ensureComprehensiveAnemiaProfileTestConfiguration();
+    await ensureAnemiaScreeningProfileTestConfiguration();
+    await ensureAntiTpoTestConfiguration();
+    await ensureAntiTgTestConfiguration();
+    await ensureAnticardiolipinIggTestConfiguration();
+    await ensureAnticardiolipinIgmTestConfiguration();
+    await ensureApolipoproteinBTestConfiguration();
+    await ensureAsciticFluidAnalysisTestConfiguration();
+    await ensureSerumBicarbonateTestConfiguration();
+    await ensureBilirubinFractionationTestConfiguration();
+    await ensureMediumSectionBiopsyTestConfiguration();
+    await ensureSmallSectionBiopsyTestConfiguration();
+    await ensureBloodCultureSensitivityTestConfiguration();
+    await ensureBodyFluidCultureSensitivityTestConfiguration();
+    await ensureBodyFluidTotalProteinTestConfiguration();
+    await ensureBodyFluidChlorideTestConfiguration();
+    await ensureBoneMarrowCytologyTestConfiguration();
     await ensureHba1cTestConfiguration();
     await ensureVitaminDTestConfiguration();
     await ensureVitaminCTestConfiguration();
@@ -6083,6 +7324,7 @@ async function initializeDatabase() {
     await ensureClotRetractionTestConfiguration();
     await ensureGroupBStrepTestConfiguration();
     await ensureFungusKohPreparationTestConfiguration();
+    await ensureAlbertStainKlbTestConfiguration();
     await ensureSputumAfbTestConfiguration();
     await ensureStoolCultureTestConfiguration();
     await ensureUrineCultureTestConfiguration();
