@@ -13,6 +13,21 @@ const { getFallbackReportParameters } = require('../src/services/reportSchemaSer
 const { sampleReport } = require('./audit-report-content.cjs');
 const { isBillingOnlyTest } = require('../frontend/scripts/reportEligibility');
 
+function extractMainContentMarkup(html) {
+  const source = String(html || '');
+  const opening = /<div class="[^"]*\bmain-content\b[^"]*">/i.exec(source);
+  assert.ok(opening, 'Generated report must contain its main report content.');
+  const tagPattern = /<\/?div\b[^>]*>/gi;
+  tagPattern.lastIndex = opening.index;
+  let depth = 0;
+  let match;
+  while ((match = tagPattern.exec(source))) {
+    depth += /^<div\b/i.test(match[0]) ? 1 : -1;
+    if (depth === 0) return source.slice(opening.index, tagPattern.lastIndex);
+  }
+  throw new Error('Generated report main content is not balanced.');
+}
+
 test('all content has exact identities and traceable medical sources', () => {
   assert.equal(new Set(REPORT_CONTENT.map(c => c.key)).size, REPORT_CONTENT.length);
   for (const content of REPORT_CONTENT) {
@@ -592,6 +607,46 @@ test('anemia screening profile stays focused on CBC and iron status', () => {
   assert.doesNotMatch(html, /HAEMATINIC VITAMINS \(SERUM\)|BONE-MARROW RESPONSE/);
 });
 
+test('antenatal profile renders maternal booking screens without inventing results', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'AntenatalProfile',
+    sample_type: 'EDTA Whole Blood, Serum / Plasma and Urine',
+    parameters: [
+      { parameter_name: 'Gestational Age', value: '18 weeks', unit: '', normal_range: '' },
+      { parameter_name: 'Haemoglobin (Hb)', value: '10.8', unit: 'g/dL', normal_range: 'Pregnancy-specific laboratory interval' },
+      { parameter_name: 'Blood Group', value: 'B', unit: '', normal_range: '' },
+      { parameter_name: 'Rh Factor', value: 'Positive', unit: '', normal_range: '' },
+      { parameter_name: 'HIV Screen', value: 'Non-reactive', unit: '', normal_range: 'Non-reactive' },
+      { parameter_name: 'HBsAg', value: 'Non-reactive', unit: '', normal_range: 'Non-reactive' },
+      { parameter_name: 'VDRL', value: 'Non-reactive', unit: '', normal_range: 'Non-reactive' },
+      { parameter_name: 'Urine Albumin', value: 'Negative', unit: '', normal_range: 'Negative' },
+      { parameter_name: 'Result / Findings', value: 'Correlate with antenatal assessment.', unit: '', normal_range: '' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">ANTENATAL PROFILE<\/div>/);
+  assert.match(html, /PREGNANCY DETAILS/);
+  assert.match(html, /HAEMATOLOGY \(EDTA WHOLE BLOOD\)/);
+  assert.match(html, /BLOOD GROUP &amp; IMMUNOHAEMATOLOGY/);
+  assert.match(html, /MATERNAL INFECTION SCREENING/);
+  assert.match(html, /URINE SCREENING/);
+  assert.match(html, />18 weeks<\/span>/);
+  assert.match(html, />B<\/span>/);
+  assert.match(html, /Correlate with antenatal assessment\./);
+  assert.match(html, /24&ndash;28 weeks/);
+  assert.match(html, /does not replace clinical examination, ultrasound, aneuploidy screening/);
+
+  const blank = buildReportHtml(sampleReport({ name: 'Antenatal Profile', parameters: [] }));
+  assert.match(blank, /class="results-table cbc-table antenatal-profile-table"/);
+  assert.match(blank, /HIV 1 &amp; 2 Screen<\/div>.*?<td><span>-<\/span><\/td>/s);
+  assert.doesNotMatch(blank, /<td><span>(?:Non-reactive|Negative)<\/span><\/td>/i);
+
+  const fallback = getFallbackReportParameters({ name: 'AntenatalProfile' });
+  assert.equal(fallback[0].parameterName, 'Gestational Age / Trimester');
+  assert.ok(fallback.some(field => field.parameterName === 'Red-cell Antibody Screen (ICT)'));
+  assert.ok(fallback.some(field => field.parameterName === 'Urine Culture / Bacteriuria Screen'));
+  assert.equal(fallback.find(field => field.parameterName === 'HIV 1 & 2 Screen').normalRange, 'Non-reactive');
+});
+
 test('Anti-TPO has a dedicated autoimmune thyroid report without adding Anti-Tg', () => {
   const html = buildReportHtml(sampleReport({
     name: 'Anti TPO (Anti ThyroidPeroxidase)',
@@ -651,6 +706,169 @@ test('Anti-Tg has a dedicated thyroid autoantibody report without adding Anti-TP
   assert.match(combined, /ANTI - Tg, SERUM/);
   assert.match(combined, /ANTI TPO, SERUM/);
   assert.doesNotMatch(combined, /class="results-table single-analyte-table thyroid-antibodies-table anti-tg-table"/);
+});
+
+test('anticardiolipin IgA has a dedicated non-criteria aPL report without matching combined isotypes', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Anti Cardiolipin Antibody IgA',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Result', value: '22.4', unit: '', normal_range: '' },
+      { parameter_name: 'Comments', value: 'Interpret with the criteria antiphospholipid tests.', unit: '', normal_range: '' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">ANTICARDIOLIPIN ANTIBODY IgA<\/div>/);
+  assert.match(html, /ANTICARDIOLIPIN ANTIBODY IgA, SERUM/);
+  assert.match(html, />22\.4<\/span>/);
+  assert.match(html, /APL-U\/mL/);
+  assert.match(html, /&lt; 15\.0/);
+  assert.match(html, /non-criteria antiphospholipid antibody/);
+  assert.match(html, /is not included in the IgG\/IgM laboratory domains/);
+  assert.match(html, /at least 12 weeks may help assess persistence/);
+  assert.match(html, /Interpret with the criteria antiphospholipid tests\./);
+  assert.doesNotMatch(html, /ANTICARDIOLIPIN ANTIBODY Ig[GM], SERUM/);
+
+  const blank = buildReportHtml(sampleReport({ name: 'AntiCardiolipinAntibodyIgA', parameters: [] }));
+  assert.match(blank, /class="results-table single-analyte-table anticardiolipin-iga-table"/);
+  assert.match(blank, /<td><span class="">-<\/span><\/td>/);
+  assert.doesNotMatch(blank, /<td><span[^>]*>(?:Positive|Negative)<\/span>/i);
+
+  const fallback = getFallbackReportParameters({ name: 'Anti Cardiolipin Antibody IgA' });
+  assert.deepEqual(fallback.map(field => field.parameterName), ['Anticardiolipin Antibody IgA, Serum', 'Comments']);
+  assert.equal(fallback[0].unit, 'APL-U/mL');
+
+  for (const name of [
+    'Anti Cardiolipin Antibody IgA &IgG',
+    'Anti Cardiolipin Antibody IgA & IgM',
+    'Anti Cardiolipin Antibody IgA, IgG & IgM',
+  ]) {
+    const combined = buildReportHtml(sampleReport({ name, parameters: [{ parameter_name: 'Result', value: 'Combined isotype result' }] }));
+    assert.doesNotMatch(combined, /class="results-table single-analyte-table anticardiolipin-iga-table"/);
+  }
+});
+
+test('anticardiolipin IgA and IgM panel reports both isotypes without absorbing other panels', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Anti Cardiolipin Antibody IgA & IgM',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Anticardiolipin Antibody IgA, Serum', value: '18.2', unit: 'APL-U/mL', normal_range: '< 15.0' },
+      { parameter_name: 'Anticardiolipin Antibody IgM, Serum', value: '42.6', unit: 'MPL-U/mL', normal_range: '< 15.0' },
+      { parameter_name: 'Comments', value: 'Repeat criteria antibodies when clinically indicated.', unit: '', normal_range: '' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">ANTICARDIOLIPIN ANTIBODY IgA & IgM<\/div>/);
+  assert.match(html, /class="results-table single-analyte-table anticardiolipin-iga-igm-panel-table"/);
+  assert.match(html, /ANTICARDIOLIPIN ANTIBODY IgA, SERUM/);
+  assert.match(html, /ANTICARDIOLIPIN ANTIBODY IgM, SERUM/);
+  assert.match(html, />18\.2<\/span>/);
+  assert.match(html, />42\.6<\/span>/);
+  assert.match(html, /APL-U\/mL/);
+  assert.match(html, /MPL-U\/mL/);
+  assert.match(html, /IgM is one of the criteria antiphospholipid antibody isotypes/);
+  assert.match(html, /IgA is not included in the laboratory domains/);
+  assert.match(html, /40&ndash;79 units is considered moderate/);
+  assert.match(html, /Repeat criteria antibodies when clinically indicated\./);
+  assert.doesNotMatch(html, /ANTICARDIOLIPIN ANTIBODY IgG, SERUM/);
+
+  const blank = buildReportHtml(sampleReport({ name: 'Anti Cardiolipin Antibody IgA &IgM', parameters: [] }));
+  assert.equal((blank.match(/<td><span class="">-<\/span><\/td>/g) || []).length, 2);
+  assert.doesNotMatch(blank, /<td><span[^>]*>(?:Positive|Negative)<\/span>/i);
+
+  const fallback = getFallbackReportParameters({ name: 'Anti Cardiolipin Antibody IgA & IgM' });
+  assert.deepEqual(
+    fallback.map(field => field.parameterName),
+    ['Anticardiolipin Antibody IgA, Serum', 'Anticardiolipin Antibody IgM, Serum', 'Comments']
+  );
+  assert.deepEqual(fallback.slice(0, 2).map(field => field.unit), ['APL-U/mL', 'MPL-U/mL']);
+
+  for (const name of ['Anti Cardiolipin Antibody IgA & IgG', 'Anti Cardiolipin Antibody IgA, IgG & IgM']) {
+    const other = buildReportHtml(sampleReport({ name, parameters: [{ parameter_name: 'Result', value: 'Other panel result' }] }));
+    assert.doesNotMatch(other, /anticardiolipin-iga-igm-panel-table/);
+  }
+});
+
+test('anticardiolipin IgA and IgG panel reports both isotypes without absorbing other panels', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Anti Cardiolipin Antibody IgA &IgG',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Anticardiolipin Antibody IgA, Serum', value: '12.1', unit: 'APL-U/mL', normal_range: '< 15.0' },
+      { parameter_name: 'Anticardiolipin Antibody IgG, Serum', value: '64.5', unit: 'GPL-U/mL', normal_range: '< 15.0' },
+      { parameter_name: 'Comments', value: 'Correlate with the complete APS laboratory profile.', unit: '', normal_range: '' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">ANTICARDIOLIPIN ANTIBODY IgA & IgG<\/div>/);
+  assert.match(html, /class="results-table single-analyte-table anticardiolipin-iga-igg-panel-table"/);
+  assert.match(html, /ANTICARDIOLIPIN ANTIBODY IgA, SERUM/);
+  assert.match(html, /ANTICARDIOLIPIN ANTIBODY IgG, SERUM/);
+  assert.match(html, />12\.1<\/span>/);
+  assert.match(html, />64\.5<\/span>/);
+  assert.match(html, /APL-U\/mL/);
+  assert.match(html, /GPL-U\/mL/);
+  assert.match(html, /IgG is one of the criteria antiphospholipid antibody isotypes/);
+  assert.match(html, /IgA is not included in the laboratory domains/);
+  assert.match(html, /40&ndash;79 units is considered moderate/);
+  assert.match(html, /Correlate with the complete APS laboratory profile\./);
+  assert.doesNotMatch(html, /ANTICARDIOLIPIN ANTIBODY IgM, SERUM/);
+
+  const blank = buildReportHtml(sampleReport({ name: 'Anti Cardiolipin Antibody IgA & IgG', parameters: [] }));
+  assert.equal((blank.match(/<td><span class="">-<\/span><\/td>/g) || []).length, 2);
+  assert.doesNotMatch(blank, /<td><span[^>]*>(?:Positive|Negative)<\/span>/i);
+
+  const fallback = getFallbackReportParameters({ name: 'Anti Cardiolipin Antibody IgA &IgG' });
+  assert.deepEqual(
+    fallback.map(field => field.parameterName),
+    ['Anticardiolipin Antibody IgA, Serum', 'Anticardiolipin Antibody IgG, Serum', 'Comments']
+  );
+  assert.deepEqual(fallback.slice(0, 2).map(field => field.unit), ['APL-U/mL', 'GPL-U/mL']);
+
+  for (const name of ['Anti Cardiolipin Antibody IgA & IgM', 'Anti Cardiolipin Antibody IgA, IgG & IgM']) {
+    const other = buildReportHtml(sampleReport({ name, parameters: [{ parameter_name: 'Result', value: 'Other panel result' }] }));
+    assert.doesNotMatch(other, /anticardiolipin-iga-igg-panel-table/);
+  }
+});
+
+test('anticardiolipin IgG and IgM panel reports both criteria isotypes separately', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Anti Cardiolipin Antibody IgG & IgM',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Anticardiolipin Antibody IgG, Serum', value: '82.3', unit: 'GPL-U/mL', normal_range: '< 15.0' },
+      { parameter_name: 'Anticardiolipin Antibody IgM, Serum', value: '27.4', unit: 'MPL-U/mL', normal_range: '< 15.0' },
+      { parameter_name: 'Comments', value: 'Confirm persistence when clinically appropriate.', unit: '', normal_range: '' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">ANTICARDIOLIPIN ANTIBODY IgG & IgM<\/div>/);
+  assert.match(html, /class="results-table single-analyte-table anticardiolipin-igg-igm-panel-table"/);
+  assert.match(html, /ANTICARDIOLIPIN ANTIBODY IgG, SERUM/);
+  assert.match(html, /ANTICARDIOLIPIN ANTIBODY IgM, SERUM/);
+  assert.match(html, />82\.3<\/span>/);
+  assert.match(html, />27\.4<\/span>/);
+  assert.match(html, /GPL-U\/mL/);
+  assert.match(html, /MPL-U\/mL/);
+  assert.match(html, /IgG and IgM are criteria antiphospholipid antibody isotypes/);
+  assert.match(html, /second specimen collected at least 12 weeks later/);
+  assert.match(html, /40&ndash;79 units is considered moderate/);
+  assert.match(html, /IgG and IgM have different laboratory weights/);
+  assert.match(html, /Confirm persistence when clinically appropriate\./);
+  assert.doesNotMatch(html, /ANTICARDIOLIPIN ANTIBODY IgA, SERUM/);
+
+  const blank = buildReportHtml(sampleReport({ name: 'Anti Cardiolipin Antibody IgG &IgM', parameters: [] }));
+  assert.equal((blank.match(/<td><span class="">-<\/span><\/td>/g) || []).length, 2);
+  assert.doesNotMatch(blank, /<td><span[^>]*>(?:Positive|Negative)<\/span>/i);
+
+  const fallback = getFallbackReportParameters({ name: 'Anti Cardiolipin Antibody IgG & IgM' });
+  assert.deepEqual(
+    fallback.map(field => field.parameterName),
+    ['Anticardiolipin Antibody IgG, Serum', 'Anticardiolipin Antibody IgM, Serum', 'Comments']
+  );
+  assert.deepEqual(fallback.slice(0, 2).map(field => field.unit), ['GPL-U/mL', 'MPL-U/mL']);
+
+  for (const name of ['Anti Cardiolipin Antibody IgA & IgM', 'Anti Cardiolipin Antibody IgA & IgG', 'Anti Cardiolipin Antibody IgA, IgG & IgM']) {
+    const other = buildReportHtml(sampleReport({ name, parameters: [{ parameter_name: 'Result', value: 'Other panel result' }] }));
+    assert.doesNotMatch(other, /anticardiolipin-igg-igm-panel-table/);
+  }
 });
 
 test('anticardiolipin IgG has a dedicated APS report without matching combined isotypes', () => {
@@ -1239,7 +1457,7 @@ test('named blood-count combinations render every requested field, not just TLC'
   assert.match(html, /data-report-content="blood-count-combinations"/);
 });
 
-test('local catalogue: restored styles and existing formats stay unchanged', async context => {
+test('local catalogue: existing report bodies stay unchanged inside the pagination shell', async context => {
   const databasePath = path.resolve(__dirname, '../lab-lms.db');
   if (!fs.existsSync(databasePath)) return context.skip('Optional full-catalogue regression requires a local catalogue database.');
   let originalFormatter;
@@ -1266,7 +1484,6 @@ test('local catalogue: restored styles and existing formats stay unchanged', asy
       }
       const oldHtml = baseline.exports.buildReportHtml(sampleReport(input));
       const newHtml = buildReportHtml(sampleReport(input));
-      assert.equal(newHtml.match(/<style>[\s\S]*?<\/style>/)[0], oldHtml.match(/<style>[\s\S]*?<\/style>/)[0]);
       // Named combinations now display all requested components, not TLC alone.
       const normalizedInputName = String(input.name).toLowerCase().replace(/[^a-z0-9]/g, '');
       const isActh = normalizedInputName === 'acth'
@@ -1334,6 +1551,9 @@ test('local catalogue: restored styles and existing formats stay unchanged', asy
         || normalizedInputName === 'anaemiascreeningprofile'
         || normalizedInputName === 'anemiascreen'
         || normalizedInputName === 'anaemiascreen';
+      const isAntenatalProfile = normalizedInputName === 'antenatalprofile'
+        || normalizedInputName === 'antenatalbookingprofile'
+        || normalizedInputName === 'antenatalscreeningprofile';
       const isAntiTpo = normalizedInputName === 'antitpoantithyroidperoxidase'
         || normalizedInputName === 'antitpoantithyroidperoxidaseantibody'
         || normalizedInputName === 'antithyroidperoxidase'
@@ -1352,6 +1572,22 @@ test('local catalogue: restored styles and existing formats stay unchanged', asy
         || normalizedInputName === 'anticardiolipinigm'
         || normalizedInputName === 'cardiolipinantibodyigm'
         || normalizedInputName === 'phospholipidcardiolipinantibodiesigm';
+      const isAnticardiolipinIga = normalizedInputName === 'anticardiolipinantibodyiga'
+        || normalizedInputName === 'anticardiolipiniga'
+        || normalizedInputName === 'cardiolipinantibodyiga'
+        || normalizedInputName === 'phospholipidcardiolipinantibodiesiga';
+      const isAnticardiolipinIgaIgm = normalizedInputName === 'anticardiolipinantibodyigaigm'
+        || normalizedInputName === 'anticardiolipinigaigm'
+        || normalizedInputName === 'cardiolipinantibodyigaigm'
+        || normalizedInputName === 'phospholipidcardiolipinantibodiesigaigm';
+      const isAnticardiolipinIgaIgg = normalizedInputName === 'anticardiolipinantibodyigaigg'
+        || normalizedInputName === 'anticardiolipinigaigg'
+        || normalizedInputName === 'cardiolipinantibodyigaigg'
+        || normalizedInputName === 'phospholipidcardiolipinantibodiesigaigg';
+      const isAnticardiolipinIggIgm = normalizedInputName === 'anticardiolipinantibodyiggigm'
+        || normalizedInputName === 'anticardiolipiniggigm'
+        || normalizedInputName === 'cardiolipinantibodyiggigm'
+        || normalizedInputName === 'phospholipidcardiolipinantibodiesiggigm';
       const isApolipoproteinB = normalizedInputName === 'apolipoproteinb'
         || normalizedInputName === 'apolipoproteinb100'
         || normalizedInputName === 'apob'
@@ -1390,7 +1626,7 @@ test('local catalogue: restored styles and existing formats stay unchanged', asy
         || normalizedInputName === 'amylase24hoururine'
         || normalizedInputName === 'amylase24hurine'
         || normalizedInputName === '24hoururineamylase';
-      if (isActh || isAda || isAfbZiehlNeelsen || isAlbertStainKlb || isBaccalSmearBrrBody || isAutoimmuneProfile || isAgRatio || isAnfQualitative || isProstaticAcidPhosphatase || isTotalAcidPhosphatase || isUrineAlcohol || isAldehydeTest || isAldosterone || isBloodAllergy || isDrugAllergy || isRandomUrineAlphaAmylase || isTimedUrineAmylase || isAmmonia || isAndrogenPanel || isAndrostenedione || isComprehensiveAnemia || isAnemiaScreening || isAntiTpo || isAntiTg || isAnticardiolipinIgg || isAnticardiolipinIgm || isApolipoproteinB || isAsciticFluidAnalysis || isSerumBicarbonate || isBilirubinFractionation || isMediumSectionBiopsy || isSmallSectionBiopsy || isBloodCultureSensitivity || isBodyFluidCultureSensitivity || isBodyFluidTotalProtein || isBodyFluidChloride || isBoneMarrowAspirationCytology || isBoneMarrowCytology) {
+      if (isActh || isAda || isAfbZiehlNeelsen || isAlbertStainKlb || isBaccalSmearBrrBody || isAutoimmuneProfile || isAgRatio || isAnfQualitative || isProstaticAcidPhosphatase || isTotalAcidPhosphatase || isUrineAlcohol || isAldehydeTest || isAldosterone || isBloodAllergy || isDrugAllergy || isRandomUrineAlphaAmylase || isTimedUrineAmylase || isAmmonia || isAndrogenPanel || isAndrostenedione || isComprehensiveAnemia || isAnemiaScreening || isAntenatalProfile || isAntiTpo || isAntiTg || isAnticardiolipinIggIgm || isAnticardiolipinIgaIgg || isAnticardiolipinIgaIgm || isAnticardiolipinIga || isAnticardiolipinIgg || isAnticardiolipinIgm || isApolipoproteinB || isAsciticFluidAnalysis || isSerumBicarbonate || isBilirubinFractionation || isMediumSectionBiopsy || isSmallSectionBiopsy || isBloodCultureSensitivity || isBodyFluidCultureSensitivity || isBodyFluidTotalProtein || isBodyFluidChloride || isBoneMarrowAspirationCytology || isBoneMarrowCytology) {
         if (isBoneMarrowAspirationCytology) {
           assert.match(newHtml, /BONE MARROW ASPIRATION &amp; CYTOLOGY/);
           assert.match(newHtml, /Nucleated Differential \/ Myelogram/);
@@ -1482,6 +1718,34 @@ test('local catalogue: restored styles and existing formats stay unchanged', asy
           assert.match(newHtml, /not automatically the treatment target for every patient/);
           continue;
         }
+        if (isAnticardiolipinIga) {
+          assert.match(newHtml, /ANTICARDIOLIPIN ANTIBODY IgA, SERUM/);
+          assert.match(newHtml, /non-criteria antiphospholipid antibody/);
+          assert.match(newHtml, /is not included in the IgG\/IgM laboratory domains/);
+          assert.doesNotMatch(newHtml, /ANTICARDIOLIPIN ANTIBODY Ig[GM], SERUM/);
+          continue;
+        }
+        if (isAnticardiolipinIgaIgm) {
+          assert.match(newHtml, /ANTICARDIOLIPIN ANTIBODY IgA, SERUM/);
+          assert.match(newHtml, /ANTICARDIOLIPIN ANTIBODY IgM, SERUM/);
+          assert.match(newHtml, /IgA is not included in the laboratory domains/);
+          assert.doesNotMatch(newHtml, /ANTICARDIOLIPIN ANTIBODY IgG, SERUM/);
+          continue;
+        }
+        if (isAnticardiolipinIgaIgg) {
+          assert.match(newHtml, /ANTICARDIOLIPIN ANTIBODY IgA, SERUM/);
+          assert.match(newHtml, /ANTICARDIOLIPIN ANTIBODY IgG, SERUM/);
+          assert.match(newHtml, /IgA is not included in the laboratory domains/);
+          assert.doesNotMatch(newHtml, /ANTICARDIOLIPIN ANTIBODY IgM, SERUM/);
+          continue;
+        }
+        if (isAnticardiolipinIggIgm) {
+          assert.match(newHtml, /ANTICARDIOLIPIN ANTIBODY IgG, SERUM/);
+          assert.match(newHtml, /ANTICARDIOLIPIN ANTIBODY IgM, SERUM/);
+          assert.match(newHtml, /IgG and IgM have different laboratory weights/);
+          assert.doesNotMatch(newHtml, /ANTICARDIOLIPIN ANTIBODY IgA, SERUM/);
+          continue;
+        }
         if (isAnticardiolipinIgm) {
           assert.match(newHtml, /ANTICARDIOLIPIN ANTIBODY IgM, SERUM/);
           assert.match(newHtml, /isolated low-level IgM result has a lower association with APS/);
@@ -1510,6 +1774,13 @@ test('local catalogue: restored styles and existing formats stay unchanged', asy
           assert.match(newHtml, /ANEMIA SCREENING PROFILE/);
           assert.match(newHtml, /IRON SCREEN \(SERUM\)/);
           assert.match(newHtml, /comprehensive anaemia profile or targeted testing/);
+          continue;
+        }
+        if (isAntenatalProfile) {
+          assert.match(newHtml, /ANTENATAL PROFILE/);
+          assert.match(newHtml, /BLOOD GROUP &amp; IMMUNOHAEMATOLOGY/);
+          assert.match(newHtml, /MATERNAL INFECTION SCREENING/);
+          assert.match(newHtml, /24&ndash;28 weeks/);
           continue;
         }
         if (isComprehensiveAnemia) {
@@ -1635,7 +1906,11 @@ test('local catalogue: restored styles and existing formats stay unchanged', asy
       const addedNotes = buildSupplementaryNotes(input);
       const withoutAddedNotes = (addedNotes ? newHtml.replace(addedNotes, '<!-- supplemental-report-content -->') : newHtml)
         .replace('        <!-- supplemental-report-content -->\n', '');
-      assert.ok(withoutAddedNotes === oldHtml, `Only supplemental content may differ: ${t.name}`);
+      assert.equal(
+        extractMainContentMarkup(withoutAddedNotes),
+        extractMainContentMarkup(oldHtml),
+        `Only supplemental content and the shared pagination shell may differ: ${t.name}`
+      );
     }
   } finally { await new Promise(resolve => db.close(resolve)); }
 });

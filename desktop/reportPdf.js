@@ -1,4 +1,5 @@
 const MAX_REPORT_HTML_BYTES = 50 * 1024 * 1024;
+const { REPORT_PAGINATION_SCRIPT } = require("../src/utils/reportPagination");
 
 function normalizePdfFileName(value) {
   const name = String(value || "LabShield_Report.pdf")
@@ -79,6 +80,7 @@ function createReportPdfHandler({ BrowserWindow, dialog, fs, path, app, getParen
           new Promise((resolve) => setTimeout(resolve, 5000))
         ]).then(() => true)
       `);
+      await pdfWindow.webContents.executeJavaScript(REPORT_PAGINATION_SCRIPT);
       const pdf = await pdfWindow.webContents.printToPDF(getPrintToPdfOptions());
       await fs.writeFile(choice.filePath, pdf);
       return { canceled: false, filePath: choice.filePath };

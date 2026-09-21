@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, ipcMain, net, powerMonitor, powerSaveBlocker } = require("electron");
+const { app, BrowserWindow, dialog, ipcMain, net, powerMonitor, powerSaveBlocker, screen } = require("electron");
 const { autoUpdater } = require("electron-updater");
 const fs = require("fs/promises");
 const path = require("path");
@@ -11,6 +11,7 @@ const {
 const { createReportPdfHandler } = require("./reportPdf");
 const { ensureAutomaticStartup } = require("./automaticStartup");
 const { createServerAvailabilityGuard } = require("./serverAvailability");
+const { getInitialWindowBounds } = require("./windowSizing");
 
 const INITIAL_UPDATE_CHECK_DELAY_MS = 20 * 1000;
 const UPDATE_CHECK_INTERVAL_MS = 30 * 60 * 1000;
@@ -278,11 +279,10 @@ async function startLocalServer() {
 }
 
 function createMainWindow() {
+  const primaryWorkArea = screen.getPrimaryDisplay()?.workAreaSize || {};
+  const windowBounds = getInitialWindowBounds(primaryWorkArea);
   mainWindow = new BrowserWindow({
-    width: 1320,
-    height: 860,
-    minWidth: 320,
-    minHeight: 500,
+    ...windowBounds,
     show: false,
     backgroundColor: "#f4f8f7",
     webPreferences: {

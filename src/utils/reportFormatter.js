@@ -3,6 +3,7 @@ const { supplementReportHtml } = require("../services/reportContentService");
 const { getCombinationDefinition } = require("../services/reportCombinationRepair");
 const { getCellReportDefinition } = require("../services/cellReportService");
 const { isBillingOnlyTest, BILLING_ONLY_MESSAGE } = require('../../frontend/scripts/reportEligibility');
+const { REPORT_PAGINATION_SCRIPT } = require("./reportPagination");
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -1462,6 +1463,50 @@ function isAnticardiolipinIgmTest(test) {
     || name === "phospholipidcardiolipinantibodiesigm";
 }
 
+function isAnticardiolipinIgaTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "acliga001"
+    || code === "acliga"
+    || name === "anticardiolipinantibodyiga"
+    || name === "anticardiolipiniga"
+    || name === "cardiolipinantibodyiga"
+    || name === "phospholipidcardiolipinantibodiesiga";
+}
+
+function isAnticardiolipinIgaIgmPanelTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "acligaigm001"
+    || code === "acligaigm"
+    || name === "anticardiolipinantibodyigaigm"
+    || name === "anticardiolipinigaigm"
+    || name === "cardiolipinantibodyigaigm"
+    || name === "phospholipidcardiolipinantibodiesigaigm";
+}
+
+function isAnticardiolipinIgaIggPanelTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "acligaigg001"
+    || code === "acligaigg"
+    || name === "anticardiolipinantibodyigaigg"
+    || name === "anticardiolipinigaigg"
+    || name === "cardiolipinantibodyigaigg"
+    || name === "phospholipidcardiolipinantibodiesigaigg";
+}
+
+function isAnticardiolipinIggIgmPanelTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "acliggigm001"
+    || code === "acliggigm"
+    || name === "anticardiolipinantibodyiggigm"
+    || name === "anticardiolipiniggigm"
+    || name === "cardiolipinantibodyiggigm"
+    || name === "phospholipidcardiolipinantibodiesiggigm";
+}
+
 function isApolipoproteinBTest(test) {
   const name = normalizeParameterName(test?.name);
   const code = normalizeParameterName(test?.code);
@@ -1538,6 +1583,15 @@ function isAnemiaScreeningProfileTest(test) {
     || name === "anaemiascreeningprofile"
     || name === "anemiascreen"
     || name === "anaemiascreen";
+}
+
+function isAntenatalProfileTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "antenatalprofile001"
+    || name === "antenatalprofile"
+    || name === "antenatalbookingprofile"
+    || name === "antenatalscreeningprofile";
 }
 
 function isTestosteroneTotalTest(test) {
@@ -7556,6 +7610,266 @@ function buildAnticardiolipinIggReportBody(test) {
   `;
 }
 
+function buildAnticardiolipinIgaReportBody(test) {
+  const result = findReportParameter(test, [
+    "Anticardiolipin Antibody IgA, Serum",
+    "Anti Cardiolipin Antibody IgA",
+    "AntiCardiolipinAntibodyIgA",
+    "Cardiolipin Antibody IgA",
+    "Phospholipid (Cardiolipin) Antibodies, IgA",
+    "aCL IgA",
+    "Result",
+  ]) || {};
+  const comments = findReportParameter(test, ["Comments", "Comment", "Remarks"]) || {};
+  const value = String(result.value ?? "").trim() || "-";
+  const range = result.normal_range && result.normal_range !== "N/A" ? result.normal_range : "< 15.0";
+  const unit = result.unit && result.unit !== "N/A" ? result.unit : "APL-U/mL";
+  const status = getReferenceStatus(value, range);
+  const statusText = status
+    ? ` <span class="report-result-status ${status.className}">${status.label}</span>`
+    : "";
+  const commentsValue = String(comments.value ?? "").trim();
+
+  return `
+    <table class="results-table single-analyte-table anticardiolipin-iga-table">
+      <thead><tr><th style="width: 34%">Investigation</th><th style="width: 22%">Result</th><th style="width: 30%">Reference Interval</th><th style="width: 14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Sample Type</strong></td><td colspan="3">${escapeHtml(test.sample_type || "Serum")}</td></tr>
+        <tr>
+          <td><strong>ANTICARDIOLIPIN ANTIBODY IgA, SERUM</strong><div class="single-analyte-method">Solid-phase immunoassay (method-specific)</div></td>
+          <td><span class="${status?.className || ""}">${escapeHtml(value)}</span>${statusText}</td>
+          <td>${escapeHtml(range)}</td>
+          <td>${escapeHtml(unit)}</td>
+        </tr>
+        ${commentsValue ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space: pre-wrap">${escapeHtml(commentsValue)}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="report-template-notes anticardiolipin-iga-notes">
+      <div class="report-note-heading">Configured Interpretation :</div>
+      <table class="report-reference-table anticardiolipin-interpretation-table">
+        <thead><tr><th>Result</th><th>Interpretation</th></tr></thead>
+        <tbody>
+          <tr><td>&lt; 15.0 APL-U/mL</td><td>Below the configured laboratory cut-off</td></tr>
+          <tr><td>&ge; 15.0 APL-U/mL</td><td>At or above the configured cut-off; interpret using the validated assay criteria</td></tr>
+        </tbody>
+      </table>
+      <div class="report-note-heading">Clinical Use :</div>
+      <p>Anticardiolipin IgA is a non-criteria antiphospholipid antibody that may be requested selectively in specialist evaluation. Its clinical utility and association with thrombosis or pregnancy morbidity are less established than the criteria antiphospholipid antibody tests.</p>
+      <div class="report-note-heading">Interpretation :</div>
+      <ul>
+        <li>A positive IgA result alone does not diagnose antiphospholipid syndrome and is not included in the IgG/IgM laboratory domains of the 2023 ACR/EULAR APS classification criteria.</li>
+        <li>Interpret the result with the clinical history and the criteria tests: lupus anticoagulant, anticardiolipin IgG/IgM, and anti-beta-2 glycoprotein I IgG/IgM.</li>
+        <li>Low-level antibodies may be transient, including after infections. When clinically relevant, repeat testing after at least 12 weeks may help assess persistence, but IgA persistence does not by itself satisfy APS classification criteria.</li>
+        <li>IgA anticardiolipin assays are not fully harmonized. Units, cut-offs, and results from different methods are not interchangeable; the performing laboratory&rsquo;s validated method and reference interval printed with the result take precedence.</li>
+      </ul>
+    </div>
+  `;
+}
+
+function buildAnticardiolipinIgaIgmPanelReportBody(test) {
+  const definitions = [
+    {
+      label: "ANTICARDIOLIPIN ANTIBODY IgA, SERUM",
+      aliases: ["Anticardiolipin Antibody IgA, Serum", "Anti Cardiolipin Antibody IgA", "Cardiolipin Antibody IgA", "aCL IgA", "IgA Result", "Result IgA", "Result"],
+      range: "< 15.0",
+      unit: "APL-U/mL",
+    },
+    {
+      label: "ANTICARDIOLIPIN ANTIBODY IgM, SERUM",
+      aliases: ["Anticardiolipin Antibody IgM, Serum", "Anti Cardiolipin Antibody IgM", "Cardiolipin Antibody IgM", "aCL IgM", "IgM Result", "Result IgM"],
+      range: "< 15.0",
+      unit: "MPL-U/mL",
+    },
+  ];
+  const rows = definitions.map(definition => {
+    const result = findReportParameter(test, definition.aliases) || {};
+    const value = String(result.value ?? "").trim() || "-";
+    const range = result.normal_range && result.normal_range !== "N/A" ? result.normal_range : definition.range;
+    const unit = result.unit && result.unit !== "N/A" ? result.unit : definition.unit;
+    const status = getReferenceStatus(value, range);
+    const statusText = status
+      ? ` <span class="report-result-status ${status.className}">${status.label}</span>`
+      : "";
+    return `
+      <tr>
+        <td><strong>${escapeHtml(definition.label)}</strong><div class="single-analyte-method">Solid-phase immunoassay (method-specific)</div></td>
+        <td><span class="${status?.className || ""}">${escapeHtml(value)}</span>${statusText}</td>
+        <td>${escapeHtml(range)}</td>
+        <td>${escapeHtml(unit)}</td>
+      </tr>
+    `;
+  }).join("");
+  const comments = findReportParameter(test, ["Comments", "Comment", "Remarks"]) || {};
+  const commentsValue = String(comments.value ?? "").trim();
+
+  return `
+    <table class="results-table single-analyte-table anticardiolipin-iga-igm-panel-table">
+      <thead><tr><th style="width: 34%">Investigation</th><th style="width: 22%">Result</th><th style="width: 30%">Reference Interval</th><th style="width: 14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Sample Type</strong></td><td colspan="3">${escapeHtml(test.sample_type || "Serum")}</td></tr>
+        ${rows}
+        ${commentsValue ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space: pre-wrap">${escapeHtml(commentsValue)}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="report-template-notes anticardiolipin-iga-igm-panel-notes">
+      <div class="report-note-heading">Configured Interpretation :</div>
+      <table class="report-reference-table anticardiolipin-interpretation-table">
+        <thead><tr><th>Isotype</th><th>Below configured cut-off</th><th>At or above configured cut-off</th></tr></thead>
+        <tbody>
+          <tr><td>IgA</td><td>&lt; 15.0 APL-U/mL</td><td>&ge; 15.0 APL-U/mL</td></tr>
+          <tr><td>IgM</td><td>&lt; 15.0 MPL-U/mL</td><td>&ge; 15.0 MPL-U/mL</td></tr>
+        </tbody>
+      </table>
+      <div class="report-note-heading">Clinical Use :</div>
+      <p>This panel measures anticardiolipin IgA and IgM as separate isotypes. IgM is one of the criteria antiphospholipid antibody isotypes; IgA is a non-criteria antibody whose clinical utility is less established and which may be requested selectively in specialist evaluation.</p>
+      <div class="report-note-heading">Interpretation :</div>
+      <ul>
+        <li>Neither result alone diagnoses antiphospholipid syndrome. Interpret the isotype pattern with the clinical history, lupus anticoagulant, anticardiolipin IgG, and anti-beta-2 glycoprotein I IgG/IgM.</li>
+        <li>IgA is not included in the laboratory domains of the 2023 ACR/EULAR APS classification criteria. An IgA result must not be scored as if it were IgG or IgM.</li>
+        <li>For standardized ELISA IgM results, 40&ndash;79 units is considered moderate and &ge; 80 units high in the 2023 classification criteria. These are research classification thresholds, not universal diagnostic cut-offs, and do not apply to IgA.</li>
+        <li>Persistent criteria-antibody positivity is important. When clinically indicated, repeat testing on a second specimen collected at least 12 weeks later may help establish persistence; low-level antibodies can be transient, including after infection.</li>
+        <li>Anticardiolipin assays are not fully harmonized. IgA and IgM use different units, and results or cut-offs from different methods are not interchangeable. The performing laboratory&rsquo;s validated method and intervals printed above take precedence.</li>
+      </ul>
+    </div>
+  `;
+}
+
+function buildAnticardiolipinIgaIggPanelReportBody(test) {
+  const definitions = [
+    {
+      label: "ANTICARDIOLIPIN ANTIBODY IgA, SERUM",
+      aliases: ["Anticardiolipin Antibody IgA, Serum", "Anti Cardiolipin Antibody IgA", "Cardiolipin Antibody IgA", "aCL IgA", "IgA Result", "Result IgA", "Result"],
+      range: "< 15.0",
+      unit: "APL-U/mL",
+    },
+    {
+      label: "ANTICARDIOLIPIN ANTIBODY IgG, SERUM",
+      aliases: ["Anticardiolipin Antibody IgG, Serum", "Anti Cardiolipin Antibody IgG", "Cardiolipin Antibody IgG", "aCL IgG", "IgG Result", "Result IgG"],
+      range: "< 15.0",
+      unit: "GPL-U/mL",
+    },
+  ];
+  const rows = definitions.map(definition => {
+    const result = findReportParameter(test, definition.aliases) || {};
+    const value = String(result.value ?? "").trim() || "-";
+    const range = result.normal_range && result.normal_range !== "N/A" ? result.normal_range : definition.range;
+    const unit = result.unit && result.unit !== "N/A" ? result.unit : definition.unit;
+    const status = getReferenceStatus(value, range);
+    const statusText = status
+      ? ` <span class="report-result-status ${status.className}">${status.label}</span>`
+      : "";
+    return `
+      <tr>
+        <td><strong>${escapeHtml(definition.label)}</strong><div class="single-analyte-method">Solid-phase immunoassay (method-specific)</div></td>
+        <td><span class="${status?.className || ""}">${escapeHtml(value)}</span>${statusText}</td>
+        <td>${escapeHtml(range)}</td>
+        <td>${escapeHtml(unit)}</td>
+      </tr>
+    `;
+  }).join("");
+  const comments = findReportParameter(test, ["Comments", "Comment", "Remarks"]) || {};
+  const commentsValue = String(comments.value ?? "").trim();
+
+  return `
+    <table class="results-table single-analyte-table anticardiolipin-iga-igg-panel-table">
+      <thead><tr><th style="width: 34%">Investigation</th><th style="width: 22%">Result</th><th style="width: 30%">Reference Interval</th><th style="width: 14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Sample Type</strong></td><td colspan="3">${escapeHtml(test.sample_type || "Serum")}</td></tr>
+        ${rows}
+        ${commentsValue ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space: pre-wrap">${escapeHtml(commentsValue)}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="report-template-notes anticardiolipin-iga-igg-panel-notes">
+      <div class="report-note-heading">Configured Interpretation :</div>
+      <table class="report-reference-table anticardiolipin-interpretation-table">
+        <thead><tr><th>Isotype</th><th>Below configured cut-off</th><th>At or above configured cut-off</th></tr></thead>
+        <tbody>
+          <tr><td>IgA</td><td>&lt; 15.0 APL-U/mL</td><td>&ge; 15.0 APL-U/mL</td></tr>
+          <tr><td>IgG</td><td>&lt; 15.0 GPL-U/mL</td><td>&ge; 15.0 GPL-U/mL</td></tr>
+        </tbody>
+      </table>
+      <div class="report-note-heading">Clinical Use :</div>
+      <p>This panel measures anticardiolipin IgA and IgG as separate isotypes. IgG is one of the criteria antiphospholipid antibody isotypes; IgA is a non-criteria antibody whose clinical utility is less established and which may be requested selectively in specialist evaluation.</p>
+      <div class="report-note-heading">Interpretation :</div>
+      <ul>
+        <li>Neither result alone diagnoses antiphospholipid syndrome. Interpret the isotype pattern with the clinical history, lupus anticoagulant, anticardiolipin IgM, and anti-beta-2 glycoprotein I IgG/IgM.</li>
+        <li>IgA is not included in the laboratory domains of the 2023 ACR/EULAR APS classification criteria. An IgA result must not be scored as if it were IgG or IgM.</li>
+        <li>For standardized ELISA IgG results, 40&ndash;79 units is considered moderate and &ge; 80 units high in the 2023 classification criteria. These are research classification thresholds, not universal diagnostic cut-offs, and do not apply to IgA.</li>
+        <li>Persistent criteria-antibody positivity is important. When clinically indicated, repeat testing on a second specimen collected at least 12 weeks later may help establish persistence; low-level antibodies can be transient, including after infection.</li>
+        <li>Anticardiolipin assays are not fully harmonized. IgA and IgG use different units, and results or cut-offs from different methods are not interchangeable. The performing laboratory&rsquo;s validated method and intervals printed above take precedence.</li>
+      </ul>
+    </div>
+  `;
+}
+
+function buildAnticardiolipinIggIgmPanelReportBody(test) {
+  const definitions = [
+    {
+      label: "ANTICARDIOLIPIN ANTIBODY IgG, SERUM",
+      aliases: ["Anticardiolipin Antibody IgG, Serum", "Anti Cardiolipin Antibody IgG", "Cardiolipin Antibody IgG", "aCL IgG", "IgG Result", "Result IgG", "Result"],
+      range: "< 15.0",
+      unit: "GPL-U/mL",
+    },
+    {
+      label: "ANTICARDIOLIPIN ANTIBODY IgM, SERUM",
+      aliases: ["Anticardiolipin Antibody IgM, Serum", "Anti Cardiolipin Antibody IgM", "Cardiolipin Antibody IgM", "aCL IgM", "IgM Result", "Result IgM"],
+      range: "< 15.0",
+      unit: "MPL-U/mL",
+    },
+  ];
+  const rows = definitions.map(definition => {
+    const result = findReportParameter(test, definition.aliases) || {};
+    const value = String(result.value ?? "").trim() || "-";
+    const range = result.normal_range && result.normal_range !== "N/A" ? result.normal_range : definition.range;
+    const unit = result.unit && result.unit !== "N/A" ? result.unit : definition.unit;
+    const status = getReferenceStatus(value, range);
+    const statusText = status
+      ? ` <span class="report-result-status ${status.className}">${status.label}</span>`
+      : "";
+    return `
+      <tr>
+        <td><strong>${escapeHtml(definition.label)}</strong><div class="single-analyte-method">Enzyme-linked immunosorbent assay (ELISA)</div></td>
+        <td><span class="${status?.className || ""}">${escapeHtml(value)}</span>${statusText}</td>
+        <td>${escapeHtml(range)}</td>
+        <td>${escapeHtml(unit)}</td>
+      </tr>
+    `;
+  }).join("");
+  const comments = findReportParameter(test, ["Comments", "Comment", "Remarks"]) || {};
+  const commentsValue = String(comments.value ?? "").trim();
+
+  return `
+    <table class="results-table single-analyte-table anticardiolipin-igg-igm-panel-table">
+      <thead><tr><th style="width: 34%">Investigation</th><th style="width: 22%">Result</th><th style="width: 30%">Reference Interval</th><th style="width: 14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Sample Type</strong></td><td colspan="3">${escapeHtml(test.sample_type || "Serum")}</td></tr>
+        ${rows}
+        ${commentsValue ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space: pre-wrap">${escapeHtml(commentsValue)}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="report-template-notes anticardiolipin-igg-igm-panel-notes">
+      <div class="report-note-heading">Configured Interpretation :</div>
+      <table class="report-reference-table anticardiolipin-interpretation-table">
+        <thead><tr><th>Isotype</th><th>Negative</th><th>Weakly positive</th><th>Moderate positive</th><th>High positive</th></tr></thead>
+        <tbody>
+          <tr><td>IgG</td><td>&lt; 15.0 GPL-U/mL</td><td>15.0&ndash;39.9</td><td>40.0&ndash;79.9</td><td>&ge; 80.0</td></tr>
+          <tr><td>IgM</td><td>&lt; 15.0 MPL-U/mL</td><td>15.0&ndash;39.9</td><td>40.0&ndash;79.9</td><td>&ge; 80.0</td></tr>
+        </tbody>
+      </table>
+      <div class="report-note-heading">Clinical Use :</div>
+      <p>Anticardiolipin IgG and IgM are criteria antiphospholipid antibody isotypes used with lupus anticoagulant and anti-beta-2 glycoprotein I IgG/IgM when evaluating suspected antiphospholipid syndrome in the appropriate clinical setting.</p>
+      <div class="report-note-heading">Interpretation :</div>
+      <ul>
+        <li>A positive result does not by itself diagnose antiphospholipid syndrome. Laboratory findings must be interpreted with qualifying clinical events and other causes of thrombosis or pregnancy morbidity.</li>
+        <li>Persistent positivity is important. When clinically indicated, a positive criteria-antibody result should be confirmed on a second specimen collected at least 12 weeks later.</li>
+        <li>For standardized ELISA results, 40&ndash;79 units is considered moderate and &ge; 80 units high in the 2023 ACR/EULAR APS classification criteria. These research classification thresholds are not universal diagnostic cut-offs.</li>
+        <li>IgG and IgM should be reported and interpreted separately. In the 2023 criteria, IgG and IgM have different laboratory weights, and isolated low-level IgM generally requires particularly cautious interpretation.</li>
+        <li>Low or weakly positive antibodies may be transient, including after infection. Assays are not fully harmonized, so results and thresholds from different methods are not interchangeable; the performing laboratory&rsquo;s validated method and intervals printed above take precedence.</li>
+      </ul>
+    </div>
+  `;
+}
+
 function buildAnticardiolipinIgmReportBody(test) {
   const result = findReportParameter(test, [
     "Anticardiolipin Antibody IgM, Serum",
@@ -8263,6 +8577,73 @@ function buildAnemiaScreeningProfileReportBody(test) {
       </ul>
       <div class="report-note-heading">Note :</div>
       <p>This is a screening profile and is not a stand-alone diagnosis. The performing laboratory&rsquo;s validated methods and reference intervals take precedence.</p>
+    </div>
+  `;
+}
+
+function buildAntenatalProfileReportBody(test) {
+  const definitions = [
+    { section: "PREGNANCY DETAILS", label: "Gestational Age / Trimester", aliases: ["Gestational Age / Trimester", "Gestational Age", "Trimester", "Period of Gestation", "POG"], range: "Clinical information", unit: "", narrative: true },
+    { section: "HAEMATOLOGY (EDTA WHOLE BLOOD)", label: "Haemoglobin (Hb)", aliases: ["Haemoglobin (Hb)", "Hemoglobin (Hb)", "Haemoglobin", "Hemoglobin", "Hb"], range: "Pregnancy / trimester-specific laboratory interval", unit: "g/dL", method: "Photometry" },
+    { section: "HAEMATOLOGY (EDTA WHOLE BLOOD)", label: "Total Leucocyte Count (TLC)", aliases: ["Total Leucocyte Count (TLC)", "Total Leukocyte Count (TLC)", "TLC", "WBC Count"], range: "Pregnancy / trimester-specific laboratory interval", unit: "cells/cumm", method: "Automated" },
+    { section: "HAEMATOLOGY (EDTA WHOLE BLOOD)", label: "Platelet Count", aliases: ["Platelet Count", "Platelets"], range: "Pregnancy-specific laboratory interval", unit: "cells/cumm", method: "Automated" },
+    { section: "BLOOD GROUP & IMMUNOHAEMATOLOGY", label: "ABO Blood Group", aliases: ["ABO Blood Group", "Blood Group", "ABO Group"], range: "Not applicable", unit: "" },
+    { section: "BLOOD GROUP & IMMUNOHAEMATOLOGY", label: "Rh(D) Type", aliases: ["Rh(D) Type", "Rh Type", "Rh Factor", "Rhesus (D)", "Rhesus Factor"], range: "Not applicable", unit: "" },
+    { section: "BLOOD GROUP & IMMUNOHAEMATOLOGY", label: "Red-cell Antibody Screen (ICT)", aliases: ["Red-cell Antibody Screen (ICT)", "Antibody Screen", "Indirect Coombs Test", "Indirect Coombs", "ICT"], range: "Negative", unit: "" },
+    { section: "GLYCAEMIC SCREENING", label: "Glucose / GDM Screening", aliases: ["Glucose / GDM Screening", "GDM Screening", "Glucose Challenge Test", "75 g OGTT", "Oral Glucose Tolerance Test", "Blood Glucose", "Glucose"], range: "Test-, gestation- and protocol-specific", unit: "mg/dL" },
+    { section: "MATERNAL INFECTION SCREENING (SERUM / PLASMA)", label: "HIV 1 & 2 Screen", aliases: ["HIV 1 & 2 Screen", "HIV 1 and 2 Screen", "HIV Screen", "HIV 1/2"], range: "Non-reactive", unit: "" },
+    { section: "MATERNAL INFECTION SCREENING (SERUM / PLASMA)", label: "Hepatitis B Surface Antigen (HBsAg)", aliases: ["Hepatitis B Surface Antigen (HBsAg)", "HBsAg", "Hepatitis B Screen"], range: "Non-reactive", unit: "" },
+    { section: "MATERNAL INFECTION SCREENING (SERUM / PLASMA)", label: "Hepatitis C Screen (Anti-HCV)", aliases: ["Hepatitis C Screen (Anti-HCV)", "Anti-HCV", "HCV Antibody", "Hepatitis C Screen"], range: "Non-reactive", unit: "" },
+    { section: "MATERNAL INFECTION SCREENING (SERUM / PLASMA)", label: "Syphilis Screen (VDRL / RPR)", aliases: ["Syphilis Screen (VDRL / RPR)", "VDRL", "RPR", "Syphilis Screen"], range: "Non-reactive", unit: "" },
+    { section: "URINE SCREENING", label: "Urine Protein / Albumin", aliases: ["Urine Protein / Albumin", "Urine Albumin", "Urine Protein", "Albumin, Urine"], range: "Negative", unit: "" },
+    { section: "URINE SCREENING", label: "Urine Glucose", aliases: ["Urine Glucose", "Glucose, Urine", "Urine Sugar"], range: "Negative", unit: "" },
+    { section: "URINE SCREENING", label: "Urine Culture / Bacteriuria Screen", aliases: ["Urine Culture / Bacteriuria Screen", "Urine Culture", "Bacteriuria Screen", "Urine Culture Result"], range: "No significant growth", unit: "" },
+    { section: "OVERALL ASSESSMENT", label: "Overall Findings", aliases: ["Overall Findings", "Result / Findings", "Screening Findings", "Interpretation", "Findings"], range: "", unit: "", narrative: true },
+  ];
+  let currentSection = "";
+  const rows = definitions.map(definition => {
+    const parameter = findReportParameter(test, definition.aliases) || {};
+    const value = String(parameter.value ?? "").trim() || "-";
+    const range = parameter.normal_range && parameter.normal_range !== "N/A" ? parameter.normal_range : definition.range;
+    const unit = parameter.unit && parameter.unit !== "N/A" ? parameter.unit : definition.unit;
+    const sectionRow = currentSection === definition.section
+      ? ""
+      : `<tr class="cbc-section"><td colspan="4">${escapeHtml(definition.section)}</td></tr>`;
+    currentSection = definition.section;
+    return `
+      ${sectionRow}
+      <tr>
+        <td><div class="cbc-investigation">${escapeHtml(definition.label)}</div>${definition.method ? `<div class="cbc-method">${escapeHtml(definition.method)}</div>` : ""}</td>
+        <td${definition.narrative ? ' colspan="3" style="white-space: pre-wrap"' : ""}><span>${escapeHtml(value)}</span></td>
+        ${definition.narrative ? "" : `<td>${escapeHtml(range || "-")}</td><td>${escapeHtml(unit || "")}</td>`}
+      </tr>
+    `;
+  }).join("");
+  const comments = findReportParameter(test, ["Comments", "Comment", "Remarks"]) || {};
+  const commentsValue = String(comments.value ?? "").trim();
+
+  return `
+    <table class="results-table cbc-table antenatal-profile-table">
+      <thead><tr><th style="width: 34%">Investigation</th><th style="width: 22%">Result</th><th style="width: 30%">Reference / Expected Finding</th><th style="width: 14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="cbc-sample-row"><td><strong>Required Specimens</strong></td><td colspan="3">EDTA Whole Blood, Serum / Plasma and Urine</td></tr>
+        ${rows}
+        ${commentsValue ? `<tr class="cbc-section"><td colspan="4">COMMENTS</td></tr><tr><td><strong>Comments</strong></td><td colspan="3" style="white-space: pre-wrap">${escapeHtml(commentsValue)}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes antenatal-profile-notes">
+      <div class="report-note-heading">Purpose :</div>
+      <p>This profile summarises selected maternal booking and antenatal screening tests. The exact components and timing should follow the treating clinician&rsquo;s request, gestational age, local programme, and laboratory protocol.</p>
+      <div class="report-note-heading">Interpretation :</div>
+      <ul>
+        <li>Pregnancy changes several haematology and biochemistry measurements. Interpret numerical results using the performing laboratory&rsquo;s pregnancy- and trimester-appropriate reference intervals.</li>
+        <li>Reactive infection-screening results are preliminary and require confirmation and clinical follow-up under the applicable national or local testing algorithm. A non-reactive result may not exclude very recent infection.</li>
+        <li>ABO/Rh(D) typing and the red-cell antibody screen must be interpreted together. Rh(D)-negative patients or a positive antibody screen require timely obstetric assessment and follow-up according to local policy.</li>
+        <li>Gestational-diabetes screening depends on the glucose test, fasting state, gestational age, and locally adopted diagnostic criteria. Testing is commonly performed at 24&ndash;28 weeks, with earlier testing when clinically indicated.</li>
+        <li>Urine protein, glucose, and culture findings require clinical correlation. Protein detected after 20 weeks should be assessed with blood pressure and appropriate confirmatory evaluation; a dipstick result alone does not diagnose pre-eclampsia.</li>
+      </ul>
+      <div class="report-note-heading">Scope :</div>
+      <p>This laboratory profile is not a stand-alone assessment of maternal or fetal wellbeing and does not replace clinical examination, ultrasound, aneuploidy screening, or other tests ordered for an individual pregnancy.</p>
     </div>
   `;
 }
@@ -10682,6 +11063,7 @@ function buildBunReportBody(test) {
   if (isAnticardiolipinIggTest(test)) return buildAnticardiolipinIggReportBody(test);
   if (isAntiTgTest(test)) return buildAntiTgReportBody(test);
   if (isAntiTpoTest(test)) return buildAntiTpoReportBody(test);
+  if (isAntenatalProfileTest(test)) return buildAntenatalProfileReportBody(test);
   if (isAnemiaScreeningProfileTest(test)) return buildAnemiaScreeningProfileReportBody(test);
   if (isComprehensiveAnemiaProfileTest(test)) return buildComprehensiveAnemiaProfileReportBody(test);
   if (isAndrostenedioneTest(test)) return buildAndrostenedioneReportBody(test);
@@ -11423,6 +11805,11 @@ function buildAmmoniaReportBody(test) {
 }
 
 function buildDigoxinReportBody(test) {
+  if (isAntenatalProfileTest(test)) return buildAntenatalProfileReportBody(test);
+  if (isAnticardiolipinIggIgmPanelTest(test)) return buildAnticardiolipinIggIgmPanelReportBody(test);
+  if (isAnticardiolipinIgaIggPanelTest(test)) return buildAnticardiolipinIgaIggPanelReportBody(test);
+  if (isAnticardiolipinIgaIgmPanelTest(test)) return buildAnticardiolipinIgaIgmPanelReportBody(test);
+  if (isAnticardiolipinIgaTest(test)) return buildAnticardiolipinIgaReportBody(test);
   if (isAmmoniaTest(test)) return buildAmmoniaReportBody(test);
   if (isAldosteroneTest(test)) return buildAldosteroneReportBody(test);
   if (isTotalAcidPhosphataseTest(test)) return buildTotalAcidPhosphataseReportBody(test);
@@ -12040,7 +12427,7 @@ function buildReportHtml(reportData) {
   const albuminTest = singleTest && isAlbuminTest(singleTest) ? singleTest : null;
   // This historical single-analyte renderer slot dispatches specialised
   // formats before Digoxin itself, so their report bodies remain consistent.
-  const digoxinTest = singleTest && (isTotalAcidPhosphataseTest(singleTest) || isProstaticAcidPhosphataseTest(singleTest) || isAgRatioTest(singleTest) || isDigoxinTest(singleTest)) ? singleTest : null;
+  const digoxinTest = singleTest && (isAnticardiolipinIggIgmPanelTest(singleTest) || isAnticardiolipinIgaIggPanelTest(singleTest) || isAnticardiolipinIgaIgmPanelTest(singleTest) || isAnticardiolipinIgaTest(singleTest) || isAntenatalProfileTest(singleTest) || isTotalAcidPhosphataseTest(singleTest) || isProstaticAcidPhosphataseTest(singleTest) || isAgRatioTest(singleTest) || isDigoxinTest(singleTest)) ? singleTest : null;
   const bunTest = singleTest && (isBunTest(singleTest) || isBilirubinFractionationTest(singleTest) || isSerumBicarbonateTest(singleTest) || isAsciticFluidAnalysisTest(singleTest) || isApolipoproteinBTest(singleTest) || isAnticardiolipinIgmTest(singleTest) || isAnticardiolipinIggTest(singleTest) || isAntiTgTest(singleTest) || isAntiTpoTest(singleTest) || isAnemiaScreeningProfileTest(singleTest) || isComprehensiveAnemiaProfileTest(singleTest) || isAndrostenedioneTest(singleTest) || isGroupBStrepTest(singleTest) || isFungusKohPreparationTest(singleTest) || isSputumAfbTest(singleTest) || isBaccalSmearBrrBodyTest(singleTest) || isAutoimmuneProfileTest(singleTest) || isAfbZiehlNeelsenStainTest(singleTest) || isBloodCultureSensitivityTest(singleTest) || isBodyFluidCultureSensitivityTest(singleTest) || isBodyFluidTotalProteinTest(singleTest) || isBodyFluidChlorideTest(singleTest) || isAfbCultureSensitivityTest(singleTest) || isStoolCultureTest(singleTest) || isUrineCultureTest(singleTest) || isMalariaParasiteIdentificationTest(singleTest) || isMycobacteriumCombinedPanelTest(singleTest) || isOvaAndParasiteTest(singleTest) || isTripleMarkerTest(singleTest) || isDoubleMarkerTest(singleTest) || isPax8Test(singleTest) || isGalectin3Test(singleTest) || isHer2Test(singleTest) || isDcpTest(singleTest) || isAfpTumorMarkerTest(singleTest) || isCa199Test(singleTest) || isCa153Test(singleTest) || isCa125Test(singleTest) || isTroponinITest(singleTest) || isTroponinTTest(singleTest) || isDengueNs1Test(singleTest) || isDengueIggTest(singleTest) || isDengueIgmTest(singleTest) || isRastTest(singleTest) || isWidalTest(singleTest) || isCrpTest(singleTest) || isSodiumTest(singleTest) || isIronTest(singleTest) || isLacticAcidTest(singleTest) || isMagnesiumTest(singleTest) || isLipaseTest(singleTest) || isAmylaseTest(singleTest) || isGgtTest(singleTest) || isChlorideTest(singleTest) || isCreatinine24HourUrineTest(singleTest) || isSemenAnalysisTest(singleTest) || isUrineCotinineTest(singleTest) || isUrineGlucoseTest(singleTest) || isPorphyrinsTest(singleTest) || isOccultBloodStoolTest(singleTest) || isCsfAnalysisTest(singleTest) || isTshTest(singleTest) || isThyroidProfileTest(singleTest) || isThyroidAntibodiesTest(singleTest) || isTriiodothyronineTotalTest(singleTest) || isTestosteroneTotalTest(singleTest) || isProgesteroneTest(singleTest) || isCortisoneTest(singleTest) || isActhTest(singleTest) || isAdaTest(singleTest) || isBetaHcgPregnancyTest(singleTest) || isProlactinTest(singleTest) || isDheaTest(singleTest) || isEstradiolTest(singleTest) || isLuteinizingHormoneTest(singleTest) || isFollicleStimulatingHormoneTest(singleTest) || isThyroxineTotalTest(singleTest) || isCalcitoninTest(singleTest) || isInhibinATest(singleTest) || isInhibinBTest(singleTest) || isPappATest(singleTest) || isDheasTest(singleTest) || isBoneMarrowAspirationCytologyTest(singleTest) || isBoneMarrowCytologyTest(singleTest) || isHistopathologyReportTest(singleTest) || isCreatinineTest(singleTest) || isIonizedCalciumTest(singleTest) || isFlecainideTest(singleTest) || isPhenobarbitalTest(singleTest) || isKetoneBodyTest(singleTest) || isUricAcidTest(singleTest) || isTibcTest(singleTest) || isSerumOsmolalityTest(singleTest) || isArterialBloodGasTest(singleTest) || isManganeseBloodTest(singleTest) || isSeleniumSerumTest(singleTest))
     ? singleTest
     : null;
@@ -12314,12 +12701,17 @@ function buildReportHtml(reportData) {
         if (reportData.tests.length === 1 && isSerumBicarbonateTest(t)) return "BICARBONATE (HCO3), SERUM";
         if (reportData.tests.length === 1 && isAsciticFluidAnalysisTest(t)) return "ASCITIC FLUID ANALYSIS (CELL COUNT & BIOCHEMISTRY)";
         if (reportData.tests.length === 1 && isApolipoproteinBTest(t)) return "APOLIPOPROTEIN B (APOB)";
+        if (reportData.tests.length === 1 && isAnticardiolipinIggIgmPanelTest(t)) return "ANTICARDIOLIPIN ANTIBODY IgG & IgM";
+        if (reportData.tests.length === 1 && isAnticardiolipinIgaIggPanelTest(t)) return "ANTICARDIOLIPIN ANTIBODY IgA & IgG";
+        if (reportData.tests.length === 1 && isAnticardiolipinIgaIgmPanelTest(t)) return "ANTICARDIOLIPIN ANTIBODY IgA & IgM";
+        if (reportData.tests.length === 1 && isAnticardiolipinIgaTest(t)) return "ANTICARDIOLIPIN ANTIBODY IgA";
         if (reportData.tests.length === 1 && isAnticardiolipinIgmTest(t)) return "ANTICARDIOLIPIN ANTIBODY IgM";
         if (reportData.tests.length === 1 && isAnticardiolipinIggTest(t)) return "ANTICARDIOLIPIN ANTIBODY IgG";
         if (reportData.tests.length === 1 && isAntiTgTest(t)) return "ANTI-THYROGLOBULIN ANTIBODY (ANTI-TG)";
         if (reportData.tests.length === 1 && isAntiTpoTest(t)) return "ANTI-THYROID PEROXIDASE ANTIBODY (ANTI-TPO)";
         if (reportData.tests.length === 1 && isThyroidAntibodiesTest(t)) return "THYROID ANTIBODIES";
         if (reportData.tests.length === 1 && isTriiodothyronineTotalTest(t)) return "TRIIODOTHYRONINE (T3), TOTAL";
+        if (reportData.tests.length === 1 && isAntenatalProfileTest(t)) return "ANTENATAL PROFILE";
         if (reportData.tests.length === 1 && isAnemiaScreeningProfileTest(t)) return "ANEMIA SCREENING PROFILE";
         if (reportData.tests.length === 1 && isComprehensiveAnemiaProfileTest(t)) return "COMPREHENSIVE ANEMIA PROFILE";
         if (reportData.tests.length === 1 && isAndrostenedioneTest(t)) return "ANDROSTENEDIONE (A4)";
@@ -12465,6 +12857,63 @@ function buildReportHtml(reportData) {
           display: flex;
           flex-direction: column;
         }
+        .report-pagination-table {
+          width: 100%;
+          border: 0;
+          border-collapse: collapse;
+        }
+        .report-pagination-table > thead,
+        .report-pagination-table > tfoot { display: none; }
+        .report-pagination-table > tbody > tr > td {
+          padding: 0;
+          border: 0;
+          vertical-align: top;
+        }
+        .report-generated-pages { display: none; }
+        .report-generated-pages.report-pagination-measuring {
+          display: block;
+          position: absolute;
+          top: 0;
+          left: -10000px;
+        }
+        .report-generated-page {
+          position: relative;
+          width: 210mm;
+          height: 297mm;
+          margin: ${embeddedPreview ? "0" : "0 auto 16px"};
+          padding: ${reportHeaderSpaceMm}mm 10mm ${reportFooterSpaceMm}mm;
+          box-sizing: border-box;
+          overflow: hidden;
+          background: #fff;
+          break-after: page;
+          page-break-after: always;
+        }
+        .report-generated-page:last-child {
+          margin-bottom: 0;
+          break-after: auto;
+          page-break-after: auto;
+        }
+        .report-generated-page > .letterhead-background { position: absolute; }
+        .report-generated-content {
+          height: calc(297mm - ${reportHeaderSpaceMm}mm - ${reportFooterSpaceMm}mm);
+          min-height: 0;
+          padding: 0;
+          display: block;
+          overflow: hidden;
+          box-sizing: border-box;
+        }
+        body.report-pagination-ready {
+          width: auto;
+          min-height: 0;
+          margin: 0;
+          padding: 0;
+          box-shadow: none;
+          background: ${embeddedPreview ? "#fff" : "#e9efee"};
+        }
+        body.report-pagination-ready > .report-generated-pages { display: block; }
+        body.report-pagination-ready > .report-pagination-source,
+        body.report-pagination-ready > .letterhead-background,
+        body.report-pagination-ready > .multi-report-page { display: none !important; }
         .report-print-controls {
           position: fixed;
           right: 16px;
@@ -13250,19 +13699,40 @@ function buildReportHtml(reportData) {
              artwork. Keep the page edge-to-edge and reserve the header/footer
              within the report content instead. */
           html, body { width: auto; height: auto; min-height: 0; }
+          .report-pagination-table > thead { display: table-header-group; }
+          .report-pagination-table > tfoot { display: table-footer-group; }
+          .report-pagination-table > thead > tr > td,
+          .report-pagination-table > tfoot > tr > td {
+            padding: 0;
+            border: 0;
+          }
+          .report-pagination-header-space { height: ${reportHeaderSpaceMm}mm; }
+          .report-pagination-footer-space { height: ${reportFooterSpaceMm}mm; }
+          .report-pagination-table > tbody > .report-pagination-content-row {
+            break-inside: auto !important;
+            page-break-inside: auto !important;
+          }
+          .report-pagination-table > tbody > .report-pagination-content-row > .report-pagination-content-cell {
+            padding: 0 10mm;
+          }
           .main-content {
             display: block;
-            min-height: 297mm;
-            padding: ${reportHeaderSpaceMm}mm 10mm ${reportFooterSpaceMm}mm;
+            min-height: calc(297mm - ${reportHeaderSpaceMm}mm - ${reportFooterSpaceMm}mm);
+            padding: 0;
             box-sizing: border-box;
-            -webkit-box-decoration-break: clone;
-            box-decoration-break: clone;
           }
           .letterhead-background {
             top: 0;
             left: 0;
           }
           .report-print-controls, .report-view-controls { display: none !important; }
+          body.report-pagination-ready { background: #fff; }
+          body.report-pagination-ready > .report-generated-pages { display: block; }
+          body.report-pagination-ready .report-generated-page {
+            margin: 0;
+            box-shadow: none;
+          }
+          body.report-read-only.report-pagination-ready > .report-generated-pages { display: none !important; }
           body.report-read-only .letterhead-background,
           body.report-read-only .main-content { display: none !important; }
           body.report-read-only .view-only-print-notice {
@@ -13347,6 +13817,13 @@ function buildReportHtml(reportData) {
       ` : ""}
       ${reportActionControls}
       ${readOnlyView ? `<div class="view-only-print-notice">Printing is disabled while viewing a report. Please return to Lab LMS and use the Print Report button.</div>` : ""}
+      <table class="report-pagination-table report-pagination-source" role="presentation">
+        <thead aria-hidden="true">
+          <tr><td><div class="report-pagination-header-space"></div></td></tr>
+        </thead>
+        <tbody>
+          <tr class="report-pagination-content-row">
+            <td class="report-pagination-content-cell">
       <div class="main-content${rtPcrTest ? " rt-pcr-report" : tpmtTest ? " tpmt-report" : cysticFibrosisNewbornTest ? " cystic-fibrosis-newborn-report" : kftTest ? " kft-report" : factorIiTest ? " factor-ii-report" : karyotypeTest ? " karyotype-report" : lipidProfileTest ? " lipid-profile-report" : lftTest ? " lft-report" : hba1cTest ? " hba1c-report" : vitaminDTest ? " vitamin-d-report" : vitaminCTest ? " vitamin-c-report" : vitaminB12Test ? " vitamin-b12-report" : randomBloodSugarTest ? " rbs-report" : fastingBloodSugarTest ? " fbs-report" : bTypeNatriureticPeptideTest ? " bnp-report" : creatineKinaseTest ? " creatine-kinase-report" : beta2MicroglobulinTest ? " beta2-microglobulin-report" : altSgptTest ? " alt-sgpt-report" : dnphTest ? " dnph-report" : prealbuminTest ? " prealbumin-report" : haptoglobinTest ? " haptoglobin-report" : gramStainBacterialVaginosisTest ? " gram-bv-report" : aldolaseTest ? " aldolase-report" : urineProteinCreatinineRatioTest ? " upcr-report" : albuminCreatinineRatioTest ? " acr-report" : postPrandialBloodSugarTest ? " ppbs-report" : tacrolimusTest ? " tacrolimus-report" : phosphorusTest ? " phosphorus-report" : alkalinePhosphataseTest ? " alkaline-phosphatase-report" : clotRetractionTest ? " clot-retraction-report" : vitaminETest ? " vitamin-e-report" : vitaminB9Test ? " vitamin-b9-report" : vitaminKTest ? " vitamin-k-report" : ldlCholesterolTest ? " ldl-cholesterol-report" : hdlCholesterolTest ? " hdl-cholesterol-report" : indirectBilirubinTest ? " indirect-bilirubin-report" : calciumTest ? " calcium-report" : ferritinTest ? " ferritin-report" : cPeptideTest ? " c-peptide-report" : vldlCholesterolTest ? " vldl-cholesterol-report" : comprehensiveMetabolicPanelTest ? " cmp-report" : electrolyteProfileTest ? " electrolytes-report" : potassiumTest ? " potassium-report" : astSgotTest ? " ast-sgot-report" : globulinTest ? " globulin-report" : albuminTest ? " albumin-report" : digoxinTest ? " digoxin-report" : bunTest ? " bun-report" : cbcTest ? " cbc-report" : bloodGroupTest ? " blood-group-report" : dDimerTest ? " d-dimer-report" : sickleCellMutationTest ? " sickle-cell-mutation-report" : rbcTest ? " rbc-report" : plateletTest ? " platelet-report" : tlcTest ? " tlc-report" : absoluteCountTest ? " absolute-count-report" : mchcTest ? " mchc-report" : mchTest ? " mch-report" : mcvTest ? " mcv-report" : mpvTest ? " mpv-report" : hctPcvTest ? " hct-pcv-report" : esrTest ? " esr-report" : pdwTest ? " pdw-report" : hemoglobinTest ? " hemoglobin-report" : ptTest ? " pt-report" : apttTest ? " aptt-report" : dlcTest ? " dlc-report" : indirectCoombsTest ? " indirect-coombs-report" : directCoombsTest ? " direct-coombs-report" : fibrinogenTest ? " fibrinogen-report" : reticulocyteTest ? " reticulocyte-report" : clottingTimeTest ? " clotting-time-report" : bleedingTimeTest ? " bleeding-time-report" : coagulationProfileTest ? " coagulation-profile-report" : factorVTest ? " factor-v-report" : factorViiTest ? " factor-vii-report" : factorIxTest ? " factor-ix-report" : factorXTest ? " factor-x-report" : factorXiTest ? " factor-xi-report" : factorViiiTest ? " factor-viii-report" : peripheralSmearTest ? " peripheral-smear-report" : factorXiiTest ? " factor-xii-report" : factorXiiiTest ? " factor-xiii-report" : ""}">
         <table class="header-table">
           <tr>
@@ -13583,6 +14060,13 @@ function buildReportHtml(reportData) {
         </div>
         ${reportDoctorSignatureMarkup}
       </div>
+            </td>
+          </tr>
+        </tbody>
+        <tfoot aria-hidden="true">
+          <tr><td><div class="report-pagination-footer-space"></div></td></tr>
+        </tfoot>
+      </table>
       ${showPrintControls ? `
         <script>
           (() => {
@@ -13646,6 +14130,7 @@ function buildReportHtml(reportData) {
           }, true);
         </script>
       ` : ""}
+      <script data-report-pagination="true">${REPORT_PAGINATION_SCRIPT}</script>
     </body>
     </html>
   `, singleTest);
@@ -13713,6 +14198,10 @@ function buildMultiTestReportHtml(reportData, tests) {
 
   const firstPage = extractGeneratedReportParts(singleTestPages[0]);
   const pageBodies = singleTestPages.map((pageHtml) => extractGeneratedReportParts(pageHtml).body);
+  const letterheadMarkup = firstPage.body.match(/<img class="letterhead-background"[^>]*>/i)?.[0] || "";
+  const repeatingLetterheadMarkup = letterheadMarkup
+    ? letterheadMarkup.replace('class="letterhead-background"', 'class="letterhead-background multi-report-print-letterhead"')
+    : "";
   const readOnlyView = reportData.readOnlyView === true;
   const reportActionControls = buildReportActionControls({
     show: reportData.showReportActions === true && readOnlyView,
@@ -13754,6 +14243,7 @@ function buildMultiTestReportHtml(reportData, tests) {
           page-break-after: always;
         }
         .multi-report-page:last-of-type { break-after: auto; page-break-after: auto; }
+        .multi-report-print-letterhead { display: none; }
         .multi-report-page .letterhead-background { position: absolute; }
         .multi-report-page .main-content {
           min-height: calc(297mm - ${reportHeaderSpaceMm}mm - ${reportFooterSpaceMm}mm);
@@ -13771,7 +14261,8 @@ function buildMultiTestReportHtml(reportData, tests) {
             width: 210mm;
             min-height: 297mm;
             margin: 0;
-            padding: ${reportHeaderSpaceMm}mm 10mm ${reportFooterSpaceMm}mm;
+            padding: 0;
+            background: transparent;
             box-shadow: none;
           }
           /* The page already reserves the letterhead header/footer. Without
@@ -13780,7 +14271,13 @@ function buildMultiTestReportHtml(reportData, tests) {
             min-height: calc(297mm - ${reportHeaderSpaceMm}mm - ${reportFooterSpaceMm}mm);
             padding: 0 !important;
           }
-          .multi-report-page .letterhead-background { position: absolute; top: 0; left: 0; }
+          .multi-report-page .letterhead-background { display: none; }
+          body.multi-report > .multi-report-print-letterhead {
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+          }
           body.report-read-only .multi-report-page { display: none !important; }
           body.report-read-only > .view-only-print-notice {
             display: block !important;
@@ -13794,6 +14291,7 @@ function buildMultiTestReportHtml(reportData, tests) {
       </style>
     </head>
     <body class="multi-report${readOnlyView ? " report-read-only" : ""}">
+      ${repeatingLetterheadMarkup}
       ${reportActionControls}
       ${readOnlyView ? `<div class="view-only-print-notice">Printing is disabled while viewing a report. Please return to Lab LMS and use the Print Report button.</div>` : ""}
       ${pageBodies.map((body) => `<section class="multi-report-page">${body}</section>`).join("\n")}
@@ -13808,6 +14306,7 @@ function buildMultiTestReportHtml(reportData, tests) {
           }, true);
         </script>
       ` : ""}
+      <script data-report-pagination="true">${REPORT_PAGINATION_SCRIPT}</script>
     </body>
     </html>
   `;

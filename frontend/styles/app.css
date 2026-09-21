@@ -2589,3 +2589,270 @@ body:has(.app-shell) {
     font-size: 1.26rem;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Low-resolution desktop layout
+   Keep 800x600 and short desktop displays readable without scaling the whole
+   application down. Space is recovered from chrome, gaps and padding while
+   navigation and wide tables receive their own horizontal scrolling areas.
+   A4 report/print styling is intentionally unaffected.
+   -------------------------------------------------------------------------- */
+
+@media (min-width: 641px) and (max-width: 900px),
+       (min-width: 641px) and (max-height: 700px) {
+  html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  .app-shell {
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .app-shell .sidebar {
+    gap: 8px;
+    padding: 9px 10px;
+    border-radius: 16px;
+  }
+
+  .app-shell .sidebar > div:first-child {
+    padding: 0 2px;
+  }
+
+  .app-shell .brand {
+    font-size: 1rem;
+  }
+
+  .app-shell .brand::before {
+    width: 28px;
+    height: 28px;
+    flex-basis: 28px;
+    border-radius: 9px;
+    font-size: 1.2rem;
+  }
+
+  .app-shell .sidebar-nav {
+    min-width: 0;
+    scrollbar-width: thin;
+    overscroll-behavior-x: contain;
+  }
+
+  .app-shell .sidebar-nav a {
+    min-height: 39px;
+    padding: 8px 11px;
+    font-size: 0.94rem;
+  }
+
+  .app-shell .sidebar > .secondary-btn {
+    min-height: 39px;
+    padding: 8px 11px;
+    font-size: 0.9rem;
+  }
+
+  .app-shell .main-content {
+    gap: 12px;
+    padding: 0 0 18px;
+  }
+
+  .app-shell .page-header {
+    min-height: auto;
+    gap: 12px;
+    padding: 13px 16px;
+    border-radius: 16px;
+  }
+
+  .app-shell .page-header h1 {
+    font-size: 1.55rem;
+  }
+
+  .app-shell .eyebrow {
+    font-size: 0.78rem;
+  }
+
+  .app-shell .pill {
+    min-height: 35px;
+    padding: 8px 11px;
+    font-size: 0.88rem;
+  }
+
+  .app-shell .panel {
+    padding: 16px;
+    border-radius: 15px;
+  }
+
+  .app-shell .metric-card {
+    min-height: 94px;
+    padding: 14px;
+  }
+
+  .app-shell .metric-card h3 {
+    font-size: 0.82rem;
+  }
+
+  .app-shell .stat-value {
+    font-size: 1.75rem !important;
+    margin-top: 7px !important;
+  }
+
+  .app-shell .section-title {
+    padding-bottom: 10px;
+  }
+
+  .app-shell .section-title h2,
+  .app-shell .window-header h2 {
+    font-size: 1.15rem;
+  }
+
+  .app-shell .section-title span,
+  .app-shell .helper,
+  .app-shell small {
+    font-size: 0.88rem;
+    line-height: 1.42;
+  }
+
+  .app-shell .field,
+  .app-shell .field > span,
+  .app-shell .field legend {
+    font-size: 0.9rem;
+  }
+
+  .app-shell input,
+  .app-shell select,
+  .app-shell textarea {
+    min-height: 41px;
+    padding: 10px 12px;
+    font-size: 1rem;
+  }
+
+  .app-shell .primary-btn,
+  .app-shell .secondary-btn,
+  .app-shell .ghost-btn,
+  .app-shell .danger-btn,
+  .app-shell .whatsapp-btn {
+    min-height: 40px;
+    padding: 9px 12px;
+    font-size: 0.92rem;
+  }
+
+  .app-shell .workspace-grid,
+  .app-shell .workflow-grid,
+  .app-shell .two-column,
+  .app-shell .stats-grid,
+  .app-shell .form-grid,
+  .app-shell .inline-grid,
+  .app-shell .permission-grid {
+    gap: 11px;
+  }
+
+  .app-shell .workspace-empty {
+    min-height: 135px;
+  }
+
+  .app-shell .list-item,
+  .app-shell .result-card,
+  .app-shell .selection-card,
+  .app-shell .totals-card {
+    padding: 12px;
+  }
+
+  .app-shell .tabs .tab-btn,
+  .app-shell .tab-group .tab-btn {
+    min-height: 36px;
+    padding: 8px 11px;
+    font-size: 0.88rem;
+  }
+
+  .app-shell .panel:has(table) {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+  }
+
+  .app-shell th {
+    font-size: 0.8rem;
+  }
+
+  .app-shell td {
+    font-size: 0.92rem;
+  }
+
+  .app-shell th,
+  .app-shell td {
+    padding: 9px 10px;
+  }
+
+  #recentVisits,
+  #technicianVisits,
+  #patientSearchResults,
+  #resultsSearchResults,
+  #userList {
+    max-height: 260px;
+  }
+
+  .login-body {
+    min-height: 100vh;
+    padding: 12px;
+  }
+
+  .login-shell {
+    width: min(900px, 100%);
+    grid-template-columns: minmax(0, 1.35fr) minmax(250px, 0.65fr);
+    gap: 12px;
+  }
+
+  .login-panel,
+  .login-aside {
+    min-width: 0;
+    padding: 19px !important;
+    border-radius: 16px;
+  }
+
+  .login-panel h1 {
+    font-size: 1.8rem;
+  }
+
+  .login-panel p[style*="font-size"] {
+    font-size: 0.98rem !important;
+    line-height: 1.45 !important;
+  }
+
+  .login-panel form[style] {
+    gap: 11px !important;
+    margin-top: 18px !important;
+  }
+
+  .login-panel input {
+    padding: 12px 13px !important;
+    font-size: 16px;
+  }
+
+  .login-panel button {
+    min-height: 44px;
+    padding: 11px 13px !important;
+    font-size: 1rem !important;
+  }
+
+  .login-panel .inline-note[style] {
+    margin-top: 12px !important;
+    font-size: 0.88rem !important;
+  }
+
+  .login-aside [style*="font-size: 4.5rem"] {
+    font-size: 2.7rem !important;
+  }
+
+  .login-aside [style*="margin-top: 60px"] {
+    margin-top: 24px !important;
+  }
+
+  .setup-aside,
+  .setup-content {
+    padding: 22px !important;
+  }
+}

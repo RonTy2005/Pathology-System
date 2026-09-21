@@ -125,6 +125,59 @@ function getFallbackReportParameters(test = {}) {
     ];
   }
 
+  if (["antenatalprofile", "antenatalbookingprofile", "antenatalscreeningprofile"].includes(normalizedName)) {
+    return [
+      createParameter("Gestational Age / Trimester", { normalRange: "Clinical information" }),
+      createParameter("Haemoglobin (Hb)", { unit: "g/dL", normalRange: "Pregnancy / trimester-specific laboratory interval" }),
+      createParameter("Total Leucocyte Count (TLC)", { unit: "cells/cumm", normalRange: "Pregnancy / trimester-specific laboratory interval" }),
+      createParameter("Platelet Count", { unit: "cells/cumm", normalRange: "Pregnancy-specific laboratory interval" }),
+      createParameter("ABO Blood Group", { normalRange: "Not applicable" }),
+      createParameter("Rh(D) Type", { normalRange: "Not applicable" }),
+      createParameter("Red-cell Antibody Screen (ICT)", { normalRange: "Negative" }),
+      createParameter("Glucose / GDM Screening", { unit: "mg/dL", normalRange: "Test-, gestation- and protocol-specific" }),
+      createParameter("HIV 1 & 2 Screen", { normalRange: "Non-reactive" }),
+      createParameter("Hepatitis B Surface Antigen (HBsAg)", { normalRange: "Non-reactive" }),
+      createParameter("Hepatitis C Screen (Anti-HCV)", { normalRange: "Non-reactive" }),
+      createParameter("Syphilis Screen (VDRL / RPR)", { normalRange: "Non-reactive" }),
+      createParameter("Urine Protein / Albumin", { normalRange: "Negative" }),
+      createParameter("Urine Glucose", { normalRange: "Negative" }),
+      createParameter("Urine Culture / Bacteriuria Screen", { normalRange: "No significant growth" }),
+      createParameter("Overall Findings"),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (["anticardiolipinantibodyiga", "anticardiolipiniga", "cardiolipinantibodyiga", "phospholipidcardiolipinantibodiesiga"].includes(normalizedName)) {
+    return [
+      createParameter("Anticardiolipin Antibody IgA, Serum", { unit: "APL-U/mL", normalRange: "< 15.0" }),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (["anticardiolipinantibodyigaigm", "anticardiolipinigaigm", "cardiolipinantibodyigaigm", "phospholipidcardiolipinantibodiesigaigm"].includes(normalizedName)) {
+    return [
+      createParameter("Anticardiolipin Antibody IgA, Serum", { unit: "APL-U/mL", normalRange: "< 15.0" }),
+      createParameter("Anticardiolipin Antibody IgM, Serum", { unit: "MPL-U/mL", normalRange: "< 15.0" }),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (["anticardiolipinantibodyigaigg", "anticardiolipinigaigg", "cardiolipinantibodyigaigg", "phospholipidcardiolipinantibodiesigaigg"].includes(normalizedName)) {
+    return [
+      createParameter("Anticardiolipin Antibody IgA, Serum", { unit: "APL-U/mL", normalRange: "< 15.0" }),
+      createParameter("Anticardiolipin Antibody IgG, Serum", { unit: "GPL-U/mL", normalRange: "< 15.0" }),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (["anticardiolipinantibodyiggigm", "anticardiolipiniggigm", "cardiolipinantibodyiggigm", "phospholipidcardiolipinantibodiesiggigm"].includes(normalizedName)) {
+    return [
+      createParameter("Anticardiolipin Antibody IgG, Serum", { unit: "GPL-U/mL", normalRange: "< 15.0" }),
+      createParameter("Anticardiolipin Antibody IgM, Serum", { unit: "MPL-U/mL", normalRange: "< 15.0" }),
+      createParameter("Comments"),
+    ];
+  }
+
   if (normalizedName === "bonemarrowcytology") {
     return [
       createParameter("Specimen / Aspirate Site"),

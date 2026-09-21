@@ -4,6 +4,7 @@ const { test } = require("node:test");
 const { ONE_HOUR_MS, createMandatoryUpdateController } = require("../desktop/mandatoryUpdateController");
 const { ensureAutomaticStartup } = require("../desktop/automaticStartup");
 const { createServerAvailabilityGuard } = require("../desktop/serverAvailability");
+const { getInitialWindowBounds } = require("../desktop/windowSizing");
 const packageMetadata = require("../package.json");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -175,6 +176,34 @@ test("packaged Windows server and client apps enforce visible automatic startup"
       assert.doesNotMatch(installerScript, /LabShield Server\.exe/);
     }
   }
+});
+
+test("800x600 displays receive an on-screen window and readable compact workspace", () => {
+  assert.deepEqual(getInitialWindowBounds({ width: 800, height: 600 }), {
+    width: 788,
+    height: 588,
+    minWidth: 520,
+    minHeight: 440,
+  });
+  assert.deepEqual(getInitialWindowBounds({ width: 1920, height: 1040 }), {
+    width: 1320,
+    height: 860,
+    minWidth: 520,
+    minHeight: 440,
+  });
+
+  const mainSource = fs.readFileSync(path.resolve(__dirname, "../desktop/main.js"), "utf8");
+  assert.match(mainSource, /screen\.getPrimaryDisplay\(\)\?\.workAreaSize/);
+  assert.match(mainSource, /getInitialWindowBounds\(primaryWorkArea\)/);
+
+  const css = fs.readFileSync(path.resolve(__dirname, "../frontend/styles/app.css"), "utf8");
+  assert.match(css, /Low-resolution desktop layout/);
+  assert.match(css, /min-width:\s*641px\) and \(max-width:\s*900px/);
+  assert.match(css, /min-width:\s*641px\) and \(max-height:\s*700px/);
+  assert.match(css, /\.app-shell \.sidebar-nav[\s\S]*?overflow-x:\s*auto/);
+  assert.match(css, /\.app-shell \.panel:has\(table\)[\s\S]*?overflow-x:\s*auto/);
+  assert.match(css, /\.app-shell input,[\s\S]*?font-size:\s*1rem/);
+  assert.match(css, /\.app-shell td \{[\s\S]*?font-size:\s*0\.92rem/);
 });
 
 test("only the server prevents automatic sleep and still allows its display to turn off", () => {

@@ -9,6 +9,7 @@ const {
   normalizePdfFileName,
   prepareReportHtml,
 } = require("../desktop/reportPdf");
+const { buildReportHtml } = require("../src/utils/reportFormatter");
 
 test("desktop report PDFs use native A4 printing with backgrounds and no margins", () => {
   assert.deepEqual(getPrintToPdfOptions(), {
@@ -80,4 +81,37 @@ test("browser fallback carries report head styles into the cloned PDF body", () 
   assert.match(source, /window\.labLmsDesktop\?\.saveReportPdf/);
   assert.match(routes, /pdfMode\s*\?\s*canDownloadReportPdf/);
   assert.match(routes, /readOnlyView:\s*!printMode\s*&&\s*!pdfMode/);
+});
+
+test("overflow pages repeat the letterhead and preserve its configured spacing", () => {
+  const reportHtml = buildReportHtml({
+    patient: { id: "QA-1", name: "Pagination Patient", age: 40, gender: "Female" },
+    visit: { bill_no: "QA-1", created_at: "2026-09-22T09:00:00Z" },
+    report: { report_no: "QA-1", finalized_at: "2026-09-22T10:00:00Z" },
+    doctor: { name: "Self" },
+    tests: [
+      { name: "Pagination Profile A", parameters: [{ parameter_name: "Result A", value: "1" }] },
+      { name: "Pagination Profile B", parameters: [{ parameter_name: "Result B", value: "2" }] },
+    ],
+    letterheadDataUrl: "data:image/png;base64,YQ==",
+    reportHeaderSpaceMm: 44,
+    reportFooterSpaceMm: 20,
+  });
+
+  assert.match(reportHtml, /\.report-pagination-header-space\s*\{\s*height:\s*44mm;/);
+  assert.match(reportHtml, /\.report-pagination-footer-space\s*\{\s*height:\s*20mm;/);
+  assert.match(reportHtml, /<table class="report-pagination-table report-pagination-source" role="presentation">/);
+  assert.match(reportHtml, /data-report-pagination="true"/);
+  assert.match(reportHtml, /body\.multi-report > \.multi-report-print-letterhead\s*\{[\s\S]*?display:\s*block;[\s\S]*?position:\s*fixed;/);
+  assert.match(reportHtml, /class="letterhead-background multi-report-print-letterhead"/);
+  assert.match(reportHtml, /\.multi-report-page \.letterhead-background\s*\{\s*display:\s*none;/);
+});
+
+test("the AnemiaScreeningProfile preview is covered by the measured-page QA fixture", () => {
+  const qaSource = fs.readFileSync(path.join(__dirname, "render-report-pdf-qa.cjs"), "utf8");
+  assert.match(qaSource, /process\.argv\.includes\("--anemia-preview"\)/);
+  assert.match(qaSource, /name:\s*"AnemiaScreeningProfile"/);
+  assert.match(qaSource, /embeddedPreview:\s*anemiaPreview/);
+  assert.match(qaSource, /window\.__labReportPaginationPromise/);
+  assert.match(qaSource, /scrollHeight:\s*content \? content\.scrollHeight/);
 });

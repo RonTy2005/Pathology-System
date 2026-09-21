@@ -1742,6 +1742,36 @@ async function ensureAnemiaScreeningProfileTestConfiguration() {
   });
 }
 
+async function ensureAntenatalProfileTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: ["AntenatalProfile", "Antenatal Profile", "Antenatal Booking Profile", "Antenatal Screening Profile"],
+    createName: "Antenatal Profile",
+    createCode: "ANTENATALPROFILE001",
+    category: "Clinical Pathology",
+    sampleType: "EDTA Whole Blood, Serum / Plasma and Urine",
+    turnaroundHours: 24,
+    parameters: [
+      { name: "Gestational Age / Trimester", aliases: ["Gestational Age", "Trimester", "Period of Gestation", "POG"], unit: "", normalRange: "Clinical information", entryMode: "manual" },
+      { name: "Haemoglobin (Hb)", aliases: ["Hemoglobin (Hb)", "Haemoglobin", "Hemoglobin", "Hb"], unit: "g/dL", normalRange: "Pregnancy / trimester-specific laboratory interval", entryMode: "manual" },
+      { name: "Total Leucocyte Count (TLC)", aliases: ["Total Leukocyte Count (TLC)", "TLC", "WBC Count"], unit: "cells/cumm", normalRange: "Pregnancy / trimester-specific laboratory interval", entryMode: "manual" },
+      { name: "Platelet Count", aliases: ["Platelets"], unit: "cells/cumm", normalRange: "Pregnancy-specific laboratory interval", entryMode: "manual" },
+      { name: "ABO Blood Group", aliases: ["Blood Group", "ABO Group"], unit: "", normalRange: "Not applicable", entryMode: "manual" },
+      { name: "Rh(D) Type", aliases: ["Rh Type", "Rh Factor", "Rhesus (D)", "Rhesus Factor"], unit: "", normalRange: "Not applicable", entryMode: "manual" },
+      { name: "Red-cell Antibody Screen (ICT)", aliases: ["Antibody Screen", "Indirect Coombs Test", "Indirect Coombs", "ICT"], unit: "", normalRange: "Negative", entryMode: "manual" },
+      { name: "Glucose / GDM Screening", aliases: ["GDM Screening", "Glucose Challenge Test", "75 g OGTT", "Oral Glucose Tolerance Test", "Blood Glucose", "Glucose"], unit: "mg/dL", normalRange: "Test-, gestation- and protocol-specific", entryMode: "manual" },
+      { name: "HIV 1 & 2 Screen", aliases: ["HIV 1 and 2 Screen", "HIV Screen", "HIV 1/2"], unit: "", normalRange: "Non-reactive", entryMode: "manual" },
+      { name: "Hepatitis B Surface Antigen (HBsAg)", aliases: ["HBsAg", "Hepatitis B Screen"], unit: "", normalRange: "Non-reactive", entryMode: "manual" },
+      { name: "Hepatitis C Screen (Anti-HCV)", aliases: ["Anti-HCV", "HCV Antibody", "Hepatitis C Screen"], unit: "", normalRange: "Non-reactive", entryMode: "manual" },
+      { name: "Syphilis Screen (VDRL / RPR)", aliases: ["VDRL", "RPR", "Syphilis Screen"], unit: "", normalRange: "Non-reactive", entryMode: "manual" },
+      { name: "Urine Protein / Albumin", aliases: ["Urine Albumin", "Urine Protein", "Albumin, Urine"], unit: "", normalRange: "Negative", entryMode: "manual" },
+      { name: "Urine Glucose", aliases: ["Glucose, Urine", "Urine Sugar"], unit: "", normalRange: "Negative", entryMode: "manual" },
+      { name: "Urine Culture / Bacteriuria Screen", aliases: ["Urine Culture", "Bacteriuria Screen", "Urine Culture Result"], unit: "", normalRange: "No significant growth", entryMode: "manual" },
+      { name: "Overall Findings", aliases: ["Result / Findings", "Screening Findings", "Interpretation", "Findings"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Comments", aliases: ["Comment", "Remarks"], unit: "", normalRange: "", entryMode: "manual" },
+    ],
+  });
+}
+
 async function ensureAntiTpoTestConfiguration() {
   await ensureReportTableTestConfiguration({
     names: [
@@ -1817,6 +1847,142 @@ async function ensureAnticardiolipinIggTestConfiguration() {
         name: "Anticardiolipin Antibody IgG, Serum",
         aliases: ["Anti Cardiolipin Antibody IgG", "AntiCardiolipinAntibodyIgG", "Cardiolipin Antibody IgG", "Phospholipid (Cardiolipin) Antibodies, IgG", "aCL IgG"],
         unit: "GPL-U/mL",
+        normalRange: "< 15.0",
+        entryMode: "manual",
+      },
+      { name: "Comments", aliases: ["Comment", "Remarks"], unit: "", normalRange: "", entryMode: "manual" },
+    ],
+  });
+}
+
+async function ensureAnticardiolipinIgaTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "Anti Cardiolipin Antibody IgA",
+      "AntiCardiolipinAntibodyIgA",
+      "Anticardiolipin Antibody IgA",
+      "Anticardiolipin IgA",
+      "Cardiolipin Antibody IgA",
+      "Phospholipid (Cardiolipin) Antibodies, IgA",
+    ],
+    createName: "Anti Cardiolipin Antibody IgA",
+    createCode: "ACLIGA001",
+    category: "Immunology",
+    sampleType: "Serum",
+    turnaroundHours: 24,
+    parameters: [
+      {
+        name: "Anticardiolipin Antibody IgA, Serum",
+        aliases: ["Anti Cardiolipin Antibody IgA", "AntiCardiolipinAntibodyIgA", "Cardiolipin Antibody IgA", "Phospholipid (Cardiolipin) Antibodies, IgA", "aCL IgA"],
+        unit: "APL-U/mL",
+        normalRange: "< 15.0",
+        entryMode: "manual",
+      },
+      { name: "Comments", aliases: ["Comment", "Remarks"], unit: "", normalRange: "", entryMode: "manual" },
+    ],
+  });
+}
+
+async function ensureAnticardiolipinIgaIgmPanelTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "Anti Cardiolipin Antibody IgA & IgM",
+      "Anti Cardiolipin Antibody IgA &IgM",
+      "AntiCardiolipinAntibodyIgA&IgM",
+      "Anticardiolipin Antibody IgA & IgM",
+      "Anticardiolipin IgA & IgM",
+      "Cardiolipin Antibody IgA & IgM",
+      "Phospholipid (Cardiolipin) Antibodies, IgA & IgM",
+    ],
+    createName: "Anti Cardiolipin Antibody IgA & IgM",
+    createCode: "ACLIGAIGM001",
+    category: "Immunology",
+    sampleType: "Serum",
+    turnaroundHours: 24,
+    parameters: [
+      {
+        name: "Anticardiolipin Antibody IgA, Serum",
+        aliases: ["Anti Cardiolipin Antibody IgA", "Cardiolipin Antibody IgA", "aCL IgA", "IgA Result", "Result IgA"],
+        unit: "APL-U/mL",
+        normalRange: "< 15.0",
+        entryMode: "manual",
+      },
+      {
+        name: "Anticardiolipin Antibody IgM, Serum",
+        aliases: ["Anti Cardiolipin Antibody IgM", "Cardiolipin Antibody IgM", "aCL IgM", "IgM Result", "Result IgM"],
+        unit: "MPL-U/mL",
+        normalRange: "< 15.0",
+        entryMode: "manual",
+      },
+      { name: "Comments", aliases: ["Comment", "Remarks"], unit: "", normalRange: "", entryMode: "manual" },
+    ],
+  });
+}
+
+async function ensureAnticardiolipinIgaIggPanelTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "Anti Cardiolipin Antibody IgA & IgG",
+      "Anti Cardiolipin Antibody IgA &IgG",
+      "AntiCardiolipinAntibodyIgA&IgG",
+      "Anticardiolipin Antibody IgA & IgG",
+      "Anticardiolipin IgA & IgG",
+      "Cardiolipin Antibody IgA & IgG",
+      "Phospholipid (Cardiolipin) Antibodies, IgA & IgG",
+    ],
+    createName: "Anti Cardiolipin Antibody IgA & IgG",
+    createCode: "ACLIGAIGG001",
+    category: "Immunology",
+    sampleType: "Serum",
+    turnaroundHours: 24,
+    parameters: [
+      {
+        name: "Anticardiolipin Antibody IgA, Serum",
+        aliases: ["Anti Cardiolipin Antibody IgA", "Cardiolipin Antibody IgA", "aCL IgA", "IgA Result", "Result IgA"],
+        unit: "APL-U/mL",
+        normalRange: "< 15.0",
+        entryMode: "manual",
+      },
+      {
+        name: "Anticardiolipin Antibody IgG, Serum",
+        aliases: ["Anti Cardiolipin Antibody IgG", "Cardiolipin Antibody IgG", "aCL IgG", "IgG Result", "Result IgG"],
+        unit: "GPL-U/mL",
+        normalRange: "< 15.0",
+        entryMode: "manual",
+      },
+      { name: "Comments", aliases: ["Comment", "Remarks"], unit: "", normalRange: "", entryMode: "manual" },
+    ],
+  });
+}
+
+async function ensureAnticardiolipinIggIgmPanelTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "Anti Cardiolipin Antibody IgG & IgM",
+      "Anti Cardiolipin Antibody IgG &IgM",
+      "AntiCardiolipinAntibodyIgG&IgM",
+      "Anticardiolipin Antibody IgG & IgM",
+      "Anticardiolipin IgG & IgM",
+      "Cardiolipin Antibody IgG & IgM",
+      "Phospholipid (Cardiolipin) Antibodies, IgG & IgM",
+    ],
+    createName: "Anti Cardiolipin Antibody IgG & IgM",
+    createCode: "ACLIGGIGM001",
+    category: "Immunology",
+    sampleType: "Serum",
+    turnaroundHours: 24,
+    parameters: [
+      {
+        name: "Anticardiolipin Antibody IgG, Serum",
+        aliases: ["Anti Cardiolipin Antibody IgG", "Cardiolipin Antibody IgG", "aCL IgG", "IgG Result", "Result IgG"],
+        unit: "GPL-U/mL",
+        normalRange: "< 15.0",
+        entryMode: "manual",
+      },
+      {
+        name: "Anticardiolipin Antibody IgM, Serum",
+        aliases: ["Anti Cardiolipin Antibody IgM", "Cardiolipin Antibody IgM", "aCL IgM", "IgM Result", "Result IgM"],
+        unit: "MPL-U/mL",
         normalRange: "< 15.0",
         entryMode: "manual",
       },
@@ -7210,8 +7376,13 @@ async function initializeDatabase() {
     await ensureAndrostenedioneTestConfiguration();
     await ensureComprehensiveAnemiaProfileTestConfiguration();
     await ensureAnemiaScreeningProfileTestConfiguration();
+    await ensureAntenatalProfileTestConfiguration();
     await ensureAntiTpoTestConfiguration();
     await ensureAntiTgTestConfiguration();
+    await ensureAnticardiolipinIgaTestConfiguration();
+    await ensureAnticardiolipinIgaIggPanelTestConfiguration();
+    await ensureAnticardiolipinIgaIgmPanelTestConfiguration();
+    await ensureAnticardiolipinIggIgmPanelTestConfiguration();
     await ensureAnticardiolipinIggTestConfiguration();
     await ensureAnticardiolipinIgmTestConfiguration();
     await ensureApolipoproteinBTestConfiguration();
@@ -7409,8 +7580,13 @@ async function initializeDatabase() {
     await ensureAndrostenedioneTestConfiguration();
     await ensureComprehensiveAnemiaProfileTestConfiguration();
     await ensureAnemiaScreeningProfileTestConfiguration();
+    await ensureAntenatalProfileTestConfiguration();
     await ensureAntiTpoTestConfiguration();
     await ensureAntiTgTestConfiguration();
+    await ensureAnticardiolipinIgaTestConfiguration();
+    await ensureAnticardiolipinIgaIggPanelTestConfiguration();
+    await ensureAnticardiolipinIgaIgmPanelTestConfiguration();
+    await ensureAnticardiolipinIggIgmPanelTestConfiguration();
     await ensureAnticardiolipinIggTestConfiguration();
     await ensureAnticardiolipinIgmTestConfiguration();
     await ensureApolipoproteinBTestConfiguration();
