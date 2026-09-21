@@ -2240,6 +2240,50 @@ async function ensureBoneMarrowCytologyTestConfiguration() {
   });
 }
 
+async function ensureBoneMarrowAspirationCytologyTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: ["BoneMarrowAspiration&Cytology", "Bone Marrow Aspiration & Cytology"],
+    createName: "Bone Marrow Aspiration & Cytology",
+    createCode: "BONEMARROWASPCYTOLOGY001",
+    category: "Haematology",
+    sampleType: "Bone Marrow Aspirate",
+    turnaroundHours: 24,
+    parameters: [
+      { name: "Specimen / Aspirate Site", aliases: ["Specimen", "Aspirate Site"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Collection Date / Time", aliases: ["Collection Date and Time", "Collection Time"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Clinical Details / Indication", aliases: ["Clinical History", "Clinical Details", "Indication"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Aspiration Procedure / Material Received", aliases: ["Procedure / Material Received", "Aspiration Procedure", "Material Received"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Aspirate Quality / Adequacy", aliases: ["Aspirate Adequacy", "Gross Description", "Adequacy"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Peripheral Blood Counts", aliases: ["Blood Counts", "CBC Findings"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Peripheral Blood Smear", aliases: ["Peripheral Smear", "Blood Smear Description"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Marrow Particles / Cellularity", aliases: ["Particles / Cellularity", "Cellularity"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Total Nucleated Cells Counted", aliases: ["Total Cells Counted", "Cells Counted"], unit: "cells", normalRange: "", entryMode: "manual" },
+      { name: "Nucleated Differential / Myelogram", aliases: ["Differential Count / Myelogram", "Myelogram", "Differential Count"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Myeloid : Erythroid Ratio", aliases: ["M:E Ratio", "Myeloid Erythroid Ratio"], unit: "", normalRange: "Laboratory-validated / age-specific", entryMode: "manual" },
+      { name: "Blasts (%)", aliases: ["Blast Percentage", "Blasts"], unit: "%", normalRange: "Laboratory-validated / classification-specific", entryMode: "manual" },
+      { name: "Erythropoiesis", aliases: ["Erythroid Series"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Granulopoiesis / Myelopoiesis", aliases: ["Granulopoiesis", "Myelopoiesis", "Myeloid Series"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Megakaryocytes", aliases: ["Megakaryopoiesis"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Lymphocytes", aliases: [], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Plasma Cells", aliases: [], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Other / Abnormal Cells or Infiltrates", aliases: ["Abnormal Cells", "Other Cells", "Infiltrates"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Detailed Morphologic Description", aliases: ["Morphologic Description", "Microscopic Description", "Microscopy"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Iron Stain / Stores", aliases: ["Iron Stain", "Iron Stores"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Sideroblasts / Ring Sideroblasts", aliases: ["Ring Sideroblasts", "Sideroblasts"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Cytochemistry / Special Stains", aliases: ["Cytochemistry", "Special Stains"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Flow Cytometry", aliases: ["Flow Cytometry Summary", "Immunophenotyping"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Cytogenetics / FISH", aliases: ["Cytogenetics", "FISH"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Molecular Studies", aliases: ["Molecular Testing", "Molecular Findings"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Trephine Biopsy Correlation", aliases: ["Bone Marrow Biopsy Correlation", "Biopsy Correlation"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Interpretation / Morphologic Diagnosis", aliases: ["Morphologic Diagnosis", "Impression", "Conclusion"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Integrated Diagnosis / Report Status", aliases: ["Integrated Diagnosis", "Report Status", "Final Diagnosis"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Recommendations / Pending Studies", aliases: ["Recommendations", "Pending Studies", "Advice", "Advised"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Limitations / Notes", aliases: ["Limitations", "Note"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Comments", aliases: ["Comment", "Remarks"], unit: "", normalRange: "", entryMode: "manual" },
+    ],
+  });
+}
+
 async function ensureHba1cTestConfiguration() {
   let hba1cTests = await all(
     `SELECT id FROM tests
@@ -3587,6 +3631,84 @@ async function ensureAlbertStainKlbTestConfiguration() {
         entryMode: "manual",
       },
       { name: "Impression", aliases: ["Interpretation", "Result / Impression"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Comments", aliases: ["Comment", "Remarks"], unit: "", normalRange: "", entryMode: "manual" },
+    ],
+  });
+}
+
+async function ensureBaccalSmearBrrBodyTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: ["BACCAL Smear for BRR Body", "Buccal Smear for Barr Body"],
+    createName: "BACCAL Smear for BRR Body",
+    createCode: "BACCALSMEARBRRBODY001",
+    category: "Cytology",
+    sampleType: "Buccal Smear",
+    turnaroundHours: 24,
+    parameters: [
+      { name: "Specimen / Collection Site", aliases: ["Specimen", "Collection Site", "Site"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Collection Date / Time", aliases: ["Collection Date and Time", "Collection Time"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Clinical Indication", aliases: ["Clinical History", "Clinical Details", "Indication"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Stain / Method", aliases: ["Stain", "Method", "Staining Method"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Smear Adequacy", aliases: ["Specimen Adequacy", "Adequacy"], unit: "", normalRange: "Laboratory adequacy criteria", entryMode: "manual" },
+      { name: "Epithelial Cells Examined", aliases: ["Cells Examined", "Total Cells Examined"], unit: "cells", normalRange: "Laboratory adequacy criteria", entryMode: "manual" },
+      { name: "Barr-body Positive Cells", aliases: ["Barr Body Positive Cells", "Positive Cells"], unit: "cells", normalRange: "", entryMode: "manual" },
+      { name: "Barr-body Positive Nuclei (%)", aliases: ["Barr Body Positive Nuclei (%)", "Barr Body Percentage", "Positive Nuclei (%)"], unit: "%", normalRange: "Laboratory-validated / stain-specific interpretive cut-off", entryMode: "calculated", formula: "{Barr-body Positive Cells} / {Epithelial Cells Examined} * 100", precision: 1 },
+      { name: "Sex Chromatin (Barr Body) Finding", aliases: ["Barr Body Finding", "Sex Chromatin Finding", "Barr Body Result", "Result"], unit: "", normalRange: "Laboratory-validated interpretive criteria", entryMode: "manual" },
+      { name: "Cytomorphologic Findings", aliases: ["Cytology Findings", "Microscopic Findings", "Findings"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Interpretation / Impression", aliases: ["Interpretation", "Impression", "Result / Impression"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Limitations / Notes", aliases: ["Limitations", "Note", "Notes"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Comments", aliases: ["Comment", "Remarks"], unit: "", normalRange: "", entryMode: "manual" },
+    ],
+  });
+}
+
+async function ensureAutoimmuneProfileTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: ["Autoimmune Profile"],
+    createName: "Autoimmune Profile",
+    createCode: "AUTOIMMUNEPROFILE001",
+    category: "Immunology",
+    sampleType: "Serum",
+    turnaroundHours: 48,
+    parameters: [
+      {
+        name: "ANA Screen / Result",
+        aliases: ["ANA Screen", "ANA Result", "Antinuclear Antibody", "Antinuclear Antibodies", "ANA Direct"],
+        unit: "",
+        normalRange: "Negative / below the laboratory screening threshold",
+        entryMode: "manual",
+      },
+      {
+        name: "ANA Titer",
+        aliases: ["ANA Titre", "Antinuclear Antibody Titer", "Antinuclear Antibody Titre"],
+        unit: "",
+        normalRange: "Laboratory-validated reporting threshold (when IFA is performed)",
+        entryMode: "manual",
+      },
+      {
+        name: "ANA Pattern (ICAP)",
+        aliases: ["ANA Pattern", "ANA IFA Pattern", "Antinuclear Antibody Pattern", "ICAP Pattern"],
+        unit: "",
+        normalRange: "",
+        entryMode: "manual",
+      },
+      {
+        name: "Anti-dsDNA Antibody",
+        aliases: ["Anti-dsDNA", "Anti dsDNA", "Anti-DNA (ds) Antibody", "Anti-DNA (DS) Ab Qn", "Double-Stranded DNA Antibody"],
+        unit: "IU/mL",
+        normalRange: "Assay-specific reference interval",
+        entryMode: "manual",
+      },
+      {
+        name: "Complement C3",
+        aliases: ["Complement C3, Serum", "C3 Complement", "C3, Serum", "C3"],
+        unit: "mg/dL",
+        normalRange: "Laboratory- and age-specific reference interval",
+        entryMode: "manual",
+      },
+      { name: "Clinical Indication", aliases: ["Clinical History", "Clinical Details", "Indication"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Method / Platform", aliases: ["Method", "Platform", "Assay Method"], unit: "", normalRange: "", entryMode: "manual" },
+      { name: "Interpretation / Findings", aliases: ["Result / Findings", "Overall Findings", "Interpretation", "Findings"], unit: "", normalRange: "", entryMode: "manual" },
       { name: "Comments", aliases: ["Comment", "Remarks"], unit: "", normalRange: "", entryMode: "manual" },
     ],
   });
@@ -7102,6 +7224,7 @@ async function initializeDatabase() {
     await ensureBodyFluidCultureSensitivityTestConfiguration();
     await ensureBodyFluidTotalProteinTestConfiguration();
     await ensureBodyFluidChlorideTestConfiguration();
+    await ensureBoneMarrowAspirationCytologyTestConfiguration();
     await ensureBoneMarrowCytologyTestConfiguration();
     await ensureHba1cTestConfiguration();
     await ensureVitaminDTestConfiguration();
@@ -7129,6 +7252,8 @@ async function initializeDatabase() {
     await ensureGroupBStrepTestConfiguration();
     await ensureFungusKohPreparationTestConfiguration();
     await ensureAlbertStainKlbTestConfiguration();
+    await ensureBaccalSmearBrrBodyTestConfiguration();
+    await ensureAutoimmuneProfileTestConfiguration();
     await ensureSputumAfbTestConfiguration();
     await ensureStoolCultureTestConfiguration();
     await ensureUrineCultureTestConfiguration();
@@ -7298,6 +7423,7 @@ async function initializeDatabase() {
     await ensureBodyFluidCultureSensitivityTestConfiguration();
     await ensureBodyFluidTotalProteinTestConfiguration();
     await ensureBodyFluidChlorideTestConfiguration();
+    await ensureBoneMarrowAspirationCytologyTestConfiguration();
     await ensureBoneMarrowCytologyTestConfiguration();
     await ensureHba1cTestConfiguration();
     await ensureVitaminDTestConfiguration();
@@ -7325,6 +7451,8 @@ async function initializeDatabase() {
     await ensureGroupBStrepTestConfiguration();
     await ensureFungusKohPreparationTestConfiguration();
     await ensureAlbertStainKlbTestConfiguration();
+    await ensureBaccalSmearBrrBodyTestConfiguration();
+    await ensureAutoimmuneProfileTestConfiguration();
     await ensureSputumAfbTestConfiguration();
     await ensureStoolCultureTestConfiguration();
     await ensureUrineCultureTestConfiguration();

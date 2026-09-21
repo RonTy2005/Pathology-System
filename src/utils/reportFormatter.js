@@ -513,6 +513,20 @@ function isAlbertStainKlbTest(test) {
     || name === "albertstainforklb";
 }
 
+function isBaccalSmearBrrBodyTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "baccalsmearbrrbody001"
+    || name === "baccalsmearforbrrbody"
+    || name === "buccalsmearforbarrbody";
+}
+
+function isAutoimmuneProfileTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "autoimmuneprofile001" || name === "autoimmuneprofile";
+}
+
 function isAfbZiehlNeelsenStainTest(test) {
   const name = normalizeParameterName(test?.name);
   const code = normalizeParameterName(test?.code);
@@ -1678,6 +1692,13 @@ function isBoneMarrowCytologyTest(test) {
   const code = normalizeParameterName(test?.code);
   return code === "bonemarrowcytology001"
     || name === "bonemarrowcytology";
+}
+
+function isBoneMarrowAspirationCytologyTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "bonemarrowaspcytology001"
+    || name === "bonemarrowaspirationcytology";
 }
 
 function isMediumSectionBiopsyTest(test) {
@@ -5432,6 +5453,146 @@ function buildAlbertStainKlbReportBody(test) {
   `;
 }
 
+// Conventional buccal-smear sex-chromatin assessment is a supportive screen,
+// not chromosome analysis. Sources: PMID 9183844 and PMID 8958328.
+function buildBaccalSmearBrrBodyReportBody(test) {
+  const valueFor = (aliases, fallback = "") => {
+    const parameter = findReportParameter(test, aliases) || {};
+    return String(parameter.value ?? "").trim() || fallback;
+  };
+  const multiline = (aliases, fallback = "-") => escapeHtml(valueFor(aliases, fallback)).replace(/\r?\n/g, "<br />");
+  const specimen = valueFor(["Specimen / Collection Site", "Specimen", "Collection Site", "Site"], test.sample_type || "Buccal Smear");
+
+  return `
+    <table class="results-table buccal-barr-body-table">
+      <thead><tr><th style="width:35%">Investigation</th><th style="width:32%">Result / Findings</th><th style="width:33%">Reference / Guide</th></tr></thead>
+      <tbody>
+        <tr class="thyroid-antibodies-section"><td colspan="3"><strong>SPECIMEN AND METHOD</strong></td></tr>
+        <tr><td><strong>Specimen / Collection Site</strong></td><td colspan="2">${escapeHtml(specimen)}</td></tr>
+        <tr><td><strong>Collection Date / Time</strong></td><td colspan="2">${multiline(["Collection Date / Time", "Collection Date and Time", "Collection Time"])}</td></tr>
+        <tr><td><strong>Clinical Indication</strong></td><td colspan="2">${multiline(["Clinical Indication", "Clinical History", "Clinical Details", "Indication"])}</td></tr>
+        <tr><td><strong>Stain / Method</strong></td><td>${multiline(["Stain / Method", "Stain", "Method", "Staining Method"])}</td><td>State the stain and microscopy method used</td></tr>
+        <tr><td><strong>Smear Adequacy</strong></td><td>${multiline(["Smear Adequacy", "Specimen Adequacy", "Adequacy"])}</td><td>Laboratory adequacy criteria</td></tr>
+
+        <tr class="thyroid-antibodies-section"><td colspan="3"><strong>SEX CHROMATIN / BARR BODY ASSESSMENT</strong></td></tr>
+        <tr><td><strong>Epithelial Cells Examined</strong></td><td>${multiline(["Epithelial Cells Examined", "Cells Examined", "Total Cells Examined"])}</td><td>Record intact, evaluable nuclei counted</td></tr>
+        <tr><td><strong>Barr-body Positive Cells</strong></td><td>${multiline(["Barr-body Positive Cells", "Barr Body Positive Cells", "Positive Cells"])}</td><td>Count meeting validated morphologic criteria</td></tr>
+        <tr><td><strong>Barr-body Positive Nuclei (%)</strong></td><td>${multiline(["Barr-body Positive Nuclei (%)", "Barr Body Positive Nuclei (%)", "Barr Body Percentage", "Positive Nuclei (%)"])}</td><td>Laboratory-validated, stain-specific interpretive cut-off</td></tr>
+        <tr><td><strong>Sex Chromatin (Barr Body) Finding</strong></td><td>${multiline(["Sex Chromatin (Barr Body) Finding", "Barr Body Finding", "Sex Chromatin Finding", "Barr Body Result", "Result"])}</td><td>Supportive cytologic finding; not a stand-alone chromosome result</td></tr>
+        <tr><td><strong>Cytomorphologic Findings</strong></td><td colspan="2">${multiline(["Cytomorphologic Findings", "Cytology Findings", "Microscopic Findings", "Findings"])}</td></tr>
+
+        <tr class="thyroid-antibodies-section"><td colspan="3"><strong>INTERPRETATION</strong></td></tr>
+        <tr><td><strong>Interpretation / Impression</strong></td><td colspan="2">${multiline(["Interpretation / Impression", "Interpretation", "Impression", "Result / Impression"])}</td></tr>
+        <tr><td><strong>Limitations / Notes</strong></td><td colspan="2">${multiline(["Limitations / Notes", "Limitations", "Note", "Notes"])}</td></tr>
+        <tr><td><strong>Comments</strong></td><td colspan="2">${multiline(["Comments", "Comment", "Remarks"])}</td></tr>
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes buccal-barr-body-notes">
+      <div class="report-note-heading">Clinical Use and Limitations :</div>
+      <ul>
+        <li>A Barr body is condensed inactive X chromatin that may be visible at the nuclear periphery in a proportion of well-preserved buccal epithelial cells.</li>
+        <li>The percentage identified varies with staining method, slide quality, cell selection and laboratory criteria. The laboratory&rsquo;s validated method-specific cut-off takes precedence over a general published range.</li>
+        <li>Conventional buccal-smear examination is a supportive screening test. Presence or absence of sex chromatin does not by itself establish chromosomal complement, phenotypic sex, gender, or a specific diagnosis.</li>
+        <li>This examination may miss mosaicism, structural abnormalities and other chromosome findings. When a sex-chromosome difference is clinically suspected, confirm with formal chromosome analysis and/or a validated FISH or molecular method as appropriate.</li>
+      </ul>
+    </div>
+  `;
+}
+
+// This focused profile follows the analytes in the documented Labcorp
+// Autoimmune Profile (006981). ANA reporting guidance follows ICAP/EFLM
+// recommendations (PMID 34625914 and PMID 36989417); results must still be
+// interpreted in their clinical context (PMID 10629135).
+function buildAutoimmuneProfileReportBody(test) {
+  const getParameter = aliases => findReportParameter(test, aliases) || {};
+  const valueFor = (aliases, fallback = "-") => {
+    const value = String(getParameter(aliases).value ?? "").trim();
+    return value || fallback;
+  };
+  const multiline = (aliases, fallback = "-") => escapeHtml(valueFor(aliases, fallback)).replace(/\r?\n/g, "<br />");
+  const analytes = [
+    {
+      label: "ANA Screen / Result",
+      aliases: ["ANA Screen / Result", "ANA Screen", "ANA Result", "Antinuclear Antibody", "Antinuclear Antibodies", "ANA Direct", "Result"],
+      range: "Negative / below the laboratory screening threshold",
+      unit: "",
+      method: "HEp-2 IFA or validated solid-phase assay, as reported",
+    },
+    {
+      label: "ANA Titer",
+      aliases: ["ANA Titer", "ANA Titre", "Antinuclear Antibody Titer", "Antinuclear Antibody Titre"],
+      range: "Laboratory-validated reporting threshold (when IFA is performed)",
+      unit: "",
+      method: "Endpoint titre when HEp-2 IFA is performed",
+    },
+    {
+      label: "ANA Pattern (ICAP)",
+      aliases: ["ANA Pattern (ICAP)", "ANA Pattern", "ANA IFA Pattern", "Antinuclear Antibody Pattern", "ICAP Pattern"],
+      range: "Pattern reported when applicable",
+      unit: "",
+      method: "HEp-2 IFA pattern / ICAP nomenclature",
+    },
+    {
+      label: "Anti-dsDNA Antibody",
+      aliases: ["Anti-dsDNA Antibody", "Anti-dsDNA", "Anti dsDNA", "Anti-DNA (ds) Antibody", "Anti-DNA (DS) Ab Qn", "Double-Stranded DNA Antibody"],
+      range: "Assay-specific reference interval",
+      unit: "IU/mL",
+      method: "Method as reported by the performing laboratory",
+    },
+    {
+      label: "Complement C3",
+      aliases: ["Complement C3", "Complement C3, Serum", "C3 Complement", "C3, Serum", "C3"],
+      range: "Laboratory- and age-specific reference interval",
+      unit: "mg/dL",
+      method: "Immunoturbidimetry / nephelometry, as reported",
+    },
+  ];
+  const analyteRows = analytes.map(definition => {
+    const parameter = getParameter(definition.aliases);
+    const value = String(parameter.value ?? "").trim() || "-";
+    const range = parameter.normal_range && parameter.normal_range !== "N/A" ? parameter.normal_range : definition.range;
+    const unit = parameter.unit && parameter.unit !== "N/A" ? parameter.unit : definition.unit;
+    return `
+      <tr>
+        <td><div class="cbc-investigation">${escapeHtml(definition.label)}</div><div class="cbc-method">${escapeHtml(definition.method)}</div></td>
+        <td><span>${escapeHtml(value)}</span></td>
+        <td>${escapeHtml(range)}</td>
+        <td>${escapeHtml(unit)}</td>
+      </tr>
+    `;
+  }).join("");
+
+  return `
+    <table class="results-table cbc-table autoimmune-profile-table">
+      <thead><tr><th style="width: 34%">Investigation</th><th style="width: 21%">Result</th><th style="width: 31%">Reference / Reporting Guide</th><th style="width: 14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="cbc-sample-row"><td><strong>Sample Type</strong></td><td colspan="3">${escapeHtml(test.sample_type || "Serum")}</td></tr>
+        <tr class="cbc-section"><td colspan="4">SYSTEMIC AUTOIMMUNE SEROLOGY</td></tr>
+        ${analyteRows}
+        <tr class="cbc-section"><td colspan="4">REPORT CONTEXT AND INTERPRETATION</td></tr>
+        <tr><td><strong>Clinical Indication</strong></td><td colspan="3" style="white-space: pre-wrap">${multiline(["Clinical Indication", "Clinical History", "Clinical Details", "Indication"])}</td></tr>
+        <tr><td><strong>Method / Platform</strong></td><td colspan="3" style="white-space: pre-wrap">${multiline(["Method / Platform", "Method", "Platform", "Assay Method"])}</td></tr>
+        <tr><td><strong>Interpretation / Findings</strong></td><td colspan="3" style="white-space: pre-wrap">${multiline(["Interpretation / Findings", "Result / Findings", "Overall Findings", "Interpretation", "Findings"])}</td></tr>
+        <tr><td><strong>Comments</strong></td><td colspan="3" style="white-space: pre-wrap">${multiline(["Comments", "Comment", "Remarks"])}</td></tr>
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes autoimmune-profile-notes">
+      <div class="report-note-heading">Profile Scope :</div>
+      <p>This focused autoimmune profile comprises an antinuclear antibody (ANA) screen, optional ANA titre and pattern when indirect immunofluorescence is performed, anti-double-stranded DNA (anti-dsDNA) antibody, and complement C3. It supports evaluation of suspected systemic autoimmune rheumatic disease but is not a universal screen for every autoimmune disorder.</p>
+      <div class="report-note-heading">Interpretation :</div>
+      <ul>
+        <li>ANA is a sensitive but nonspecific marker. A positive result can occur in systemic autoimmune rheumatic disease, other illnesses, with some medicines, and in people without autoimmune disease; interpret it only with compatible clinical findings and pre-test probability.</li>
+        <li>When ANA is performed by HEp-2 indirect immunofluorescence, the endpoint titre and fluorescence pattern should be reported where applicable. Different methods and numerical values are not directly interchangeable.</li>
+        <li>Anti-dsDNA can provide additional support for systemic lupus erythematosus in the appropriate clinical setting. Diagnostic specificity and quantitative results depend on the assay method and cut-off.</li>
+        <li>Reduced complement C3 may reflect complement consumption but is not specific to one disease. A normal C3 result does not exclude systemic lupus erythematosus or another autoimmune condition.</li>
+        <li>Negative results do not exclude all autoimmune diseases. Depending on the clinical presentation, targeted testing may include ENA antibodies, C4, rheumatoid factor and anti-CCP, ANCA with MPO/PR3, antiphospholipid antibodies, or organ-specific autoantibodies.</li>
+      </ul>
+      <div class="report-note-heading">Note :</div>
+      <p>Interpret all components together with symptoms, examination findings, medicines, prior results, and the performing laboratory&rsquo;s validated method-specific reference intervals. This profile alone does not establish or exclude a diagnosis.</p>
+    </div>
+  `;
+}
+
 function buildAfbZiehlNeelsenStainReportBody(test) {
   if (isAlbertStainKlbTest(test)) return buildAlbertStainKlbReportBody(test);
 
@@ -8578,6 +8739,87 @@ function buildBoneMarrowCytologyReportBody(test) {
   `;
 }
 
+// Reporting structure follows ICSH bone-marrow examination guidance:
+// https://onlinelibrary.wiley.com/doi/full/10.1111/ijlh.70214
+// https://www.icsh.org/guidelines-for-the-standardization-of-bone-marrow-specimens-and-reports
+function buildBoneMarrowAspirationCytologyReportBody(test) {
+  const value = aliases => String(findReportParameter(test, aliases)?.value ?? "").trim();
+  const narrative = aliases => escapeHtml(value(aliases) || "-").replace(/\r?\n/g, "<br />");
+  const specimen = value(["Specimen / Aspirate Site", "Specimen", "Aspirate Site"])
+    || test.sample_type
+    || "Bone Marrow Aspirate";
+
+  return `
+    <style>
+      .bone-marrow-report-label { border-bottom: 2px solid #263238; color: #263238; font-size: 12px; font-weight: 700; letter-spacing: .45px; margin: 1px 0 6px; padding: 3px 0 5px; text-align: center; }
+      .bone-marrow-aspiration-cytology-table { border: 1px solid #9aa4ab; margin-bottom: 7px; }
+      .bone-marrow-aspiration-cytology-table th { background: #eef2f4; }
+      .bone-marrow-aspiration-cytology-table td { border-bottom: 1px solid #cbd2d7; }
+      .bone-marrow-aspiration-cytology-table .bone-marrow-section td { background: #e1e7ea; border-bottom: 1px solid #7e8a91; border-top: 1px solid #7e8a91; color: #1f2933; font-weight: 700; letter-spacing: .25px; padding-bottom: 4px !important; padding-top: 5px !important; }
+      .bone-marrow-aspiration-cytology-table .bone-marrow-conclusion td { border-top: 1.5px solid #263238; font-weight: 600; }
+      .bone-marrow-aspiration-cytology-notes { border-left: 3px solid #607d8b; margin-top: 7px; padding-left: 8px; }
+    </style>
+    <div class="bone-marrow-aspiration-cytology-report">
+      <div class="bone-marrow-report-label">BONE MARROW ASPIRATION &amp; CYTOLOGY</div>
+      <table class="results-table bone-marrow-aspiration-cytology-table">
+        <thead><tr><th style="width:31%">Section / Parameter</th><th style="width:69%">Result / Morphologic Findings</th></tr></thead>
+        <tbody>
+          <tr class="bone-marrow-section"><td colspan="2"><strong>SPECIMEN, PROCEDURE AND CLINICAL DATA</strong></td></tr>
+          <tr><td><strong>Specimen / Aspirate Site</strong></td><td>${escapeHtml(specimen)}</td></tr>
+          <tr><td><strong>Collection Date / Time</strong></td><td>${narrative(["Collection Date / Time", "Collection Date and Time", "Collection Time"])}</td></tr>
+          <tr><td><strong>Clinical Details / Indication</strong></td><td>${narrative(["Clinical Details / Indication", "Clinical History", "Clinical Details", "Indication"])}</td></tr>
+          <tr><td><strong>Aspiration Procedure / Material Received</strong></td><td>${narrative(["Aspiration Procedure / Material Received", "Procedure / Material Received", "Aspiration Procedure", "Material Received"])}</td></tr>
+          <tr><td><strong>Aspirate Quality / Adequacy</strong></td><td>${narrative(["Aspirate Quality / Adequacy", "Aspirate Adequacy", "Gross Description", "Adequacy"])}</td></tr>
+
+          <tr class="bone-marrow-section"><td colspan="2"><strong>PERIPHERAL BLOOD CORRELATION</strong></td></tr>
+          <tr><td><strong>Peripheral Blood Counts</strong></td><td>${narrative(["Peripheral Blood Counts", "Blood Counts", "CBC Findings"])}</td></tr>
+          <tr><td><strong>Peripheral Blood Smear</strong></td><td>${narrative(["Peripheral Blood Smear", "Peripheral Smear", "Blood Smear Description"])}</td></tr>
+
+          <tr class="bone-marrow-section"><td colspan="2"><strong>ASPIRATE MORPHOLOGY AND MYELOGRAM</strong></td></tr>
+          <tr><td><strong>Marrow Particles / Cellularity</strong></td><td>${narrative(["Marrow Particles / Cellularity", "Particles / Cellularity", "Cellularity"])}</td></tr>
+          <tr><td><strong>Total Nucleated Cells Counted</strong></td><td>${narrative(["Total Nucleated Cells Counted", "Total Cells Counted", "Cells Counted"])}</td></tr>
+          <tr><td><strong>Nucleated Differential / Myelogram</strong></td><td>${narrative(["Nucleated Differential / Myelogram", "Differential Count / Myelogram", "Myelogram", "Differential Count"])}</td></tr>
+          <tr><td><strong>Myeloid : Erythroid Ratio</strong></td><td>${narrative(["Myeloid : Erythroid Ratio", "M:E Ratio", "Myeloid Erythroid Ratio"])}</td></tr>
+          <tr><td><strong>Blasts (%)</strong></td><td>${narrative(["Blasts (%)", "Blast Percentage", "Blasts"])}</td></tr>
+          <tr><td><strong>Erythropoiesis</strong></td><td>${narrative(["Erythropoiesis", "Erythroid Series"])}</td></tr>
+          <tr><td><strong>Granulopoiesis / Myelopoiesis</strong></td><td>${narrative(["Granulopoiesis / Myelopoiesis", "Granulopoiesis", "Myelopoiesis", "Myeloid Series"])}</td></tr>
+          <tr><td><strong>Megakaryocytes</strong></td><td>${narrative(["Megakaryocytes", "Megakaryopoiesis"])}</td></tr>
+          <tr><td><strong>Lymphocytes</strong></td><td>${narrative(["Lymphocytes"])}</td></tr>
+          <tr><td><strong>Plasma Cells</strong></td><td>${narrative(["Plasma Cells"])}</td></tr>
+          <tr><td><strong>Other / Abnormal Cells or Infiltrates</strong></td><td>${narrative(["Other / Abnormal Cells or Infiltrates", "Abnormal Cells", "Other Cells", "Infiltrates"])}</td></tr>
+          <tr><td><strong>Detailed Morphologic Description</strong></td><td>${narrative(["Detailed Morphologic Description", "Morphologic Description", "Microscopic Description", "Microscopy"])}</td></tr>
+
+          <tr class="bone-marrow-section"><td colspan="2"><strong>IRON, SPECIAL STAINS AND ANCILLARY STUDIES</strong></td></tr>
+          <tr><td><strong>Iron Stain / Stores</strong></td><td>${narrative(["Iron Stain / Stores", "Iron Stain", "Iron Stores"])}</td></tr>
+          <tr><td><strong>Sideroblasts / Ring Sideroblasts</strong></td><td>${narrative(["Sideroblasts / Ring Sideroblasts", "Ring Sideroblasts", "Sideroblasts"])}</td></tr>
+          <tr><td><strong>Cytochemistry / Special Stains</strong></td><td>${narrative(["Cytochemistry / Special Stains", "Cytochemistry", "Special Stains"])}</td></tr>
+          <tr><td><strong>Flow Cytometry</strong></td><td>${narrative(["Flow Cytometry", "Flow Cytometry Summary", "Immunophenotyping"])}</td></tr>
+          <tr><td><strong>Cytogenetics / FISH</strong></td><td>${narrative(["Cytogenetics / FISH", "Cytogenetics", "FISH"])}</td></tr>
+          <tr><td><strong>Molecular Studies</strong></td><td>${narrative(["Molecular Studies", "Molecular Testing", "Molecular Findings"])}</td></tr>
+          <tr><td><strong>Trephine Biopsy Correlation</strong></td><td>${narrative(["Trephine Biopsy Correlation", "Bone Marrow Biopsy Correlation", "Biopsy Correlation"])}</td></tr>
+
+          <tr class="bone-marrow-section"><td colspan="2"><strong>INTERPRETATION AND CONCLUSION</strong></td></tr>
+          <tr class="bone-marrow-conclusion"><td><strong>Interpretation / Morphologic Diagnosis</strong></td><td>${narrative(["Interpretation / Morphologic Diagnosis", "Morphologic Diagnosis", "Impression", "Conclusion"])}</td></tr>
+          <tr><td><strong>Integrated Diagnosis / Report Status</strong></td><td>${narrative(["Integrated Diagnosis / Report Status", "Integrated Diagnosis", "Report Status", "Final Diagnosis"])}</td></tr>
+          <tr><td><strong>Recommendations / Pending Studies</strong></td><td>${narrative(["Recommendations / Pending Studies", "Recommendations", "Pending Studies", "Advice", "Advised"])}</td></tr>
+          <tr><td><strong>Limitations / Notes</strong></td><td>${narrative(["Limitations / Notes", "Limitations", "Note"])}</td></tr>
+          <tr><td><strong>Comments</strong></td><td>${narrative(["Comments", "Comment", "Remarks"])}</td></tr>
+        </tbody>
+      </table>
+      <div class="single-analyte-notes report-template-notes bone-marrow-aspiration-cytology-notes">
+        <div class="report-note-heading">Reporting and Interpretation Notes :</div>
+        <ul>
+          <li>Aspirate adequacy should describe particles, haemodilution, preservation and any blood tap, paucicellular aspirate or dry tap because these directly affect morphologic assessment.</li>
+          <li>The myelogram, blast percentage, M:E ratio and lineage morphology should be assessed in representative, well-preserved areas, with the number of nucleated cells counted documented.</li>
+          <li>There is no universal adult reference interval suitable for every patient or laboratory. Expected proportions vary with age, specimen quality, preparation and laboratory method; use validated local and age-appropriate intervals.</li>
+          <li>Aspirate and trephine biopsy findings are complementary. A final classification may require correlation with the peripheral blood, biopsy, flow cytometry, cytogenetic/FISH and molecular findings.</li>
+          <li>Pending ancillary results and material limitations should be stated clearly. Do not interpret a blank or unperformed study as a negative result.</li>
+        </ul>
+      </div>
+    </div>
+  `;
+}
+
 function buildFnacReportBody(test) {
   const specimen = getCytologyValue(test, ["Specimen"], "Cervical / Vaginal Specimens");
   const clinicalHistory = getCytologyValue(
@@ -10446,6 +10688,8 @@ function buildBunReportBody(test) {
   if (isGroupBStrepTest(test)) return buildGroupBStrepReportBody(test);
   if (isFungusKohPreparationTest(test)) return buildFungusKohPreparationReportBody(test);
   if (isSputumAfbTest(test)) return buildSputumAfbReportBody(test);
+  if (isBaccalSmearBrrBodyTest(test)) return buildBaccalSmearBrrBodyReportBody(test);
+  if (isAutoimmuneProfileTest(test)) return buildAutoimmuneProfileReportBody(test);
   if (isAfbZiehlNeelsenStainTest(test)) return buildAfbZiehlNeelsenStainReportBody(test);
   if (isBloodCultureSensitivityTest(test)) return buildBloodCultureSensitivityReportBody(test);
   if (isBodyFluidCultureSensitivityTest(test)) return buildBodyFluidCultureSensitivityReportBody(test);
@@ -10547,6 +10791,7 @@ function buildBunReportBody(test) {
   if (isInhibinBTest(test)) return buildInhibinBReportBody(test);
   if (isPappATest(test)) return buildPappAReportBody(test);
   if (isDheasTest(test)) return buildDheasReportBody(test);
+  if (isBoneMarrowAspirationCytologyTest(test)) return buildBoneMarrowAspirationCytologyReportBody(test);
   if (isBoneMarrowCytologyTest(test)) return buildBoneMarrowCytologyReportBody(test);
   if (isFnacTest(test)) return buildFnacReportBody(test);
   if (isPapSmearTest(test)) return buildPapSmearReportBody(test);
@@ -11796,7 +12041,7 @@ function buildReportHtml(reportData) {
   // This historical single-analyte renderer slot dispatches specialised
   // formats before Digoxin itself, so their report bodies remain consistent.
   const digoxinTest = singleTest && (isTotalAcidPhosphataseTest(singleTest) || isProstaticAcidPhosphataseTest(singleTest) || isAgRatioTest(singleTest) || isDigoxinTest(singleTest)) ? singleTest : null;
-  const bunTest = singleTest && (isBunTest(singleTest) || isBilirubinFractionationTest(singleTest) || isSerumBicarbonateTest(singleTest) || isAsciticFluidAnalysisTest(singleTest) || isApolipoproteinBTest(singleTest) || isAnticardiolipinIgmTest(singleTest) || isAnticardiolipinIggTest(singleTest) || isAntiTgTest(singleTest) || isAntiTpoTest(singleTest) || isAnemiaScreeningProfileTest(singleTest) || isComprehensiveAnemiaProfileTest(singleTest) || isAndrostenedioneTest(singleTest) || isGroupBStrepTest(singleTest) || isFungusKohPreparationTest(singleTest) || isSputumAfbTest(singleTest) || isAfbZiehlNeelsenStainTest(singleTest) || isBloodCultureSensitivityTest(singleTest) || isBodyFluidCultureSensitivityTest(singleTest) || isBodyFluidTotalProteinTest(singleTest) || isBodyFluidChlorideTest(singleTest) || isAfbCultureSensitivityTest(singleTest) || isStoolCultureTest(singleTest) || isUrineCultureTest(singleTest) || isMalariaParasiteIdentificationTest(singleTest) || isMycobacteriumCombinedPanelTest(singleTest) || isOvaAndParasiteTest(singleTest) || isTripleMarkerTest(singleTest) || isDoubleMarkerTest(singleTest) || isPax8Test(singleTest) || isGalectin3Test(singleTest) || isHer2Test(singleTest) || isDcpTest(singleTest) || isAfpTumorMarkerTest(singleTest) || isCa199Test(singleTest) || isCa153Test(singleTest) || isCa125Test(singleTest) || isTroponinITest(singleTest) || isTroponinTTest(singleTest) || isDengueNs1Test(singleTest) || isDengueIggTest(singleTest) || isDengueIgmTest(singleTest) || isRastTest(singleTest) || isWidalTest(singleTest) || isCrpTest(singleTest) || isSodiumTest(singleTest) || isIronTest(singleTest) || isLacticAcidTest(singleTest) || isMagnesiumTest(singleTest) || isLipaseTest(singleTest) || isAmylaseTest(singleTest) || isGgtTest(singleTest) || isChlorideTest(singleTest) || isCreatinine24HourUrineTest(singleTest) || isSemenAnalysisTest(singleTest) || isUrineCotinineTest(singleTest) || isUrineGlucoseTest(singleTest) || isPorphyrinsTest(singleTest) || isOccultBloodStoolTest(singleTest) || isCsfAnalysisTest(singleTest) || isTshTest(singleTest) || isThyroidProfileTest(singleTest) || isThyroidAntibodiesTest(singleTest) || isTriiodothyronineTotalTest(singleTest) || isTestosteroneTotalTest(singleTest) || isProgesteroneTest(singleTest) || isCortisoneTest(singleTest) || isActhTest(singleTest) || isAdaTest(singleTest) || isBetaHcgPregnancyTest(singleTest) || isProlactinTest(singleTest) || isDheaTest(singleTest) || isEstradiolTest(singleTest) || isLuteinizingHormoneTest(singleTest) || isFollicleStimulatingHormoneTest(singleTest) || isThyroxineTotalTest(singleTest) || isCalcitoninTest(singleTest) || isInhibinATest(singleTest) || isInhibinBTest(singleTest) || isPappATest(singleTest) || isDheasTest(singleTest) || isBoneMarrowCytologyTest(singleTest) || isHistopathologyReportTest(singleTest) || isCreatinineTest(singleTest) || isIonizedCalciumTest(singleTest) || isFlecainideTest(singleTest) || isPhenobarbitalTest(singleTest) || isKetoneBodyTest(singleTest) || isUricAcidTest(singleTest) || isTibcTest(singleTest) || isSerumOsmolalityTest(singleTest) || isArterialBloodGasTest(singleTest) || isManganeseBloodTest(singleTest) || isSeleniumSerumTest(singleTest))
+  const bunTest = singleTest && (isBunTest(singleTest) || isBilirubinFractionationTest(singleTest) || isSerumBicarbonateTest(singleTest) || isAsciticFluidAnalysisTest(singleTest) || isApolipoproteinBTest(singleTest) || isAnticardiolipinIgmTest(singleTest) || isAnticardiolipinIggTest(singleTest) || isAntiTgTest(singleTest) || isAntiTpoTest(singleTest) || isAnemiaScreeningProfileTest(singleTest) || isComprehensiveAnemiaProfileTest(singleTest) || isAndrostenedioneTest(singleTest) || isGroupBStrepTest(singleTest) || isFungusKohPreparationTest(singleTest) || isSputumAfbTest(singleTest) || isBaccalSmearBrrBodyTest(singleTest) || isAutoimmuneProfileTest(singleTest) || isAfbZiehlNeelsenStainTest(singleTest) || isBloodCultureSensitivityTest(singleTest) || isBodyFluidCultureSensitivityTest(singleTest) || isBodyFluidTotalProteinTest(singleTest) || isBodyFluidChlorideTest(singleTest) || isAfbCultureSensitivityTest(singleTest) || isStoolCultureTest(singleTest) || isUrineCultureTest(singleTest) || isMalariaParasiteIdentificationTest(singleTest) || isMycobacteriumCombinedPanelTest(singleTest) || isOvaAndParasiteTest(singleTest) || isTripleMarkerTest(singleTest) || isDoubleMarkerTest(singleTest) || isPax8Test(singleTest) || isGalectin3Test(singleTest) || isHer2Test(singleTest) || isDcpTest(singleTest) || isAfpTumorMarkerTest(singleTest) || isCa199Test(singleTest) || isCa153Test(singleTest) || isCa125Test(singleTest) || isTroponinITest(singleTest) || isTroponinTTest(singleTest) || isDengueNs1Test(singleTest) || isDengueIggTest(singleTest) || isDengueIgmTest(singleTest) || isRastTest(singleTest) || isWidalTest(singleTest) || isCrpTest(singleTest) || isSodiumTest(singleTest) || isIronTest(singleTest) || isLacticAcidTest(singleTest) || isMagnesiumTest(singleTest) || isLipaseTest(singleTest) || isAmylaseTest(singleTest) || isGgtTest(singleTest) || isChlorideTest(singleTest) || isCreatinine24HourUrineTest(singleTest) || isSemenAnalysisTest(singleTest) || isUrineCotinineTest(singleTest) || isUrineGlucoseTest(singleTest) || isPorphyrinsTest(singleTest) || isOccultBloodStoolTest(singleTest) || isCsfAnalysisTest(singleTest) || isTshTest(singleTest) || isThyroidProfileTest(singleTest) || isThyroidAntibodiesTest(singleTest) || isTriiodothyronineTotalTest(singleTest) || isTestosteroneTotalTest(singleTest) || isProgesteroneTest(singleTest) || isCortisoneTest(singleTest) || isActhTest(singleTest) || isAdaTest(singleTest) || isBetaHcgPregnancyTest(singleTest) || isProlactinTest(singleTest) || isDheaTest(singleTest) || isEstradiolTest(singleTest) || isLuteinizingHormoneTest(singleTest) || isFollicleStimulatingHormoneTest(singleTest) || isThyroxineTotalTest(singleTest) || isCalcitoninTest(singleTest) || isInhibinATest(singleTest) || isInhibinBTest(singleTest) || isPappATest(singleTest) || isDheasTest(singleTest) || isBoneMarrowAspirationCytologyTest(singleTest) || isBoneMarrowCytologyTest(singleTest) || isHistopathologyReportTest(singleTest) || isCreatinineTest(singleTest) || isIonizedCalciumTest(singleTest) || isFlecainideTest(singleTest) || isPhenobarbitalTest(singleTest) || isKetoneBodyTest(singleTest) || isUricAcidTest(singleTest) || isTibcTest(singleTest) || isSerumOsmolalityTest(singleTest) || isArterialBloodGasTest(singleTest) || isManganeseBloodTest(singleTest) || isSeleniumSerumTest(singleTest))
     ? singleTest
     : null;
   const typhidotTest = singleTest && (isTyphidotTest(singleTest) || isHbsAgTest(singleTest) || isAntiHbcIgmTest(singleTest) || isHepatitisBProfileTest(singleTest) || isMantouxTest(singleTest) || isHiv12ScreeningTest(singleTest) || isAntiBTitreTest(singleTest) || isAntiATitreTest(singleTest) || isDustAllergyTest(singleTest) || isDengueFeverPanelTest(singleTest) || isG6PdTest(singleTest) || isAntiHbsTest(singleTest) || isGangliosideGm1IggTest(singleTest) || isGangliosideGm1IgmTest(singleTest) || isGangliosideGd1aIggTest(singleTest) || isGangliosideGd1aIgmTest(singleTest) || isGangliosideGd1bIggTest(singleTest) || isGangliosideGq1bIggTest(singleTest) || isAntiHistoneAntibodiesTest(singleTest) || isRibosomePAntibodiesTest(singleTest) || isAntiCcpTest(singleTest) || isImmunoglobulinIggTest(singleTest) || isImmunoglobulinIgeTest(singleTest) || isImmunoglobulinIgmTest(singleTest) || isImmunoglobulinIgaTest(singleTest))
@@ -11958,6 +12203,8 @@ function buildReportHtml(reportData) {
         if (reportData.tests.length === 1 && isFungusKohPreparationTest(t)) return "FUNGUS ROUTINE, KOH PREPARATION";
         if (reportData.tests.length === 1 && isSputumAfbTest(t)) return "SPUTUM EXAMINATION, AFB";
         if (reportData.tests.length === 1 && isAlbertStainKlbTest(t)) return "ALBERT STAIN OF SMEARS FOR KLB";
+        if (reportData.tests.length === 1 && isBaccalSmearBrrBodyTest(t)) return "BUCCAL SMEAR FOR BARR BODY (SEX CHROMATIN)";
+        if (reportData.tests.length === 1 && isAutoimmuneProfileTest(t)) return "AUTOIMMUNE PROFILE";
         if (reportData.tests.length === 1 && isAfbZiehlNeelsenStainTest(t)) return "AFB (ZIEHL-NEELSEN STAIN)";
         if (reportData.tests.length === 1 && isBloodCultureSensitivityTest(t)) return "BLOOD CULTURE & SENSITIVITY";
         if (reportData.tests.length === 1 && isBodyFluidCultureSensitivityTest(t)) return "BODY FLUID CULTURE & SENSITIVITY";
@@ -12094,6 +12341,7 @@ function buildReportHtml(reportData) {
         if (reportData.tests.length === 1 && isInhibinBTest(t)) return "INHIBIN B";
         if (reportData.tests.length === 1 && isPappATest(t)) return "PAPP-A (PREGNANCY ASSOCIATED PLASMA PROTEIN-A)";
         if (reportData.tests.length === 1 && isDheasTest(t)) return "DEHYDROEPIANDROSTERONE SULPHATE (DHEAS)";
+        if (reportData.tests.length === 1 && isBoneMarrowAspirationCytologyTest(t)) return "BONE MARROW ASPIRATION &amp; CYTOLOGY";
         if (reportData.tests.length === 1 && isBoneMarrowCytologyTest(t)) return "BONE MARROW ASPIRATE - CYTOLOGY";
         if (reportData.tests.length === 1 && isFnacTest(t)) return "FINE NEEDLE ASPIRATION CYTOLOGY (FNAC)";
         if (reportData.tests.length === 1 && isPapSmearTest(t)) return "CYTOLOGY, PAP SMEAR EXAMINATION";

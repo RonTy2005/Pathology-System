@@ -1,4 +1,4 @@
-const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
+const ONE_HOUR_MS = 60 * 60 * 1000;
 
 /**
  * Keeps a downloaded desktop update from being postponed indefinitely. The
@@ -15,7 +15,7 @@ function createMandatoryUpdateController({
   setTimer = setTimeout,
   clearTimer = clearTimeout,
   log = console,
-  forceAfterMs = SIX_HOURS_MS,
+  forceAfterMs = ONE_HOUR_MS,
 } = {}) {
   if (!autoUpdater) throw new Error("An autoUpdater is required.");
   if (!dialog?.showMessageBox) throw new Error("Electron dialog support is required.");
@@ -48,7 +48,7 @@ function createMandatoryUpdateController({
   function enforceDeadline() {
     if (!downloadedUpdate || installing || deadlineAt === null) return false;
     if (now() < deadlineAt) return false;
-    return startInstall("six-hour mandatory update deadline");
+    return startInstall("one-hour mandatory update deadline");
   }
 
   function scheduleDeadline() {
@@ -71,7 +71,7 @@ function createMandatoryUpdateController({
         type: "info",
         title: `${productName} update ready`,
         message: `Version ${version} has been downloaded.`,
-        detail: `Restart now to install it. If you choose Later or close this message, ${productName} will restart and install the update automatically within 6 hours.`,
+        detail: `Restart now to install it. If you choose Later or close this message, ${productName} will restart and install the update automatically within 1 hour.`,
         buttons: ["Restart and update now", "Later"],
         defaultId: 1,
         cancelId: 1,
@@ -135,4 +135,4 @@ function createMandatoryUpdateController({
   };
 }
 
-module.exports = { SIX_HOURS_MS, createMandatoryUpdateController };
+module.exports = { ONE_HOUR_MS, createMandatoryUpdateController };

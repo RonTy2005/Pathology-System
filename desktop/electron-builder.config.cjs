@@ -60,8 +60,14 @@ module.exports = {
     allowToChangeInstallationDirectory: true,
     allowElevation: true,
     perMachine: isServer,
+    // Clinical records, user accounts, settings, sessions and client
+    // connection details live in AppData and must survive both an in-place
+    // upgrade and an uninstall/reinstall recovery workflow.
+    deleteAppDataOnUninstall: false,
     createDesktopShortcut: true,
     shortcutName: isServer ? "LabShield Server" : "LabShield",
-    include: isServer ? "desktop/installer/server-firewall.nsh" : undefined,
+    include: isServer
+      ? "desktop/installer/server-firewall.nsh"
+      : "desktop/installer/client-startup.nsh",
   },
 };

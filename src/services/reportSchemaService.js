@@ -88,6 +88,43 @@ function getFallbackReportParameters(test = {}) {
     ];
   }
 
+  if (["baccalsmearforbrrbody", "buccalsmearforbarrbody"].includes(normalizedName)) {
+    return [
+      createParameter("Specimen / Collection Site"),
+      createParameter("Collection Date / Time"),
+      createParameter("Clinical Indication"),
+      createParameter("Stain / Method"),
+      createParameter("Smear Adequacy"),
+      createParameter("Epithelial Cells Examined", { unit: "cells" }),
+      createParameter("Barr-body Positive Cells", { unit: "cells" }),
+      {
+        ...createParameter("Barr-body Positive Nuclei (%)", { unit: "%", normalRange: "Laboratory-validated / stain-specific interpretive cut-off" }),
+        entryMode: "calculated",
+        calculationFormula: "{Barr-body Positive Cells} / {Epithelial Cells Examined} * 100",
+        calculationPrecision: 1,
+      },
+      createParameter("Sex Chromatin (Barr Body) Finding", { normalRange: "Laboratory-validated interpretive criteria" }),
+      createParameter("Cytomorphologic Findings"),
+      createParameter("Interpretation / Impression"),
+      createParameter("Limitations / Notes"),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (normalizedName === "autoimmuneprofile") {
+    return [
+      createParameter("ANA Screen / Result", { normalRange: "Negative / below the laboratory screening threshold" }),
+      createParameter("ANA Titer", { normalRange: "Laboratory-validated reporting threshold (when IFA is performed)" }),
+      createParameter("ANA Pattern (ICAP)"),
+      createParameter("Anti-dsDNA Antibody", { unit: "IU/mL", normalRange: "Assay-specific reference interval" }),
+      createParameter("Complement C3", { unit: "mg/dL", normalRange: "Laboratory- and age-specific reference interval" }),
+      createParameter("Clinical Indication"),
+      createParameter("Method / Platform"),
+      createParameter("Interpretation / Findings"),
+      createParameter("Comments"),
+    ];
+  }
+
   if (normalizedName === "bonemarrowcytology") {
     return [
       createParameter("Specimen / Aspirate Site"),
@@ -110,6 +147,42 @@ function getFallbackReportParameters(test = {}) {
       createParameter("Iron Stain / Stores"),
       createParameter("Cytochemistry / Ancillary Studies"),
       createParameter("Interpretation / Morphologic Diagnosis"),
+      createParameter("Recommendations / Pending Studies"),
+      createParameter("Limitations / Notes"),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (normalizedName === "bonemarrowaspirationcytology") {
+    return [
+      createParameter("Specimen / Aspirate Site"),
+      createParameter("Collection Date / Time"),
+      createParameter("Clinical Details / Indication"),
+      createParameter("Aspiration Procedure / Material Received"),
+      createParameter("Aspirate Quality / Adequacy"),
+      createParameter("Peripheral Blood Counts"),
+      createParameter("Peripheral Blood Smear"),
+      createParameter("Marrow Particles / Cellularity"),
+      createParameter("Total Nucleated Cells Counted", { unit: "cells" }),
+      createParameter("Nucleated Differential / Myelogram"),
+      createParameter("Myeloid : Erythroid Ratio", { normalRange: "Laboratory-validated / age-specific" }),
+      createParameter("Blasts (%)", { unit: "%", normalRange: "Laboratory-validated / classification-specific" }),
+      createParameter("Erythropoiesis"),
+      createParameter("Granulopoiesis / Myelopoiesis"),
+      createParameter("Megakaryocytes"),
+      createParameter("Lymphocytes"),
+      createParameter("Plasma Cells"),
+      createParameter("Other / Abnormal Cells or Infiltrates"),
+      createParameter("Detailed Morphologic Description"),
+      createParameter("Iron Stain / Stores"),
+      createParameter("Sideroblasts / Ring Sideroblasts"),
+      createParameter("Cytochemistry / Special Stains"),
+      createParameter("Flow Cytometry"),
+      createParameter("Cytogenetics / FISH"),
+      createParameter("Molecular Studies"),
+      createParameter("Trephine Biopsy Correlation"),
+      createParameter("Interpretation / Morphologic Diagnosis"),
+      createParameter("Integrated Diagnosis / Report Status"),
       createParameter("Recommendations / Pending Studies"),
       createParameter("Limitations / Notes"),
       createParameter("Comments"),

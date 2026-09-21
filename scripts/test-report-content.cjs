@@ -131,6 +131,92 @@ test('Albert stain for KLB uses a dedicated direct-smear microscopy report', () 
   assert.match(html, /validated toxigenicity test/);
 });
 
+test('BACCAL smear for BRR body uses a dedicated Barr-body cytology screen without inventing a result', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'BACCAL Smear for BRR Body',
+    sample_type: 'Buccal Smear',
+    parameters: [
+      { parameter_name: 'Specimen / Collection Site', value: 'Buccal mucosa, inner cheek', unit: '', normal_range: '' },
+      { parameter_name: 'Stain / Method', value: 'Papanicolaou stain; light microscopy', unit: '', normal_range: '' },
+      { parameter_name: 'Smear Adequacy', value: 'Adequate; intact epithelial nuclei present', unit: '', normal_range: '' },
+      { parameter_name: 'Epithelial Cells Examined', value: '100', unit: 'cells', normal_range: '' },
+      { parameter_name: 'Barr-body Positive Cells', value: '18', unit: 'cells', normal_range: '' },
+      { parameter_name: 'Barr-body Positive Nuclei (%)', value: '18.0', unit: '%', normal_range: 'Laboratory-validated / stain-specific interpretive cut-off' },
+      { parameter_name: 'Sex Chromatin (Barr Body) Finding', value: 'Barr bodies identified in a proportion of evaluable nuclei', unit: '', normal_range: '' },
+      { parameter_name: 'Findings', value: 'Condensed chromatin apposed to the nuclear membrane in selected cells', unit: '', normal_range: '' },
+      { parameter_name: 'Impression', value: 'Sex-chromatin-positive cytologic pattern', unit: '', normal_range: '' },
+      { parameter_name: 'Comments', value: 'Confirmatory chromosome analysis may be considered when clinically indicated.', unit: '', normal_range: '' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">BUCCAL SMEAR FOR BARR BODY \(SEX CHROMATIN\)<\/div>/);
+  assert.match(html, /SEX CHROMATIN \/ BARR BODY ASSESSMENT/);
+  assert.match(html, /Buccal mucosa, inner cheek/);
+  assert.match(html, /Epithelial Cells Examined/);
+  assert.match(html, /Barr-body Positive Nuclei \(%\)/);
+  assert.match(html, />18\.0<\/td>/);
+  assert.match(html, /Sex-chromatin-positive cytologic pattern/);
+  assert.match(html, /does not by itself establish chromosomal complement/);
+  assert.match(html, /may miss mosaicism, structural abnormalities/);
+
+  const blank = buildReportHtml(sampleReport({ name: 'BACCAL Smear for BRR Body', sample_type: 'Buccal Smear', parameters: [] }));
+  assert.match(blank, /Sex Chromatin \(Barr Body\) Finding<\/strong><\/td><td>-<\/td>/);
+  assert.doesNotMatch(blank, /Barr bodies (?:identified|not identified)/i);
+
+  const fallback = getFallbackReportParameters({ name: 'BACCAL Smear for BRR Body', sample_type: 'Buccal Smear' });
+  const percentage = fallback.find(field => field.parameterName === 'Barr-body Positive Nuclei (%)');
+  assert.equal(percentage.entryMode, 'calculated');
+  assert.equal(percentage.calculationFormula, '{Barr-body Positive Cells} / {Epithelial Cells Examined} * 100');
+  assert.ok(fallback.some(field => field.parameterName === 'Smear Adequacy'));
+  assert.ok(fallback.some(field => field.parameterName === 'Interpretation / Impression'));
+
+  const separate = buildReportHtml(sampleReport({ name: 'Buccal SmearforSexChromation(B..)', sample_type: 'Buccal Smear', parameters: [] }));
+  assert.doesNotMatch(separate, /class="results-table buccal-barr-body-table"/);
+});
+
+test('Autoimmune Profile reports ANA, anti-dsDNA and C3 without claiming a diagnosis', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Autoimmune Profile',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'ANA Screen / Result', value: 'Positive', unit: '', normal_range: 'Negative' },
+      { parameter_name: 'ANA Titer', value: '1:160', unit: '', normal_range: '< 1:80' },
+      { parameter_name: 'ANA Pattern (ICAP)', value: 'Speckled nuclear pattern (AC-4)', unit: '', normal_range: '' },
+      { parameter_name: 'Anti-dsDNA Antibody', value: '36', unit: 'IU/mL', normal_range: '< 10' },
+      { parameter_name: 'Complement C3', value: '74', unit: 'mg/dL', normal_range: '90 - 180' },
+      { parameter_name: 'Method / Platform', value: 'ANA by HEp-2 IFA; anti-dsDNA by immunoassay; C3 by immunoturbidimetry', unit: '', normal_range: '' },
+      { parameter_name: 'Result / Findings', value: 'Correlate this serologic pattern with the clinical presentation.', unit: '', normal_range: '' },
+      { parameter_name: 'Comments', value: 'Method-specific intervals printed above take precedence.', unit: '', normal_range: '' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">AUTOIMMUNE PROFILE<\/div>/);
+  assert.match(html, /SYSTEMIC AUTOIMMUNE SEROLOGY/);
+  assert.match(html, /ANA Screen \/ Result/);
+  assert.match(html, />1:160<\/span>/);
+  assert.match(html, /Speckled nuclear pattern \(AC-4\)/);
+  assert.match(html, /Anti-dsDNA Antibody/);
+  assert.match(html, />36<\/span>/);
+  assert.match(html, /Complement C3/);
+  assert.match(html, />74<\/span>/);
+  assert.match(html, /Correlate this serologic pattern with the clinical presentation\./);
+  assert.match(html, /not a universal screen for every autoimmune disorder/);
+  assert.match(html, /This profile alone does not establish or exclude a diagnosis/);
+
+  const blank = buildReportHtml(sampleReport({ name: 'Autoimmune Profile', sample_type: 'Serum', parameters: [] }));
+  assert.match(blank, /ANA Screen \/ Result<\/div>.*?<td><span>-<\/span><\/td>/s);
+  assert.doesNotMatch(blank, /<td><span>(?:Positive|Negative)<\/span><\/td>/i);
+
+  const fallback = getFallbackReportParameters({ name: 'Autoimmune Profile', sample_type: 'Serum' });
+  assert.deepEqual(
+    fallback.slice(0, 5).map(field => field.parameterName),
+    ['ANA Screen / Result', 'ANA Titer', 'ANA Pattern (ICAP)', 'Anti-dsDNA Antibody', 'Complement C3']
+  );
+  assert.equal(fallback.find(field => field.parameterName === 'Anti-dsDNA Antibody').normalRange, 'Assay-specific reference interval');
+  assert.equal(fallback.find(field => field.parameterName === 'Complement C3').unit, 'mg/dL');
+
+  const separate = buildReportHtml(sampleReport({ name: 'Thyroid Autoimmune Profile', sample_type: 'Serum', parameters: [] }));
+  assert.doesNotMatch(separate, /class="results-table cbc-table autoimmune-profile-table"/);
+});
+
 test('A/G ratio renders the protein components, calculation, and laboratory interval', () => {
   const html = buildReportHtml(sampleReport({
     name: 'AGRatio',
@@ -1026,7 +1112,7 @@ test('body-fluid chloride uses a source-specific electrolyte report without borr
   }
 });
 
-test('bone marrow cytology uses a structured aspirate morphology report without changing the separate aspiration test', () => {
+test('bone marrow cytology uses a structured aspirate morphology report distinct from the combined aspiration format', () => {
   const html = buildReportHtml(sampleReport({
     name: 'Bone Marrow Cytology',
     sample_type: 'Bone Marrow Aspirate',
@@ -1076,7 +1162,58 @@ test('bone marrow cytology uses a structured aspirate morphology report without 
   assert.ok(fallback.some(field => field.parameterName === 'Interpretation / Morphologic Diagnosis'));
 
   const separate = buildReportHtml(sampleReport({ name: 'BoneMarrowAspiration&Cytology', sample_type: 'Bone Marrow Aspirate', parameters: [] }));
+  assert.match(separate, /class="bone-marrow-aspiration-cytology-report"/);
   assert.doesNotMatch(separate, /class="bone-marrow-cytology-report"/);
+});
+
+test('bone marrow aspiration and cytology has a complete modern morphology and ancillary-studies format', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'BoneMarrowAspiration&Cytology',
+    sample_type: 'Bone Marrow Aspirate',
+    parameters: [
+      { parameter_name: 'Specimen', value: 'Posterior iliac crest aspirate' },
+      { parameter_name: 'Clinical History', value: 'Unexplained cytopenia under evaluation' },
+      { parameter_name: 'Gross Description', value: 'Particulate aspirate; adequate for morphology' },
+      { parameter_name: 'Peripheral Blood Counts', value: 'CBC correlation supplied' },
+      { parameter_name: 'Peripheral Blood Smear', value: 'Representative peripheral-smear findings' },
+      { parameter_name: 'Nucleated Differential / Myelogram', value: 'Differential findings entered by the reporting pathologist' },
+      { parameter_name: 'Total Nucleated Cells Counted', value: '500', unit: 'cells' },
+      { parameter_name: 'Myeloid : Erythroid Ratio', value: '2.5 : 1' },
+      { parameter_name: 'Blasts (%)', value: '1', unit: '%' },
+      { parameter_name: 'Microscopic Description', value: 'Detailed sample morphology' },
+      { parameter_name: 'Iron Stain / Stores', value: 'Iron-stain findings entered here' },
+      { parameter_name: 'Sideroblasts / Ring Sideroblasts', value: 'Sideroblast assessment entered here' },
+      { parameter_name: 'Flow Cytometry', value: 'Flow-cytometry correlation pending' },
+      { parameter_name: 'Cytogenetics / FISH', value: 'Cytogenetic correlation pending' },
+      { parameter_name: 'Molecular Studies', value: 'Molecular correlation pending' },
+      { parameter_name: 'Impression', value: 'Morphology-based diagnostic impression' },
+      { parameter_name: 'Integrated Diagnosis / Report Status', value: 'Preliminary; ancillary studies pending' },
+      { parameter_name: 'Advice', value: 'Correlate with trephine biopsy and ancillary studies' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">BONE MARROW ASPIRATION &amp; CYTOLOGY<\/div>/);
+  assert.match(html, /class="bone-marrow-aspiration-cytology-report"/);
+  assert.match(html, /SPECIMEN, PROCEDURE AND CLINICAL DATA/);
+  assert.match(html, /PERIPHERAL BLOOD CORRELATION/);
+  assert.match(html, /ASPIRATE MORPHOLOGY AND MYELOGRAM/);
+  assert.match(html, /IRON, SPECIAL STAINS AND ANCILLARY STUDIES/);
+  assert.match(html, /INTERPRETATION AND CONCLUSION/);
+  assert.match(html, /Posterior iliac crest aspirate/);
+  assert.match(html, /Detailed sample morphology/);
+  assert.match(html, /Sideroblasts \/ Ring Sideroblasts/);
+  assert.match(html, /Flow Cytometry/);
+  assert.match(html, /Cytogenetics \/ FISH/);
+  assert.match(html, /Molecular Studies/);
+  assert.match(html, /Trephine Biopsy Correlation/);
+  assert.match(html, /no universal adult reference interval/);
+  assert.match(html, /Do not interpret a blank or unperformed study as a negative result/);
+
+  const fallback = getFallbackReportParameters({ name: 'Bone Marrow Aspiration & Cytology', sample_type: 'Bone Marrow Aspirate' });
+  assert.equal(fallback[0].parameterName, 'Specimen / Aspirate Site');
+  assert.ok(fallback.some(field => field.parameterName === 'Nucleated Differential / Myelogram'));
+  assert.ok(fallback.some(field => field.parameterName === 'Sideroblasts / Ring Sideroblasts'));
+  assert.ok(fallback.some(field => field.parameterName === 'Flow Cytometry'));
+  assert.ok(fallback.some(field => field.parameterName === 'Integrated Diagnosis / Report Status'));
 });
 
 test('multiple reports receive their own notes through the same renderer', () => {
@@ -1143,6 +1280,9 @@ test('local catalogue: restored styles and existing formats stay unchanged', asy
       const isAlbertStainKlb = normalizedInputName === 'albertstainofsmearsforklb'
         || normalizedInputName === 'albertstainofsmearforklb'
         || normalizedInputName === 'albertstainforklb';
+      const isBaccalSmearBrrBody = normalizedInputName === 'baccalsmearforbrrbody'
+        || normalizedInputName === 'buccalsmearforbarrbody';
+      const isAutoimmuneProfile = normalizedInputName === 'autoimmuneprofile';
       const isAgRatio = normalizedInputName === 'agratio'
         || normalizedInputName === 'albuminglobulinratio';
       const isAnfQualitative = normalizedInputName === 'anfantinuclearfactorqualitative'
@@ -1244,12 +1384,21 @@ test('local catalogue: restored styles and existing formats stay unchanged', asy
         || normalizedInputName === 'bodyfluidforchloride'
         || normalizedInputName === 'chloridebodyfluid'
         || normalizedInputName === 'bodyfluidchloride';
+      const isBoneMarrowAspirationCytology = normalizedInputName === 'bonemarrowaspirationcytology';
       const isBoneMarrowCytology = normalizedInputName === 'bonemarrowcytology';
       const isTimedUrineAmylase = normalizedInputName === 'amylase24hrsurine'
         || normalizedInputName === 'amylase24hoururine'
         || normalizedInputName === 'amylase24hurine'
         || normalizedInputName === '24hoururineamylase';
-      if (isActh || isAda || isAfbZiehlNeelsen || isAlbertStainKlb || isAgRatio || isAnfQualitative || isProstaticAcidPhosphatase || isTotalAcidPhosphatase || isUrineAlcohol || isAldehydeTest || isAldosterone || isBloodAllergy || isDrugAllergy || isRandomUrineAlphaAmylase || isTimedUrineAmylase || isAmmonia || isAndrogenPanel || isAndrostenedione || isComprehensiveAnemia || isAnemiaScreening || isAntiTpo || isAntiTg || isAnticardiolipinIgg || isAnticardiolipinIgm || isApolipoproteinB || isAsciticFluidAnalysis || isSerumBicarbonate || isBilirubinFractionation || isMediumSectionBiopsy || isSmallSectionBiopsy || isBloodCultureSensitivity || isBodyFluidCultureSensitivity || isBodyFluidTotalProtein || isBodyFluidChloride || isBoneMarrowCytology) {
+      if (isActh || isAda || isAfbZiehlNeelsen || isAlbertStainKlb || isBaccalSmearBrrBody || isAutoimmuneProfile || isAgRatio || isAnfQualitative || isProstaticAcidPhosphatase || isTotalAcidPhosphatase || isUrineAlcohol || isAldehydeTest || isAldosterone || isBloodAllergy || isDrugAllergy || isRandomUrineAlphaAmylase || isTimedUrineAmylase || isAmmonia || isAndrogenPanel || isAndrostenedione || isComprehensiveAnemia || isAnemiaScreening || isAntiTpo || isAntiTg || isAnticardiolipinIgg || isAnticardiolipinIgm || isApolipoproteinB || isAsciticFluidAnalysis || isSerumBicarbonate || isBilirubinFractionation || isMediumSectionBiopsy || isSmallSectionBiopsy || isBloodCultureSensitivity || isBodyFluidCultureSensitivity || isBodyFluidTotalProtein || isBodyFluidChloride || isBoneMarrowAspirationCytology || isBoneMarrowCytology) {
+        if (isBoneMarrowAspirationCytology) {
+          assert.match(newHtml, /BONE MARROW ASPIRATION &amp; CYTOLOGY/);
+          assert.match(newHtml, /Nucleated Differential \/ Myelogram/);
+          assert.match(newHtml, /Sideroblasts \/ Ring Sideroblasts/);
+          assert.match(newHtml, /Flow Cytometry/);
+          assert.match(newHtml, /Integrated Diagnosis \/ Report Status/);
+          continue;
+        }
         if (isBoneMarrowCytology) {
           assert.match(newHtml, /BONE MARROW ASPIRATE - CYTOLOGY/);
           assert.match(newHtml, /Nucleated Differential \/ Myelogram/);
@@ -1424,6 +1573,21 @@ test('local catalogue: restored styles and existing formats stay unchanged', asy
         if (isAlbertStainKlb) {
           assert.match(newHtml, /ALBERT STAIN FOR KLEBS&ndash;L&Ouml;FFLER BACILLI \(KLB\)/);
           assert.match(newHtml, /Microscopy alone does not confirm/);
+          continue;
+        }
+        if (isBaccalSmearBrrBody) {
+          assert.match(newHtml, /BUCCAL SMEAR FOR BARR BODY \(SEX CHROMATIN\)/);
+          assert.match(newHtml, /Barr-body Positive Nuclei \(%\)/);
+          assert.match(newHtml, /supportive screening test/);
+          assert.match(newHtml, /may miss mosaicism, structural abnormalities/);
+          continue;
+        }
+        if (isAutoimmuneProfile) {
+          assert.match(newHtml, /AUTOIMMUNE PROFILE/);
+          assert.match(newHtml, /ANA Screen \/ Result/);
+          assert.match(newHtml, /Anti-dsDNA Antibody/);
+          assert.match(newHtml, /Complement C3/);
+          assert.match(newHtml, /does not establish or exclude a diagnosis/);
           continue;
         }
         if (isTotalAcidPhosphatase) {

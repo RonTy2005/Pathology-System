@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, ipcMain, net, powerMonitor } = require("electron");
+const { app, BrowserWindow, dialog, ipcMain, net, powerMonitor, powerSaveBlocker } = require("electron");
 const { autoUpdater } = require("electron-updater");
 const fs = require("fs/promises");
 const path = require("path");
@@ -9,9 +9,12 @@ const {
   recoverClientConnection,
 } = require("./dataMigration");
 const { createReportPdfHandler } = require("./reportPdf");
+const { ensureAutomaticStartup } = require("./automaticStartup");
+const { createServerAvailabilityGuard } = require("./serverAvailability");
 
 const INITIAL_UPDATE_CHECK_DELAY_MS = 20 * 1000;
 const UPDATE_CHECK_INTERVAL_MS = 30 * 60 * 1000;
+const CLIENT_HEALTH_CHECK_INTERVAL_MS = 15 * 1000;
 
 const appRoot = app.isPackaged
   ? path.join(process.resourcesPath, "app")
@@ -23,6 +26,7 @@ const commandLineMode = process.argv.includes("--server")
 const appMode = commandLineMode || packageMetadata.labLmsMode || "client";
 const desktopProductName = appMode === "server" ? "LabShield Server" : "LabShield";
 const stableUserDataPath = configureStableUserDataPath(app, appMode);
+const serverAvailabilityGuard = createServerAvailabilityGuard({ appMode, powerSaveBlocker });
 
 let mainWindow;
 let serverInstance;
@@ -30,6 +34,10 @@ let retryTimer;
 let updateCheckTimer;
 let delayedUpdateCheckTimer;
 let updateCheckInProgress = false;
+let clientHealthCheckTimer;
+let clientHealthCheckInProgress = false;
+let clientHealthCheckFailures = 0;
+let connectedServerUrl = null;
 let mandatoryUpdateController;
 let connectionStatus = {
   phase: "starting",
@@ -42,6 +50,13 @@ function clearAutomaticUpdateTimers() {
   if (delayedUpdateCheckTimer) clearTimeout(delayedUpdateCheckTimer);
   updateCheckTimer = null;
   delayedUpdateCheckTimer = null;
+}
+
+function clearClientHealthCheck() {
+  if (clientHealthCheckTimer) clearInterval(clientHealthCheckTimer);
+  clientHealthCheckTimer = null;
+  clientHealthCheckInProgress = false;
+  clientHealthCheckFailures = 0;
 }
 
 async function checkForDesktopUpdate() {
@@ -85,6 +100,7 @@ function startAutomaticUpdates() {
   powerMonitor.on("resume", () => {
     mandatoryUpdateController?.enforceDeadline();
     scheduleAutomaticUpdateCheck();
+    if (appMode === "client") scheduleRetry(1500);
   });
 }
 
@@ -132,9 +148,40 @@ function clearRetryTimer() {
   retryTimer = null;
 }
 
-function scheduleRetry() {
+function scheduleRetry(delay = 8000) {
   clearRetryTimer();
-  retryTimer = setTimeout(() => connectToLanServer(), 8000);
+  retryTimer = setTimeout(() => connectToLanServer(), delay);
+}
+
+function startClientHealthCheck(serverUrl) {
+  if (appMode !== "client") return;
+  clearClientHealthCheck();
+  connectedServerUrl = serverUrl;
+  clientHealthCheckTimer = setInterval(async () => {
+    if (
+      clientHealthCheckInProgress
+      || !connectedServerUrl
+      || (typeof net.isOnline === "function" && !net.isOnline())
+    ) return;
+
+    clientHealthCheckInProgress = true;
+    try {
+      const { isLabServer } = require(path.join(appRoot, "src", "services", "lanClientDiscovery"));
+      if (await isLabServer(connectedServerUrl, 2200)) {
+        clientHealthCheckFailures = 0;
+        return;
+      }
+
+      clientHealthCheckFailures += 1;
+      if (clientHealthCheckFailures >= 2) {
+        connectedServerUrl = null;
+        clearClientHealthCheck();
+        scheduleRetry(500);
+      }
+    } finally {
+      clientHealthCheckInProgress = false;
+    }
+  }, CLIENT_HEALTH_CHECK_INTERVAL_MS);
 }
 
 async function loadConnectingScreen() {
@@ -157,6 +204,7 @@ async function useServer(serverUrl) {
     servers: [normalizedUrl],
   });
   await mainWindow.loadURL(`${normalizedUrl}/login.html`);
+  startClientHealthCheck(normalizedUrl);
   return normalizedUrl;
 }
 
@@ -267,6 +315,8 @@ ipcMain.handle("lab-lms:save-report-pdf", (event, payload) => {
 });
 
 app.whenReady().then(async () => {
+  ensureAutomaticStartup({ app });
+  serverAvailabilityGuard.start();
   createMainWindow();
   await mainWindow.loadFile(path.join(__dirname, "connecting.html"));
   startAutomaticUpdates();
@@ -301,7 +351,9 @@ app.on("window-all-closed", () => {
 
 app.on("before-quit", () => {
   clearRetryTimer();
+  clearClientHealthCheck();
   clearAutomaticUpdateTimers();
+  serverAvailabilityGuard.stop();
   mandatoryUpdateController?.stop();
   serverInstance?.labLmsDiscovery?.stop?.();
   serverInstance?.close?.();
