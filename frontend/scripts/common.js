@@ -243,7 +243,11 @@ function getRoleHome(role, user) {
   switch (role) {
     case "superadmin":
     case "admin": return "admin.html";
+    case "manager": return "admin.html";
     case "receptionist": return "reception.html";
+    case "na": return Array.isArray(user?.permissions) && user.permissions.includes("collect_due_payments")
+      ? "reception.html#due-collection"
+      : "login.html";
     case "blood_sample_technician": return "reception.html#results-entry";
     case "ct_technician": return "ct_technician.html";
     case "mri_technician": return "mri_technician.html";

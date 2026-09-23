@@ -1,4 +1,8 @@
-protectPage(["admin", "manager", "receptionist", "blood_sample_technician", "usg_technician", "mri_technician", "ct_technician"]);
+protectPage(["admin", "manager", "receptionist", "blood_sample_technician", "usg_technician", "mri_technician", "ct_technician", "na"]);
+
+if (getUser()?.role === "na" && !hasPermission("collect_due_payments")) {
+  window.location.href = "login.html";
+}
 
 const associateSelect = document.getElementById("associateSelectNew");
 const editAssociateSelect = document.getElementById("editAssociateSelect");
@@ -1261,7 +1265,8 @@ function initializeNavigation() {
     "#new-visit": document.getElementById("new-visit"),
     "#patient-management": document.getElementById("patient-management"),
     "#results-entry": document.getElementById("results-entry"),
-    "#collection-delivery": document.getElementById("collection-delivery"),
+    "#reports": document.getElementById("reports"),
+    "#due-collection": document.getElementById("due-collection"),
     "#price-inquiry": document.getElementById("price-inquiry"),
     "#daily-accounts": document.getElementById("daily-accounts"),
   };
@@ -1271,7 +1276,8 @@ function initializeNavigation() {
     "#new-visit": "Register a new patient",
     "#patient-management": "Patient Management",
     "#results-entry": "Enter Test Results",
-    "#collection-delivery": "Bill Collection & Reports",
+    "#reports": "Reports",
+    "#due-collection": "Due Collection",
     "#price-inquiry": "Price Inquiry",
     "#daily-accounts": "Daily Accounts",
   };
@@ -1282,10 +1288,14 @@ function initializeNavigation() {
     "#price-inquiry": ["manage_billing"],
   };
   const sectionAnyPermissions = {
-    "#collection-delivery": ["manage_billing", "view_reports", "print_reports", "download_reports"],
+    "#reports": ["view_reports", "print_reports", "download_reports"],
+    "#due-collection": ["collect_due_payments"],
   };
 
   function canOpenSection(href) {
+    if (user?.role === "na") {
+      return href === "#due-collection" && hasPermission("collect_due_payments");
+    }
     // Technicians may register a patient, but patient management exposes the
     // wider patient record workspace. Keep that workspace for reception and
     // administrative roles only.
@@ -1305,7 +1315,9 @@ function initializeNavigation() {
   }
 
   function activateSection(href) {
-    const fallbackHref = hasRegistrationOnlyAccess ? "#new-visit" : "#reception-summary";
+    const fallbackHref = user?.role === "na"
+      ? "#due-collection"
+      : hasRegistrationOnlyAccess ? "#new-visit" : "#reception-summary";
     const normalizedHref = normalizeHref(href);
     let targetHref = (sections[normalizedHref] && sections[normalizedHref] !== null) ? normalizedHref : fallbackHref;
 
@@ -1337,12 +1349,20 @@ function initializeNavigation() {
     if (targetHref === "#price-inquiry" && typeof initPriceInquiry === 'function') {
       initPriceInquiry();
     }
-    if (targetHref === "#collection-delivery" && typeof loadCollectionVisits === 'function') {
+    if (targetHref === "#due-collection" && typeof loadCollectionVisits === 'function') {
       setTimeout(() => {
         const searchInput = document.getElementById("collectionSearchInput");
         const dateFrom = document.getElementById("collectionDateFrom")?.value || "";
         const dateTo = document.getElementById("collectionDateTo")?.value || "";
         loadCollectionVisits(searchInput?.value?.trim() || "", dateFrom, dateTo);
+      }, 0);
+    }
+    if (targetHref === "#reports" && typeof loadReportVisits === 'function') {
+      setTimeout(() => {
+        const searchInput = document.getElementById("reportsSearchInput");
+        const dateFrom = document.getElementById("reportsDateFrom")?.value || "";
+        const dateTo = document.getElementById("reportsDateTo")?.value || "";
+        loadReportVisits(searchInput?.value?.trim() || "", dateFrom, dateTo);
       }, 0);
     }
     if (targetHref === "#daily-accounts" && typeof loadDailyAccounts === 'function') {
@@ -1375,7 +1395,7 @@ function initializeNavigation() {
 
   navLinks.forEach((link) => {
     const href = normalizeHref(link.getAttribute("href"));
-    if (href !== "#reception-summary" && !canOpenSection(href)) {
+    if (!canOpenSection(href)) {
       link.style.display = "none";
     }
     if (href === "#reception-summary" && hasRegistrationOnlyAccess) {
@@ -1774,16 +1794,10 @@ function setDefaultResultsDateRange() {
 }
 
 function setDefaultCollectionDateRange() {
-  const today = new Date();
-  const oneMonthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const offset = today.getTimezoneOffset() * 60000;
-  const fromDateString = new Date(oneMonthAgo.getTime() - offset).toISOString().split("T")[0];
-  const toDateString = new Date(today.getTime() - offset).toISOString().split("T")[0];
-  
   const from = document.getElementById("collectionDateFrom");
   const to = document.getElementById("collectionDateTo");
-  if (from) from.value = fromDateString;
-  if (to) to.value = toDateString;
+  if (from) from.value = "";
+  if (to) to.value = "";
 }
 
 function getLocalDatetime() {
@@ -2247,6 +2261,7 @@ async function loadVendorsForExpenses() {
 
 async function loadReceptionSummary() {
   const user = getUser();
+  if (user?.role === "na") return;
   try {
     if (["blood_sample_technician", "usg_technician", "mri_technician", "ct_technician"].includes(user?.role)) {
       document.getElementById("receptionistStatsGrid").style.display = "none";
@@ -2297,25 +2312,22 @@ collectionList.addEventListener("click", (event) => {
 });
 
 async function loadCollectionVisits(search = "", dateFrom = "", dateTo = "") {
-  let url = `/api/visits?query=${encodeURIComponent(search)}`;
+  let url = `/api/visits?all=1&due=1&query=${encodeURIComponent(search)}`;
   if (dateFrom) url += `&dateFrom=${encodeURIComponent(dateFrom)}`;
   if (dateTo) url += `&dateTo=${encodeURIComponent(dateTo)}`;
   
   const data = await API.request(url);
   
-  // Filter for visits that either have due amount or are ready (reported)
-  const relevantVisits = data.visits.filter(v => v.amount_due > 0 || v.status === "reported");
+  const relevantVisits = data.visits.filter((visit) => Number(visit.amount_due || 0) > 0);
 
   if (!relevantVisits.length) {
-    collectionList.innerHTML = `<div class="empty-state">No matching visits found with due amounts or ready reports.</div>`;
+    collectionList.innerHTML = `<div class="empty-state">No matching visits found with outstanding amounts.</div>`;
     return;
   }
 
-  const user = getUser();
   const canManageBilling = hasPermission("manage_billing");
-  const canViewReports = hasPermission("view_reports");
-  const canPrintReports = hasPermission("print_reports");
-  const canCollectPayments = (isAdministrativeRole(user?.role) || user?.role === "receptionist") && canManageBilling;
+  const canCollectPayments = hasPermission("collect_due_payments");
+  const canIssueRefunds = (isAdministrativeRole(getUser()?.role) || getUser()?.role === "receptionist") && canManageBilling;
 
   collectionList.innerHTML = relevantVisits
     .map(
@@ -2323,16 +2335,14 @@ async function loadCollectionVisits(search = "", dateFrom = "", dateTo = "") {
         <div class="list-item" style="position: relative;">
           <div style="position: absolute; top: 18px; right: 18px; width: 12px; height: 12px; border-radius: 50%; background-color: ${visit.status === 'reported' ? 'var(--primary)' : 'var(--danger)'}; box-shadow: 0 0 8px 1px ${visit.status === 'reported' ? 'var(--primary)' : 'var(--danger)'};" title="${visit.status === 'reported' ? 'Report Ready' : 'Report Not Ready'}"></div>
           <div style="padding-right: 20px;">
-            <strong>${visit.bill_no} • ${visit.patient_name}</strong><br />
-            <span>${visit.tests || "No tests"} • Due: <strong>${currency(visit.amount_due)}</strong></span>
+            <strong>${escapeHtml(visit.bill_no)} &bull; ${escapeHtml(visit.patient_name)}</strong><br />
+            <span>${escapeHtml(visit.tests || "No tests")} &bull; Due: <strong>${currency(visit.amount_due)}</strong></span>
           </div>
           <div class="actions-row">
             ${canManageBilling ? `<button class="secondary-btn" data-bill-preview="${visit.id}" type="button">Preview Bill</button>` : ""}
             ${canManageBilling ? `<button class="ghost-btn" data-bill-print="${visit.id}" type="button">Print Bill</button>` : ""}
-            ${visit.amount_due > 0 && canCollectPayments ? `<button class="primary-btn" data-collect-payment="${visit.id}" data-due="${visit.amount_due}" data-bill="${visit.bill_no}" data-patient="${visit.patient_name}" type="button">Collect Due</button>` : ""}
-            ${visit.amount_paid > 0 && canCollectPayments ? `<button class="ghost-btn" data-issue-refund="${visit.id}" data-bill="${visit.bill_no}" data-patient="${visit.patient_name}" data-paid="${visit.amount_paid}" type="button">Refund</button>` : ""}
-            ${visit.status === "reported" && canViewReports ? `<button class="secondary-btn" data-view-report="${visit.id}" type="button">View Report</button>` : ""}
-            ${visit.status === "reported" && canPrintReports ? `<button class="ghost-btn" data-print-report="${visit.id}" type="button">Print Report</button>` : ""}
+            ${visit.amount_due > 0 && canCollectPayments ? `<button class="primary-btn" data-collect-payment="${visit.id}" data-due="${visit.amount_due}" data-bill="${escapeHtml(visit.bill_no)}" data-patient="${escapeHtml(visit.patient_name)}" type="button">Collect Due</button>` : ""}
+            ${visit.amount_paid > 0 && canIssueRefunds ? `<button class="ghost-btn" data-issue-refund="${visit.id}" data-bill="${escapeHtml(visit.bill_no)}" data-patient="${escapeHtml(visit.patient_name)}" data-paid="${visit.amount_paid}" type="button">Refund</button>` : ""}
           </div>
         </div>
       `
@@ -2366,21 +2376,54 @@ async function loadCollectionVisits(search = "", dateFrom = "", dateTo = "") {
     });
   });
 
-  collectionList.querySelectorAll("[data-view-report]").forEach((button) => {
+}
+
+const reportsSearchInput = document.getElementById("reportsSearchInput");
+const reportsDateFrom = document.getElementById("reportsDateFrom");
+const reportsDateTo = document.getElementById("reportsDateTo");
+const reportsList = document.getElementById("reportsList");
+
+async function loadReportVisits(search = "", dateFrom = "", dateTo = "") {
+  let url = `/api/visits?all=1&status=reported&query=${encodeURIComponent(search)}`;
+  if (dateFrom) url += `&dateFrom=${encodeURIComponent(dateFrom)}`;
+  if (dateTo) url += `&dateTo=${encodeURIComponent(dateTo)}`;
+
+  const data = await API.request(url);
+  const finalizedVisits = (data.visits || []).filter((visit) => visit.status === "reported");
+  if (!finalizedVisits.length) {
+    reportsList.innerHTML = `<div class="empty-state">No finalized reports match this search.</div>`;
+    return;
+  }
+
+  const canViewReports = hasPermission("view_reports");
+  const canPrintReports = hasPermission("print_reports");
+  reportsList.innerHTML = finalizedVisits.map((visit) => `
+    <div class="list-item" style="position: relative;">
+      <div style="position: absolute; top: 18px; right: 18px; width: 12px; height: 12px; border-radius: 50%; background-color: var(--primary); box-shadow: 0 0 8px 1px var(--primary);" title="Report Ready"></div>
+      <div style="padding-right: 20px;">
+        <strong>${escapeHtml(visit.bill_no)} &bull; ${escapeHtml(visit.patient_name)}</strong><br />
+        <span>${escapeHtml(visit.tests || "No tests")} &bull; Finalized report ready</span>
+      </div>
+      <div class="actions-row">
+        ${canViewReports ? `<button class="primary-btn" data-view-report="${visit.id}" type="button">View Report</button>` : ""}
+        ${canPrintReports ? `<button class="ghost-btn" data-print-report="${visit.id}" type="button">Print Report</button>` : ""}
+      </div>
+    </div>
+  `).join("");
+
+  reportsList.querySelectorAll("[data-view-report]").forEach((button) => {
     button.addEventListener("click", () => openHtmlReport(button.dataset.viewReport, false));
   });
-
-  collectionList.querySelectorAll("[data-print-report]").forEach((button) => {
+  reportsList.querySelectorAll("[data-print-report]").forEach((button) => {
     button.addEventListener("click", async () => {
       try {
         await API.request(`/api/visits/${button.dataset.printReport}/print`, { method: "POST" });
         openHtmlReport(button.dataset.printReport, true);
       } catch (error) {
-        showMessage("collectionMessage", error.message, true);
+        showMessage("reportsMessage", error.message, true);
       }
     });
   });
-
 }
 
 document.getElementById("cancelPaymentBtn").addEventListener("click", () => {
@@ -2397,7 +2440,8 @@ paymentForm.addEventListener("submit", async (e) => {
 
   if (!visitId || !amount) return;
 
-  const popup = window.open("", "_blank");
+  const canPrintCollectedBill = hasPermission("manage_billing");
+  const popup = canPrintCollectedBill ? window.open("", "_blank") : null;
   if (popup) popup.document.write("Processing payment...");
 
   try {
@@ -2417,8 +2461,7 @@ paymentForm.addEventListener("submit", async (e) => {
     loadReceptionSummary();
     loadDailyAccounts();
 
-    // Auto-generate and print the bill
-    openHtmlBill(visitId, true, popup);
+    if (canPrintCollectedBill) openHtmlBill(visitId, true, popup);
   } catch (error) {
     if (popup) popup.close();
     showMessage("paymentMessage", error.message, true);
@@ -2477,6 +2520,18 @@ async function reloadCollectionVisits() {
 collectionSearchInput.addEventListener("input", reloadCollectionVisits);
 collectionDateFrom.addEventListener("change", reloadCollectionVisits);
 collectionDateTo.addEventListener("change", reloadCollectionVisits);
+
+async function reloadReportVisits() {
+  return await loadReportVisits(
+    reportsSearchInput.value.trim(),
+    reportsDateFrom.value,
+    reportsDateTo.value
+  );
+}
+
+reportsSearchInput.addEventListener("input", reloadReportVisits);
+reportsDateFrom.addEventListener("change", reloadReportVisits);
+reportsDateTo.addEventListener("change", reloadReportVisits);
 
 // Removed duplicate setDefaultCollectionDateRange
 
@@ -2696,7 +2751,9 @@ function copyQuoteToClipboard() {
 (async function init() {
   try {
     if (window.location.hash === "" || window.location.hash === "#") {
-      window.location.hash = "#new-visit";
+      window.location.hash = getUser()?.role === "na" && hasPermission("collect_due_payments")
+        ? "#due-collection"
+        : "#new-visit";
     }
 
     initializeNavigation();

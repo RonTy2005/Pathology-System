@@ -186,7 +186,83 @@ testRouter.get("/:id/sample-report", allowRoles(ROLES.ADMIN), async (req, res, n
             const hasRatioLabel = /\bratio\b/.test(parameterName);
             const hasInrLabel = /\binr\b/.test(parameterName);
             let value = "Normal";
-            if (testName.includes("blood group")) {
+            if (["antiinsulinantibody", "insulinantibody", "insulinantibodies", "insulinautoantibodyiaa"]
+              .includes(testName.replace(/[^a-z0-9]/g, ""))) {
+              value = "Negative";
+            } else if (["antileptospiraantibody", "leptospiraantibody"]
+              .includes(testName.replace(/[^a-z0-9]/g, ""))) {
+              value = "Non-reactive";
+            } else if (testName.replace(/[^a-z0-9]/g, "") === "antimicrosomalantibody") {
+              if (parameterName.includes("target")) value = "Specify antigen (sample)";
+              else if (parameterName.includes("method")) value = "Specify method (sample)";
+              else if (parameterName.includes("result")) value = "Example result";
+              else if (parameterName.includes("interpretation")) value = "Use assay-specific criteria";
+              else value = "Sample only";
+            } else if (testName.replace(/[^a-z0-9]/g, "") === "antidsdnaantibody") {
+              if (parameterName.includes("method")) value = "Specify method (sample)";
+              else if (parameterName.includes("interpretation")) value = "Use assay-specific criteria";
+              else if (parameterName.includes("comment")) value = "Sample comment";
+              else value = "Example result";
+            } else if (testName.replace(/[^a-z0-9]/g, "") === "antissdnaantibody") {
+              if (parameterName.includes("method")) value = "Specify method (sample)";
+              else if (parameterName.includes("interpretation")) value = "Use assay-specific criteria";
+              else if (parameterName.includes("comment")) value = "Sample comment";
+              else value = "Example result";
+            } else if (testName.replace(/[^a-z0-9]/g, "") === "antihistoneantibody") {
+              if (parameterName.includes("method")) value = "Specify method (sample)";
+              else if (parameterName.includes("interpretation")) value = "Use assay-specific criteria";
+              else if (parameterName.includes("comment")) value = "Sample comment";
+              else value = "Example result";
+            } else if (testName.replace(/[^a-z0-9]/g, "") === "antiribosomalpantibody") {
+              if (parameterName.includes("method")) value = "Specify method (sample)";
+              else if (parameterName.includes("interpretation")) value = "Use assay-specific criteria";
+              else if (parameterName.includes("comment")) value = "Sample comment";
+              else value = "Example result";
+            } else if (testName.replace(/[^a-z0-9]/g, "") === "anticcpab") {
+              if (parameterName.includes("method")) value = "Specify method (sample)";
+              else if (parameterName.includes("interpretation")) value = "Use assay-specific criteria";
+              else if (parameterName.includes("comment")) value = "Sample comment";
+              else value = "Example result";
+            } else if (testName.replace(/[^a-z0-9]/g, "") === "antispermantibody") {
+              if (parameterName.includes("specimen") || parameterName.includes("matrix")) value = "Specify specimen (sample)";
+              else if (parameterName.includes("method")) value = "Specify method (sample)";
+              else if (parameterName.includes("class")) value = "Specify class if tested";
+              else if (parameterName.includes("interpretation")) value = "Use specimen-specific criteria";
+              else if (parameterName.includes("comment")) value = "Sample comment";
+              else value = "Example result";
+            } else if (testName.replace(/[^a-z0-9]/g, "") === "apolipoproteina1") {
+              if (parameterName.includes("method")) value = "Specify method (sample)";
+              else if (parameterName.includes("interpretation")) value = "Use age/sex-specific interval";
+              else if (parameterName.includes("comment")) value = "Sample comment";
+              else value = "Example result";
+            } else if (["arsenicurine", "urinearsenic"].includes(testName.replace(/[^a-z0-9]/g, ""))) {
+              if (parameterName.includes("collection")) value = "Random urine (sample)";
+              else if (parameterName.includes("method")) value = "Specify method (sample)";
+              else if (parameterName.includes("interpretation")) value = "Use collection-specific interval";
+              else if (parameterName.includes("comment")) value = "Sample comment";
+              else value = "Example result";
+            } else if (testName.replace(/[^a-z0-9]/g, "") === "arthritisprofile") {
+              value = parameterName.includes("comment") ? "Sample comment" : "Example result";
+            } else if (["asciticfluidsgramstain", "asciticfluidgramstain"].includes(testName.replace(/[^a-z0-9]/g, ""))) {
+              if (parameterName.includes("specimen")) value = "Ascitic fluid (sample)";
+              else if (parameterName.includes("method")) value = "Direct smear (sample)";
+              else if (parameterName.includes("reaction") || parameterName.includes("morphology")) value = "Describe if organisms are seen";
+              else if (parameterName.includes("comment")) value = "Sample comment";
+              else value = "Example observation";
+            } else if (["asciticfluidforprotein", "asciticfluidtotalprotein"].includes(testName.replace(/[^a-z0-9]/g, ""))) {
+              if (parameterName.includes("specimen")) value = "Ascitic fluid (sample)";
+              else if (parameterName.includes("appearance")) value = "Specify appearance (sample)";
+              else if (parameterName.includes("method")) value = "Specify method (sample)";
+              else if (parameterName.includes("comment")) value = "Sample comment";
+              else value = "Example result";
+            } else if (["bacteccultureforaerobicbacteria", "bacteccultureforanaerobicbacteria", "bactecanaerobicculture"].includes(testName.replace(/[^a-z0-9]/g, ""))) {
+              if (parameterName.includes("specimen")) value = "Specify specimen/site (sample)";
+              else if (parameterName.includes("bottle")) value = "Specify bottle (sample)";
+              else if (parameterName.includes("collection")) value = "Specify collection time (sample)";
+              else if (parameterName.includes("report status")) value = "Specify preliminary/final";
+              else if (parameterName.includes("comment")) value = "Sample comment";
+              else value = "Example result (if tested)";
+            } else if (testName.includes("blood group")) {
               if (parameterName.includes("abo")) value = "B";
               else if (parameterName.includes("rh")) value = "+";
             } else if (testName.includes("d-dimer") || testName.includes("d dimer")) {
@@ -598,6 +674,7 @@ testRouter.get("/:id/sample-report", allowRoles(ROLES.ADMIN), async (req, res, n
       : req.query.letterhead === "1"
         ? true
         : businessSettings.defaultReportIncludesLetterhead;
+    res.set("Cache-Control", "no-store");
     res.type("html");
     res.send(buildReportHtml({
       ...mockReportData,

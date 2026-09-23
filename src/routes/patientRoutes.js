@@ -6,6 +6,7 @@ const { logAction } = require("../services/logService");
 const { ACCESS_CONTROLS, PAYMENT_MODES, PERMISSIONS, ROLES, TECHNICIAN_ROLES } = require("../config/constants");
 const { expandTestBundleConfigs } = require("../services/testBundleService");
 const { materializeRegistrationTests } = require("../services/registrationTestService");
+const { createPatientPortalToken } = require("../utils/patientPortal");
 
 const patientRouter = express.Router();
 
@@ -82,9 +83,9 @@ async function createRegistrationVisit({ patientId, tests: testConfigs, user, am
     `INSERT INTO visits (
       bill_no, patient_id, doctor_id, subtotal, discount, total, amount_paid,
       amount_due, payment_mode, payment_status, associate_id, associate_label,
-      sample_source, status, created_by, created_at
+      sample_source, status, created_by, created_at, patient_portal_token
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'registered', ?, COALESCE(?, CURRENT_TIMESTAMP))`,
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'registered', ?, COALESCE(?, CURRENT_TIMESTAMP), ?)`,
     [
       await nextDailySequenceId("REG", "visits", "bill_no"),
       patientId, 
@@ -100,7 +101,8 @@ async function createRegistrationVisit({ patientId, tests: testConfigs, user, am
       associateName || "Direct at lab",
       sampleSource || "lab",
       user.id, 
-      registrationTime ? new Date(registrationTime).toISOString() : null
+      registrationTime ? new Date(registrationTime).toISOString() : null,
+      createPatientPortalToken(),
     ]
   );
 

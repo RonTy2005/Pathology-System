@@ -2598,6 +2598,198 @@ body:has(.app-shell) {
    A4 report/print styling is intentionally unaffected.
    -------------------------------------------------------------------------- */
 
+/* --------------------------------------------------------------------------
+   Medium-density desktop layout
+   A 1440x900 display is common in labs and remote-support sessions. It has
+   enough width for the desktop navigation, but not enough height for the
+   spacious 1080p layout. Tighten the signed-in workspace without altering
+   public pages, generated reports, or A4 printing.
+   -------------------------------------------------------------------------- */
+@media (min-width: 901px) and (max-width: 1600px) and (max-height: 900px) {
+  .app-shell {
+    grid-template-columns: 228px minmax(0, 1fr);
+    gap: 12px;
+    padding: 10px 12px;
+    font-size: 0.94rem;
+  }
+
+  .app-shell .sidebar {
+    top: 10px;
+    min-height: calc(100vh - 20px);
+    gap: 12px;
+    padding: 16px 12px 12px;
+    border-radius: 18px;
+  }
+
+  .app-shell .sidebar > div:first-child {
+    padding: 2px 6px 4px;
+  }
+
+  .app-shell .brand {
+    gap: 8px;
+    font-size: 0.96rem;
+  }
+
+  .app-shell .brand::before {
+    width: 27px;
+    height: 27px;
+    flex-basis: 27px;
+    border-radius: 9px;
+    font-size: 1.16rem;
+  }
+
+  .app-shell .sidebar-subtitle {
+    margin: 7px 0 0 35px;
+    font-size: 0.62rem;
+  }
+
+  .app-shell .sidebar-nav {
+    gap: 2px;
+    padding: 2px 0;
+  }
+
+  .app-shell .sidebar-nav a {
+    min-height: 35px;
+    gap: 8px;
+    padding: 7px 9px;
+    border-radius: 10px;
+    font-size: 0.80rem;
+  }
+
+  .app-shell .sidebar-nav a::before {
+    width: 5px;
+    height: 5px;
+    flex-basis: 5px;
+  }
+
+  .app-shell .sidebar > .secondary-btn {
+    min-height: 37px;
+    padding: 8px 10px;
+    font-size: 0.80rem;
+  }
+
+  .app-shell .main-content {
+    gap: 14px;
+    padding: 3px 10px 24px 2px;
+  }
+
+  .app-shell .page-header {
+    min-height: auto;
+    padding: 15px 18px;
+    border-radius: 18px;
+  }
+
+  .app-shell .page-header h1 {
+    font-size: clamp(1.45rem, 2.1vw, 1.9rem);
+  }
+
+  .app-shell .eyebrow {
+    font-size: 0.66rem;
+  }
+
+  .app-shell .pill {
+    min-height: 33px;
+    padding: 7px 10px;
+    font-size: 0.76rem;
+  }
+
+  .app-shell .panel {
+    padding: 18px;
+    border-radius: 16px;
+  }
+
+  .app-shell .metric-card {
+    min-height: 88px;
+    padding: 13px;
+  }
+
+  .app-shell .stat-value {
+    margin-top: 5px !important;
+    font-size: 1.55rem !important;
+  }
+
+  .app-shell .section-title {
+    padding-bottom: 9px;
+  }
+
+  .app-shell .section-title h2,
+  .app-shell .window-header h2 {
+    font-size: 1.04rem;
+  }
+
+  .app-shell .section-title span,
+  .app-shell .helper,
+  .app-shell small {
+    font-size: 0.78rem;
+    line-height: 1.35;
+  }
+
+  .app-shell .field,
+  .app-shell .field > span,
+  .app-shell .field legend {
+    font-size: 0.84rem;
+  }
+
+  .app-shell input,
+  .app-shell select,
+  .app-shell textarea {
+    min-height: 38px;
+    padding: 9px 11px;
+    font-size: 0.94rem;
+  }
+
+  .app-shell textarea {
+    min-height: 84px;
+  }
+
+  .app-shell .primary-btn,
+  .app-shell .secondary-btn,
+  .app-shell .ghost-btn,
+  .app-shell .danger-btn,
+  .app-shell .whatsapp-btn {
+    min-height: 38px;
+    padding: 8px 11px;
+    font-size: 0.84rem;
+  }
+
+  .app-shell .workspace-grid,
+  .app-shell .workflow-grid,
+  .app-shell .two-column,
+  .app-shell .stats-grid,
+  .app-shell .form-grid,
+  .app-shell .inline-grid,
+  .app-shell .permission-grid {
+    gap: 9px;
+  }
+
+  .app-shell .list-item,
+  .app-shell .result-card,
+  .app-shell .selection-card,
+  .app-shell .totals-card {
+    padding: 10px;
+  }
+
+  .app-shell .tabs .tab-btn,
+  .app-shell .tab-group .tab-btn {
+    min-height: 34px;
+    padding: 7px 9px;
+    font-size: 0.80rem;
+  }
+
+  .app-shell th {
+    font-size: 0.74rem;
+  }
+
+  .app-shell td {
+    font-size: 0.84rem;
+  }
+
+  .app-shell th,
+  .app-shell td {
+    padding: 8px 9px;
+  }
+}
+
 @media (min-width: 641px) and (max-width: 900px),
        (min-width: 641px) and (max-height: 700px) {
   html {

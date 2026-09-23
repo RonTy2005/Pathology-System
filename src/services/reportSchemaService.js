@@ -154,6 +154,166 @@ function getFallbackReportParameters(test = {}) {
     ];
   }
 
+  if (["antiinsulinantibody", "insulinantibody", "insulinantibodies", "insulinautoantibodyiaa"].includes(normalizedName)) {
+    return [createParameter("Insulin Antibodies (IAA), Serum", { normalRange: "Assay-specific negative cut-off" })];
+  }
+
+  if (["antileptospiraantibody", "leptospiraantibody"].includes(normalizedName)) {
+    return [createParameter("Anti-Leptospira Antibody, Serum", { normalRange: "Negative / non-reactive (assay-specific)" })];
+  }
+
+  if (normalizedName === "antimicrosomalantibody") {
+    return [
+      createParameter("Antigen / Assay Target"),
+      createParameter("Assay Method"),
+      createParameter("Anti-Microsomal Antibody Result", { normalRange: "Performing laboratory's validated criterion" }),
+      createParameter("Laboratory Interpretation"),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (normalizedName === "antidsdnaantibody") {
+    return [
+      createParameter("Anti-dsDNA Antibody", { normalRange: "Assay-specific reference interval" }),
+      createParameter("Assay Method / Platform"),
+      createParameter("Laboratory Interpretation"),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (normalizedName === "antissdnaantibody") {
+    return [
+      createParameter("Anti-ssDNA Antibody", { normalRange: "Assay-specific reference interval" }),
+      createParameter("Assay Method / Platform"),
+      createParameter("Laboratory Interpretation"),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (normalizedName === "antihistoneantibody") {
+    return [
+      createParameter("Anti-Histone Antibody", { normalRange: "Assay-specific negative cut-off" }),
+      createParameter("Assay Method / Platform"),
+      createParameter("Laboratory Interpretation"),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (normalizedName === "antiribosomalpantibody") {
+    return [
+      createParameter("Anti-Ribosomal P Antibody", { normalRange: "Assay-specific negative cut-off" }),
+      createParameter("Assay Method / Platform"),
+      createParameter("Laboratory Interpretation"),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (normalizedName === "anticcpab") {
+    return [
+      createParameter("Anti-CCP Antibody", { normalRange: "Assay-specific negative cut-off" }),
+      createParameter("Assay Method / Platform"),
+      createParameter("Laboratory Interpretation"),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (normalizedName === "antispermantibody") {
+    return [
+      createParameter("Specimen / Matrix"),
+      createParameter("Assay Method / Platform"),
+      createParameter("Antibody Class"),
+      createParameter("Anti-Sperm Antibody Result", { normalRange: "Specimen- and assay-specific criterion" }),
+      createParameter("Laboratory Interpretation"),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (["apolipoproteina1", "apolipoproteinai"].includes(normalizedName)) {
+    return [
+      createParameter("Apolipoprotein A1, Serum", { unit: "mg/dL", normalRange: "Age- and sex-specific laboratory interval" }),
+      createParameter("Assay Method / Platform"),
+      createParameter("Laboratory Interpretation"),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (normalizedName === "arsenicurine" || normalizedName === "urinearsenic") {
+    return [
+      createParameter("Collection Type / Duration"),
+      createParameter("Arsenic, Total, Urine", { unit: "mcg/L", normalRange: "Collection- and method-specific laboratory interval" }),
+      createParameter("Assay Method / Platform"),
+      createParameter("Laboratory Interpretation"),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (normalizedName === "arthritisprofile") {
+    return [
+      createParameter("Serum Uric Acid", { unit: "mg/dL", normalRange: "Lab-validated interval" }),
+      createParameter("Rheumatoid Factor, RA", { unit: "IU/mL", normalRange: "Assay-specific laboratory interval" }),
+      createParameter("C-Reactive Protein, CRP", { unit: "mg/L", normalRange: "Assay-specific laboratory interval" }),
+      createParameter("Antistreptolysin O, ASO Titer", { unit: "IU/mL", normalRange: "Age- and assay-specific laboratory interval" }),
+      createParameter("iCalcium", { unit: "mmol/L", normalRange: "Lab-validated interval" }),
+      createParameter("Total Calcium", { unit: "mg/dL", normalRange: "Lab-validated interval" }),
+      createParameter("Serum Phosphorus", { unit: "mg/dL", normalRange: "Age-specific laboratory interval" }),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (normalizedName === "asciticfluidsgramstain" || normalizedName === "asciticfluidgramstain") {
+    return [
+      createParameter("Specimen / Site"),
+      createParameter("Smear Method / Preparation"),
+      createParameter("Inflammatory Cells / PMNs"),
+      createParameter("Gram Stain Findings"),
+      createParameter("Gram Reaction / Bacterial Morphology"),
+      createParameter("Impression"),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (["asciticfluidforprotein", "asciticfluidtotalprotein"].includes(normalizedName)) {
+    return [
+      createParameter("Ascitic Fluid Total Protein", { unit: "g/dL", normalRange: "Interpretive; no universal reference interval" }),
+      createParameter("Specimen / Site"),
+      createParameter("Appearance"),
+      createParameter("Method / Analyzer"),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (normalizedName === "bacteccultureforaerobicbacteria") {
+    return [
+      createParameter("Specimen / Collection Site"),
+      createParameter("Bottle / Medium"),
+      createParameter("Collection Date / Time"),
+      createParameter("Culture Status / Result"),
+      createParameter("Report Status"),
+      createParameter("Time to Positivity"),
+      createParameter("Gram Stain from Positive Bottle"),
+      createParameter("Organism(s) Isolated"),
+      createParameter("Identification Method"),
+      createParameter("Antimicrobial Susceptibility"),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (normalizedName === "bacteccultureforanaerobicbacteria" || normalizedName === "bactecanaerobicculture") {
+    return [
+      createParameter("Specimen / Collection Site"),
+      createParameter("Bottle / Medium"),
+      createParameter("Collection Date / Time"),
+      createParameter("Culture Status / Result"),
+      createParameter("Report Status"),
+      createParameter("Time to Positivity"),
+      createParameter("Gram Stain from Positive Bottle"),
+      createParameter("Organism(s) Isolated"),
+      createParameter("Identification Method"),
+      createParameter("Antimicrobial Susceptibility"),
+      createParameter("Comments"),
+    ];
+  }
+
   if (["anticardiolipinantibodyigaigm", "anticardiolipinigaigm", "cardiolipinantibodyigaigm", "phospholipidcardiolipinantibodiesigaigm"].includes(normalizedName)) {
     return [
       createParameter("Anticardiolipin Antibody IgA, Serum", { unit: "APL-U/mL", normalRange: "< 15.0" }),

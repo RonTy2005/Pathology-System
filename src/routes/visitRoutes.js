@@ -613,6 +613,7 @@ visitRouter.get("/", async (req, res, next) => {
         v.patient_id,
         v.bill_no,
         v.total,
+        v.amount_paid,
         v.amount_due,
         v.payment_status,
         v.status,
@@ -639,6 +640,10 @@ visitRouter.get("/", async (req, res, next) => {
     if (status) {
       sql += " AND v.status = ?";
       params.push(status);
+    }
+
+    if (req.query.due === "1") {
+      sql += " AND v.amount_due > 0.005";
     }
 
     if (dateFrom) {
@@ -1058,8 +1063,7 @@ visitRouter.get(
 
 visitRouter.patch(
   "/:id/payment",
-  allowRoles(ROLES.ADMIN, ROLES.RECEPTIONIST),
-  allowPermissions(PERMISSIONS.MANAGE_BILLING),
+  allowPermissions(PERMISSIONS.COLLECT_DUE_PAYMENTS),
   async (req, res, next) => {
     try {
       const amount = Number(req.body.amountPaid);
@@ -1080,8 +1084,12 @@ visitRouter.patch(
         }
 
         const currentDue = Number(current.amount_due || 0);
-        if (currentDue <= 0) {
+        if (currentDue <= 0.005) {
           throw httpError("No due amount is pending for this bill", 400);
+        }
+
+        if (amount > currentDue + 0.005) {
+          throw httpError("Payment exceeds the outstanding amount", 400);
         }
 
         const collected = Math.min(amount, currentDue);

@@ -44,16 +44,27 @@ async function getPortalVisit(token) {
   );
 }
 
+function getPortalPathologyReportLinks(visit, tests = []) {
+  return tests.map((test) => ({
+    id: `pathology-${test.visit_test_id}-${test.test_id}`,
+    type: "pathology",
+    label: `${test.name} report`,
+    url: `/api/patient-reports/${encodeURIComponent(visit.patient_portal_token)}/report?visitTestId=${encodeURIComponent(test.visit_test_id)}&testId=${encodeURIComponent(test.test_id)}`,
+  }));
+}
+
 async function getPortalReports(visit) {
   const reports = [];
 
   if (visit.report_id && Number(visit.finalized) === 1) {
-    reports.push({
+    const reportBundle = await getReportBundle(visit.id);
+    const pathologyReports = getPortalPathologyReportLinks(visit, reportBundle?.tests || []);
+    reports.push(...(pathologyReports.length ? pathologyReports : [{
       id: "pathology",
       type: "pathology",
       label: "Laboratory report",
       url: `/api/patient-reports/${encodeURIComponent(visit.patient_portal_token)}/report`,
-    });
+    }]));
   }
 
   const imagingReports = await all(
@@ -329,6 +340,24 @@ patientPortalRouter.get("/:token/report", async (req, res, next) => {
       return res.status(403).json({ message: "This report is not ready yet." });
     }
 
+    const hasIndividualReportRequest = Object.prototype.hasOwnProperty.call(req.query, "visitTestId")
+      || Object.prototype.hasOwnProperty.call(req.query, "testId");
+    if (hasIndividualReportRequest) {
+      const visitTestId = Number(req.query.visitTestId);
+      const testId = Number(req.query.testId);
+      if (!Number.isSafeInteger(visitTestId) || !Number.isSafeInteger(testId)) {
+        return res.status(404).json({ message: "Report not found." });
+      }
+
+      const selectedTests = report.tests.filter((test) => (
+        Number(test.visit_test_id) === visitTestId && Number(test.test_id) === testId
+      ));
+      if (!selectedTests.length) {
+        return res.status(404).json({ message: "Report not found." });
+      }
+      report.tests = selectedTests;
+    }
+
     const businessSettings = await getBusinessSettings({
       includeLetterhead: true,
       includeBusinessLogo: true,
@@ -408,4 +437,4 @@ patientPortalRouter.get("/:token/imaging-reports/:fileId", async (req, res, next
   }
 });
 
-module.exports = { patientPortalRouter };
+module.exports = { patientPortalRouter, getPortalPathologyReportLinks };

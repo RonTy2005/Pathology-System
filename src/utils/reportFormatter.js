@@ -1429,6 +1429,75 @@ function isAntiTpoTest(test) {
     || name === "thyroperoxidaseantibodies";
 }
 
+function isAntiInsulinAntibodyTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return name === "antiinsulinantibody"
+    || name === "insulinantibody"
+    || name === "insulinantibodies"
+    || name === "insulinautoantibodyiaa";
+}
+
+function isAntiLeptospiraAntibodyTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return name === "antileptospiraantibody" || name === "leptospiraantibody";
+}
+
+function isAntiMicrosomalAntibodyTest(test) {
+  return normalizeParameterName(test?.name) === "antimicrosomalantibody";
+}
+
+function isAntiDsDnaAntibodyTest(test) {
+  return normalizeParameterName(test?.name) === "antidsdnaantibody";
+}
+
+function isAntiSsDnaAntibodyTest(test) {
+  return normalizeParameterName(test?.name) === "antissdnaantibody";
+}
+
+function isAntiHistoneAntibodyTest(test) {
+  return normalizeParameterName(test?.name) === "antihistoneantibody";
+}
+
+function isAntiRibosomalPAntibodyTest(test) {
+  return normalizeParameterName(test?.name) === "antiribosomalpantibody";
+}
+
+function isAntiCcpAbTest(test) {
+  return normalizeParameterName(test?.name) === "anticcpab";
+}
+
+function isAntiSpermAntibodyTest(test) {
+  return normalizeParameterName(test?.name) === "antispermantibody";
+}
+
+function isApolipoproteinA1Test(test) {
+  return normalizeParameterName(test?.name) === "apolipoproteina1";
+}
+
+function isUrineArsenicTest(test) {
+  return ["arsenicurine", "urinearsenic"].includes(normalizeParameterName(test?.name));
+}
+
+function isArthritisProfileTest(test) {
+  return normalizeParameterName(test?.name) === "arthritisprofile";
+}
+
+function isAsciticFluidGramStainTest(test) {
+  return ["asciticfluidsgramstain", "asciticfluidgramstain"].includes(normalizeParameterName(test?.name));
+}
+
+function isAsciticFluidTotalProteinTest(test) {
+  return ["asciticfluidforprotein", "asciticfluidtotalprotein"].includes(normalizeParameterName(test?.name));
+}
+
+function isBactecAerobicCultureTest(test) {
+  return normalizeParameterName(test?.name) === "bacteccultureforaerobicbacteria";
+}
+
+function isBactecAnaerobicCultureTest(test) {
+  return ["bacteccultureforanaerobicbacteria", "bactecanaerobicculture"].includes(normalizeParameterName(test?.name));
+}
+
 function isAntiTgTest(test) {
   const name = normalizeParameterName(test?.name);
   const code = normalizeParameterName(test?.code);
@@ -12709,6 +12778,22 @@ function buildReportHtml(reportData) {
         if (reportData.tests.length === 1 && isAnticardiolipinIggTest(t)) return "ANTICARDIOLIPIN ANTIBODY IgG";
         if (reportData.tests.length === 1 && isAntiTgTest(t)) return "ANTI-THYROGLOBULIN ANTIBODY (ANTI-TG)";
         if (reportData.tests.length === 1 && isAntiTpoTest(t)) return "ANTI-THYROID PEROXIDASE ANTIBODY (ANTI-TPO)";
+        if (reportData.tests.length === 1 && isAntiInsulinAntibodyTest(t) && !String(t.report_body || "").trim()) return "INSULIN ANTIBODIES (IAA)";
+        if (reportData.tests.length === 1 && isAntiLeptospiraAntibodyTest(t) && !String(t.report_body || "").trim()) return "ANTI-LEPTOSPIRA ANTIBODY";
+        if (reportData.tests.length === 1 && isAntiMicrosomalAntibodyTest(t) && !String(t.report_body || "").trim()) return "ANTI-MICROSOMAL ANTIBODY";
+        if (reportData.tests.length === 1 && isAntiDsDnaAntibodyTest(t) && !String(t.report_body || "").trim()) return "ANTI-dsDNA ANTIBODY";
+        if (reportData.tests.length === 1 && isAntiSsDnaAntibodyTest(t) && !String(t.report_body || "").trim()) return "ANTI-ssDNA ANTIBODY";
+        if (reportData.tests.length === 1 && isAntiHistoneAntibodyTest(t) && !String(t.report_body || "").trim()) return "ANTI-HISTONE ANTIBODY";
+        if (reportData.tests.length === 1 && isAntiRibosomalPAntibodyTest(t) && !String(t.report_body || "").trim()) return "ANTI-RIBOSOMAL P ANTIBODY";
+        if (reportData.tests.length === 1 && isAntiCcpAbTest(t) && !String(t.report_body || "").trim()) return "ANTI-CCP ANTIBODY";
+        if (reportData.tests.length === 1 && isAntiSpermAntibodyTest(t) && !String(t.report_body || "").trim()) return "ANTI-SPERM ANTIBODY";
+        if (reportData.tests.length === 1 && isApolipoproteinA1Test(t) && !String(t.report_body || "").trim()) return "APOLIPOPROTEIN A1 (APOA1)";
+        if (reportData.tests.length === 1 && isUrineArsenicTest(t) && !String(t.report_body || "").trim()) return "ARSENIC, URINE (TOTAL)";
+        if (reportData.tests.length === 1 && isArthritisProfileTest(t) && !String(t.report_body || "").trim()) return "ARTHRITIS PROFILE";
+        if (reportData.tests.length === 1 && isAsciticFluidGramStainTest(t) && !String(t.report_body || "").trim()) return "ASCITIC FLUID GRAM STAIN";
+        if (reportData.tests.length === 1 && isAsciticFluidTotalProteinTest(t) && !String(t.report_body || "").trim()) return "ASCITIC FLUID TOTAL PROTEIN";
+        if (reportData.tests.length === 1 && isBactecAerobicCultureTest(t) && !String(t.report_body || "").trim()) return "BACTEC AEROBIC CULTURE";
+        if (reportData.tests.length === 1 && isBactecAnaerobicCultureTest(t) && !String(t.report_body || "").trim()) return "BACTEC ANAEROBIC CULTURE";
         if (reportData.tests.length === 1 && isThyroidAntibodiesTest(t)) return "THYROID ANTIBODIES";
         if (reportData.tests.length === 1 && isTriiodothyronineTotalTest(t)) return "TRIIODOTHYRONINE (T3), TOTAL";
         if (reportData.tests.length === 1 && isAntenatalProfileTest(t)) return "ANTENATAL PROFILE";

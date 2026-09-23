@@ -1,13 +1,19 @@
 protectPage(["blood_sample_technician", "usg_technician", "mri_technician", "ct_technician"]);
 
 const receptionLink = document.getElementById("receptionLink");
-if (hasPermission("manage_patients") || hasPermission("manage_billing")) {
+const canOpenDueCollection = hasPermission("collect_due_payments");
+const canOpenReports = hasPermission("view_reports") || hasPermission("print_reports") || hasPermission("download_reports");
+if (hasPermission("manage_patients") || canOpenDueCollection || canOpenReports) {
   receptionLink.href = hasPermission("manage_patients")
     ? "reception.html#new-visit"
-    : "reception.html#collection-delivery";
+    : canOpenDueCollection
+      ? "reception.html#due-collection"
+      : "reception.html#reports";
   receptionLink.textContent = hasPermission("manage_patients")
     ? "Patient Registration"
-    : "Billing & Reports";
+    : canOpenDueCollection
+      ? "Due Collection"
+      : "Reports";
   receptionLink.hidden = false;
 }
 

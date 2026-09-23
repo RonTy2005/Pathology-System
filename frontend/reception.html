@@ -19,7 +19,8 @@
         <a href="#new-visit" id="navNewVisit">New Patient</a>
         <a href="#patient-management">Patient Management</a>
         <a href="#results-entry" id="navResultsEntry">Enter Results</a>
-        <a href="#collection-delivery">Bill Collection & Reports</a>
+        <a href="#reports">Reports</a>
+        <a href="#due-collection">Due Collection</a>
         <a href="#price-inquiry" id="navPriceInquiry">Price Inquiry</a>
         <a href="#daily-accounts" id="navDailyAccounts">Daily Accounts</a>
       </nav>
@@ -462,10 +463,10 @@
         </article>
       </section>
 
-      <section id="collection-delivery" class="panel" hidden>
+      <section id="due-collection" class="panel" hidden>
         <div class="section-title">
-          <h2>Bill Collection & Reports</h2>
-          <span>Collect due amounts and print finalized reports</span>
+          <h2>Due Collection</h2>
+          <span>Collect outstanding bill amounts</span>
         </div>
           <div class="inline-grid">
             <label class="field">
@@ -545,6 +546,29 @@
           </div>
           <p id="refundMessage" class="message"></p>
         </form>
+      </section>
+
+      <section id="reports" class="panel" hidden>
+        <div class="section-title">
+          <h2>Reports</h2>
+          <span>View and print finalized patient reports</span>
+        </div>
+        <div class="inline-grid">
+          <label class="field">
+            <span>Search patient or bill</span>
+            <input id="reportsSearchInput" placeholder="Search by bill, patient name, or phone" autocomplete="off" />
+          </label>
+          <label class="field">
+            <span>From date</span>
+            <input id="reportsDateFrom" type="date" />
+          </label>
+          <label class="field">
+            <span>To date</span>
+            <input id="reportsDateTo" type="date" />
+          </label>
+        </div>
+        <div id="reportsList" class="list"></div>
+        <p id="reportsMessage" class="message"></p>
       </section>
 
       <section id="price-inquiry" class="panel" hidden>

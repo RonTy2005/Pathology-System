@@ -206,6 +206,16 @@ test("800x600 displays receive an on-screen window and readable compact workspac
   assert.match(css, /\.app-shell td \{[\s\S]*?font-size:\s*0\.92rem/);
 });
 
+test("1440x900 desktops use a denser signed-in workspace without changing report print layout", () => {
+  const css = fs.readFileSync(path.resolve(__dirname, "../frontend/styles/app.css"), "utf8");
+  assert.match(css, /Medium-density desktop layout/);
+  assert.match(css, /min-width:\s*901px\) and \(max-width:\s*1600px\) and \(max-height:\s*900px\)/);
+  assert.match(css, /grid-template-columns:\s*228px minmax\(0, 1fr\)/);
+  assert.match(css, /\.app-shell \.sidebar-nav a \{[\s\S]*?min-height:\s*35px/);
+  assert.match(css, /\.app-shell textarea \{[\s\S]*?min-height:\s*84px/);
+  assert.match(css, /public pages, generated reports, or A4 printing/);
+});
+
 test("only the server prevents automatic sleep and still allows its display to turn off", () => {
   const calls = [];
   const active = new Set();

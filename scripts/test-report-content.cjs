@@ -10,6 +10,7 @@ const { REPORT_CONTENT, getReportContent, buildSupplementaryNotes, supplementRep
 const { COMBINATIONS, getCombinationDefinition, repairKnownCombinationSchemas } = require('../src/services/reportCombinationRepair');
 const { CELL_REPORT_DEFINITIONS, getCellReportDefinition, getCellReportParameters, getCellReportPreviewValue, repairCellReportSchemas } = require('../src/services/cellReportService');
 const { getFallbackReportParameters } = require('../src/services/reportSchemaService');
+const { ensureAntiInsulinAntibodyTestConfiguration, ensureAntiLeptospiraAntibodyTestConfiguration, ensureAntiMicrosomalAntibodyTestConfiguration, ensureAntiDsDnaAntibodyTestConfiguration, ensureAntiSsDnaAntibodyTestConfiguration, ensureAntiHistoneAntibodyTestConfiguration, ensureAntiRibosomalPAntibodyTestConfiguration, ensureAntiCcpAbTestConfiguration, ensureAntiSpermAntibodyTestConfiguration, ensureApolipoproteinA1TestConfiguration, ensureUrineArsenicTestConfiguration, ensureArthritisProfileTestConfiguration, ensureAsciticFluidGramStainTestConfiguration, ensureAsciticFluidTotalProteinTestConfiguration, ensureBactecAerobicCultureTestConfiguration, ensureBactecAnaerobicCultureTestConfiguration } = require('../src/db/init');
 const { sampleReport } = require('./audit-report-content.cjs');
 const { isBillingOnlyTest } = require('../frontend/scripts/reportEligibility');
 
@@ -706,6 +707,478 @@ test('Anti-Tg has a dedicated thyroid autoantibody report without adding Anti-TP
   assert.match(combined, /ANTI - Tg, SERUM/);
   assert.match(combined, /ANTI TPO, SERUM/);
   assert.doesNotMatch(combined, /class="results-table single-analyte-table thyroid-antibodies-table anti-tg-table"/);
+});
+
+test('Anti InsulinAntibody keeps the shared result layout and adds assay-aware interpretation', () => {
+  const input = {
+    name: 'Anti InsulinAntibody', sample_type: 'Serum',
+    parameters: [{ parameter_name: 'Insulin Antibodies (IAA), Serum', value: 'Measured value', unit: 'Lab unit', normal_range: 'Lab cut-off' }],
+  };
+  const html = buildReportHtml(sampleReport(input));
+  assert.match(html, /<div class="test-title">INSULIN ANTIBODIES \(IAA\)<\/div>/);
+  assert.match(html, /Insulin Antibodies \(IAA\), Serum/);
+  assert.match(html, /Measured value/);
+  assert.match(html, /Lab cut-off/);
+  assert.match(html, /data-report-content="anti-insulin-antibody"/);
+  assert.match(html, /Injected insulin can induce antibodies/);
+  assert.match(html, /numerical threshold and unit depend on the method/);
+  assert.doesNotMatch(html, /<5\.0 uU\/mL|0\.4 U\/mL/);
+  assert.equal(getReportContent({ name: 'Anti Insulin Receptor Antibody', sample_type: 'Serum' }), null);
+  assert.equal(getReportContent({ name: 'Anti InsulinAntibody', sample_type: 'Urine' }), null);
+  assert.equal(getFallbackReportParameters({ name: 'Anti InsulinAntibody' })[0].normalRange, 'Assay-specific negative cut-off');
+  const custom = buildReportHtml(sampleReport({ ...input, report_body: 'Lab-approved interpretation' }));
+  assert.doesNotMatch(custom, /data-report-content="anti-insulin-antibody"/);
+  assert.match(custom, /Lab-approved interpretation/);
+});
+
+test('Anti Leptospira Antibody adds timed-serology guidance without claiming IgM or IgG', () => {
+  const input = {
+    name: 'Anti Leptospira Antibody', sample_type: 'Serum',
+    parameters: [{ parameter_name: 'Anti-Leptospira Antibody, Serum', value: 'Non-reactive', unit: '', normal_range: 'Negative / non-reactive (assay-specific)' }],
+  };
+  const html = buildReportHtml(sampleReport(input));
+  assert.match(html, /<div class="test-title">ANTI-LEPTOSPIRA ANTIBODY<\/div>/);
+  assert.match(html, /Anti-Leptospira Antibody, Serum/);
+  assert.match(html, /Non-reactive/);
+  assert.match(html, /data-report-content="anti-leptospira-antibody"/);
+  assert.match(html, /Does not exclude leptospirosis/);
+  assert.match(html, /microscopic agglutination testing \(MAT\)/);
+  assert.match(html, /does not specify IgM or IgG/);
+  assert.equal(getFallbackReportParameters({ name: 'Anti Leptospira Antibody' })[0].normalRange, 'Negative / non-reactive (assay-specific)');
+  for (const other of ['Leptospira Antibodies (IgG & IgM)', 'Leptospira Antibody IgG', 'LeptospiraAntibodyIgM']) {
+    assert.equal(getReportContent({ name: other, sample_type: 'Serum' }), null);
+    assert.doesNotMatch(buildReportHtml(sampleReport({ name: other, sample_type: 'Serum', parameters: [] })), /data-report-content="anti-leptospira-antibody"/);
+  }
+  const custom = buildReportHtml(sampleReport({ ...input, report_body: 'Lab-authored explanation' }));
+  assert.doesNotMatch(custom, /data-report-content="anti-leptospira-antibody"/);
+  assert.match(custom, /Lab-authored explanation/);
+});
+
+test('Anti Microsomal Antibody has a target-neutral report, not thyroid or LKM findings', () => {
+  const input = {
+    name: 'Anti Microsomal Antibody', sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Antigen / Assay Target', value: 'Laboratory target', unit: '', normal_range: '' },
+      { parameter_name: 'Assay Method', value: 'Laboratory method', unit: '', normal_range: '' },
+      { parameter_name: 'Anti-Microsomal Antibody Result', value: 'Measured result', unit: 'Lab unit', normal_range: 'Lab criterion' },
+      { parameter_name: 'Laboratory Interpretation', value: 'Lab interpretation', unit: '', normal_range: '' },
+    ],
+  };
+  const html = buildReportHtml(sampleReport(input));
+  assert.match(html, /<div class="test-title">ANTI-MICROSOMAL ANTIBODY<\/div>/);
+  for (const value of ['Laboratory target', 'Laboratory method', 'Measured result', 'Lab criterion', 'Lab interpretation']) {
+    assert.match(html, new RegExp(value));
+  }
+  assert.match(html, /data-report-content="anti-microsomal-antibody"/);
+  assert.match(html, /does not identify the antigen or clinical indication/);
+  assert.match(html, /Do not assume this is a thyroid peroxidase/);
+  assert.doesNotMatch(html, /class="results-table single-analyte-table thyroid-antibodies-table anti-tpo-table"/);
+  assert.equal(getFallbackReportParameters({ name: 'Anti Microsomal Antibody' }).length, 5);
+  assert.equal(getReportContent({ name: 'Anti LKM', sample_type: 'Serum' }), null);
+  assert.equal(getReportContent({ name: 'Anti TPO (Anti ThyroidPeroxidase)', sample_type: 'Serum' }), null);
+  const custom = buildReportHtml(sampleReport({ ...input, report_body: 'Performing lab text' }));
+  assert.doesNotMatch(custom, /data-report-content="anti-microsomal-antibody"/);
+  assert.match(custom, /Performing lab text/);
+});
+
+test('Anti ds DNAAntibody has a dedicated assay-aware report distinct from anti-ssDNA', () => {
+  const input = {
+    name: 'Anti ds DNAAntibody', sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Anti-dsDNA Antibody', value: 'Lab result', unit: 'Lab unit', normal_range: 'Lab cut-off' },
+      { parameter_name: 'Assay Method / Platform', value: 'Lab method', unit: '', normal_range: '' },
+      { parameter_name: 'Laboratory Interpretation', value: 'Lab interpretation', unit: '', normal_range: '' },
+    ],
+  };
+  const html = buildReportHtml(sampleReport(input));
+  assert.match(html, /<div class="test-title">ANTI-dsDNA ANTIBODY<\/div>/);
+  for (const value of ['Lab result', 'Lab unit', 'Lab cut-off', 'Lab method', 'Lab interpretation']) {
+    assert.match(html, new RegExp(value));
+  }
+  assert.match(html, /data-report-content="anti-dsdna-antibody"/);
+  assert.match(html, /positive result alone does not establish the diagnosis/);
+  assert.match(html, /Does not exclude SLE/);
+  assert.equal(getFallbackReportParameters({ name: input.name }).length, 4);
+  assert.equal(getFallbackReportParameters({ name: input.name })[0].normalRange, 'Assay-specific reference interval');
+  assert.equal(getReportContent({ name: 'Anti ssDNAAntibody', sample_type: 'Serum' }).key, 'anti-ssdna-antibody');
+  assert.equal(getReportContent({ name: 'SLE (L.E. Cell + ANF + Anti ds DNA)', sample_type: 'Serum' }), null);
+  const custom = buildReportHtml(sampleReport({ ...input, report_body: 'Lab-authored explanation' }));
+  assert.doesNotMatch(custom, /data-report-content="anti-dsdna-antibody"/);
+  assert.match(custom, /Lab-authored explanation/);
+});
+
+test('Anti ssDNAAntibody has its own report without borrowing anti-dsDNA interpretation', () => {
+  const input = {
+    name: 'Anti ssDNAAntibody', sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Anti-ssDNA Antibody', value: 'Lab result', unit: 'Lab unit', normal_range: 'Lab cut-off' },
+      { parameter_name: 'Assay Method / Platform', value: 'Lab method', unit: '', normal_range: '' },
+      { parameter_name: 'Laboratory Interpretation', value: 'Lab interpretation', unit: '', normal_range: '' },
+    ],
+  };
+  const html = buildReportHtml(sampleReport(input));
+  assert.match(html, /<div class="test-title">ANTI-ssDNA ANTIBODY<\/div>/);
+  for (const value of ['Lab result', 'Lab unit', 'Lab cut-off', 'Lab method', 'Lab interpretation']) {
+    assert.match(html, new RegExp(value));
+  }
+  assert.match(html, /data-report-content="anti-ssdna-antibody"/);
+  assert.match(html, /less specific for systemic lupus erythematosus/);
+  assert.match(html, /does not diagnose SLE/);
+  assert.doesNotMatch(html, /data-report-content="anti-dsdna-antibody"/);
+  assert.equal(getFallbackReportParameters({ name: input.name }).length, 4);
+  assert.equal(getFallbackReportParameters({ name: input.name })[0].normalRange, 'Assay-specific reference interval');
+  assert.equal(getReportContent({ name: 'Anti ds DNAAntibody', sample_type: 'Serum' }).key, 'anti-dsdna-antibody');
+  const custom = buildReportHtml(sampleReport({ ...input, report_body: 'Lab-authored explanation' }));
+  assert.doesNotMatch(custom, /data-report-content="anti-ssdna-antibody"/);
+  assert.match(custom, /Lab-authored explanation/);
+});
+
+test('Anti-Histone Antibody explains the result without replacing an existing assay range', () => {
+  const input = {
+    name: 'Anti-Histone Antibody', sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Anti-Histone Antibody', value: 'Lab result', unit: 'Lab unit', normal_range: 'Lab cut-off' },
+      { parameter_name: 'Assay Method / Platform', value: 'Lab method', unit: '', normal_range: '' },
+      { parameter_name: 'Laboratory Interpretation', value: 'Lab interpretation', unit: '', normal_range: '' },
+    ],
+  };
+  const html = buildReportHtml(sampleReport(input));
+  assert.match(html, /<div class="test-title">ANTI-HISTONE ANTIBODY<\/div>/);
+  for (const value of ['Lab result', 'Lab unit', 'Lab cut-off', 'Lab method', 'Lab interpretation']) {
+    assert.match(html, new RegExp(value));
+  }
+  assert.match(html, /data-report-content="anti-histone-antibody"/);
+  assert.match(html, /does not by itself establish drug-induced lupus/);
+  assert.equal(getFallbackReportParameters({ name: input.name }).length, 4);
+  const existing = buildReportHtml(sampleReport({
+    name: 'Anti-Histone Antibodies', sample_type: 'Serum (1 ml)',
+    parameters: [{ parameter_name: 'ANTI-HISTONE ANTIBODIES', value: '0.5', unit: 'Units', normal_range: '< 1.00' }],
+  }));
+  assert.match(existing, /<div class="test-title">ANTI-HISTONE ANTIBODIES<\/div>/);
+  assert.doesNotMatch(existing, /data-report-content="anti-histone-antibody"/);
+  assert.match(existing, /&lt; 1\.00/);
+  assert.equal(getReportContent({ name: 'Anti-Chromatin Antibody', sample_type: 'Serum' }), null);
+  const custom = buildReportHtml(sampleReport({ ...input, report_body: 'Lab-authored explanation' }));
+  assert.doesNotMatch(custom, /data-report-content="anti-histone-antibody"/);
+  assert.match(custom, /Lab-authored explanation/);
+});
+
+test('Anti-Ribosomal P Antibody has a distinct report and leaves the plural bespoke format intact', () => {
+  const input = {
+    name: 'Anti-Ribosomal P Antibody', sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Anti-Ribosomal P Antibody', value: 'Lab result', unit: 'Lab unit', normal_range: 'Lab cut-off' },
+      { parameter_name: 'Assay Method / Platform', value: 'Lab method', unit: '', normal_range: '' },
+      { parameter_name: 'Laboratory Interpretation', value: 'Lab interpretation', unit: '', normal_range: '' },
+    ],
+  };
+  const html = buildReportHtml(sampleReport(input));
+  assert.match(html, /<div class="test-title">ANTI-RIBOSOMAL P ANTIBODY<\/div>/);
+  for (const value of ['Lab result', 'Lab unit', 'Lab cut-off', 'Lab method', 'Lab interpretation']) {
+    assert.match(html, new RegExp(value));
+  }
+  assert.match(html, /data-report-content="anti-ribosomal-p-antibody"/);
+  assert.match(html, /does not establish SLE or a particular organ manifestation/);
+  assert.equal(getFallbackReportParameters({ name: input.name }).length, 4);
+  const existing = buildReportHtml(sampleReport({
+    name: 'Ribosome P Antibodies', code: 'RIBOSOMEP', sample_type: 'Serum (1 ml)',
+    parameters: [{ parameter_name: 'Ribosome P Antibodies, IgG', value: '0.5', unit: 'U', normal_range: '< 1.0' }],
+  }));
+  assert.match(existing, /<div class="test-title">RIBOSOME P ANTIBODIES<\/div>/);
+  assert.doesNotMatch(existing, /data-report-content="anti-ribosomal-p-antibody"/);
+  assert.match(existing, /&lt; 1\.0/);
+  assert.equal(getReportContent({ name: 'Ribosome P Antibodies', sample_type: 'Serum' }), null);
+  const custom = buildReportHtml(sampleReport({ ...input, report_body: 'Lab-authored explanation' }));
+  assert.doesNotMatch(custom, /data-report-content="anti-ribosomal-p-antibody"/);
+  assert.match(custom, /Lab-authored explanation/);
+});
+
+test('AntiCCPAB has an assay-aware report without borrowing the copied Anti CCP cutoff', () => {
+  const input = {
+    name: 'AntiCCPAB', sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Anti-CCP Antibody', value: 'Lab result', unit: 'Lab unit', normal_range: 'Lab cut-off' },
+      { parameter_name: 'Assay Method / Platform', value: 'Lab method', unit: '', normal_range: '' },
+      { parameter_name: 'Laboratory Interpretation', value: 'Lab interpretation', unit: '', normal_range: '' },
+    ],
+  };
+  const html = buildReportHtml(sampleReport(input));
+  assert.match(html, /<div class="test-title">ANTI-CCP ANTIBODY<\/div>/);
+  for (const value of ['Lab result', 'Lab unit', 'Lab cut-off', 'Lab method', 'Lab interpretation']) {
+    assert.match(html, new RegExp(value));
+  }
+  assert.match(html, /data-report-content="anti-ccp-ab"/);
+  assert.match(html, /does not establish a diagnosis/);
+  assert.doesNotMatch(html, /class="results-table anti-ccp-table"/);
+  assert.equal(getFallbackReportParameters({ name: input.name }).length, 4);
+  assert.equal(getFallbackReportParameters({ name: input.name })[0].normalRange, 'Assay-specific negative cut-off');
+  const existing = buildReportHtml(sampleReport({
+    name: 'Anti Cyclic-Citrullinated-Peptide (Anti CCP)', code: 'ANTICCP', sample_type: 'Serum',
+    parameters: [{ parameter_name: 'ANTI CCP (CYCLIC CITRULLINATED PEPTIDE), SERUM', value: '2.0', unit: 'U/mL', normal_range: '< 5.00' }],
+  }));
+  assert.doesNotMatch(existing, /data-report-content="anti-ccp-ab"/);
+  assert.match(existing, /&lt; 5\.00/);
+  assert.equal(getReportContent({ name: 'Anti Cyclic-Citrullinated-Peptide (Anti CCP)', sample_type: 'Serum' }), null);
+  const custom = buildReportHtml(sampleReport({ ...input, report_body: 'Lab-authored explanation' }));
+  assert.doesNotMatch(custom, /data-report-content="anti-ccp-ab"/);
+  assert.match(custom, /Lab-authored explanation/);
+});
+
+test('AntiSpermAntibody report requires specimen and method without assuming a MAR cutoff', () => {
+  const input = {
+    name: 'AntiSpermAntibody', sample_type: '',
+    parameters: [
+      { parameter_name: 'Specimen / Matrix', value: 'Lab specimen', unit: '', normal_range: '' },
+      { parameter_name: 'Assay Method / Platform', value: 'Lab method', unit: '', normal_range: '' },
+      { parameter_name: 'Antibody Class', value: 'Lab class', unit: '', normal_range: '' },
+      { parameter_name: 'Anti-Sperm Antibody Result', value: 'Lab result', unit: 'Lab unit', normal_range: 'Lab criterion' },
+      { parameter_name: 'Laboratory Interpretation', value: 'Lab interpretation', unit: '', normal_range: '' },
+    ],
+  };
+  const html = buildReportHtml(sampleReport(input));
+  assert.match(html, /<div class="test-title">ANTI-SPERM ANTIBODY<\/div>/);
+  for (const value of ['Lab specimen', 'Lab method', 'Lab class', 'Lab result', 'Lab unit', 'Lab criterion', 'Lab interpretation']) {
+    assert.match(html, new RegExp(value));
+  }
+  assert.match(html, /data-report-content="anti-sperm-antibody"/);
+  assert.match(html, /A detected antibody result alone does not establish infertility/);
+  assert.doesNotMatch(html, /50% or more/);
+  assert.deepEqual(getFallbackReportParameters({ name: input.name }).map(field => field.parameterName), [
+    'Specimen / Matrix', 'Assay Method / Platform', 'Antibody Class',
+    'Anti-Sperm Antibody Result', 'Laboratory Interpretation', 'Comments',
+  ]);
+  assert.equal(getReportContent({ name: 'Semen Analysis - Seminogram', sample_type: 'Semen' }).key, 'semen-analysis');
+  const custom = buildReportHtml(sampleReport({ ...input, report_body: 'Lab-authored explanation' }));
+  assert.doesNotMatch(custom, /data-report-content="anti-sperm-antibody"/);
+  assert.match(custom, /Lab-authored explanation/);
+});
+
+test('ApolipoproteinA1 has an age- and sex-aware report separate from ApoB', () => {
+  const input = {
+    name: 'ApolipoproteinA1', sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Apolipoprotein A1, Serum', value: 'Lab result', unit: 'mg/dL', normal_range: 'Lab interval' },
+      { parameter_name: 'Assay Method / Platform', value: 'Lab method', unit: '', normal_range: '' },
+      { parameter_name: 'Laboratory Interpretation', value: 'Lab interpretation', unit: '', normal_range: '' },
+    ],
+  };
+  const html = buildReportHtml(sampleReport(input));
+  assert.match(html, /<div class="test-title">APOLIPOPROTEIN A1 \(APOA1\)<\/div>/);
+  for (const value of ['Lab result', 'mg/dL', 'Lab interval', 'Lab method', 'Lab interpretation']) {
+    assert.match(html, new RegExp(value));
+  }
+  assert.match(html, /data-report-content="apolipoprotein-a1"/);
+  assert.match(html, /major protein component of high-density lipoprotein/);
+  assert.match(html, /age- and sex-specific ApoA1 reference interval/);
+  assert.doesNotMatch(html, /apolipoprotein-b-table/);
+  const fields = getFallbackReportParameters({ name: input.name });
+  assert.deepEqual(fields.map(field => field.parameterName), [
+    'Apolipoprotein A1, Serum', 'Assay Method / Platform', 'Laboratory Interpretation', 'Comments',
+  ]);
+  assert.equal(fields[0].normalRange, 'Age- and sex-specific laboratory interval');
+  assert.equal(getReportContent({ name: 'Apolipoprotein B', sample_type: 'Serum' }), null);
+  const custom = buildReportHtml(sampleReport({ ...input, report_body: 'Lab-authored explanation' }));
+  assert.doesNotMatch(custom, /data-report-content="apolipoprotein-a1"/);
+  assert.match(custom, /Lab-authored explanation/);
+});
+
+test('Arsenic (Urine) reports total concentration without implying inorganic arsenic or a universal cutoff', () => {
+  const input = {
+    name: 'Arsenic (Urine)', sample_type: 'Urine',
+    parameters: [
+      { parameter_name: 'Collection Type / Duration', value: 'Random urine', unit: '', normal_range: '' },
+      { parameter_name: 'Arsenic, Total, Urine', value: 'Lab result', unit: 'mcg/L', normal_range: 'Lab interval' },
+      { parameter_name: 'Assay Method / Platform', value: 'Lab method', unit: '', normal_range: '' },
+      { parameter_name: 'Laboratory Interpretation', value: 'Lab interpretation', unit: '', normal_range: '' },
+    ],
+  };
+  const html = buildReportHtml(sampleReport(input));
+  assert.match(html, /<div class="test-title">ARSENIC, URINE \(TOTAL\)<\/div>/);
+  for (const value of ['Random urine', 'Lab result', 'mcg/L', 'Lab interval', 'Lab method', 'Lab interpretation']) {
+    assert.match(html, new RegExp(value));
+  }
+  assert.match(html, /data-report-content="urine-arsenic"/);
+  assert.match(html, /Recent seafood intake can raise total urinary arsenic/);
+  assert.match(html, /do not label the total result as inorganic or toxic arsenic/);
+  const fields = getFallbackReportParameters({ name: input.name });
+  assert.deepEqual(fields.map(field => field.parameterName), [
+    'Collection Type / Duration', 'Arsenic, Total, Urine', 'Assay Method / Platform',
+    'Laboratory Interpretation', 'Comments',
+  ]);
+  assert.equal(fields[1].normalRange, 'Collection- and method-specific laboratory interval');
+  assert.equal(getReportContent({ name: 'Arsenic (Blood)', sample_type: 'Blood' }), null);
+  const custom = buildReportHtml(sampleReport({ ...input, report_body: 'Lab-authored explanation' }));
+  assert.doesNotMatch(custom, /data-report-content="urine-arsenic"/);
+  assert.match(custom, /Lab-authored explanation/);
+});
+
+test('Arthritis Profile reports the selected seven serum markers with component-aware explanations', () => {
+  const fields = getFallbackReportParameters({ name: 'Arthritis Profile' });
+  assert.deepEqual(fields.map(field => field.parameterName), [
+    'Serum Uric Acid', 'Rheumatoid Factor, RA', 'C-Reactive Protein, CRP',
+    'Antistreptolysin O, ASO Titer', 'iCalcium', 'Total Calcium', 'Serum Phosphorus', 'Comments',
+  ]);
+  assert.deepEqual(fields.slice(0, 7).map(field => field.unit), [
+    'mg/dL', 'IU/mL', 'mg/L', 'IU/mL', 'mmol/L', 'mg/dL', 'mg/dL',
+  ]);
+  assert.ok(fields.slice(0, 7).every(field => !/\d/.test(field.normalRange)));
+
+  const input = {
+    name: 'Arthritis Profile', code: 'PF052', sample_type: 'Serum',
+    parameters: fields.map((field, index) => ({
+      parameter_name: field.parameterName,
+      value: index === 7 ? 'Sample comment' : `Lab result ${index + 1}`,
+      unit: field.unit, normal_range: field.normalRange,
+    })),
+  };
+  const html = buildReportHtml(sampleReport(input));
+  assert.match(html, /<div class="test-title">ARTHRITIS PROFILE<\/div>/);
+  for (let index = 1; index <= 7; index++) assert.match(html, new RegExp(`Lab result ${index}`));
+  assert.match(html, /data-report-content="arthritis-profile"/);
+  assert.match(html, /A negative result does not exclude rheumatoid arthritis/);
+  assert.match(html, /a result alone cannot confirm or exclude gout/);
+  assert.doesNotMatch(html, /anti-CCP antibodies are useful/i);
+
+  const limited = buildReportHtml(sampleReport({
+    ...input, parameters: input.parameters.filter(field => /uric acid|comments/i.test(field.parameter_name)),
+  }));
+  assert.match(limited, /A raised serum urate may occur without gout/);
+  assert.doesNotMatch(limited, /A positive result can support rheumatoid arthritis/);
+  const custom = buildReportHtml(sampleReport({ ...input, report_body: 'Lab-authored explanation' }));
+  assert.doesNotMatch(custom, /data-report-content="arthritis-profile"/);
+  assert.match(custom, /Lab-authored explanation/);
+});
+
+test('Ascitic Fluids Gram Stain records microscopy without inventing a negative result or culture finding', () => {
+  const fields = getFallbackReportParameters({ name: 'Ascitic Fluids Gram Stain' });
+  assert.deepEqual(fields.map(field => field.parameterName), [
+    'Specimen / Site', 'Smear Method / Preparation', 'Inflammatory Cells / PMNs',
+    'Gram Stain Findings', 'Gram Reaction / Bacterial Morphology', 'Impression', 'Comments',
+  ]);
+  assert.ok(fields.every(field => !field.normalRange));
+  const input = {
+    name: 'Ascitic Fluids Gram Stain', sample_type: 'Ascitic Fluid',
+    parameters: [
+      { parameter_name: 'Specimen / Site', value: 'Ascitic fluid', unit: '', normal_range: '' },
+      { parameter_name: 'Smear Method / Preparation', value: 'Lab method', unit: '', normal_range: '' },
+      { parameter_name: 'Inflammatory Cells / PMNs', value: 'Observed cells', unit: '', normal_range: '' },
+      { parameter_name: 'Gram Stain Findings', value: 'Observed finding', unit: '', normal_range: '' },
+      { parameter_name: 'Gram Reaction / Bacterial Morphology', value: 'Observed morphology', unit: '', normal_range: '' },
+      { parameter_name: 'Impression', value: 'Lab impression', unit: '', normal_range: '' },
+    ],
+  };
+  const html = buildReportHtml(sampleReport(input));
+  assert.match(html, /<div class="test-title">ASCITIC FLUID GRAM STAIN<\/div>/);
+  for (const value of ['Ascitic fluid', 'Lab method', 'Observed cells', 'Observed finding', 'Observed morphology', 'Lab impression']) {
+    assert.match(html, new RegExp(value));
+  }
+  assert.match(html, /data-report-content="ascitic-fluid-gram-stain"/);
+  assert.match(html, /does not exclude spontaneous bacterial peritonitis/);
+  assert.match(html, /not an absolute ascitic-fluid PMN count/);
+  assert.equal(getReportContent({ name: 'Peritonial Fluid Gram stain' }), null);
+  const custom = buildReportHtml(sampleReport({ ...input, report_body: 'Lab-authored explanation' }));
+  assert.doesNotMatch(custom, /data-report-content="ascitic-fluid-gram-stain"/);
+  assert.match(custom, /Lab-authored explanation/);
+});
+
+test('AsciticFluidforProtein has a standalone total-protein report without a pleural ratio or invented SAAG', () => {
+  const fields = getFallbackReportParameters({ name: 'AsciticFluidforProtein' });
+  assert.deepEqual(fields.map(field => field.parameterName), [
+    'Ascitic Fluid Total Protein', 'Specimen / Site', 'Appearance', 'Method / Analyzer', 'Comments',
+  ]);
+  assert.equal(fields[0].unit, 'g/dL');
+  assert.equal(fields[0].normalRange, 'Interpretive; no universal reference interval');
+  const input = {
+    name: 'AsciticFluidforProtein', sample_type: 'Ascitic Fluid',
+    parameters: [
+      { parameter_name: 'Ascitic Fluid Total Protein', value: 'Lab result', unit: 'g/dL', normal_range: 'Lab interpretation' },
+      { parameter_name: 'Specimen / Site', value: 'Ascitic fluid', unit: '', normal_range: '' },
+      { parameter_name: 'Method / Analyzer', value: 'Lab method', unit: '', normal_range: '' },
+    ],
+  };
+  const html = buildReportHtml(sampleReport(input));
+  assert.match(html, /<div class="test-title">ASCITIC FLUID TOTAL PROTEIN<\/div>/);
+  for (const value of ['Lab result', 'g/dL', 'Lab interpretation', 'Ascitic fluid', 'Lab method']) {
+    assert.match(html, new RegExp(value));
+  }
+  assert.match(html, /data-report-content="ascitic-fluid-total-protein"/);
+  assert.match(html, /universal healthy reference interval/);
+  assert.match(html, /Do not calculate SAAG without separately measured paired serum and ascitic albumin/);
+  assert.doesNotMatch(html, /body-fluid-protein-table/);
+  assert.equal(getReportContent({ name: 'Body Fluides for Proein', sample_type: 'Body Fluid' }), null);
+  const custom = buildReportHtml(sampleReport({ ...input, report_body: 'Lab-authored explanation' }));
+  assert.doesNotMatch(custom, /data-report-content="ascitic-fluid-total-protein"/);
+  assert.match(custom, /Lab-authored explanation/);
+});
+
+test('Bactec Culture for Aerobic Bacteria keeps specimen and report stage explicit without assuming growth', () => {
+  const fields = getFallbackReportParameters({ name: 'Bactec Culture for Aerobic Bacteria' });
+  assert.deepEqual(fields.map(field => field.parameterName), [
+    'Specimen / Collection Site', 'Bottle / Medium', 'Collection Date / Time',
+    'Culture Status / Result', 'Report Status', 'Time to Positivity',
+    'Gram Stain from Positive Bottle', 'Organism(s) Isolated', 'Identification Method',
+    'Antimicrobial Susceptibility', 'Comments',
+  ]);
+  assert.ok(fields.every(field => !field.normalRange));
+  const input = {
+    name: 'Bactec Culture for Aerobic Bacteria', sample_type: '',
+    parameters: [
+      { parameter_name: 'Specimen / Collection Site', value: 'Submitted specimen', unit: '', normal_range: '' },
+      { parameter_name: 'Bottle / Medium', value: 'Aerobic bottle', unit: '', normal_range: '' },
+      { parameter_name: 'Culture Status / Result', value: 'Lab culture result', unit: '', normal_range: '' },
+      { parameter_name: 'Report Status', value: 'Lab report stage', unit: '', normal_range: '' },
+      { parameter_name: 'Gram Stain from Positive Bottle', value: 'Lab stain finding', unit: '', normal_range: '' },
+      { parameter_name: 'Organism(s) Isolated', value: 'Lab isolate', unit: '', normal_range: '' },
+      { parameter_name: 'Antimicrobial Susceptibility', value: 'Lab susceptibility', unit: '', normal_range: '' },
+    ],
+  };
+  const html = buildReportHtml(sampleReport(input));
+  assert.match(html, /<div class="test-title">BACTEC AEROBIC CULTURE<\/div>/);
+  for (const value of ['Submitted specimen', 'Aerobic bottle', 'Lab culture result', 'Lab report stage', 'Lab stain finding', 'Lab isolate', 'Lab susceptibility']) {
+    assert.match(html, new RegExp(value));
+  }
+  assert.match(html, /data-report-content="bactec-aerobic-culture"/);
+  assert.match(html, /Use a final no-growth statement only after/);
+  assert.match(html, /An aerobic bottle does not substitute for an anaerobic culture/);
+  assert.equal(getReportContent({ name: 'BactecCultureforAnaerobic Bacteria' }).key, 'bactec-anaerobic-culture');
+  const custom = buildReportHtml(sampleReport({ ...input, report_body: 'Lab-authored explanation' }));
+  assert.doesNotMatch(custom, /data-report-content="bactec-aerobic-culture"/);
+  assert.match(custom, /Lab-authored explanation/);
+});
+
+test('BactecCultureforAnaerobic Bacteria reports its own bottle without assuming obligate anaerobes', () => {
+  const fields = getFallbackReportParameters({ name: 'BactecCultureforAnaerobic Bacteria' });
+  assert.deepEqual(fields.map(field => field.parameterName), [
+    'Specimen / Collection Site', 'Bottle / Medium', 'Collection Date / Time',
+    'Culture Status / Result', 'Report Status', 'Time to Positivity',
+    'Gram Stain from Positive Bottle', 'Organism(s) Isolated', 'Identification Method',
+    'Antimicrobial Susceptibility', 'Comments',
+  ]);
+  assert.ok(fields.every(field => !field.normalRange));
+  const input = {
+    name: 'BactecCultureforAnaerobic Bacteria', sample_type: '',
+    parameters: [
+      { parameter_name: 'Specimen / Collection Site', value: 'Submitted specimen', unit: '', normal_range: '' },
+      { parameter_name: 'Bottle / Medium', value: 'Anaerobic bottle', unit: '', normal_range: '' },
+      { parameter_name: 'Culture Status / Result', value: 'Lab culture result', unit: '', normal_range: '' },
+      { parameter_name: 'Report Status', value: 'Lab report stage', unit: '', normal_range: '' },
+      { parameter_name: 'Gram Stain from Positive Bottle', value: 'Lab stain finding', unit: '', normal_range: '' },
+      { parameter_name: 'Organism(s) Isolated', value: 'Lab isolate', unit: '', normal_range: '' },
+      { parameter_name: 'Antimicrobial Susceptibility', value: 'Lab susceptibility', unit: '', normal_range: '' },
+    ],
+  };
+  const html = buildReportHtml(sampleReport(input));
+  assert.match(html, /<div class="test-title">BACTEC ANAEROBIC CULTURE<\/div>/);
+  for (const value of ['Submitted specimen', 'Anaerobic bottle', 'Lab culture result', 'Lab report stage', 'Lab stain finding', 'Lab isolate', 'Lab susceptibility']) {
+    assert.match(html, new RegExp(value));
+  }
+  assert.match(html, /data-report-content="bactec-anaerobic-culture"/);
+  assert.match(html, /can contain an obligate anaerobe or a facultative organism/);
+  assert.match(html, /Do not label an isolate as an obligate anaerobe solely because it grew/);
+  assert.equal(getReportContent({ name: 'Bactec Culture for Aerobic Bacteria' }).key, 'bactec-aerobic-culture');
+  const custom = buildReportHtml(sampleReport({ ...input, report_body: 'Lab-authored explanation' }));
+  assert.doesNotMatch(custom, /data-report-content="bactec-anaerobic-culture"/);
+  assert.match(custom, /Lab-authored explanation/);
 });
 
 test('anticardiolipin IgA has a dedicated non-criteria aPL report without matching combined isotypes', () => {
@@ -1622,11 +2095,111 @@ test('local catalogue: existing report bodies stay unchanged inside the paginati
         || normalizedInputName === 'bodyfluidchloride';
       const isBoneMarrowAspirationCytology = normalizedInputName === 'bonemarrowaspirationcytology';
       const isBoneMarrowCytology = normalizedInputName === 'bonemarrowcytology';
+      const isAntiInsulinAntibody = normalizedInputName === 'antiinsulinantibody'
+        || normalizedInputName === 'insulinantibody'
+        || normalizedInputName === 'insulinantibodies'
+        || normalizedInputName === 'insulinautoantibodyiaa';
+      const isAntiLeptospiraAntibody = normalizedInputName === 'antileptospiraantibody'
+        || normalizedInputName === 'leptospiraantibody';
+      const isAntiMicrosomalAntibody = normalizedInputName === 'antimicrosomalantibody';
+      const isAntiDsDnaAntibody = normalizedInputName === 'antidsdnaantibody';
+      const isAntiSsDnaAntibody = normalizedInputName === 'antissdnaantibody';
+      const isAntiHistoneAntibody = normalizedInputName === 'antihistoneantibody';
+      const isAntiRibosomalPAntibody = normalizedInputName === 'antiribosomalpantibody';
+      const isAntiCcpAb = normalizedInputName === 'anticcpab';
+      const isAntiSpermAntibody = normalizedInputName === 'antispermantibody';
+      const isApolipoproteinA1 = normalizedInputName === 'apolipoproteina1';
+      const isUrineArsenic = normalizedInputName === 'arsenicurine';
+      const isArthritisProfile = normalizedInputName === 'arthritisprofile';
+      const isAsciticFluidGramStain = normalizedInputName === 'asciticfluidsgramstain';
+      const isAsciticFluidTotalProtein = normalizedInputName === 'asciticfluidforprotein';
+      const isBactecAerobicCulture = normalizedInputName === 'bacteccultureforaerobicbacteria';
+      const isBactecAnaerobicCulture = normalizedInputName === 'bacteccultureforanaerobicbacteria';
       const isTimedUrineAmylase = normalizedInputName === 'amylase24hrsurine'
         || normalizedInputName === 'amylase24hoururine'
         || normalizedInputName === 'amylase24hurine'
         || normalizedInputName === '24hoururineamylase';
-      if (isActh || isAda || isAfbZiehlNeelsen || isAlbertStainKlb || isBaccalSmearBrrBody || isAutoimmuneProfile || isAgRatio || isAnfQualitative || isProstaticAcidPhosphatase || isTotalAcidPhosphatase || isUrineAlcohol || isAldehydeTest || isAldosterone || isBloodAllergy || isDrugAllergy || isRandomUrineAlphaAmylase || isTimedUrineAmylase || isAmmonia || isAndrogenPanel || isAndrostenedione || isComprehensiveAnemia || isAnemiaScreening || isAntenatalProfile || isAntiTpo || isAntiTg || isAnticardiolipinIggIgm || isAnticardiolipinIgaIgg || isAnticardiolipinIgaIgm || isAnticardiolipinIga || isAnticardiolipinIgg || isAnticardiolipinIgm || isApolipoproteinB || isAsciticFluidAnalysis || isSerumBicarbonate || isBilirubinFractionation || isMediumSectionBiopsy || isSmallSectionBiopsy || isBloodCultureSensitivity || isBodyFluidCultureSensitivity || isBodyFluidTotalProtein || isBodyFluidChloride || isBoneMarrowAspirationCytology || isBoneMarrowCytology) {
+      if (isAsciticFluidTotalProtein) {
+        assert.match(newHtml, /ASCITIC FLUID TOTAL PROTEIN/);
+        assert.match(newHtml, /data-report-content="ascitic-fluid-total-protein"/);
+        continue;
+      }
+      if (isBactecAerobicCulture) {
+        assert.match(newHtml, /BACTEC AEROBIC CULTURE/);
+        assert.match(newHtml, /data-report-content="bactec-aerobic-culture"/);
+        continue;
+      }
+      if (isBactecAnaerobicCulture) {
+        assert.match(newHtml, /BACTEC ANAEROBIC CULTURE/);
+        assert.match(newHtml, /data-report-content="bactec-anaerobic-culture"/);
+        continue;
+      }
+      if (isActh || isAda || isAfbZiehlNeelsen || isAlbertStainKlb || isBaccalSmearBrrBody || isAutoimmuneProfile || isAgRatio || isAnfQualitative || isProstaticAcidPhosphatase || isTotalAcidPhosphatase || isUrineAlcohol || isAldehydeTest || isAldosterone || isBloodAllergy || isDrugAllergy || isRandomUrineAlphaAmylase || isTimedUrineAmylase || isAmmonia || isAndrogenPanel || isAndrostenedione || isComprehensiveAnemia || isAnemiaScreening || isAntenatalProfile || isAntiTpo || isAntiTg || isAntiInsulinAntibody || isAntiLeptospiraAntibody || isAntiMicrosomalAntibody || isAntiDsDnaAntibody || isAntiSsDnaAntibody || isAntiHistoneAntibody || isAntiRibosomalPAntibody || isAntiCcpAb || isAntiSpermAntibody || isApolipoproteinA1 || isUrineArsenic || isArthritisProfile || isAsciticFluidGramStain || isAnticardiolipinIggIgm || isAnticardiolipinIgaIgg || isAnticardiolipinIgaIgm || isAnticardiolipinIga || isAnticardiolipinIgg || isAnticardiolipinIgm || isApolipoproteinB || isAsciticFluidAnalysis || isSerumBicarbonate || isBilirubinFractionation || isMediumSectionBiopsy || isSmallSectionBiopsy || isBloodCultureSensitivity || isBodyFluidCultureSensitivity || isBodyFluidTotalProtein || isBodyFluidChloride || isBoneMarrowAspirationCytology || isBoneMarrowCytology) {
+        if (isAsciticFluidGramStain) {
+          assert.match(newHtml, /ASCITIC FLUID GRAM STAIN/);
+          assert.match(newHtml, /data-report-content="ascitic-fluid-gram-stain"/);
+          continue;
+        }
+        if (isArthritisProfile) {
+          assert.match(newHtml, /ARTHRITIS PROFILE/);
+          assert.match(newHtml, /data-report-content="arthritis-profile"/);
+          continue;
+        }
+        if (isUrineArsenic) {
+          assert.match(newHtml, /ARSENIC, URINE \(TOTAL\)/);
+          assert.match(newHtml, /data-report-content="urine-arsenic"/);
+          continue;
+        }
+        if (isApolipoproteinA1) {
+          assert.match(newHtml, /APOLIPOPROTEIN A1 \(APOA1\)/);
+          assert.match(newHtml, /data-report-content="apolipoprotein-a1"/);
+          continue;
+        }
+        if (isAntiSpermAntibody) {
+          assert.match(newHtml, /ANTI-SPERM ANTIBODY/);
+          assert.match(newHtml, /data-report-content="anti-sperm-antibody"/);
+          continue;
+        }
+        if (isAntiCcpAb) {
+          assert.match(newHtml, /ANTI-CCP ANTIBODY/);
+          assert.match(newHtml, /data-report-content="anti-ccp-ab"/);
+          continue;
+        }
+        if (isAntiRibosomalPAntibody) {
+          assert.match(newHtml, /ANTI-RIBOSOMAL P ANTIBODY/);
+          assert.match(newHtml, /data-report-content="anti-ribosomal-p-antibody"/);
+          continue;
+        }
+        if (isAntiHistoneAntibody) {
+          assert.match(newHtml, /ANTI-HISTONE ANTIBODY/);
+          assert.match(newHtml, /data-report-content="anti-histone-antibody"/);
+          continue;
+        }
+        if (isAntiSsDnaAntibody) {
+          assert.match(newHtml, /ANTI-ssDNA ANTIBODY/);
+          assert.match(newHtml, /data-report-content="anti-ssdna-antibody"/);
+          continue;
+        }
+        if (isAntiDsDnaAntibody) {
+          assert.match(newHtml, /ANTI-dsDNA ANTIBODY/);
+          assert.match(newHtml, /data-report-content="anti-dsdna-antibody"/);
+          continue;
+        }
+        if (isAntiMicrosomalAntibody) {
+          assert.match(newHtml, /ANTI-MICROSOMAL ANTIBODY/);
+          assert.match(newHtml, /data-report-content="anti-microsomal-antibody"/);
+          continue;
+        }
+        if (isAntiLeptospiraAntibody) {
+          assert.match(newHtml, /ANTI-LEPTOSPIRA ANTIBODY/);
+          assert.match(newHtml, /data-report-content="anti-leptospira-antibody"/);
+          continue;
+        }
+        if (isAntiInsulinAntibody) {
+          assert.match(newHtml, /INSULIN ANTIBODIES \(IAA\)/);
+          assert.match(newHtml, /data-report-content="anti-insulin-antibody"/);
+          continue;
+        }
         if (isBoneMarrowAspirationCytology) {
           assert.match(newHtml, /BONE MARROW ASPIRATION &amp; CYTOLOGY/);
           assert.match(newHtml, /Nucleated Differential \/ Myelogram/);
@@ -1947,6 +2520,697 @@ async function fixture() {
   }
   return db;
 }
+
+test('Anti InsulinAntibody upgrades only unused blank placeholders and stays idempotent', async () => {
+  const db = await fixture();
+  try {
+    for (const [id, name, body] of [
+      [500, 'Anti InsulinAntibody', ''],
+      [501, 'Anti Insulin Antibody', ''],
+      [502, 'Insulin Antibody', ''],
+      [503, 'Anti InsulinAntibody', 'Lab-authored format'],
+      [504, 'Anti Insulin Receptor Antibody', ''],
+      [505, 'Insulin Antibodies', ''],
+    ]) {
+      await db.run('INSERT INTO tests (id,name,category,report_body) VALUES (?,?,?,?)', [id, name, 'Imported legacy catalogue', body]);
+    }
+    for (const id of [500, 501, 502, 503, 504]) {
+      await db.run("INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,'Result','','','manual',1)", [id]);
+    }
+    await db.run('INSERT INTO visit_tests (test_id) VALUES (?)', [501]);
+    await db.run("UPDATE test_parameters SET unit='Custom unit' WHERE test_id=502");
+
+    await ensureAntiInsulinAntibodyTestConfiguration(db);
+    await ensureAntiInsulinAntibodyTestConfiguration(db);
+
+    const upgraded = await db.get('SELECT sample_type FROM tests WHERE id=500');
+    const upgradedFields = await db.all('SELECT parameter_name,normal_range FROM test_parameters WHERE test_id=500');
+    assert.equal(upgraded.sample_type, 'Serum');
+    assert.deepEqual(upgradedFields, [{ parameter_name: 'Insulin Antibodies (IAA), Serum', normal_range: 'Assay-specific negative cut-off' }]);
+    assert.equal((await db.get('SELECT parameter_name FROM test_parameters WHERE test_id=501')).parameter_name, 'Result');
+    assert.equal((await db.get('SELECT unit FROM test_parameters WHERE test_id=502')).unit, 'Custom unit');
+    assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=503')).sample_type, null);
+    assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=504')).sample_type, null);
+    assert.equal((await db.get('SELECT COUNT(*) AS count FROM test_parameters WHERE test_id=505')).count, 1);
+  } finally {
+    await db.close();
+  }
+});
+
+test('Anti Leptospira Antibody repairs only its unused generic entry', async () => {
+  const db = await fixture();
+  try {
+    for (const [id, name, body] of [
+      [520, 'Anti Leptospira Antibody', ''],
+      [521, 'Leptospira Antibody', ''],
+      [522, 'Anti Leptospira Antibody', ''],
+      [523, 'Anti Leptospira Antibody', 'Lab-authored format'],
+      [524, 'Leptospira Antibody IgG', ''],
+      [525, 'Leptospira Antibody IgM', ''],
+      [526, 'Leptospira Antibodies (IgG & IgM)', ''],
+      [527, 'Leptospira Antibody', ''],
+    ]) {
+      await db.run('INSERT INTO tests (id,name,category,report_body) VALUES (?,?,?,?)', [id, name, 'Imported legacy catalogue', body]);
+      if (id !== 527) await db.run("INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,'Result','','','manual',1)", [id]);
+    }
+    await db.run('INSERT INTO visit_tests (test_id) VALUES (?)', [521]);
+    await db.run("UPDATE test_parameters SET normal_range='Custom cut-off' WHERE test_id=522");
+
+    await ensureAntiLeptospiraAntibodyTestConfiguration(db);
+    await ensureAntiLeptospiraAntibodyTestConfiguration(db);
+
+    assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=520')).sample_type, 'Serum');
+    assert.deepEqual(await db.all('SELECT parameter_name,normal_range FROM test_parameters WHERE test_id=520'), [
+      { parameter_name: 'Anti-Leptospira Antibody, Serum', normal_range: 'Negative / non-reactive (assay-specific)' },
+    ]);
+    assert.equal((await db.get('SELECT parameter_name FROM test_parameters WHERE test_id=521')).parameter_name, 'Result');
+    assert.equal((await db.get('SELECT normal_range FROM test_parameters WHERE test_id=522')).normal_range, 'Custom cut-off');
+    for (const id of [523, 524, 525, 526]) {
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, null);
+    }
+    assert.equal((await db.get('SELECT COUNT(*) AS count FROM test_parameters WHERE test_id=527')).count, 1);
+  } finally {
+    await db.close();
+  }
+});
+
+test('Anti Microsomal Antibody repairs only its unused generic entry', async () => {
+  const db = await fixture();
+  try {
+    for (const [id, name, body] of [
+      [540, 'Anti Microsomal Antibody', ''],
+      [541, 'Anti Microsomal Antibody', ''],
+      [542, 'Anti Microsomal Antibody', ''],
+      [543, 'Anti Microsomal Antibody', 'Lab-authored format'],
+      [544, 'Anti TPO (Anti ThyroidPeroxidase)', ''],
+      [545, 'Anti LKM', ''],
+      [546, 'Anti Microsomal Antibody', ''],
+    ]) {
+      await db.run('INSERT INTO tests (id,name,category,report_body) VALUES (?,?,?,?)', [id, name, 'Imported legacy catalogue', body]);
+      if (id !== 546) await db.run("INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,'Result','','','manual',1)", [id]);
+    }
+    await db.run('INSERT INTO visit_tests (test_id) VALUES (?)', [541]);
+    await db.run("UPDATE test_parameters SET normal_range='Custom cut-off' WHERE test_id=542");
+
+    await ensureAntiMicrosomalAntibodyTestConfiguration(db);
+    await ensureAntiMicrosomalAntibodyTestConfiguration(db);
+
+    const expectedNames = ['Antigen / Assay Target', 'Assay Method', 'Anti-Microsomal Antibody Result', 'Laboratory Interpretation', 'Comments'];
+    for (const id of [540, 546]) {
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, 'Serum');
+      const fields = await db.all('SELECT parameter_name FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(field => field.parameter_name), expectedNames);
+    }
+    assert.equal((await db.get('SELECT parameter_name FROM test_parameters WHERE test_id=541')).parameter_name, 'Result');
+    assert.equal((await db.get('SELECT normal_range FROM test_parameters WHERE test_id=542')).normal_range, 'Custom cut-off');
+    for (const id of [543, 544, 545]) {
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, null);
+      assert.equal((await db.get('SELECT parameter_name FROM test_parameters WHERE test_id=?', [id])).parameter_name, 'Result');
+    }
+  } finally {
+    await db.close();
+  }
+});
+
+test('Anti ds DNAAntibody repairs only its unused generic entry', async () => {
+  const db = await fixture();
+  try {
+    for (const [id, name, body] of [
+      [560, 'Anti ds DNAAntibody', ''],
+      [561, 'Anti ds DNAAntibody', ''],
+      [562, 'Anti ds DNAAntibody', ''],
+      [563, 'Anti ds DNAAntibody', 'Lab-authored format'],
+      [564, 'Anti ssDNAAntibody', ''],
+      [565, 'Anti ds DNAAntibody', ''],
+    ]) {
+      await db.run('INSERT INTO tests (id,name,category,report_body) VALUES (?,?,?,?)', [id, name, 'Imported legacy catalogue', body]);
+      if (id !== 565) await db.run("INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,'Result','','','manual',1)", [id]);
+    }
+    await db.run('INSERT INTO visit_tests (test_id) VALUES (?)', [561]);
+    await db.run("UPDATE test_parameters SET normal_range='Custom cut-off' WHERE test_id=562");
+
+    await ensureAntiDsDnaAntibodyTestConfiguration(db);
+    await ensureAntiDsDnaAntibodyTestConfiguration(db);
+
+    const expectedNames = ['Anti-dsDNA Antibody', 'Assay Method / Platform', 'Laboratory Interpretation', 'Comments'];
+    for (const id of [560, 565]) {
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, 'Serum');
+      const fields = await db.all('SELECT parameter_name,normal_range FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(field => field.parameter_name), expectedNames);
+      assert.equal(fields[0].normal_range, 'Assay-specific reference interval');
+    }
+    assert.equal((await db.get('SELECT parameter_name FROM test_parameters WHERE test_id=561')).parameter_name, 'Result');
+    assert.equal((await db.get('SELECT normal_range FROM test_parameters WHERE test_id=562')).normal_range, 'Custom cut-off');
+    for (const id of [563, 564]) {
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, null);
+      assert.equal((await db.get('SELECT parameter_name FROM test_parameters WHERE test_id=?', [id])).parameter_name, 'Result');
+    }
+  } finally {
+    await db.close();
+  }
+});
+
+test('Anti ssDNAAntibody repairs only its unused generic entry', async () => {
+  const db = await fixture();
+  try {
+    for (const [id, name, body] of [
+      [580, 'Anti ssDNAAntibody', ''],
+      [581, 'Anti ssDNAAntibody', ''],
+      [582, 'Anti ssDNAAntibody', ''],
+      [583, 'Anti ssDNAAntibody', 'Lab-authored format'],
+      [584, 'Anti ds DNAAntibody', ''],
+      [585, 'Anti ssDNAAntibody', ''],
+    ]) {
+      await db.run('INSERT INTO tests (id,name,category,report_body) VALUES (?,?,?,?)', [id, name, 'Imported legacy catalogue', body]);
+      if (id !== 585) await db.run("INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,'Result','','','manual',1)", [id]);
+    }
+    await db.run('INSERT INTO visit_tests (test_id) VALUES (?)', [581]);
+    await db.run("UPDATE test_parameters SET normal_range='Custom cut-off' WHERE test_id=582");
+
+    await ensureAntiSsDnaAntibodyTestConfiguration(db);
+    await ensureAntiSsDnaAntibodyTestConfiguration(db);
+
+    const expectedNames = ['Anti-ssDNA Antibody', 'Assay Method / Platform', 'Laboratory Interpretation', 'Comments'];
+    for (const id of [580, 585]) {
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, 'Serum');
+      const fields = await db.all('SELECT parameter_name,normal_range FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(field => field.parameter_name), expectedNames);
+      assert.equal(fields[0].normal_range, 'Assay-specific reference interval');
+    }
+    assert.equal((await db.get('SELECT parameter_name FROM test_parameters WHERE test_id=581')).parameter_name, 'Result');
+    assert.equal((await db.get('SELECT normal_range FROM test_parameters WHERE test_id=582')).normal_range, 'Custom cut-off');
+    for (const id of [583, 584]) {
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, null);
+      assert.equal((await db.get('SELECT parameter_name FROM test_parameters WHERE test_id=?', [id])).parameter_name, 'Result');
+    }
+  } finally {
+    await db.close();
+  }
+});
+
+test('Anti-Histone Antibody fills the blank entry but preserves the configured duplicate', async () => {
+  const db = await fixture();
+  try {
+    for (const [id, name, body] of [
+      [600, 'Anti-Histone Antibody', ''],
+      [601, 'Anti-Histone Antibody', ''],
+      [602, 'Anti-Histone Antibodies', ''],
+      [603, 'Anti-Histone Antibody', 'Lab-authored format'],
+      [604, 'Anti-Chromatin Antibody', ''],
+      [605, 'Anti-Histone Antibody', ''],
+    ]) {
+      await db.run('INSERT INTO tests (id,name,category,report_body) VALUES (?,?,?,?)', [id, name, 'Immunology', body]);
+      if (id !== 605) await db.run("INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,'Result','','','manual',1)", [id]);
+    }
+    await db.run('INSERT INTO visit_tests (test_id) VALUES (?)', [601]);
+    await db.run("UPDATE tests SET sample_type='Serum (1 ml)' WHERE id=602");
+    await db.run("UPDATE test_parameters SET parameter_name='ANTI-HISTONE ANTIBODIES',unit='Units',normal_range='< 1.00' WHERE test_id=602");
+
+    await ensureAntiHistoneAntibodyTestConfiguration(db);
+    await ensureAntiHistoneAntibodyTestConfiguration(db);
+
+    const expectedNames = ['Anti-Histone Antibody', 'Assay Method / Platform', 'Laboratory Interpretation', 'Comments'];
+    for (const id of [600, 605]) {
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, 'Serum');
+      const fields = await db.all('SELECT parameter_name,normal_range FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(field => field.parameter_name), expectedNames);
+      assert.equal(fields[0].normal_range, 'Assay-specific negative cut-off');
+    }
+    assert.equal((await db.get('SELECT parameter_name FROM test_parameters WHERE test_id=601')).parameter_name, 'Result');
+    assert.deepEqual(await db.all('SELECT parameter_name,unit,normal_range FROM test_parameters WHERE test_id=602'), [
+      { parameter_name: 'ANTI-HISTONE ANTIBODIES', unit: 'Units', normal_range: '< 1.00' },
+    ]);
+    assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=602')).sample_type, 'Serum (1 ml)');
+    for (const id of [603, 604]) {
+      assert.equal((await db.get('SELECT parameter_name FROM test_parameters WHERE test_id=?', [id])).parameter_name, 'Result');
+    }
+  } finally {
+    await db.close();
+  }
+});
+
+test('Anti-Ribosomal P Antibody fills only its unused blank entry', async () => {
+  const db = await fixture();
+  try {
+    for (const [id, name, body] of [
+      [620, 'Anti-Ribosomal P Antibody', ''],
+      [621, 'Anti-Ribosomal P Antibody', ''],
+      [622, 'Ribosome P Antibodies', ''],
+      [623, 'Anti-Ribosomal P Antibody', 'Lab-authored format'],
+      [624, 'Anti-Ribosomal P Antibody', ''],
+    ]) {
+      await db.run('INSERT INTO tests (id,name,category,report_body) VALUES (?,?,?,?)', [id, name, 'Immunology', body]);
+      if (id !== 624) await db.run("INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,'Result','','','manual',1)", [id]);
+    }
+    await db.run('INSERT INTO visit_tests (test_id) VALUES (?)', [621]);
+    await db.run("UPDATE tests SET sample_type='Serum (1 ml)' WHERE id=622");
+    await db.run("UPDATE test_parameters SET parameter_name='Ribosome P Antibodies, IgG',unit='U',normal_range='< 1.0' WHERE test_id=622");
+
+    await ensureAntiRibosomalPAntibodyTestConfiguration(db);
+    await ensureAntiRibosomalPAntibodyTestConfiguration(db);
+
+    const expectedNames = ['Anti-Ribosomal P Antibody', 'Assay Method / Platform', 'Laboratory Interpretation', 'Comments'];
+    for (const id of [620, 624]) {
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, 'Serum');
+      const fields = await db.all('SELECT parameter_name,normal_range FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(field => field.parameter_name), expectedNames);
+      assert.equal(fields[0].normal_range, 'Assay-specific negative cut-off');
+    }
+    assert.equal((await db.get('SELECT parameter_name FROM test_parameters WHERE test_id=621')).parameter_name, 'Result');
+    assert.deepEqual(await db.all('SELECT parameter_name,unit,normal_range FROM test_parameters WHERE test_id=622'), [
+      { parameter_name: 'Ribosome P Antibodies, IgG', unit: 'U', normal_range: '< 1.0' },
+    ]);
+    assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=622')).sample_type, 'Serum (1 ml)');
+    assert.equal((await db.get('SELECT parameter_name FROM test_parameters WHERE test_id=623')).parameter_name, 'Result');
+  } finally {
+    await db.close();
+  }
+});
+
+test('AntiCCPAB fills its placeholder without changing the copied Anti CCP assay', async () => {
+  const db = await fixture();
+  try {
+    for (const [id, name, body] of [
+      [640, 'AntiCCPAB', ''],
+      [641, 'AntiCCPAB', ''],
+      [642, 'Anti Cyclic-Citrullinated-Peptide (Anti CCP)', ''],
+      [643, 'AntiCCPAB', 'Lab-authored format'],
+      [644, 'AntiCCPAB', ''],
+    ]) {
+      await db.run('INSERT INTO tests (id,name,category,report_body) VALUES (?,?,?,?)', [id, name, 'Immunology', body]);
+      if (id !== 644) await db.run("INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,'Result','','','manual',1)", [id]);
+    }
+    await db.run('INSERT INTO visit_tests (test_id) VALUES (?)', [641]);
+    await db.run("UPDATE tests SET sample_type='Serum' WHERE id=642");
+    await db.run("UPDATE test_parameters SET parameter_name='ANTI CCP (CYCLIC CITRULLINATED PEPTIDE), SERUM',unit='U/mL',normal_range='< 5.00' WHERE test_id=642");
+
+    await ensureAntiCcpAbTestConfiguration(db);
+    await ensureAntiCcpAbTestConfiguration(db);
+
+    const expectedNames = ['Anti-CCP Antibody', 'Assay Method / Platform', 'Laboratory Interpretation', 'Comments'];
+    for (const id of [640, 644]) {
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, 'Serum');
+      const fields = await db.all('SELECT parameter_name,normal_range FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(field => field.parameter_name), expectedNames);
+      assert.equal(fields[0].normal_range, 'Assay-specific negative cut-off');
+    }
+    assert.equal((await db.get('SELECT parameter_name FROM test_parameters WHERE test_id=641')).parameter_name, 'Result');
+    assert.deepEqual(await db.all('SELECT parameter_name,unit,normal_range FROM test_parameters WHERE test_id=642'), [
+      { parameter_name: 'ANTI CCP (CYCLIC CITRULLINATED PEPTIDE), SERUM', unit: 'U/mL', normal_range: '< 5.00' },
+    ]);
+    assert.equal((await db.get('SELECT parameter_name FROM test_parameters WHERE test_id=643')).parameter_name, 'Result');
+  } finally {
+    await db.close();
+  }
+});
+
+test('AntiSpermAntibody repairs only unused placeholders and leaves specimen unspecified', async () => {
+  const db = await fixture();
+  try {
+    for (const [id, name, body] of [
+      [660, 'AntiSpermAntibody', ''],
+      [661, 'AntiSpermAntibody', ''],
+      [662, 'AntiSpermAntibody', ''],
+      [663, 'AntiSpermAntibody', 'Lab-authored format'],
+      [664, 'Semen Analysis - Seminogram', ''],
+      [665, 'AntiSpermAntibody', ''],
+    ]) {
+      await db.run('INSERT INTO tests (id,name,category,report_body) VALUES (?,?,?,?)', [id, name, 'Imported legacy catalogue', body]);
+      if (id !== 665) await db.run("INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,'Result','','','manual',1)", [id]);
+    }
+    await db.run('INSERT INTO visit_tests (test_id) VALUES (?)', [661]);
+    await db.run("UPDATE test_parameters SET normal_range='Custom criterion' WHERE test_id=662");
+
+    await ensureAntiSpermAntibodyTestConfiguration(db);
+    await ensureAntiSpermAntibodyTestConfiguration(db);
+
+    const expectedNames = ['Specimen / Matrix', 'Assay Method / Platform', 'Antibody Class', 'Anti-Sperm Antibody Result', 'Laboratory Interpretation', 'Comments'];
+    for (const id of [660, 665]) {
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, null);
+      const fields = await db.all('SELECT parameter_name,normal_range FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(field => field.parameter_name), expectedNames);
+      assert.equal(fields[3].normal_range, 'Specimen- and assay-specific criterion');
+    }
+    assert.equal((await db.get('SELECT parameter_name FROM test_parameters WHERE test_id=661')).parameter_name, 'Result');
+    assert.equal((await db.get('SELECT normal_range FROM test_parameters WHERE test_id=662')).normal_range, 'Custom criterion');
+    for (const id of [663, 664]) {
+      assert.equal((await db.get('SELECT parameter_name FROM test_parameters WHERE test_id=?', [id])).parameter_name, 'Result');
+    }
+  } finally {
+    await db.close();
+  }
+});
+
+test('ApolipoproteinA1 fills only its unused serum placeholder and preserves ApoB', async () => {
+  const db = await fixture();
+  try {
+    for (const [id, name, body] of [
+      [680, 'ApolipoproteinA1', ''],
+      [681, 'ApolipoproteinA1', ''],
+      [682, 'ApolipoproteinA1', ''],
+      [683, 'ApolipoproteinA1', 'Lab-authored format'],
+      [684, 'Apolipoprotein B', ''],
+      [685, 'ApolipoproteinA1', ''],
+      [686, 'ApolipoproteinA1', ''],
+    ]) {
+      await db.run('INSERT INTO tests (id,name,category,report_body) VALUES (?,?,?,?)', [id, name, 'Imported legacy catalogue', body]);
+      if (id !== 685) await db.run("INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,'Result','','','manual',1)", [id]);
+    }
+    await db.run('INSERT INTO visit_tests (test_id) VALUES (?)', [681]);
+    await db.run("UPDATE test_parameters SET normal_range='Custom interval' WHERE test_id=682");
+    await db.run("UPDATE tests SET sample_type='Plasma' WHERE id=686");
+
+    await ensureApolipoproteinA1TestConfiguration(db);
+    await ensureApolipoproteinA1TestConfiguration(db);
+
+    const expectedNames = ['Apolipoprotein A1, Serum', 'Assay Method / Platform', 'Laboratory Interpretation', 'Comments'];
+    for (const id of [680, 685]) {
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, 'Serum');
+      const fields = await db.all('SELECT parameter_name,unit,normal_range FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(field => field.parameter_name), expectedNames);
+      assert.equal(fields[0].unit, 'mg/dL');
+      assert.equal(fields[0].normal_range, 'Age- and sex-specific laboratory interval');
+    }
+    assert.equal((await db.get('SELECT parameter_name FROM test_parameters WHERE test_id=681')).parameter_name, 'Result');
+    assert.equal((await db.get('SELECT normal_range FROM test_parameters WHERE test_id=682')).normal_range, 'Custom interval');
+    for (const id of [683, 684, 686]) {
+      assert.equal((await db.get('SELECT parameter_name FROM test_parameters WHERE test_id=?', [id])).parameter_name, 'Result');
+    }
+    assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=686')).sample_type, 'Plasma');
+  } finally {
+    await db.close();
+  }
+});
+
+test('Arsenic (Urine) repairs only unused blank urine placeholders', async () => {
+  const db = await fixture();
+  try {
+    for (const [id, name, body] of [
+      [690, 'Arsenic (Urine)', ''],
+      [691, 'Arsenic (Urine)', ''],
+      [692, 'Arsenic (Urine)', ''],
+      [693, 'Arsenic (Urine)', 'Lab-authored format'],
+      [694, 'Arsenic (Blood)', ''],
+      [695, 'Arsenic (Urine)', ''],
+      [696, 'Arsenic (Urine)', ''],
+    ]) {
+      await db.run('INSERT INTO tests (id,name,category,report_body) VALUES (?,?,?,?)', [id, name, 'Imported legacy catalogue', body]);
+      if (id !== 695) await db.run("INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,'Result','','','manual',1)", [id]);
+    }
+    await db.run('INSERT INTO visit_tests (test_id) VALUES (?)', [691]);
+    await db.run("UPDATE test_parameters SET normal_range='Custom interval' WHERE test_id=692");
+    await db.run("UPDATE tests SET sample_type='Blood' WHERE id=696");
+
+    await ensureUrineArsenicTestConfiguration(db);
+    await ensureUrineArsenicTestConfiguration(db);
+
+    const expectedNames = [
+      'Collection Type / Duration', 'Arsenic, Total, Urine', 'Assay Method / Platform',
+      'Laboratory Interpretation', 'Comments',
+    ];
+    for (const id of [690, 695]) {
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, 'Urine');
+      const fields = await db.all('SELECT parameter_name,unit,normal_range FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(field => field.parameter_name), expectedNames);
+      assert.equal(fields[1].unit, 'mcg/L');
+      assert.equal(fields[1].normal_range, 'Collection- and method-specific laboratory interval');
+    }
+    assert.equal((await db.get('SELECT parameter_name FROM test_parameters WHERE test_id=691')).parameter_name, 'Result');
+    assert.equal((await db.get('SELECT normal_range FROM test_parameters WHERE test_id=692')).normal_range, 'Custom interval');
+    for (const id of [693, 694, 696]) {
+      assert.equal((await db.get('SELECT parameter_name FROM test_parameters WHERE test_id=?', [id])).parameter_name, 'Result');
+    }
+    assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=696')).sample_type, 'Blood');
+  } finally {
+    await db.close();
+  }
+});
+
+test('Arthritis Profile fills only unused unbundled serum placeholders', async () => {
+  const db = await fixture();
+  try {
+    for (const [id, name, body] of [
+      [700, 'Arthritis Profile', ''],
+      [701, 'Arthritis Profile', ''],
+      [702, 'Arthritis Profile', ''],
+      [703, 'Arthritis Profile', 'Lab-authored format'],
+      [704, 'Rheumatoid Factor, RA', ''],
+      [705, 'Arthritis Profile', ''],
+      [706, 'Arthritis Profile', ''],
+      [707, 'Arthritis Profile', ''],
+    ]) {
+      await db.run('INSERT INTO tests (id,name,category,report_body) VALUES (?,?,?,?)', [id, name, 'Imported legacy catalogue', body]);
+      if (id !== 705) await db.run("INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,'Result','','','manual',1)", [id]);
+    }
+    await db.run('INSERT INTO visit_tests (test_id) VALUES (?)', [701]);
+    await db.run("UPDATE test_parameters SET normal_range='Custom interval' WHERE test_id=702");
+    await db.run("UPDATE tests SET sample_type='Blood' WHERE id=706");
+    await db.run('INSERT INTO test_bundle_items (bundle_test_id, component_test_id) VALUES (?,?)', [707, 704]);
+
+    await ensureArthritisProfileTestConfiguration(db);
+    await ensureArthritisProfileTestConfiguration(db);
+
+    const expectedNames = [
+      'Serum Uric Acid', 'Rheumatoid Factor, RA', 'C-Reactive Protein, CRP',
+      'Antistreptolysin O, ASO Titer', 'iCalcium', 'Total Calcium', 'Serum Phosphorus', 'Comments',
+    ];
+    for (const id of [700, 705]) {
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, 'Serum');
+      const fields = await db.all('SELECT parameter_name,unit,normal_range FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(field => field.parameter_name), expectedNames);
+      assert.equal(fields[2].unit, 'mg/L');
+      assert.equal(fields[6].normal_range, 'Age-specific laboratory interval');
+    }
+    assert.equal((await db.get('SELECT parameter_name FROM test_parameters WHERE test_id=701')).parameter_name, 'Result');
+    assert.equal((await db.get('SELECT normal_range FROM test_parameters WHERE test_id=702')).normal_range, 'Custom interval');
+    for (const id of [703, 704, 706, 707]) {
+      assert.equal((await db.get('SELECT parameter_name FROM test_parameters WHERE test_id=?', [id])).parameter_name, 'Result');
+    }
+    assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=706')).sample_type, 'Blood');
+  } finally {
+    await db.close();
+  }
+});
+
+test('Ascitic Fluids Gram Stain expands only unused generic microscopy fields and preserves their IDs', async () => {
+  const db = await fixture();
+  try {
+    for (const [id, name, body] of [
+      [710, 'Ascitic Fluids Gram Stain', ''],
+      [711, 'Ascitic Fluids Gram Stain', ''],
+      [712, 'Ascitic Fluids Gram Stain', ''],
+      [713, 'Ascitic Fluids Gram Stain', 'Lab-authored format'],
+      [714, 'Peritonial Fluid Gram stain', ''],
+      [715, 'Ascitic Fluids Gram Stain', ''],
+      [716, 'Ascitic Fluids Gram Stain', ''],
+      [717, 'Ascitic Fluids Gram Stain', ''],
+      [718, 'Ascitic Fluids Gram Stain', ''],
+    ]) {
+      await db.run('INSERT INTO tests (id,name,category,report_body) VALUES (?,?,?,?)', [id, name, 'Imported legacy catalogue', body]);
+      const names = id === 715 ? [] : id === 717 ? ['Result'] : ['Findings', 'Impression', 'Comments'];
+      for (const [index, fieldName] of names.entries()) {
+        await db.run(
+          'INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,?,?,?,?,?)',
+          [id, fieldName, '', '', 'manual', index + 1]
+        );
+      }
+    }
+    const originalIds = (await db.all('SELECT id FROM test_parameters WHERE test_id=? ORDER BY display_order', [710])).map(field => field.id);
+    await db.run('INSERT INTO visit_tests (test_id) VALUES (?)', [711]);
+    await db.run("UPDATE test_parameters SET unit='Lab custom' WHERE test_id=712 AND parameter_name='Findings'");
+    await db.run("UPDATE tests SET sample_type='Blood' WHERE id=716");
+    await db.run('INSERT INTO test_bundle_items (bundle_test_id,component_test_id) VALUES (?,?)', [718, 714]);
+
+    await ensureAsciticFluidGramStainTestConfiguration(db);
+    await ensureAsciticFluidGramStainTestConfiguration(db);
+
+    const expected = [
+      'Specimen / Site', 'Smear Method / Preparation', 'Inflammatory Cells / PMNs',
+      'Gram Stain Findings', 'Gram Reaction / Bacterial Morphology', 'Impression', 'Comments',
+    ];
+    for (const id of [710, 715, 717]) {
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, 'Ascitic Fluid');
+      const fields = await db.all('SELECT id,parameter_name,normal_range FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(field => field.parameter_name), expected);
+      assert.ok(fields.every(field => !field.normal_range));
+      if (id === 710) assert.deepEqual([fields[3].id, fields[5].id, fields[6].id], originalIds);
+    }
+    for (const id of [711, 712, 713, 714, 716, 718]) {
+      assert.deepEqual(
+        (await db.all('SELECT parameter_name FROM test_parameters WHERE test_id=? ORDER BY display_order', [id])).map(field => field.parameter_name),
+        ['Findings', 'Impression', 'Comments']
+      );
+    }
+    assert.equal((await db.get('SELECT unit FROM test_parameters WHERE test_id=712 AND parameter_name=?', ['Findings'])).unit, 'Lab custom');
+    assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=716')).sample_type, 'Blood');
+  } finally {
+    await db.close();
+  }
+});
+
+test('AsciticFluidforProtein upgrades only unused blank placeholders without changing general body-fluid protein', async () => {
+  const db = await fixture();
+  try {
+    for (const [id, name, body] of [
+      [720, 'AsciticFluidforProtein', ''],
+      [721, 'AsciticFluidforProtein', ''],
+      [722, 'AsciticFluidforProtein', ''],
+      [723, 'AsciticFluidforProtein', 'Lab-authored format'],
+      [724, 'Body Fluides for Proein', ''],
+      [725, 'AsciticFluidforProtein', ''],
+      [726, 'AsciticFluidforProtein', ''],
+      [727, 'AsciticFluidforProtein', ''],
+    ]) {
+      await db.run('INSERT INTO tests (id,name,category,report_body) VALUES (?,?,?,?)', [id, name, 'Imported legacy catalogue', body]);
+      if (id !== 725) await db.run("INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,'Result','','','manual',1)", [id]);
+    }
+    const originalId = (await db.get('SELECT id FROM test_parameters WHERE test_id=?', [720])).id;
+    await db.run('INSERT INTO visit_tests (test_id) VALUES (?)', [721]);
+    await db.run("UPDATE test_parameters SET unit='Lab custom' WHERE test_id=722");
+    await db.run("UPDATE tests SET sample_type='Pleural Fluid' WHERE id=726");
+    await db.run('INSERT INTO test_bundle_items (bundle_test_id,component_test_id) VALUES (?,?)', [727, 724]);
+
+    await ensureAsciticFluidTotalProteinTestConfiguration(db);
+    await ensureAsciticFluidTotalProteinTestConfiguration(db);
+
+    const expected = ['Ascitic Fluid Total Protein', 'Specimen / Site', 'Appearance', 'Method / Analyzer', 'Comments'];
+    for (const id of [720, 725]) {
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, 'Ascitic Fluid');
+      const fields = await db.all('SELECT id,parameter_name,unit,normal_range FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(field => field.parameter_name), expected);
+      assert.equal(fields[0].unit, 'g/dL');
+      assert.equal(fields[0].normal_range, 'Interpretive; no universal reference interval');
+      if (id === 720) assert.equal(fields[0].id, originalId);
+    }
+    for (const id of [721, 722, 723, 724, 726, 727]) {
+      assert.equal((await db.get('SELECT parameter_name FROM test_parameters WHERE test_id=?', [id])).parameter_name, 'Result');
+    }
+    assert.equal((await db.get('SELECT unit FROM test_parameters WHERE test_id=722')).unit, 'Lab custom');
+    assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=726')).sample_type, 'Pleural Fluid');
+  } finally {
+    await db.close();
+  }
+});
+
+test('BACTEC aerobic culture expands only unused generic fields, preserving specimen and anaerobic culture', async () => {
+  const db = await fixture();
+  try {
+    for (const [id, name, body] of [
+      [740, 'Bactec Culture for Aerobic Bacteria', ''],
+      [741, 'Bactec Culture for Aerobic Bacteria', ''],
+      [742, 'Bactec Culture for Aerobic Bacteria', ''],
+      [743, 'Bactec Culture for Aerobic Bacteria', 'Lab-authored format'],
+      [744, 'BactecCultureforAnaerobic Bacteria', ''],
+      [745, 'Bactec Culture for Aerobic Bacteria', ''],
+      [746, 'Bactec Culture for Aerobic Bacteria', ''],
+      [747, 'Bactec Culture for Aerobic Bacteria', ''],
+      [748, 'Bactec Culture for Aerobic Bacteria', ''],
+    ]) {
+      await db.run('INSERT INTO tests (id,name,category,report_body) VALUES (?,?,?,?)', [id, name, 'Imported legacy catalogue', body]);
+      const names = id === 745 ? [] : id === 746 ? ['Result'] : [
+        'Culture Result', 'Organism Isolated', 'Antibiotic Sensitivity', 'Comments',
+      ];
+      for (const [index, fieldName] of names.entries()) {
+        await db.run(
+          'INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,?,?,?,?,?)',
+          [id, fieldName, '', '', 'manual', index + 1]
+        );
+      }
+    }
+    const originalIds = (await db.all('SELECT id FROM test_parameters WHERE test_id=? ORDER BY display_order', [740])).map(field => field.id);
+    await db.run('INSERT INTO visit_tests (test_id) VALUES (?)', [741]);
+    await db.run("UPDATE test_parameters SET normal_range='Lab custom' WHERE test_id=742 AND parameter_name='Culture Result'");
+    await db.run('INSERT INTO test_bundle_items (bundle_test_id,component_test_id) VALUES (?,?)', [747, 744]);
+    await db.run("UPDATE tests SET sample_type='Sterile Body Fluid' WHERE id=748");
+
+    await ensureBactecAerobicCultureTestConfiguration(db);
+    await ensureBactecAerobicCultureTestConfiguration(db);
+
+    const expected = [
+      'Specimen / Collection Site', 'Bottle / Medium', 'Collection Date / Time',
+      'Culture Status / Result', 'Report Status', 'Time to Positivity',
+      'Gram Stain from Positive Bottle', 'Organism(s) Isolated', 'Identification Method',
+      'Antimicrobial Susceptibility', 'Comments',
+    ];
+    for (const id of [740, 745, 746, 748]) {
+      const fields = await db.all('SELECT id,parameter_name,unit,normal_range FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(field => field.parameter_name), expected);
+      assert.ok(fields.every(field => !field.normal_range));
+      if (id === 740) assert.deepEqual([fields[3].id, fields[7].id, fields[9].id, fields[10].id], originalIds);
+    }
+    assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=740')).sample_type, null);
+    assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=748')).sample_type, 'Sterile Body Fluid');
+    for (const id of [741, 742, 743, 744, 747]) {
+      assert.deepEqual(
+        (await db.all('SELECT parameter_name FROM test_parameters WHERE test_id=? ORDER BY display_order', [id])).map(field => field.parameter_name),
+        ['Culture Result', 'Organism Isolated', 'Antibiotic Sensitivity', 'Comments']
+      );
+    }
+    assert.equal((await db.get('SELECT normal_range FROM test_parameters WHERE test_id=742 AND parameter_name=?', ['Culture Result'])).normal_range, 'Lab custom');
+  } finally {
+    await db.close();
+  }
+});
+
+test('BACTEC anaerobic culture expands only unused generic fields and leaves aerobic culture untouched', async () => {
+  const db = await fixture();
+  try {
+    for (const [id, name, body] of [
+      [760, 'BactecCultureforAnaerobic Bacteria', ''],
+      [761, 'BactecCultureforAnaerobic Bacteria', ''],
+      [762, 'BactecCultureforAnaerobic Bacteria', ''],
+      [763, 'BactecCultureforAnaerobic Bacteria', 'Lab-authored format'],
+      [764, 'Bactec Culture for Aerobic Bacteria', ''],
+      [765, 'BactecCultureforAnaerobic Bacteria', ''],
+      [766, 'BactecCultureforAnaerobic Bacteria', ''],
+      [767, 'BactecCultureforAnaerobic Bacteria', ''],
+      [768, 'BactecCultureforAnaerobic Bacteria', ''],
+    ]) {
+      await db.run('INSERT INTO tests (id,name,category,report_body) VALUES (?,?,?,?)', [id, name, 'Imported legacy catalogue', body]);
+      const names = id === 765 ? [] : id === 766 ? ['Result'] : [
+        'Culture Result', 'Organism Isolated', 'Antibiotic Sensitivity', 'Comments',
+      ];
+      for (const [index, fieldName] of names.entries()) {
+        await db.run(
+          'INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,?,?,?,?,?)',
+          [id, fieldName, '', '', 'manual', index + 1]
+        );
+      }
+    }
+    const originalIds = (await db.all('SELECT id FROM test_parameters WHERE test_id=? ORDER BY display_order', [760])).map(field => field.id);
+    await db.run('INSERT INTO visit_tests (test_id) VALUES (?)', [761]);
+    await db.run("UPDATE test_parameters SET normal_range='Lab custom' WHERE test_id=762 AND parameter_name='Culture Result'");
+    await db.run('INSERT INTO test_bundle_items (bundle_test_id,component_test_id) VALUES (?,?)', [767, 764]);
+    await db.run("UPDATE tests SET sample_type='Peritoneal Fluid' WHERE id=768");
+
+    await ensureBactecAnaerobicCultureTestConfiguration(db);
+    await ensureBactecAnaerobicCultureTestConfiguration(db);
+
+    const expected = [
+      'Specimen / Collection Site', 'Bottle / Medium', 'Collection Date / Time',
+      'Culture Status / Result', 'Report Status', 'Time to Positivity',
+      'Gram Stain from Positive Bottle', 'Organism(s) Isolated', 'Identification Method',
+      'Antimicrobial Susceptibility', 'Comments',
+    ];
+    for (const id of [760, 765, 766, 768]) {
+      const fields = await db.all('SELECT id,parameter_name,unit,normal_range FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(field => field.parameter_name), expected);
+      assert.ok(fields.every(field => !field.normal_range));
+      if (id === 760) assert.deepEqual([fields[3].id, fields[7].id, fields[9].id, fields[10].id], originalIds);
+    }
+    assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=760')).sample_type, null);
+    assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=768')).sample_type, 'Peritoneal Fluid');
+    for (const id of [761, 762, 763, 764, 767]) {
+      assert.deepEqual(
+        (await db.all('SELECT parameter_name FROM test_parameters WHERE test_id=? ORDER BY display_order', [id])).map(field => field.parameter_name),
+        ['Culture Result', 'Organism Isolated', 'Antibiotic Sensitivity', 'Comments']
+      );
+    }
+    assert.equal((await db.get('SELECT normal_range FROM test_parameters WHERE test_id=762 AND parameter_name=?', ['Culture Result'])).normal_range, 'Lab custom');
+  } finally {
+    await db.close();
+  }
+});
 
 test('combination repair copies exact source metadata, backs up placeholders and is idempotent', async () => {
   const db = await fixture();

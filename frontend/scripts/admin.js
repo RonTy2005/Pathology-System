@@ -104,7 +104,7 @@ const clearDoctorFormBtn = document.getElementById("clearDoctorFormBtn");
 
 const ROLE_DEFAULTS = {
   na: [],
-  receptionist: ["manage_patients", "manage_billing", "view_reports"],
+  receptionist: ["manage_patients", "manage_billing", "collect_due_payments", "view_reports"],
   blood_sample_technician: ["manage_patients", "manage_billing", "view_reports", "enter_results", "finalize_reports", "print_reports"],
   usg_technician: ["manage_patients", "manage_billing", "view_reports", "enter_results", "finalize_reports", "print_reports"],
   mri_technician: ["manage_patients", "manage_billing", "view_reports", "enter_results", "finalize_reports", "print_reports"],
@@ -112,6 +112,7 @@ const ROLE_DEFAULTS = {
   manager: [
     "manage_patients",
     "manage_billing",
+    "collect_due_payments",
     "view_reports",
     "download_reports",
     "share_whatsapp_pdf",
@@ -123,6 +124,7 @@ const ROLE_DEFAULTS = {
   admin: [
     "manage_patients",
     "manage_billing",
+    "collect_due_payments",
     "delete_patients",
     "view_reports",
     "download_reports",
@@ -141,6 +143,7 @@ const ROLE_DEFAULTS = {
 const PERMISSION_LABELS = [
   ["manage_patients", "Patient registration (New Patient workspace)"],
   ["manage_billing", "Billing and bill access"],
+  ["collect_due_payments", "Bill collection (collect outstanding due amounts)"],
   ["delete_patients", "Delete patients"],
   ["view_reports", "View reports"],
   ["download_reports", "Download report PDF"],
