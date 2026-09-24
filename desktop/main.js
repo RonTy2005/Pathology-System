@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, ipcMain, net, powerMonitor, powerSaveBlocker, screen } = require("electron");
+const { app, BrowserWindow, dialog, ipcMain, net, powerMonitor, powerSaveBlocker, screen, shell } = require("electron");
 const { autoUpdater } = require("electron-updater");
 const fs = require("fs/promises");
 const path = require("path");
@@ -30,6 +30,17 @@ const stableUserDataPath = configureStableUserDataPath(app, appMode);
 const serverAvailabilityGuard = createServerAvailabilityGuard({ appMode, powerSaveBlocker });
 
 let mainWindow;
+const hasSingleInstanceLock = app.requestSingleInstanceLock();
+if (!hasSingleInstanceLock) {
+  app.quit();
+} else {
+  app.on("second-instance", (_event, argv) => {
+    if (argv.includes("--autostart") || !mainWindow) return;
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
+  });
+}
 let serverInstance;
 let retryTimer;
 let updateCheckTimer;
@@ -308,7 +319,10 @@ function createMainWindow() {
     },
   });
 
-  mainWindow.once("ready-to-show", () => mainWindow.show());
+  mainWindow.once("ready-to-show", () => {
+    mainWindow?.show();
+    mainWindow?.focus();
+  });
   mainWindow.webContents.on("did-fail-load", (_event, errorCode, _description, validatedURL, isMainFrame) => {
     // Reopen discovery only when the page itself cannot load, not when a
     // background health probe or an individual API request times out.
@@ -338,11 +352,17 @@ ipcMain.handle("lab-lms:save-report-pdf", (event, payload) => {
   return saveReportPdf(event, payload);
 });
 
-app.whenReady().then(async () => {
-  ensureAutomaticStartup({ app });
+if (hasSingleInstanceLock) app.whenReady().then(async () => {
+  ensureAutomaticStartup({ app, shell, appMode });
   serverAvailabilityGuard.start();
   createMainWindow();
   await mainWindow.loadFile(path.join(__dirname, appMode === "server" ? "server-starting.html" : "connecting.html"));
+  // A local startup screen must be visible even if an older graphics driver
+  // never delivers Electron's ready-to-show event.
+  if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) {
+    mainWindow.show();
+    mainWindow.focus();
+  }
   startAutomaticUpdates();
 
   try {

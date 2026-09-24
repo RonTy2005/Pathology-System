@@ -173,26 +173,75 @@ test("Windows 7 and 32-bit installers use compatible runtimes and isolated updat
 
 test("packaged Windows server and client apps enforce visible automatic startup", () => {
   const calls = [];
+  const shortcuts = [];
+  const startupFolders = [];
+  const executablePath = "C:\\Program Files\\LabShield\\LabShield.exe";
   const app = {
     isPackaged: true,
+    getPath: name => name === "appData" ? "C:\\Users\\Lab\\AppData\\Roaming" : null,
     setLoginItemSettings: settings => calls.push(settings),
     getLoginItemSettings: () => ({ openAtLogin: true }),
   };
+  const shell = {
+    readShortcutLink: () => { throw new Error("Shortcut not found"); },
+    writeShortcutLink: (...args) => { shortcuts.push(args); return true; },
+  };
+  const fileSystem = { mkdirSync: (...args) => startupFolders.push(args) };
   const result = ensureAutomaticStartup({
-    app,
+    app, shell, fileSystem, pathModule: path.win32,
     platform: "win32",
-    executablePath: "C:\\Program Files\\LabShield\\LabShield.exe",
+    executablePath,
   });
   assert.equal(result.configured, true);
+  assert.equal(result.loginItemConfigured, true);
+  assert.equal(result.shortcutConfigured, true);
   assert.deepEqual(calls, [{
     openAtLogin: true,
-    openAsHidden: false,
-    path: "C:\\Program Files\\LabShield\\LabShield.exe",
+    enabled: true,
+    name: "LabShield",
+    path: executablePath,
   }]);
+  assert.equal(shortcuts.length, 1);
+  assert.equal(shortcuts[0][0], "C:\\Users\\Lab\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\LabShield.lnk");
+  assert.equal(shortcuts[0][1], "create");
+  assert.deepEqual(shortcuts[0][2], {
+    target: executablePath,
+    cwd: "C:\\Program Files\\LabShield",
+    args: "--autostart",
+    description: "LabShield starts when this Windows user signs in",
+  });
+  assert.equal(startupFolders.length, 1);
+
+  const disabledRun = ensureAutomaticStartup({
+    app: { ...app, getLoginItemSettings: () => ({ openAtLogin: true, executableWillLaunchAtLogin: false }) },
+    shell, fileSystem, pathModule: path.win32, platform: "win32", executablePath,
+    logger: { warn() {} },
+  });
+  assert.equal(disabledRun.loginItemConfigured, false);
+  assert.equal(disabledRun.shortcutConfigured, true, "the current-user Startup shortcut repairs a disabled Run entry");
+
+  const existingShortcut = ensureAutomaticStartup({
+    app, fileSystem, pathModule: path.win32, platform: "win32", executablePath,
+    shell: { readShortcutLink: () => ({ target: executablePath, args: "--autostart" }), writeShortcutLink: () => { throw new Error("unnecessary rewrite"); } },
+  });
+  assert.equal(existingShortcut.shortcutConfigured, true);
+
+  const server = ensureAutomaticStartup({
+    app, shell, fileSystem, pathModule: path.win32, appMode: "server", platform: "win32",
+    executablePath: "C:\\Program Files\\LabShield Server\\LabShield Server.exe",
+  });
+  assert.equal(server.settings.name, "LabShield Server");
+  assert.match(server.shortcutPath, /LabShield Server\.lnk$/);
 
   const development = ensureAutomaticStartup({ app: { ...app, isPackaged: false }, platform: "win32" });
   assert.equal(development.configured, false);
-  assert.equal(calls.length, 1, "development launches must not change Windows startup settings");
+  assert.equal(calls.length, 4, "development launches must not change Windows startup settings");
+
+  const mainSource = fs.readFileSync(path.resolve(__dirname, "../desktop/main.js"), "utf8");
+  assert.match(mainSource, /app\.requestSingleInstanceLock\(\)/);
+  assert.match(mainSource, /if \(hasSingleInstanceLock\) app\.whenReady\(\)/);
+  assert.match(mainSource, /mainWindow\.once\("ready-to-show",[\s\S]*?mainWindow\?\.show\(\);[\s\S]*?mainWindow\?\.focus\(\);/);
+  assert.match(mainSource, /if \(mainWindow && !mainWindow\.isDestroyed\(\) && !mainWindow\.isVisible\(\)\)/);
 
   for (const mode of ["server", "client"]) {
     const config = loadBuilderConfig({ mode });
