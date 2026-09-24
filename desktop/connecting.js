@@ -8,7 +8,7 @@ const manualMessage = document.querySelector("#manualMessage");
 
 function renderStatus(status) {
   message.textContent = status.message || "Preparing LabShield…";
-  retryButton.disabled = status.phase === "searching";
+  retryButton.disabled = status.phase === "searching" || status.phase === "connecting";
   choices.replaceChildren();
   choices.hidden = !status.servers?.length;
 

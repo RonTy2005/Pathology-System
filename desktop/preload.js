@@ -13,4 +13,5 @@ contextBridge.exposeInMainWorld("labLmsConnection", {
 
 contextBridge.exposeInMainWorld("labLmsDesktop", {
   saveReportPdf: (html, fileName) => ipcRenderer.invoke("lab-lms:save-report-pdf", { html, fileName }),
+  saveBillPdf: (html, fileName) => ipcRenderer.invoke("lab-lms:save-report-pdf", { html, fileName, kind: "bill" }),
 });

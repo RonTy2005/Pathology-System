@@ -1,8 +1,8 @@
 const express = require("express");
 const { all, get, run, transaction } = require("../db/helpers");
-const { allowPermissions, allowRoles } = require("../middleware/auth");
+const { allowPermissions } = require("../middleware/auth");
 const { logAction } = require("../services/logService");
-const { PERMISSIONS, ROLES } = require("../config/constants");
+const { PERMISSIONS } = require("../config/constants");
 
 const testRouter = express.Router();
 const { buildReportHtml } = require("../utils/reportFormatter");
@@ -78,7 +78,6 @@ function buildUnsavedTestPreview(testInput = {}) {
 
 testRouter.post(
   "/builder-report-preview",
-  allowRoles(ROLES.ADMIN, ROLES.MANAGER, ROLES.RECEPTIONIST),
   allowPermissions(PERMISSIONS.MANAGE_TESTS),
   async (req, res, next) => {
     try {
@@ -135,7 +134,7 @@ testRouter.post(
   }
 );
 
-testRouter.get("/:id/sample-report", allowRoles(ROLES.ADMIN), async (req, res, next) => {
+testRouter.get("/:id/sample-report", allowPermissions(PERMISSIONS.MANAGE_TESTS), async (req, res, next) => {
   try {
     const test = await get("SELECT * FROM tests WHERE id = ?", [req.params.id]);
     if (!test) {
@@ -756,7 +755,7 @@ testRouter.get("/categories", async (req, res, next) => {
   }
 });
 
-testRouter.post("/", allowRoles(ROLES.ADMIN, ROLES.MANAGER, ROLES.RECEPTIONIST), allowPermissions(PERMISSIONS.MANAGE_TESTS), async (req, res, next) => {
+testRouter.post("/", allowPermissions(PERMISSIONS.MANAGE_TESTS), async (req, res, next) => {
   try {
     const { name, code, category, sampleType, price, turnaroundHours, parameters: requestedParameters = [] } = req.body;
     const reportBody = normalizeReportBody(req.body.reportBody ?? req.body.report_body);
@@ -807,7 +806,6 @@ testRouter.post("/", allowRoles(ROLES.ADMIN, ROLES.MANAGER, ROLES.RECEPTIONIST),
 
 testRouter.post(
   "/import",
-  allowRoles(ROLES.ADMIN, ROLES.MANAGER, ROLES.RECEPTIONIST),
   allowPermissions(PERMISSIONS.MANAGE_TESTS),
   async (req, res, next) => {
     try {
@@ -868,7 +866,7 @@ testRouter.post(
   }
 );
 
-testRouter.put("/:id", allowRoles(ROLES.ADMIN, ROLES.MANAGER, ROLES.RECEPTIONIST), allowPermissions(PERMISSIONS.MANAGE_TESTS), async (req, res, next) => {
+testRouter.put("/:id", allowPermissions(PERMISSIONS.MANAGE_TESTS), async (req, res, next) => {
   try {
     const { name, code, category, sampleType, price, turnaroundHours, active, parameters: requestedParameters = [] } = req.body;
     const reportBody = normalizeReportBody(req.body.reportBody ?? req.body.report_body);
@@ -904,7 +902,7 @@ testRouter.put("/:id", allowRoles(ROLES.ADMIN, ROLES.MANAGER, ROLES.RECEPTIONIST
   }
 });
 
-testRouter.delete("/:id", allowRoles(ROLES.ADMIN, ROLES.MANAGER, ROLES.RECEPTIONIST), allowPermissions(PERMISSIONS.MANAGE_TESTS), async (req, res, next) => {
+testRouter.delete("/:id", allowPermissions(PERMISSIONS.MANAGE_TESTS), async (req, res, next) => {
   try {
     const test = await get("SELECT * FROM tests WHERE id = ?", [req.params.id]);
     if (!test) {

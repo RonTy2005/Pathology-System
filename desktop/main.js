@@ -42,7 +42,7 @@ let connectedServerUrl = null;
 let mandatoryUpdateController;
 let connectionStatus = {
   phase: "starting",
-  message: "Preparing LabShield…",
+  message: appMode === "server" ? "Preparing laboratory data…" : "Connecting to your laboratory…",
   servers: [],
 };
 
@@ -101,7 +101,9 @@ function startAutomaticUpdates() {
   powerMonitor.on("resume", () => {
     mandatoryUpdateController?.enforceDeadline();
     scheduleAutomaticUpdateCheck();
-    if (appMode === "client") scheduleRetry(1500);
+    // A sleeping client keeps its current page. Only retry discovery when it
+    // was already on the connection screen; a resume is not a disconnection.
+    if (appMode === "client" && !connectedServerUrl) scheduleRetry(1500);
   });
 }
 
@@ -169,15 +171,24 @@ function startClientHealthCheck(serverUrl) {
     try {
       const { isLabServer } = require(path.join(appRoot, "src", "services", "lanClientDiscovery"));
       if (await isLabServer(connectedServerUrl, 2200)) {
+        if (clientHealthCheckFailures >= 2) {
+          publishConnectionStatus({
+            phase: "connected",
+            message: `Connected to ${connectedServerUrl}`,
+          });
+        }
         clientHealthCheckFailures = 0;
         return;
       }
 
       clientHealthCheckFailures += 1;
-      if (clientHealthCheckFailures >= 2) {
-        connectedServerUrl = null;
-        clearClientHealthCheck();
-        scheduleRetry(500);
+      if (clientHealthCheckFailures === 2) {
+        // The page and its entered data remain intact while the LAN is briefly
+        // unavailable. HTTP requests resume working when the server returns.
+        publishConnectionStatus({
+          phase: "offline",
+          message: "Connection to the laboratory server interrupted. This screen will stay open and reconnect automatically.",
+        });
       }
     } finally {
       clientHealthCheckInProgress = false;
@@ -190,10 +201,10 @@ async function loadConnectingScreen() {
   await mainWindow.loadFile(path.join(__dirname, "connecting.html"));
 }
 
-async function useServer(serverUrl) {
+async function useServer(serverUrl, { alreadyVerified = false } = {}) {
   const { isLabServer, normalizeServerUrl } = require(path.join(appRoot, "src", "services", "lanClientDiscovery"));
   const normalizedUrl = normalizeServerUrl(serverUrl);
-  if (!normalizedUrl || !(await isLabServer(normalizedUrl))) {
+  if (!normalizedUrl || (!alreadyVerified && !(await isLabServer(normalizedUrl)))) {
     throw new Error("That LabShield server could not be reached. Check the address and LAN connection.");
   }
 
@@ -213,20 +224,24 @@ async function connectToLanServer({ forceDiscovery = false } = {}) {
   if (appMode !== "client") return null;
 
   await loadConnectingScreen();
+  const { discoverLabServers, isLabServer } = require(path.join(appRoot, "src", "services", "lanClientDiscovery"));
+  const savedServerUrl = forceDiscovery ? null : await readSavedServerUrl();
+  if (savedServerUrl) {
+    publishConnectionStatus({
+      phase: "connecting",
+      message: "Connecting to your saved laboratory server…",
+      servers: [],
+    });
+    if (await isLabServer(savedServerUrl)) return useServer(savedServerUrl, { alreadyVerified: true });
+  }
+
   publishConnectionStatus({
     phase: "searching",
     message: "Searching this local network for the LabShield server…",
     servers: [],
   });
-
-  const { discoverLabServers, isLabServer } = require(path.join(appRoot, "src", "services", "lanClientDiscovery"));
-  const savedServerUrl = forceDiscovery ? null : await readSavedServerUrl();
-  if (savedServerUrl && await isLabServer(savedServerUrl)) {
-    return useServer(savedServerUrl);
-  }
-
   const servers = await discoverLabServers();
-  if (servers.length === 1) return useServer(servers[0]);
+  if (servers.length === 1) return useServer(servers[0], { alreadyVerified: true });
 
   if (servers.length > 1) {
     publishConnectionStatus({
@@ -247,6 +262,7 @@ async function connectToLanServer({ forceDiscovery = false } = {}) {
 }
 
 async function startLocalServer() {
+  publishConnectionStatus({ phase: "starting", message: "Preparing laboratory data…" });
   const databasePreparation = await prepareServerDatabase();
   process.env.LAB_LMS_APP_ROOT = appRoot;
   process.env.LAB_LMS_DATA_DIR = app.getPath("userData");
@@ -293,6 +309,14 @@ function createMainWindow() {
   });
 
   mainWindow.once("ready-to-show", () => mainWindow.show());
+  mainWindow.webContents.on("did-fail-load", (_event, errorCode, _description, validatedURL, isMainFrame) => {
+    // Reopen discovery only when the page itself cannot load, not when a
+    // background health probe or an individual API request times out.
+    if (appMode !== "client" || !isMainFrame || errorCode === -3 || !/^https?:/i.test(validatedURL || "")) return;
+    connectedServerUrl = null;
+    clearClientHealthCheck();
+    scheduleRetry(500);
+  });
   mainWindow.on("closed", () => { mainWindow = null; });
 }
 
@@ -318,7 +342,7 @@ app.whenReady().then(async () => {
   ensureAutomaticStartup({ app });
   serverAvailabilityGuard.start();
   createMainWindow();
-  await mainWindow.loadFile(path.join(__dirname, "connecting.html"));
+  await mainWindow.loadFile(path.join(__dirname, appMode === "server" ? "server-starting.html" : "connecting.html"));
   startAutomaticUpdates();
 
   try {

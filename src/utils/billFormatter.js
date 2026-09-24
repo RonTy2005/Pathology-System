@@ -1,4 +1,5 @@
 const { getPatientPortalQrUrl } = require("./patientPortal");
+const { formatBusinessTime } = require("../services/publicPortalAvailabilityService");
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -56,14 +57,18 @@ function paymentSummary(visit) {
   return { label: "PAYMENT DUE", tone: "due" };
 }
 
-function buildBillHtml(billData) {
+function buildBillHtml(billData, { sharedLinkView = false } = {}) {
   const settings = billData.businessSettings || {};
   const businessName = escapeHtml(settings.businessName || billData.businessName || "Your Diagnostic Centre");
-  const facilityType = escapeHtml(settings.facilityType || "Diagnostic services");
   const address = escapeHtml(settings.address || "");
   const phone = escapeHtml(settings.phone || "");
   const email = escapeHtml(settings.email || "");
   const registrationNo = escapeHtml(settings.registrationNo || "");
+  const openingTime = formatBusinessTime(settings.businessOpeningTime);
+  const closingTime = formatBusinessTime(settings.businessClosingTime);
+  const businessHours = openingTime && closingTime && openingTime !== closingTime
+    ? ` (Business hours: ${openingTime} to ${closingTime})`
+    : "";
   const logoDataUrl = /^data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/]+={0,2}$/i.test(String(settings.businessLogoDataUrl || ""))
     ? String(settings.businessLogoDataUrl)
     : "";
@@ -111,8 +116,7 @@ function buildBillHtml(billData) {
             <div class="brand-mark">${logoDataUrl ? `<img src="${logoDataUrl}" alt="${businessName} logo" />` : `<span>${businessName.slice(0, 1)}</span>`}</div>
             <div>
               <h1>${businessName}</h1>
-              <p>${facilityType}</p>
-              ${address ? `<p>${address}</p>` : ""}
+              ${address ? `<p class="business-address">${address}</p>` : ""}
               ${contactDetails ? `<p>${contactDetails}</p>` : ""}
             </div>
           </div>
@@ -153,6 +157,7 @@ function buildBillHtml(billData) {
               <p><b>Amount in words:</b> Rupees ${numberToWords(billedAmount)}</p>
               <p><b>Payment mode:</b> ${paymentMode}</p>
               <p class="report-note">Reports are released after payment and technical verification.</p>
+              <p class="collection-note">Please collect the report only from the lab at the scheduled time${businessHours}.</p>
             </div>
             <table class="totals-table">
               <tbody>
@@ -199,6 +204,7 @@ function buildBillHtml(billData) {
         .brand-mark img { width: 100%; height: 100%; object-fit: contain; }
         .brand-block h1 { margin: 0; color: var(--accent); font-size: 19px; line-height: 1.05; letter-spacing: -.01em; }
         .brand-block p { margin: 1px 0 0; color: var(--muted); font-size: 9px; }
+        .brand-block .business-address { color: var(--ink); font-size: 10px; font-weight: 700; line-height: 1.2; }
         .slip-title { min-width: 62mm; display: flex; flex-direction: column; align-items: flex-end; text-align: right; gap: 1px; }
         .slip-title span { color: var(--accent); font-size: 8.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
         .slip-title strong { font-size: 14px; line-height: 1.15; text-decoration: underline; }
@@ -222,6 +228,7 @@ function buildBillHtml(billData) {
         .receipt-notes { padding-top: 1mm; }
         .receipt-notes p { margin: 0 0 1.5mm; font-size: 9.5px; }
         .receipt-notes .report-note { margin-top: 2.5mm; color: var(--muted); }
+        .receipt-notes .collection-note { margin-top: 1.5mm; color: var(--ink); font-size: 10px; font-weight: 700; line-height: 1.2; }
         .totals-table { width: 100%; border-collapse: collapse; font-size: 10px; }
         .totals-table th, .totals-table td { padding: 1.1mm 1.5mm; border: 1px solid var(--line); text-align: left; }
         .totals-table td { text-align: right; white-space: nowrap; }
@@ -236,11 +243,15 @@ function buildBillHtml(billData) {
         .signatory { min-height: 10mm; padding-top: 4mm; border-bottom: 1px solid var(--ink); text-align: center; display: flex; flex-direction: column; gap: 1px; }
         .signatory span { color: var(--muted); font-size: 8px; }
         .signatory strong { color: var(--ink); font-size: 9.5px; }
-        @media screen { .bill-slip { margin: 10mm auto; box-shadow: 0 7px 28px rgba(30, 30, 30, .16); } }
+        @media screen {
+          .bill-slip { margin: 10mm auto; box-shadow: 0 7px 28px rgba(30, 30, 30, .16); }
+          .shared-link-bill { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+          .shared-link-bill .items-table td.service strong { font-size: 9.5px; font-weight: 600; line-height: 1.2; }
+        }
         @media print { html, body { background: #fff; } .bill-slip { margin: 0; box-shadow: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
       </style>
     </head>
-    <body>${pagesHtml}</body>
+    <body${sharedLinkView ? ' class="shared-link-bill"' : ""}>${pagesHtml}</body>
     </html>`;
 }
 

@@ -83,6 +83,28 @@ test("browser fallback carries report head styles into the cloned PDF body", () 
   assert.match(routes, /readOnlyView:\s*!printMode\s*&&\s*!pdfMode/);
 });
 
+test("report barcode is embedded and identical with or without letterhead", () => {
+  const base = {
+    patient: { id: 1, name: "Barcode Patient", age: 32, gender: "Female" },
+    visit: { bill_no: "BILL-20260925-001", created_at: "2026-09-25T09:00:00Z" },
+    report: { report_no: "REPORT-001", finalized_at: "2026-09-25T10:00:00Z" },
+    doctor: { name: "Self" },
+    tests: [{ name: "Barcode Test", parameters: [{ parameter_name: "Result", value: "Normal" }] }],
+    reportHeaderSpaceMm: 44,
+  };
+  const withLetterhead = buildReportHtml({ ...base, letterheadDataUrl: "data:image/png;base64,YQ==" });
+  const withoutLetterhead = buildReportHtml({ ...base, letterheadDataUrl: null });
+  const barcode = (html) => html.match(/<img src="(data:image\/svg\+xml;base64,[^"]+)" class="barcode-img"/)?.[1];
+  assert.ok(barcode(withLetterhead));
+  assert.equal(barcode(withLetterhead), barcode(withoutLetterhead));
+  assert.doesNotMatch(withoutLetterhead, /bwipjs-api\.metafloor\.com/);
+  const svg = Buffer.from(barcode(withoutLetterhead).split(",")[1], "base64").toString("utf8");
+  assert.match(svg, /<svg viewBox=/);
+  assert.match(svg, /<path[^>]+stroke=/);
+  assert.match(withoutLetterhead, /class="header-barcode"/);
+  assert.match(withoutLetterhead, /\.report-pagination-header-space\s*\{\s*height:\s*44mm;/);
+});
+
 test("overflow pages repeat the letterhead and preserve its configured spacing", () => {
   const reportHtml = buildReportHtml({
     patient: { id: "QA-1", name: "Pagination Patient", age: 40, gender: "Female" },

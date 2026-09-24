@@ -1,7 +1,7 @@
 const express = require("express");
 const { all, get, run, transaction } = require("../db/helpers");
-const { nextDailySequenceId } = require("../db/sequences");
-const { allowPermissions, allowRoles } = require("../middleware/auth");
+const { nextDailyPatientCode, nextDailySequenceId } = require("../db/sequences");
+const { allowPermissions, allowRoles, hasPermission } = require("../middleware/auth");
 const { logAction } = require("../services/logService");
 const { ACCESS_CONTROLS, PAYMENT_MODES, PERMISSIONS, ROLES, TECHNICIAN_ROLES } = require("../config/constants");
 const { expandTestBundleConfigs } = require("../services/testBundleService");
@@ -36,7 +36,7 @@ async function savePatient({ name, age, gender, phone }, registrationTime) {
     `INSERT INTO patients (patient_code, name, age, gender, phone, created_at)
      VALUES (?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP))`,
     [
-      await nextDailySequenceId("PAT", "patients", "patient_code"),
+      await nextDailyPatientCode(),
       name,
       age,
       gender,
@@ -360,9 +360,52 @@ patientRouter.delete("/:id", allowPermissions(PERMISSIONS.DELETE_PATIENTS), asyn
 
 patientRouter.patch("/:id", async (req, res, next) => {
   try {
+    const canEditDetails = !!req.user.accessControls?.[ACCESS_CONTROLS.EDIT_PATIENT_DETAILS];
+    const canManageVisits = hasPermission(req.user, PERMISSIONS.MANAGE_PATIENTS);
+    if (!canEditDetails && !canManageVisits) {
+      return res.status(403).json({ message: "Patient editing is disabled for this user" });
+    }
+
+    const detailFields = new Set(["name", "age", "gender", "phone"]);
+    const hasVisitFields = Object.keys(req.body).some((field) => !detailFields.has(field));
+    if (hasVisitFields && !canManageVisits) {
+      return res.status(403).json({ message: "Permission denied to edit visits or billing" });
+    }
+
+    if (!hasVisitFields && canEditDetails) {
+      const name = String(req.body.name || "").trim();
+      const age = Number(req.body.age);
+      const gender = String(req.body.gender || "");
+      const phone = String(req.body.phone || "").trim();
+      if (!name || !Number.isFinite(age) || age < 0 || !gender) {
+        return res.status(400).json({ message: "Enter a valid patient name, age and gender" });
+      }
+      const patient = await transaction(async () => {
+        const existing = await get("SELECT * FROM patients WHERE id = ?", [req.params.id]);
+        if (!existing) {
+          const error = new Error("Patient not found");
+          error.statusCode = 404;
+          throw error;
+        }
+        await run(
+          "UPDATE patients SET name = ?, age = ?, gender = ?, phone = ? WHERE id = ?",
+          [name, age, gender, phone || null, req.params.id]
+        );
+        await logAction({
+          userId: req.user.id,
+          action: "patient_update",
+          details: `Updated patient ${existing.patient_code}`,
+          entityId: req.params.id,
+          entityType: "patient",
+        });
+        return get("SELECT * FROM patients WHERE id = ?", [req.params.id]);
+      });
+      return res.json({ patient });
+    }
+
     const testConfigs = Array.isArray(req.body.tests) ? req.body.tests : (req.body.testIds || []).map(id => ({ id }));
 
-    if (!req.user.accessControls?.[ACCESS_CONTROLS.EDIT_PATIENT_DETAILS] && !testConfigs.length) {
+    if (!canEditDetails && !testConfigs.length) {
       return res.status(403).json({ message: "Patient editing is disabled for this user" });
     }
 

@@ -2,6 +2,7 @@ const { getCbcHeading, getCbcParameters, getCbcVariant } = require("../config/cb
 const { supplementReportHtml } = require("../services/reportContentService");
 const { getCombinationDefinition } = require("../services/reportCombinationRepair");
 const { getCellReportDefinition } = require("../services/cellReportService");
+const bwipjs = require("bwip-js");
 const { isBillingOnlyTest, BILLING_ONLY_MESSAGE } = require('../../frontend/scripts/reportEligibility');
 const { REPORT_PAGINATION_SCRIPT } = require("./reportPagination");
 
@@ -503,6 +504,17 @@ function isSputumAfbTest(test) {
   const name = normalizeParameterName(test?.name);
   const code = normalizeParameterName(test?.code);
   return code === "sputumafb" || name === "sputumexaminationafb" || name.includes("sputumafbstain") || name.includes("sputumexaminationafb");
+}
+
+function buildBarcodeDataUrl(value) {
+  const text = String(value ?? "").trim();
+  if (!text) return "";
+  try {
+    const svg = bwipjs.toSVG({ bcid: "code128", text, scale: 2, height: 10, includetext: true });
+    return `data:image/svg+xml;base64,${Buffer.from(svg, "utf8").toString("base64")}`;
+  } catch (_error) {
+    return "";
+  }
 }
 
 function isAlbertStainKlbTest(test) {
@@ -1808,6 +1820,13 @@ function isPapSmearTest(test) {
   const code = normalizeParameterName(test?.code);
   return code === "papsmear001" || code === "papsmear" || code === "pap8254"
     || name === "papsmear" || name === "cytologypapsmearexamination";
+}
+
+function getBronchialPapSpecimen(test) {
+  const name = normalizeParameterName(test?.name);
+  if (name === "bronchialbrushingforpap") return "Bronchial Brushing";
+  if (name === "bronchiallavageforpap") return "Bronchial Lavage";
+  return null;
 }
 
 function isBoneMarrowCytologyTest(test) {
@@ -9189,6 +9208,52 @@ function buildBoneMarrowCytologyReportBody(test) {
   `;
 }
 
+// Respiratory cytology reporting follows the Papanicolaou Society's guidance on
+// specimen adequacy, diagnostic category and explanatory comments. The stain
+// name is not a cervical Pap-smear diagnosis.
+// https://pubmed.ncbi.nlm.nih.gov/26990836/
+// https://papsociety.org/guidelines/respiratorytract.pdf
+function buildBronchialPapCytologyReportBody(test) {
+  const specimenType = getBronchialPapSpecimen(test);
+  const value = aliases => String(findReportParameter(test, aliases)?.value ?? "").trim();
+  const narrative = aliases => escapeHtml(value(aliases) || "-").replace(/\r?\n/g, "<br />");
+  const specimen = value(["Specimen / Collection Site", "Specimen", "Collection Site", "Site"])
+    || test.sample_type || specimenType;
+
+  return `
+    <div class="bronchial-pap-cytology-report">
+      <table class="results-table bronchial-pap-cytology-table">
+        <thead><tr><th style="width:30%">Section / Parameter</th><th style="width:70%">Findings</th></tr></thead>
+        <tbody>
+          <tr class="thyroid-antibodies-section"><td colspan="2"><strong>SPECIMEN AND CLINICAL DETAILS</strong></td></tr>
+          <tr><td><strong>Specimen / Collection Site</strong></td><td>${escapeHtml(specimen)}</td></tr>
+          <tr><td><strong>Collection Date / Time</strong></td><td>${narrative(["Collection Date / Time", "Collection Date and Time", "Collection Time"])}</td></tr>
+          <tr><td><strong>Clinical Details / Imaging</strong></td><td>${narrative(["Clinical Details / Imaging", "Clinical Details", "Clinical History", "Imaging Findings"])}</td></tr>
+          <tr><td><strong>Preparation / Stains</strong></td><td>${narrative(["Preparation / Stains", "Preparation", "Stains", "Method"])}</td></tr>
+          <tr class="thyroid-antibodies-section"><td colspan="2"><strong>MICROSCOPIC EVALUATION</strong></td></tr>
+          <tr><td><strong>Specimen Adequacy</strong></td><td>${narrative(["Specimen Adequacy", "Adequacy"])}</td></tr>
+          <tr><td><strong>Cytomorphologic Findings</strong></td><td>${narrative(["Cytomorphologic Findings", "Cytology Findings", "Microscopic Findings", "Microscopy"])}</td></tr>
+          <tr><td><strong>Other Findings / Organisms</strong></td><td>${narrative(["Other Findings / Organisms", "Other Findings", "Organisms"])}</td></tr>
+          <tr class="thyroid-antibodies-section"><td colspan="2"><strong>CONCLUSION</strong></td></tr>
+          <tr><td><strong>Diagnostic Category</strong></td><td>${narrative(["Diagnostic Category", "Category"])}</td></tr>
+          <tr><td><strong>Interpretation / Diagnosis</strong></td><td>${narrative(["Interpretation / Diagnosis", "Interpretation", "Diagnosis", "Impression", "Result"])}</td></tr>
+          <tr><td><strong>Ancillary Studies / Correlation</strong></td><td>${narrative(["Ancillary Studies / Correlation", "Ancillary Studies", "Correlation"])}</td></tr>
+          <tr><td><strong>Comments / Limitations</strong></td><td>${narrative(["Comments / Limitations", "Comments", "Limitations", "Notes"])}</td></tr>
+        </tbody>
+      </table>
+      <div class="single-analyte-notes report-template-notes bronchial-pap-cytology-notes">
+        <div class="report-note-heading">Reporting guidance :</div>
+        <ul>
+          <li>This is respiratory cytology of a ${specimenType.toLowerCase()} specimen; it is not a cervical Pap smear. State the sampled site and specimen adequacy before the diagnostic category and conclusion.</li>
+          <li>For an inadequate or limited sample, document the reason and interpretive limitation. Blood, inflammation, scant cellularity or poor preservation can restrict assessment.</li>
+          <li>A negative cytology result does not exclude a lesion outside the sampled area. Correlate with bronchoscopy, imaging and tissue biopsy when clinically indicated.</li>
+          <li>Report organisms, cell-block, special-stain, immunocytochemical or molecular findings only when those investigations were actually performed. No numeric normal range applies to this qualitative cytology report.</li>
+        </ul>
+      </div>
+    </div>
+  `;
+}
+
 // Reporting structure follows ICSH bone-marrow examination guidance:
 // https://onlinelibrary.wiley.com/doi/full/10.1111/ijlh.70214
 // https://www.icsh.org/guidelines-for-the-standardization-of-bone-marrow-specimens-and-reports
@@ -12423,7 +12488,7 @@ function buildReportHtml(reportData) {
   const digitalReportUrl = String(reportData.digitalReportUrl || "").trim();
   const qrPayload = digitalReportUrl || `${billNo}-${patientName}`;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(qrPayload)}`;
-  const barcodeUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(billNo)}&scale=2&height=10&includetext`;
+  const barcodeUrl = buildBarcodeDataUrl(reportData.visit.bill_no);
 
   const singleTest = reportData.tests.length === 1 ? reportData.tests[0] : null;
   const customReportNarratives = buildCustomReportNarratives(reportData.tests);
@@ -12496,6 +12561,8 @@ function buildReportHtml(reportData) {
   const albuminTest = singleTest && isAlbuminTest(singleTest) ? singleTest : null;
   // This historical single-analyte renderer slot dispatches specialised
   // formats before Digoxin itself, so their report bodies remain consistent.
+  const bronchialPapTest = singleTest && getBronchialPapSpecimen(singleTest)
+    && !String(singleTest.report_body || "").trim() ? singleTest : null;
   const digoxinTest = singleTest && (isAnticardiolipinIggIgmPanelTest(singleTest) || isAnticardiolipinIgaIggPanelTest(singleTest) || isAnticardiolipinIgaIgmPanelTest(singleTest) || isAnticardiolipinIgaTest(singleTest) || isAntenatalProfileTest(singleTest) || isTotalAcidPhosphataseTest(singleTest) || isProstaticAcidPhosphataseTest(singleTest) || isAgRatioTest(singleTest) || isDigoxinTest(singleTest)) ? singleTest : null;
   const bunTest = singleTest && (isBunTest(singleTest) || isBilirubinFractionationTest(singleTest) || isSerumBicarbonateTest(singleTest) || isAsciticFluidAnalysisTest(singleTest) || isApolipoproteinBTest(singleTest) || isAnticardiolipinIgmTest(singleTest) || isAnticardiolipinIggTest(singleTest) || isAntiTgTest(singleTest) || isAntiTpoTest(singleTest) || isAnemiaScreeningProfileTest(singleTest) || isComprehensiveAnemiaProfileTest(singleTest) || isAndrostenedioneTest(singleTest) || isGroupBStrepTest(singleTest) || isFungusKohPreparationTest(singleTest) || isSputumAfbTest(singleTest) || isBaccalSmearBrrBodyTest(singleTest) || isAutoimmuneProfileTest(singleTest) || isAfbZiehlNeelsenStainTest(singleTest) || isBloodCultureSensitivityTest(singleTest) || isBodyFluidCultureSensitivityTest(singleTest) || isBodyFluidTotalProteinTest(singleTest) || isBodyFluidChlorideTest(singleTest) || isAfbCultureSensitivityTest(singleTest) || isStoolCultureTest(singleTest) || isUrineCultureTest(singleTest) || isMalariaParasiteIdentificationTest(singleTest) || isMycobacteriumCombinedPanelTest(singleTest) || isOvaAndParasiteTest(singleTest) || isTripleMarkerTest(singleTest) || isDoubleMarkerTest(singleTest) || isPax8Test(singleTest) || isGalectin3Test(singleTest) || isHer2Test(singleTest) || isDcpTest(singleTest) || isAfpTumorMarkerTest(singleTest) || isCa199Test(singleTest) || isCa153Test(singleTest) || isCa125Test(singleTest) || isTroponinITest(singleTest) || isTroponinTTest(singleTest) || isDengueNs1Test(singleTest) || isDengueIggTest(singleTest) || isDengueIgmTest(singleTest) || isRastTest(singleTest) || isWidalTest(singleTest) || isCrpTest(singleTest) || isSodiumTest(singleTest) || isIronTest(singleTest) || isLacticAcidTest(singleTest) || isMagnesiumTest(singleTest) || isLipaseTest(singleTest) || isAmylaseTest(singleTest) || isGgtTest(singleTest) || isChlorideTest(singleTest) || isCreatinine24HourUrineTest(singleTest) || isSemenAnalysisTest(singleTest) || isUrineCotinineTest(singleTest) || isUrineGlucoseTest(singleTest) || isPorphyrinsTest(singleTest) || isOccultBloodStoolTest(singleTest) || isCsfAnalysisTest(singleTest) || isTshTest(singleTest) || isThyroidProfileTest(singleTest) || isThyroidAntibodiesTest(singleTest) || isTriiodothyronineTotalTest(singleTest) || isTestosteroneTotalTest(singleTest) || isProgesteroneTest(singleTest) || isCortisoneTest(singleTest) || isActhTest(singleTest) || isAdaTest(singleTest) || isBetaHcgPregnancyTest(singleTest) || isProlactinTest(singleTest) || isDheaTest(singleTest) || isEstradiolTest(singleTest) || isLuteinizingHormoneTest(singleTest) || isFollicleStimulatingHormoneTest(singleTest) || isThyroxineTotalTest(singleTest) || isCalcitoninTest(singleTest) || isInhibinATest(singleTest) || isInhibinBTest(singleTest) || isPappATest(singleTest) || isDheasTest(singleTest) || isBoneMarrowAspirationCytologyTest(singleTest) || isBoneMarrowCytologyTest(singleTest) || isHistopathologyReportTest(singleTest) || isCreatinineTest(singleTest) || isIonizedCalciumTest(singleTest) || isFlecainideTest(singleTest) || isPhenobarbitalTest(singleTest) || isKetoneBodyTest(singleTest) || isUricAcidTest(singleTest) || isTibcTest(singleTest) || isSerumOsmolalityTest(singleTest) || isArterialBloodGasTest(singleTest) || isManganeseBloodTest(singleTest) || isSeleniumSerumTest(singleTest))
     ? singleTest
@@ -12820,6 +12887,7 @@ function buildReportHtml(reportData) {
         if (reportData.tests.length === 1 && isDheasTest(t)) return "DEHYDROEPIANDROSTERONE SULPHATE (DHEAS)";
         if (reportData.tests.length === 1 && isBoneMarrowAspirationCytologyTest(t)) return "BONE MARROW ASPIRATION &amp; CYTOLOGY";
         if (reportData.tests.length === 1 && isBoneMarrowCytologyTest(t)) return "BONE MARROW ASPIRATE - CYTOLOGY";
+        if (reportData.tests.length === 1 && getBronchialPapSpecimen(t) && !String(t.report_body || "").trim()) return `${escapeHtml(getBronchialPapSpecimen(t).toUpperCase())} - PAP CYTOLOGY`;
         if (reportData.tests.length === 1 && isFnacTest(t)) return "FINE NEEDLE ASPIRATION CYTOLOGY (FNAC)";
         if (reportData.tests.length === 1 && isPapSmearTest(t)) return "CYTOLOGY, PAP SMEAR EXAMINATION";
         if (reportData.tests.length === 1 && isHistopathologyReportTest(t)) return getHistopathologyTitle(t);
@@ -13932,7 +14000,7 @@ function buildReportHtml(reportData) {
             </td>
             <td style="width: 26%;" class="header-barcode">
               <div>
-                <img src="${barcodeUrl}" class="barcode-img" />
+                ${barcodeUrl ? `<img src="${barcodeUrl}" class="barcode-img" alt="Bill barcode: ${billNo}" />` : `<span>${billNo}</span>`}
               </div>
               <div class="date-row"><strong>Registered on:</strong> ${registeredOn}</div>
               <div class="date-row"><strong>Reported on:</strong> ${reportedOn}</div>
@@ -13942,7 +14010,7 @@ function buildReportHtml(reportData) {
 
         <div class="test-title">${testTitle}</div>
 
-        ${beta2GlycoproteinPanelTest ? buildBeta2GlycoproteinPanelReportBody(beta2GlycoproteinPanelTest) : toxoplasmaAntibodiesPanelTest ? buildToxoplasmaAntibodiesPanelReportBody(toxoplasmaAntibodiesPanelTest) : torchProfileTest ? buildTorchProfileReportBody(torchProfileTest) : tnfAlphaTest ? buildTnfAlphaReportBody(tnfAlphaTest) : rheumatoidFactorTest ? buildRheumatoidFactorReportBody(rheumatoidFactorTest) : asoTiterTest ? buildAsoTiterReportBody(asoTiterTest) : hsCrpTest ? buildHsCrpReportBody(hsCrpTest) : typhidotTest ? buildTyphidotReportBody(typhidotTest) : vdrlTest ? buildVdrlReportBody(vdrlTest) : havIggTest ? buildHavIggReportBody(havIggTest) : havIgmTest ? buildHavIgmReportBody(havIgmTest) : hcvRapidScreeningTest ? buildHcvRapidScreeningReportBody(hcvRapidScreeningTest) : rtPcrTest ? buildRtPcrReportBody(rtPcrTest) : tpmtTest ? buildTpmtGenotypingReportBody(tpmtTest) : cysticFibrosisNewbornTest ? buildCysticFibrosisNewbornScreenReportBody(cysticFibrosisNewbornTest) : kftTest ? buildKftReportBody(kftTest) : factorIiTest ? buildFactorIiReportBody(factorIiTest) : karyotypeTest ? buildKaryotypeReportBody(karyotypeTest) : lipidProfileTest ? buildLipidProfileReportBody(lipidProfileTest) : lftTest ? buildLftReportBody(lftTest) : hba1cTest ? buildHba1cReportBody(hba1cTest) : vitaminDTest ? buildVitaminDReportBody(vitaminDTest) : vitaminCTest ? buildVitaminCReportBody(vitaminCTest) : vitaminB12Test ? buildVitaminB12ReportBody(vitaminB12Test) : randomBloodSugarTest ? buildRandomBloodSugarReportBody(randomBloodSugarTest) : fastingBloodSugarTest ? buildFastingBloodSugarReportBody(fastingBloodSugarTest) : bTypeNatriureticPeptideTest ? buildBTypeNatriureticPeptideReportBody(bTypeNatriureticPeptideTest) : creatineKinaseTest ? buildCreatineKinaseReportBody(creatineKinaseTest) : beta2MicroglobulinTest ? buildBeta2MicroglobulinReportBody(beta2MicroglobulinTest) : altSgptTest ? buildAltSgptReportBody(altSgptTest) : dnphTest ? buildDnphReportBody(dnphTest) : prealbuminTest ? buildPrealbuminReportBody(prealbuminTest) : haptoglobinTest ? buildHaptoglobinReportBody(haptoglobinTest) : gramStainBacterialVaginosisTest ? buildGramStainBacterialVaginosisReportBody(gramStainBacterialVaginosisTest) : aldolaseTest ? buildAldolaseReportBody(aldolaseTest) : urineProteinCreatinineRatioTest ? buildUrineProteinCreatinineRatioReportBody(urineProteinCreatinineRatioTest) : albuminCreatinineRatioTest ? buildAlbuminCreatinineRatioReportBody(albuminCreatinineRatioTest) : postPrandialBloodSugarTest ? buildPostPrandialBloodSugarReportBody(postPrandialBloodSugarTest) : tacrolimusTest ? buildTacrolimusReportBody(tacrolimusTest) : phosphorusTest ? buildPhosphorusReportBody(phosphorusTest) : alkalinePhosphataseTest ? buildAlkalinePhosphataseReportBody(alkalinePhosphataseTest) : clotRetractionTest ? buildClotRetractionReportBody(clotRetractionTest) : vitaminETest ? buildVitaminEReportBody(vitaminETest) : vitaminB9Test ? buildVitaminB9ReportBody(vitaminB9Test) : vitaminKTest ? buildVitaminKReportBody(vitaminKTest) : ldlCholesterolTest ? buildLdlCholesterolReportBody(ldlCholesterolTest) : hdlCholesterolTest ? buildHdlCholesterolReportBody(hdlCholesterolTest) : indirectBilirubinTest ? buildIndirectBilirubinReportBody(indirectBilirubinTest) : calciumTest ? buildCalciumReportBody(calciumTest) : ferritinTest ? buildFerritinReportBody(ferritinTest) : cPeptideTest ? buildCPeptideReportBody(cPeptideTest) : vldlCholesterolTest ? buildVldlCholesterolReportBody(vldlCholesterolTest) : comprehensiveMetabolicPanelTest ? buildComprehensiveMetabolicPanelReportBody(comprehensiveMetabolicPanelTest) : electrolyteProfileTest ? buildElectrolyteProfileReportBody(electrolyteProfileTest) : potassiumTest ? buildPotassiumReportBody(potassiumTest) : astSgotTest ? buildAstSgotReportBody(astSgotTest) : globulinTest ? buildGlobulinReportBody(globulinTest) : albuminTest ? buildAlbuminReportBody(albuminTest) : digoxinTest ? buildDigoxinReportBody(digoxinTest) : bunTest ? buildBunReportBody(bunTest) : cbcTest ? buildCbcReportBody(cbcTest, cbcVariant) : bloodGroupTest ? buildBloodGroupReportBody(bloodGroupTest) : dDimerTest ? buildDDimerReportBody(dDimerTest) : sickleCellMutationTest ? buildSickleCellMutationAnalysisReportBody(sickleCellMutationTest) : rbcTest ? buildRbcReportBody(rbcTest) : plateletTest ? buildPlateletReportBody(plateletTest) : tlcTest ? buildTlcReportBody(tlcTest) : absoluteCountTest ? buildAbsoluteCountReportBody(absoluteCountTest, absoluteCountTemplate) : mchcTest ? buildMchcReportBody(mchcTest) : mchTest ? buildMchReportBody(mchTest) : mcvTest ? buildMcvReportBody(mcvTest) : mpvTest ? buildMpvReportBody(mpvTest) : hctPcvTest ? buildHctPcvReportBody(hctPcvTest) : esrTest ? buildEsrReportBody(esrTest) : pdwTest ? buildPdwReportBody(pdwTest) : hemoglobinTest ? buildHemoglobinReportBody(hemoglobinTest, reportData.patient.gender) : ptTest ? buildProthrombinTimeReportBody(ptTest) : apttTest ? buildApttReportBody(apttTest) : dlcTest ? buildDlcReportBody(dlcTest) : indirectCoombsTest ? buildIndirectCoombsReportBody(indirectCoombsTest) : directCoombsTest ? buildDirectCoombsReportBody(directCoombsTest) : fibrinogenTest ? buildFibrinogenReportBody(fibrinogenTest) : reticulocyteTest ? buildReticulocyteReportBody(reticulocyteTest) : clottingTimeTest ? buildClottingTimeReportBody(clottingTimeTest) : bleedingTimeTest ? buildBleedingTimeReportBody(bleedingTimeTest) : coagulationProfileTest ? buildCoagulationProfileReportBody(coagulationProfileTest) : factorVTest ? buildFactorVReportBody(factorVTest) : factorViiTest ? buildFactorViiReportBody(factorViiTest) : factorIxTest ? buildFactorIxReportBody(factorIxTest) : factorXTest ? buildFactorXReportBody(factorXTest) : factorXiTest ? buildFactorXiReportBody(factorXiTest) : factorViiiTest ? buildFactorViiiReportBody(factorViiiTest) : peripheralSmearTest ? buildPeripheralBloodSmearReportBody(peripheralSmearTest) : factorXiiTest ? buildFactorXiiReportBody(factorXiiTest) : factorXiiiTest ? buildFactorXiiiReportBody(factorXiiiTest) : `
+        ${bronchialPapTest ? buildBronchialPapCytologyReportBody(bronchialPapTest) : beta2GlycoproteinPanelTest ? buildBeta2GlycoproteinPanelReportBody(beta2GlycoproteinPanelTest) : toxoplasmaAntibodiesPanelTest ? buildToxoplasmaAntibodiesPanelReportBody(toxoplasmaAntibodiesPanelTest) : torchProfileTest ? buildTorchProfileReportBody(torchProfileTest) : tnfAlphaTest ? buildTnfAlphaReportBody(tnfAlphaTest) : rheumatoidFactorTest ? buildRheumatoidFactorReportBody(rheumatoidFactorTest) : asoTiterTest ? buildAsoTiterReportBody(asoTiterTest) : hsCrpTest ? buildHsCrpReportBody(hsCrpTest) : typhidotTest ? buildTyphidotReportBody(typhidotTest) : vdrlTest ? buildVdrlReportBody(vdrlTest) : havIggTest ? buildHavIggReportBody(havIggTest) : havIgmTest ? buildHavIgmReportBody(havIgmTest) : hcvRapidScreeningTest ? buildHcvRapidScreeningReportBody(hcvRapidScreeningTest) : rtPcrTest ? buildRtPcrReportBody(rtPcrTest) : tpmtTest ? buildTpmtGenotypingReportBody(tpmtTest) : cysticFibrosisNewbornTest ? buildCysticFibrosisNewbornScreenReportBody(cysticFibrosisNewbornTest) : kftTest ? buildKftReportBody(kftTest) : factorIiTest ? buildFactorIiReportBody(factorIiTest) : karyotypeTest ? buildKaryotypeReportBody(karyotypeTest) : lipidProfileTest ? buildLipidProfileReportBody(lipidProfileTest) : lftTest ? buildLftReportBody(lftTest) : hba1cTest ? buildHba1cReportBody(hba1cTest) : vitaminDTest ? buildVitaminDReportBody(vitaminDTest) : vitaminCTest ? buildVitaminCReportBody(vitaminCTest) : vitaminB12Test ? buildVitaminB12ReportBody(vitaminB12Test) : randomBloodSugarTest ? buildRandomBloodSugarReportBody(randomBloodSugarTest) : fastingBloodSugarTest ? buildFastingBloodSugarReportBody(fastingBloodSugarTest) : bTypeNatriureticPeptideTest ? buildBTypeNatriureticPeptideReportBody(bTypeNatriureticPeptideTest) : creatineKinaseTest ? buildCreatineKinaseReportBody(creatineKinaseTest) : beta2MicroglobulinTest ? buildBeta2MicroglobulinReportBody(beta2MicroglobulinTest) : altSgptTest ? buildAltSgptReportBody(altSgptTest) : dnphTest ? buildDnphReportBody(dnphTest) : prealbuminTest ? buildPrealbuminReportBody(prealbuminTest) : haptoglobinTest ? buildHaptoglobinReportBody(haptoglobinTest) : gramStainBacterialVaginosisTest ? buildGramStainBacterialVaginosisReportBody(gramStainBacterialVaginosisTest) : aldolaseTest ? buildAldolaseReportBody(aldolaseTest) : urineProteinCreatinineRatioTest ? buildUrineProteinCreatinineRatioReportBody(urineProteinCreatinineRatioTest) : albuminCreatinineRatioTest ? buildAlbuminCreatinineRatioReportBody(albuminCreatinineRatioTest) : postPrandialBloodSugarTest ? buildPostPrandialBloodSugarReportBody(postPrandialBloodSugarTest) : tacrolimusTest ? buildTacrolimusReportBody(tacrolimusTest) : phosphorusTest ? buildPhosphorusReportBody(phosphorusTest) : alkalinePhosphataseTest ? buildAlkalinePhosphataseReportBody(alkalinePhosphataseTest) : clotRetractionTest ? buildClotRetractionReportBody(clotRetractionTest) : vitaminETest ? buildVitaminEReportBody(vitaminETest) : vitaminB9Test ? buildVitaminB9ReportBody(vitaminB9Test) : vitaminKTest ? buildVitaminKReportBody(vitaminKTest) : ldlCholesterolTest ? buildLdlCholesterolReportBody(ldlCholesterolTest) : hdlCholesterolTest ? buildHdlCholesterolReportBody(hdlCholesterolTest) : indirectBilirubinTest ? buildIndirectBilirubinReportBody(indirectBilirubinTest) : calciumTest ? buildCalciumReportBody(calciumTest) : ferritinTest ? buildFerritinReportBody(ferritinTest) : cPeptideTest ? buildCPeptideReportBody(cPeptideTest) : vldlCholesterolTest ? buildVldlCholesterolReportBody(vldlCholesterolTest) : comprehensiveMetabolicPanelTest ? buildComprehensiveMetabolicPanelReportBody(comprehensiveMetabolicPanelTest) : electrolyteProfileTest ? buildElectrolyteProfileReportBody(electrolyteProfileTest) : potassiumTest ? buildPotassiumReportBody(potassiumTest) : astSgotTest ? buildAstSgotReportBody(astSgotTest) : globulinTest ? buildGlobulinReportBody(globulinTest) : albuminTest ? buildAlbuminReportBody(albuminTest) : digoxinTest ? buildDigoxinReportBody(digoxinTest) : bunTest ? buildBunReportBody(bunTest) : cbcTest ? buildCbcReportBody(cbcTest, cbcVariant) : bloodGroupTest ? buildBloodGroupReportBody(bloodGroupTest) : dDimerTest ? buildDDimerReportBody(dDimerTest) : sickleCellMutationTest ? buildSickleCellMutationAnalysisReportBody(sickleCellMutationTest) : rbcTest ? buildRbcReportBody(rbcTest) : plateletTest ? buildPlateletReportBody(plateletTest) : tlcTest ? buildTlcReportBody(tlcTest) : absoluteCountTest ? buildAbsoluteCountReportBody(absoluteCountTest, absoluteCountTemplate) : mchcTest ? buildMchcReportBody(mchcTest) : mchTest ? buildMchReportBody(mchTest) : mcvTest ? buildMcvReportBody(mcvTest) : mpvTest ? buildMpvReportBody(mpvTest) : hctPcvTest ? buildHctPcvReportBody(hctPcvTest) : esrTest ? buildEsrReportBody(esrTest) : pdwTest ? buildPdwReportBody(pdwTest) : hemoglobinTest ? buildHemoglobinReportBody(hemoglobinTest, reportData.patient.gender) : ptTest ? buildProthrombinTimeReportBody(ptTest) : apttTest ? buildApttReportBody(apttTest) : dlcTest ? buildDlcReportBody(dlcTest) : indirectCoombsTest ? buildIndirectCoombsReportBody(indirectCoombsTest) : directCoombsTest ? buildDirectCoombsReportBody(directCoombsTest) : fibrinogenTest ? buildFibrinogenReportBody(fibrinogenTest) : reticulocyteTest ? buildReticulocyteReportBody(reticulocyteTest) : clottingTimeTest ? buildClottingTimeReportBody(clottingTimeTest) : bleedingTimeTest ? buildBleedingTimeReportBody(bleedingTimeTest) : coagulationProfileTest ? buildCoagulationProfileReportBody(coagulationProfileTest) : factorVTest ? buildFactorVReportBody(factorVTest) : factorViiTest ? buildFactorViiReportBody(factorViiTest) : factorIxTest ? buildFactorIxReportBody(factorIxTest) : factorXTest ? buildFactorXReportBody(factorXTest) : factorXiTest ? buildFactorXiReportBody(factorXiTest) : factorViiiTest ? buildFactorViiiReportBody(factorViiiTest) : peripheralSmearTest ? buildPeripheralBloodSmearReportBody(peripheralSmearTest) : factorXiiTest ? buildFactorXiiReportBody(factorXiiTest) : factorXiiiTest ? buildFactorXiiiReportBody(factorXiiiTest) : `
         <table class="results-table">
           <thead>
             <tr>

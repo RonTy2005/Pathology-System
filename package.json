@@ -4,7 +4,7 @@
   "main": "desktop/main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "test:report-content": "node --test scripts/test-report-content.cjs scripts/test-billing-only.cjs scripts/test-patient-portal-letterhead.cjs scripts/test-bill-collection-permission.cjs",
+    "test:report-content": "node --test scripts/test-report-content.cjs scripts/test-billing-only.cjs scripts/test-patient-portal-letterhead.cjs scripts/test-bill-collection-permission.cjs scripts/test-bill-history-permission.cjs scripts/test-patient-code.cjs scripts/test-test-catalog-permission.cjs scripts/test-report-permission-revocation.cjs scripts/test-patient-edit-access.cjs",
     "test:desktop-update": "node --test scripts/test-desktop-update.cjs scripts/test-desktop-data-migration.cjs scripts/test-report-pdf.cjs",
     "test:bill-layout": "node --test scripts/test-bill-layout.cjs",
     "render:bill-layout": "cmd /d /s /c \"set ELECTRON_RUN_AS_NODE=&& electron scripts/render-bill-layout-pdf.cjs\"",
@@ -22,6 +22,7 @@
   "license": "ISC",
   "description": "LabShield laboratory management system",
   "dependencies": {
+    "bwip-js": "^4.11.2",
     "cors": "^2.8.6",
     "electron-updater": "^6.8.9",
     "express": "^5.2.1",

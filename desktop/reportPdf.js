@@ -42,7 +42,7 @@ function createReportPdfHandler({ BrowserWindow, dialog, fs, path, app, getParen
     const parentWindow = getParentWindow();
     const defaultPath = path.join(app.getPath("downloads"), fileName);
     const choice = await dialog.showSaveDialog(parentWindow, {
-      title: "Save laboratory report PDF",
+      title: payload.kind === "bill" ? "Save laboratory bill PDF" : "Save laboratory report PDF",
       defaultPath,
       filters: [{ name: "PDF document", extensions: ["pdf"] }],
       properties: ["showOverwriteConfirmation", "createDirectory"],

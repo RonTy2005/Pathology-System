@@ -252,7 +252,7 @@
       <section id="patient-management" class="panel" hidden>
         <div class="section-title">
           <h2>Patient Management</h2>
-          <span>Search and edit patient details and tests</span>
+          <span id="patientManagementDescription">Search and edit patient details and tests</span>
         </div>
         <div class="stack" style="gap: 24px;">
           <div style="background: rgba(255, 255, 255, 0.5); padding: 24px; border-radius: 16px; border: 1px solid var(--line);">
@@ -277,7 +277,14 @@
           
           <div style="background: rgba(255, 255, 255, 0.5); padding: 24px; border-radius: 16px; border: 1px solid var(--line);">
             <div id="patientEditEmptyState" class="empty-state" style="text-align: center; color: var(--muted); padding: 2rem;">
-              Select a patient from the search results to view and edit details.
+              Select a patient from the search results to view their details.
+            </div>
+            <div id="patientBillHistoryOnly" class="stack" hidden>
+              <div class="section-title tight">
+                <h2 id="patientBillHistoryTitle">Bill History</h2>
+                <span>View, print, download or share a previous bill</span>
+              </div>
+              <div id="patientBillHistoryList" class="stack" style="gap: 12px;"></div>
             </div>
             <form id="patientEditForm" class="stack" hidden>
           <div class="section-title tight">
@@ -312,6 +319,7 @@
             </label>
           </div>
           
+          <div id="patientVisitEditFields" class="stack">
           <div class="section-title tight">
             <h2>Tests & Referrals</h2>
             <span>Modify tests and referral details for this visit</span>
@@ -411,8 +419,9 @@
           </div>
           
           <div id="editBillChangedBanner" hidden style="background: rgba(255,180,0,0.12); border: 1px solid rgba(255,180,0,0.4); border-radius: 12px; padding: 14px 18px; margin-top: 8px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;"><span style="font-weight: 600;">&#9888; Bill amount has changed.</span><button class="primary-btn" id="generateEditedBillBtn" type="button">Generate New Bill</button><button class="ghost-btn" id="printEditedBillBtn" type="button" hidden>Print New Bill</button></div>
+          </div>
           <div class="actions-row">
-            <button class="primary-btn" type="submit">Update patient & tests</button>
+            <button class="primary-btn" id="savePatientEditBtn" type="submit">Update patient & tests</button>
             <button class="secondary-btn" id="cancelPatientEdit" type="button">Cancel</button>
             <button class="danger-btn" id="deleteSelectedPatientBtn" type="button" hidden>Delete patient</button>
           </div>
@@ -493,7 +502,11 @@
           <div class="inline-grid">
             <label class="field">
               <span>Amount to Collect</span>
-              <input id="paymentAmount" type="number" step="0.01" min="0.01" required />
+              <input id="paymentAmount" type="number" step="0.01" min="0" required />
+            </label>
+            <label class="field">
+              <span>Discount on Due</span>
+              <input id="paymentDiscount" type="number" step="0.01" min="0" value="0" required />
             </label>
             <label class="field">
               <span>Payment Mode</span>
@@ -504,6 +517,7 @@
               </select>
             </label>
           </div>
+          <p id="paymentBalancePreview" class="muted"></p>
           <div id="editBillChangedBanner" hidden style="background: rgba(255,180,0,0.12); border: 1px solid rgba(255,180,0,0.4); border-radius: 12px; padding: 14px 18px; margin-top: 8px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;"><span style="font-weight: 600;">&#9888; Bill amount has changed.</span><button class="primary-btn" id="generateEditedBillBtn" type="button">Generate New Bill</button><button class="ghost-btn" id="printEditedBillBtn" type="button" hidden>Print New Bill</button></div>
           <div class="actions-row">
             <button class="primary-btn" type="submit">Receive Payment</button>

@@ -1,5 +1,5 @@
 const { all } = require("./helpers");
-const { buildDailyPrefix, buildSequenceId } = require("../utils/id");
+const { pad, buildDateStamp, buildDailyPrefix, buildSequenceId } = require("../utils/id");
 
 const ALLOWED_COLUMNS = {
   patients: new Set(["patient_code"]),
@@ -41,6 +41,23 @@ async function nextDailySequenceId(prefix, table, column) {
   return buildSequenceId(prefix, highest + 1);
 }
 
+async function nextDailyPatientCode(date = new Date()) {
+  const dateStamp = buildDateStamp(date);
+  const rows = await all(
+    `SELECT patient_code AS value FROM patients
+     WHERE patient_code LIKE ? OR patient_code LIKE ?`,
+    [`${dateStamp}-%`, `PAT-${dateStamp}-%`]
+  );
+  const highest = rows.reduce((max, row) => {
+    const value = String(row.value || "");
+    const match = value.match(new RegExp(`^(?:PAT-)?${dateStamp}-(\\d+)$`));
+    return match ? Math.max(max, Number(match[1])) : max;
+  }, 0);
+
+  return `${dateStamp}-${pad(highest + 1)}`;
+}
+
 module.exports = {
   nextDailySequenceId,
+  nextDailyPatientCode,
 };

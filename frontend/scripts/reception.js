@@ -1,7 +1,18 @@
 protectPage(["admin", "manager", "receptionist", "blood_sample_technician", "usg_technician", "mri_technician", "ct_technician", "na"]);
 
-if (getUser()?.role === "na" && !hasPermission("collect_due_payments")) {
-  window.location.href = "login.html";
+const receptionAccessPending = getUser()?.role === "na"
+  && !hasPermission("collect_due_payments")
+  && !hasPermission("manage_billing")
+  && !hasAccessControl("edit_patient_details");
+if (receptionAccessPending) {
+  document.documentElement.style.visibility = "hidden";
+  refreshSessionUser()
+    .then(({ user, changed }) => {
+      if (changed) return;
+      if (user?.accessControls?.edit_patient_details) window.location.reload();
+      else window.location.href = "login.html";
+    })
+    .catch(() => { window.location.href = "login.html"; });
 }
 
 const associateSelect = document.getElementById("associateSelectNew");
@@ -468,8 +479,7 @@ function renderExistingVisitTests(tests, visitId) {
   });
 }
 
-function renderPatientHistory(visits) {
-  const container = document.getElementById("patientVisitHistory");
+function renderPatientHistory(visits, container = document.getElementById("patientVisitHistory")) {
   if (!container) return;
 
   if (!visits.length) {
@@ -477,21 +487,56 @@ function renderPatientHistory(visits) {
     return;
   }
 
+  const canManageBilling = hasPermission("manage_billing");
   container.innerHTML = visits.map(v => `
     <div class="result-card stack compact" style="background: rgba(255,255,255,0.4); border: 1px solid var(--line);">
       <div style="display: flex; justify-content: space-between; align-items: center;">
-        <strong style="color: var(--primary);">${v.bill_no}</strong>
+        <strong style="color: var(--primary);">${escapeHtml(v.bill_no)}</strong>
         <span style="font-size: 0.85rem; color: var(--muted);">${formatDate(v.created_at)}</span>
       </div>
       <div style="font-size: 0.9rem;">
-        Tests: <span style="font-weight: 500;">${v.tests || "No tests"}</span>
+        Tests: <span style="font-weight: 500;">${escapeHtml(v.tests || "No tests")}</span>
       </div>
       <div style="font-size: 0.8rem; color: var(--muted); display: flex; justify-content: space-between;">
-        <span>Ref: ${v.doctor_name || "Self"}</span>
-        <span>Total: ${currency(v.total)} • Status: <strong style="text-transform: uppercase;">${v.status}</strong></span>
+        <span>Ref: ${escapeHtml(v.doctor_name || "Self")}</span>
+        <span>Total: ${currency(v.total)} &bull; Status: <strong style="text-transform: uppercase;">${escapeHtml(v.status)}</strong></span>
       </div>
+      ${canManageBilling ? `<div class="actions-row">
+        <button class="secondary-btn" data-bill-preview="${v.id}" type="button">View Bill</button>
+        <button class="ghost-btn" data-bill-print="${v.id}" type="button">Print Bill</button>
+        <button class="ghost-btn" data-download-bill="${v.id}" type="button">Download PDF</button>
+        <button class="ghost-btn" data-share-bill="${v.id}" type="button">Share on WhatsApp</button>
+      </div>` : ""}
     </div>
   `).join("");
+
+  if (!canManageBilling) return;
+  container.querySelectorAll("[data-bill-preview]").forEach((button) => {
+    button.addEventListener("click", () => openHtmlBill(button.dataset.billPreview, false));
+  });
+  container.querySelectorAll("[data-bill-print]").forEach((button) => {
+    button.addEventListener("click", () => openHtmlBill(button.dataset.billPrint, true));
+  });
+  container.querySelectorAll("[data-share-bill]").forEach((button) => {
+    button.addEventListener("click", () => shareBillViaWhatsApp(button.dataset.shareBill));
+  });
+  container.querySelectorAll("[data-download-bill]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const visit = visits.find((item) => Number(item.id) === Number(button.dataset.downloadBill));
+      if (!visit) return;
+      const originalText = button.textContent;
+      button.disabled = true;
+      button.textContent = "Preparing PDF...";
+      try {
+        await downloadBillPdf(visit.id, visit.bill_no);
+      } catch (error) {
+        alert(error.message || "Unable to download the bill PDF.");
+      } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+      }
+    });
+  });
 }
 
 function updateEditTotals() {
@@ -801,8 +846,9 @@ function bindQuickBillEditActions(container, visits) {
 
 function renderNewPatientBillingHistory(visits, patientName = "") {
   if (!newPatientBillingHistory) return;
+  const canManageBilling = hasPermission("manage_billing");
   const canEditBill = getUser()?.role === "receptionist"
-    && hasPermission("manage_billing")
+    && canManageBilling
     && hasPermission("manage_patients");
   const canViewReports = hasPermission("view_reports");
 
@@ -824,11 +870,13 @@ function renderNewPatientBillingHistory(visits, patientName = "") {
           <span style="color:${Number(visit.amount_due || 0) > 0 ? "var(--danger)" : "var(--primary)"};">Due ${currency(visit.amount_due)}</span>
         </div>
       </div>
-      ${(canEditBill || (canViewReports && visit.status === "reported")) ? `
+      ${(canManageBilling || (canViewReports && visit.status === "reported")) ? `
         <div class="actions-row" style="margin-top:8px; gap:8px;">
           ${canEditBill ? `<button class="ghost-btn" data-quick-edit-bill="${visit.id}" type="button">Edit Bill</button>` : ""}
-          ${canEditBill ? `<button class="ghost-btn" data-share-bill="${visit.id}" type="button">WhatsApp Bill</button>` : ""}
-          ${canEditBill ? `<button class="ghost-btn" data-download-bill="${visit.id}" type="button">Download Bill PDF</button>` : ""}
+          ${canManageBilling ? `<button class="ghost-btn" data-bill-preview="${visit.id}" type="button">View Bill</button>` : ""}
+          ${canManageBilling ? `<button class="ghost-btn" data-bill-print="${visit.id}" type="button">Print Bill</button>` : ""}
+          ${canManageBilling ? `<button class="ghost-btn" data-share-bill="${visit.id}" type="button">WhatsApp Bill</button>` : ""}
+          ${canManageBilling ? `<button class="ghost-btn" data-download-bill="${visit.id}" type="button">Download Bill PDF</button>` : ""}
           ${canViewReports && visit.status === "reported" ? `<button class="ghost-btn" data-view="${visit.id}" type="button">View Report</button>` : ""}
         </div>
       ` : ""}
@@ -837,6 +885,12 @@ function renderNewPatientBillingHistory(visits, patientName = "") {
 
   newPatientBillingHistory.querySelectorAll("[data-view]").forEach((button) => {
     button.addEventListener("click", () => openHtmlReport(button.dataset.view, false));
+  });
+  newPatientBillingHistory.querySelectorAll("[data-bill-preview]").forEach((button) => {
+    button.addEventListener("click", () => openHtmlBill(button.dataset.billPreview, false));
+  });
+  newPatientBillingHistory.querySelectorAll("[data-bill-print]").forEach((button) => {
+    button.addEventListener("click", () => openHtmlBill(button.dataset.billPrint, true));
   });
   newPatientBillingHistory.querySelectorAll("[data-share-bill]").forEach((button) => {
     button.addEventListener("click", () => shareBillViaWhatsApp(button.dataset.shareBill));
@@ -1253,6 +1307,18 @@ function initializeNavigation() {
   const user = getUser();
   const technicianRoles = ["blood_sample_technician", "usg_technician", "mri_technician", "ct_technician"];
   const isTechnician = technicianRoles.includes(user?.role);
+  const canEditPatients = hasAccessControl("edit_patient_details");
+  const canManagePatientVisits = hasPermission("manage_patients") && !isTechnician && user?.role !== "na";
+  const patientManagementDescription = document.getElementById("patientManagementDescription");
+  if (patientManagementDescription) {
+    patientManagementDescription.textContent = canEditPatients && canManagePatientVisits
+      ? "Search and edit patient details and tests"
+      : canEditPatients
+        ? "Search and edit patient details"
+        : canManagePatientVisits
+          ? "Search and edit patient tests"
+          : "Search patients and access previous bills";
+  }
   const hasRegistrationOnlyAccess = isTechnician
     && hasPermission("manage_patients")
     && !hasPermission("manage_billing")
@@ -1283,29 +1349,29 @@ function initializeNavigation() {
   };
   const sectionPermissions = {
     "#new-visit": ["manage_patients"],
-    "#patient-management": ["manage_patients"],
     "#results-entry": ["enter_results"],
     "#price-inquiry": ["manage_billing"],
   };
   const sectionAnyPermissions = {
+    "#patient-management": ["manage_patients", "manage_billing"],
     "#reports": ["view_reports", "print_reports", "download_reports"],
     "#due-collection": ["collect_due_payments"],
   };
 
   function canOpenSection(href) {
     if (user?.role === "na") {
-      return href === "#due-collection" && hasPermission("collect_due_payments");
+      return (href === "#due-collection" && hasPermission("collect_due_payments"))
+        || (href === "#patient-management" && (hasPermission("manage_billing") || canEditPatients));
     }
-    // Technicians may register a patient, but patient management exposes the
-    // wider patient record workspace. Keep that workspace for reception and
-    // administrative roles only.
-    if (href === "#patient-management" && isTechnician) return false;
+    // Technicians with billing access can view bill history, not edit patient records.
+    if (href === "#patient-management" && isTechnician && !hasPermission("manage_billing") && !canEditPatients) return false;
     if (href === "#reception-summary" && hasRegistrationOnlyAccess) return false;
 
     const permissions = sectionPermissions[href] || [];
     const anyPermissions = sectionAnyPermissions[href] || [];
     const hasRequiredPermissions = permissions.every((permission) => hasPermission(permission));
-    const hasAllowedPermission = !anyPermissions.length || anyPermissions.some((permission) => hasPermission(permission));
+    const hasAllowedPermission = !anyPermissions.length || anyPermissions.some((permission) => hasPermission(permission))
+      || (href === "#patient-management" && canEditPatients);
     return hasRequiredPermissions && hasAllowedPermission;
   }
 
@@ -1316,7 +1382,7 @@ function initializeNavigation() {
 
   function activateSection(href) {
     const fallbackHref = user?.role === "na"
-      ? "#due-collection"
+      ? (hasPermission("collect_due_payments") ? "#due-collection" : "#patient-management")
       : hasRegistrationOnlyAccess ? "#new-visit" : "#reception-summary";
     const normalizedHref = normalizeHref(href);
     let targetHref = (sections[normalizedHref] && sections[normalizedHref] !== null) ? normalizedHref : fallbackHref;
@@ -1390,7 +1456,9 @@ function initializeNavigation() {
       });
     }
   });
-  const initialSection = window.location.hash || (hasRegistrationOnlyAccess ? "#new-visit" : "#reception-summary");
+  const initialSection = window.location.hash || (user?.role === "na"
+    ? (hasPermission("collect_due_payments") ? "#due-collection" : "#patient-management")
+    : (hasRegistrationOnlyAccess ? "#new-visit" : "#reception-summary"));
   activateSection(initialSection);
 
   navLinks.forEach((link) => {
@@ -1453,6 +1521,29 @@ function renderPatientSearchResults(patients) {
 }
 
 function selectPatientForEdit(patient, preferredVisitId = null) {
+  const canManagePatientVisits = hasPermission("manage_patients")
+    && !["na", "blood_sample_technician", "usg_technician", "mri_technician", "ct_technician"].includes(getUser()?.role);
+  const canEditPatientDetails = hasAccessControl("edit_patient_details");
+  const billHistoryOnly = document.getElementById("patientBillHistoryOnly");
+  if (!canManagePatientVisits && !canEditPatientDetails) {
+    if (!hasPermission("manage_billing")) return;
+    selectedPatient = patient;
+    patientEditForm.hidden = true;
+    document.getElementById("patientEditEmptyState").hidden = true;
+    billHistoryOnly.hidden = false;
+    document.getElementById("patientBillHistoryTitle").textContent = `Bill History — ${patient.name}`;
+    const billHistoryList = document.getElementById("patientBillHistoryList");
+    billHistoryList.innerHTML = `<div class="empty-state">Loading bill history...</div>`;
+    API.request(`/api/visits/patient/${patient.id}`)
+      .then((visits) => {
+        if (selectedPatient?.id === patient.id) renderPatientHistory(visits, billHistoryList);
+      })
+      .catch((error) => {
+        billHistoryList.innerHTML = `<div class="empty-state">Could not load bill history: ${escapeHtml(error.message)}</div>`;
+      });
+    return;
+  }
+  if (billHistoryOnly) billHistoryOnly.hidden = true;
   selectedPatient = patient;
   editSelectedTests = [];
   existingVisitTestsList = [];
@@ -1489,8 +1580,32 @@ function selectPatientForEdit(patient, preferredVisitId = null) {
 
   patientEditForm.hidden = false;
   document.getElementById("patientEditEmptyState").hidden = true;
+  document.getElementById("patientVisitEditFields").hidden = !canManagePatientVisits;
+  for (const field of [editPatientName, editPatientPhone, editPatientAge, editPatientGender]) {
+    field.disabled = !canEditPatientDetails;
+  }
+  document.getElementById("savePatientEditBtn").textContent = canManagePatientVisits
+    ? (canEditPatientDetails ? "Update patient & tests" : "Update tests")
+    : "Save patient details";
   if (deleteSelectedPatientBtn) {
-    deleteSelectedPatientBtn.hidden = !hasPermission("delete_patients");
+    deleteSelectedPatientBtn.hidden = !canManagePatientVisits || !hasPermission("delete_patients");
+  }
+
+  if (!canManagePatientVisits) {
+    if (hasPermission("manage_billing") && billHistoryOnly) {
+      billHistoryOnly.hidden = false;
+      document.getElementById("patientBillHistoryTitle").textContent = `Bill History — ${patient.name}`;
+      const billHistoryList = document.getElementById("patientBillHistoryList");
+      billHistoryList.innerHTML = `<div class="empty-state">Loading bill history...</div>`;
+      API.request(`/api/visits/patient/${patient.id}`)
+        .then((visits) => {
+          if (selectedPatient?.id === patient.id) renderPatientHistory(visits, billHistoryList);
+        })
+        .catch((error) => {
+          billHistoryList.innerHTML = `<div class="empty-state">Could not load bill history: ${escapeHtml(error.message)}</div>`;
+        });
+    }
+    return;
   }
 
   // Load existing visit tests in the background
@@ -1584,6 +1699,31 @@ if (document.getElementById("patientSearchDateTo")) {
 document.getElementById("patientEditForm").addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!selectedPatient) return;
+
+  const canManagePatientVisits = hasPermission("manage_patients")
+    && !["na", "blood_sample_technician", "usg_technician", "mri_technician", "ct_technician"].includes(getUser()?.role);
+  if (!canManagePatientVisits) {
+    if (!hasAccessControl("edit_patient_details")) return;
+    try {
+      await API.request(`/api/patients/${selectedPatient.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          name: editPatientName.value.trim(),
+          phone: editPatientPhone.value.trim(),
+          age: Number(editPatientAge.value),
+          gender: editPatientGender.value,
+        }),
+      });
+      showMessage("patientEditMessage", "Patient details updated successfully");
+      patientEditForm.hidden = true;
+      document.getElementById("patientEditEmptyState").hidden = false;
+      selectedPatient = null;
+      await reloadPatientSearch();
+    } catch (error) {
+      showMessage("patientEditMessage", error.message, true);
+    }
+    return;
+  }
 
   let editDoctorId = editSelectedDoctor?.id || null;
   let editDoctorSearchVal = document.getElementById("editDoctorSearch").value.trim();
@@ -1818,6 +1958,9 @@ const resultsSaveAllBtn = document.getElementById("resultsSaveAllBtn");
 const resultsFinalizeBtn = document.getElementById("resultsFinalizeBtn");
 const resultsPrintBtn = document.getElementById("resultsPrintBtn");
 const resultsViewReportBtn = document.getElementById("resultsViewReportBtn");
+if (resultsPrintBtn && !hasPermission("print_reports")) {
+  resultsPrintBtn.style.display = "none";
+}
 if (resultsViewReportBtn && !hasPermission("view_reports")) {
   resultsViewReportBtn.style.display = "none";
 }
@@ -1928,7 +2071,7 @@ async function loadResultsVisit(visitId) {
   resultsActions.hidden = false;
   resultsSaveAllBtn.disabled = false;
   resultsFinalizeBtn.disabled = false;
-  resultsPrintBtn.disabled = !reportData?.report?.finalized;
+  resultsPrintBtn.disabled = !hasPermission("print_reports") || !reportData?.report?.finalized;
   resultsViewReportBtn.disabled = !canViewReports || !reportData?.report?.finalized;
 }
 
@@ -1968,7 +2111,7 @@ resultsFinalizeBtn.addEventListener("click", async () => {
   if (!activeResultsVisitId) return;
   try {
     const data = await API.request(`/api/visits/${activeResultsVisitId}/finalize-report`, { method: "POST" });
-    resultsPrintBtn.disabled = false;
+    resultsPrintBtn.disabled = !hasPermission("print_reports");
     resultsViewReportBtn.disabled = !hasPermission("view_reports");
     showMessage("resultsMessage", `Report finalized${data.doctorCreated ? ` • ${data.doctor.name} was added to Doctor Setup.` : ""}`);
     reloadResultsVisits();
@@ -1979,7 +2122,7 @@ resultsFinalizeBtn.addEventListener("click", async () => {
 });
 
 resultsPrintBtn.addEventListener("click", async () => {
-  if (!activeResultsVisitId) return;
+  if (!activeResultsVisitId || !hasPermission("print_reports")) return;
   try {
     await API.request(`/api/visits/${activeResultsVisitId}/print`, { method: "POST" });
     openHtmlReport(activeResultsVisitId, true);
@@ -2294,7 +2437,27 @@ const paymentForm = document.getElementById("paymentForm");
 const paymentVisitDetails = document.getElementById("paymentVisitDetails");
 const paymentVisitId = document.getElementById("paymentVisitId");
 const paymentAmount = document.getElementById("paymentAmount");
+const paymentDiscount = document.getElementById("paymentDiscount");
+const paymentBalancePreview = document.getElementById("paymentBalancePreview");
 const paymentMessage = document.getElementById("paymentMessage");
+
+function updatePaymentBalancePreview(adjustAmount = false) {
+  const dueCents = Math.round(Number(paymentForm.dataset.currentDue || 0) * 100);
+  const discountCents = Math.round(Number(paymentDiscount.value || 0) * 100);
+  const availableCents = Math.max(0, dueCents - discountCents);
+  paymentDiscount.max = (dueCents / 100).toFixed(2);
+  paymentAmount.max = (availableCents / 100).toFixed(2);
+  if (adjustAmount && Number(paymentAmount.value || 0) * 100 > availableCents) {
+    paymentAmount.value = (availableCents / 100).toFixed(2);
+  }
+  const amountCents = Math.round(Number(paymentAmount.value || 0) * 100);
+  paymentBalancePreview.textContent = discountCents > dueCents || amountCents + discountCents > dueCents
+    ? `Payment and discount cannot exceed the outstanding ${currency(dueCents / 100)}.`
+    : `Outstanding ${currency(dueCents / 100)} − discount ${currency(discountCents / 100)} − collected ${currency(amountCents / 100)} = remaining ${currency((dueCents - discountCents - amountCents) / 100)}.`;
+}
+
+paymentDiscount.addEventListener("input", () => updatePaymentBalancePreview(true));
+paymentAmount.addEventListener("input", () => updatePaymentBalancePreview());
 
 collectionList.addEventListener("click", (event) => {
   if (!(event.target instanceof Element)) return;
@@ -2354,8 +2517,10 @@ async function loadCollectionVisits(search = "", dateFrom = "", dateTo = "") {
       paymentForm.hidden = false;
       refundForm.hidden = true;
       paymentVisitId.value = button.dataset.collectPayment;
+      paymentForm.dataset.currentDue = button.dataset.due;
       paymentAmount.value = button.dataset.due;
-      paymentAmount.max = button.dataset.due;
+      paymentDiscount.value = "0";
+      updatePaymentBalancePreview();
       paymentVisitDetails.textContent = `${button.dataset.patient} (Bill: ${button.dataset.bill}) - Due: ${currency(button.dataset.due)}`;
       paymentMessage.textContent = "";
       paymentForm.scrollIntoView({ behavior: "smooth" });
@@ -2430,15 +2595,27 @@ document.getElementById("cancelPaymentBtn").addEventListener("click", () => {
   paymentForm.hidden = true;
   paymentVisitId.value = "";
   paymentAmount.value = "";
+  paymentDiscount.value = "0";
+  delete paymentForm.dataset.currentDue;
+  paymentBalancePreview.textContent = "";
 });
 
 paymentForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const visitId = paymentVisitId.value;
-  const amount = paymentAmount.value;
+  const amount = Number(paymentAmount.value);
+  const discount = Number(paymentDiscount.value || 0);
   const mode = document.getElementById("paymentCollectionMode").value;
 
-  if (!visitId || !amount) return;
+  const dueCents = Math.round(Number(paymentForm.dataset.currentDue || 0) * 100);
+  const amountCents = Math.round(amount * 100);
+  const discountCents = Math.round(discount * 100);
+  if (!visitId || !Number.isFinite(amount) || !Number.isFinite(discount)
+    || amount < 0 || discount < 0 || amountCents + discountCents <= 0
+    || amountCents + discountCents > dueCents) {
+    showMessage("paymentMessage", "Enter a valid payment and discount within the outstanding amount.", true);
+    return;
+  }
 
   const canPrintCollectedBill = hasPermission("manage_billing");
   const popup = canPrintCollectedBill ? window.open("", "_blank") : null;
@@ -2447,13 +2624,16 @@ paymentForm.addEventListener("submit", async (e) => {
   try {
     await API.request(`/api/visits/${visitId}/payment`, {
       method: "PATCH",
-      body: JSON.stringify({ amountPaid: amount, paymentMode: mode }),
+      body: JSON.stringify({ amountPaid: amount, discount, paymentMode: mode }),
     });
 
-    showMessage("paymentMessage", "Payment collected successfully.");
+    showMessage("paymentMessage", amount > 0 ? "Due updated successfully." : "Discount applied successfully.");
     paymentForm.hidden = true;
     paymentVisitId.value = "";
     paymentAmount.value = "";
+    paymentDiscount.value = "0";
+    delete paymentForm.dataset.currentDue;
+    paymentBalancePreview.textContent = "";
     
     // Reload lists
     loadCollectionVisits(collectionSearchInput.value.trim(), collectionDateFrom.value, collectionDateTo.value);
@@ -2750,9 +2930,12 @@ function copyQuoteToClipboard() {
 
 (async function init() {
   try {
+    if (receptionAccessPending) return;
     if (window.location.hash === "" || window.location.hash === "#") {
       window.location.hash = getUser()?.role === "na" && hasPermission("collect_due_payments")
         ? "#due-collection"
+        : getUser()?.role === "na" && (hasPermission("manage_billing") || hasAccessControl("edit_patient_details"))
+          ? "#patient-management"
         : "#new-visit";
     }
 

@@ -28,6 +28,22 @@ function getFallbackReportParameters(test = {}) {
   if (cellParameters) return cellParameters;
   const normalizedName = normalizeSchemaName(test.name);
 
+  if (["bronchialbrushingforpap", "bronchiallavageforpap"].includes(normalizedName)) {
+    return [
+      createParameter("Specimen / Collection Site"),
+      createParameter("Collection Date / Time"),
+      createParameter("Clinical Details / Imaging"),
+      createParameter("Preparation / Stains"),
+      createParameter("Specimen Adequacy"),
+      createParameter("Cytomorphologic Findings"),
+      createParameter("Other Findings / Organisms"),
+      createParameter("Diagnostic Category"),
+      createParameter("Interpretation / Diagnosis"),
+      createParameter("Ancillary Studies / Correlation"),
+      createParameter("Comments / Limitations"),
+    ];
+  }
+
   if (normalizedName === "acr" || normalizedName.includes("albumincreatinineratio")) {
     return [
       createParameter("Urine Albumin", { unit: "mg/L" }),

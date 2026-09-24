@@ -1,6 +1,6 @@
 const express = require("express");
 const { all, get, run, transaction } = require("../db/helpers");
-const { nextDailySequenceId } = require("../db/sequences");
+const { nextDailyPatientCode, nextDailySequenceId } = require("../db/sequences");
 const { allowAnyPermission, allowPermissions, allowRoles, hasPermission } = require("../middleware/auth");
 const { ACCESS_CONTROLS, PAYMENT_MODES, PERMISSIONS, ROLES, TECHNICIAN_ROLES, VISIT_STATUS } = require("../config/constants");
 const { logAction } = require("../services/logService");
@@ -431,7 +431,7 @@ async function createPatientIfNeeded({ name, age, gender, phone }, registrationT
     `INSERT INTO patients (patient_code, name, age, gender, phone, created_at)
      VALUES (?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP))`,
     [
-      await nextDailySequenceId("PAT", "patients", "patient_code"),
+      await nextDailyPatientCode(),
       name,
       age,
       gender,
@@ -867,7 +867,7 @@ visitRouter.delete(
 
 visitRouter.get(
   "/:id/bill-share",
-  allowRoles(ROLES.ADMIN, ROLES.RECEPTIONIST, ...TECHNICIAN_ROLES),
+  allowRoles(ROLES.ADMIN, ROLES.MANAGER, ROLES.RECEPTIONIST, ROLES.NA, ...TECHNICIAN_ROLES),
   allowPermissions(PERMISSIONS.MANAGE_BILLING),
   async (req, res, next) => {
     try {
@@ -946,7 +946,7 @@ visitRouter.patch(
   }
 );
 
-visitRouter.get("/:id/bill", allowRoles(ROLES.ADMIN, ROLES.RECEPTIONIST, ...TECHNICIAN_ROLES), async (req, res, next) => {
+visitRouter.get("/:id/bill", allowRoles(ROLES.ADMIN, ROLES.MANAGER, ROLES.RECEPTIONIST, ROLES.NA, ...TECHNICIAN_ROLES), async (req, res, next) => {
   try {
     if (!hasPermission(req.user, PERMISSIONS.MANAGE_BILLING)) {
       return res.status(403).json({ message: "Permission denied" });
@@ -1067,10 +1067,14 @@ visitRouter.patch(
   async (req, res, next) => {
     try {
       const amount = Number(req.body.amountPaid);
+      const discount = Number(req.body.discount ?? 0);
       const paymentMode = req.body.paymentMode || "cash";
 
-      if (!Number.isFinite(amount) || amount <= 0) {
-        return res.status(400).json({ message: "Enter a valid payment amount" });
+      if (!Number.isFinite(amount) || amount < 0 || !Number.isFinite(discount) || discount < 0
+        || (amount === 0 && discount === 0)
+        || Math.abs(amount * 100 - Math.round(amount * 100)) > 0.000001
+        || Math.abs(discount * 100 - Math.round(discount * 100)) > 0.000001) {
+        return res.status(400).json({ message: "Enter a valid payment or discount amount (up to two decimal places)" });
       }
 
       if (!PAYMENT_MODES.includes(paymentMode)) {
@@ -1083,33 +1087,38 @@ visitRouter.patch(
           throw httpError("Visit not found", 404);
         }
 
-        const currentDue = Number(current.amount_due || 0);
-        if (currentDue <= 0.005) {
+        const currentDueCents = Math.round(Number(current.amount_due || 0) * 100);
+        const amountCents = Math.round(amount * 100);
+        const discountCents = Math.round(discount * 100);
+        if (currentDueCents <= 0) {
           throw httpError("No due amount is pending for this bill", 400);
         }
 
-        if (amount > currentDue + 0.005) {
-          throw httpError("Payment exceeds the outstanding amount", 400);
+        if (amountCents + discountCents > currentDueCents) {
+          throw httpError("Payment and discount exceed the outstanding amount", 400);
         }
 
-        const collected = Math.min(amount, currentDue);
-        const newPaid = Number(current.amount_paid || 0) + collected;
-        const newDue = Math.max(0, Number(current.total || 0) - newPaid);
-        const paymentStatus = newDue === 0 ? "paid" : "partial";
+        const collected = amountCents / 100;
+        const appliedDiscount = discountCents / 100;
+        const newPaid = (Math.round(Number(current.amount_paid || 0) * 100) + amountCents) / 100;
+        const newDiscount = (Math.round(Number(current.discount || 0) * 100) + discountCents) / 100;
+        const newTotal = (Math.round(Number(current.total || 0) * 100) - discountCents) / 100;
+        const newDue = (currentDueCents - amountCents - discountCents) / 100;
+        const paymentStatus = newDue === 0 ? "paid" : newPaid > 0 ? "partial" : "due";
 
         await run(
           `UPDATE visits
-           SET amount_paid = ?, amount_due = ?, payment_mode = ?, payment_status = ?
+           SET discount = ?, total = ?, amount_paid = ?, amount_due = ?, payment_mode = ?, payment_status = ?
            WHERE id = ?`,
-          [newPaid, newDue, paymentMode, paymentStatus, req.params.id]
+          [newDiscount, newTotal, newPaid, newDue, amountCents > 0 ? paymentMode : current.payment_mode, paymentStatus, req.params.id]
         );
 
         await logAction({
           userId: req.user.id,
-          action: "payment_collected",
+          action: amountCents > 0 ? "payment_collected" : "due_discount_applied",
           entityType: "visit",
           entityId: req.params.id,
-          meta: { amount: collected, mode: paymentMode, newDue },
+          meta: { amount: collected, discount: appliedDiscount, mode: amountCents > 0 ? paymentMode : null, newDue },
         });
 
         return get("SELECT * FROM visits WHERE id = ?", [req.params.id]);
@@ -1538,7 +1547,7 @@ visitRouter.post(
   }
 });
 
-visitRouter.post("/:id/bill-print", allowRoles(ROLES.ADMIN, ROLES.RECEPTIONIST, ...TECHNICIAN_ROLES), async (req, res, next) => {
+visitRouter.post("/:id/bill-print", allowRoles(ROLES.ADMIN, ROLES.MANAGER, ROLES.RECEPTIONIST, ROLES.NA, ...TECHNICIAN_ROLES), async (req, res, next) => {
   try {
     if (!hasPermission(req.user, PERMISSIONS.MANAGE_BILLING)) {
       return res.status(403).json({ message: "Permission denied" });

@@ -357,6 +357,8 @@ function configureSectionAccess() {
     if (SUPERADMIN_ONLY_WINDOWS.has(hash)) link.hidden = !isSuperadminRole();
     else if (ADMIN_ONLY_WINDOWS.has(hash)) link.hidden = !isAdminRole();
   });
+  const patientManagementLink = document.getElementById("adminPatientManagementLink");
+  if (patientManagementLink) patientManagementLink.hidden = !hasAccessControl("edit_patient_details");
 }
 
 async function loadBusinessSettings() {
@@ -1340,9 +1342,7 @@ function summarizePermissions(permissions = []) {
 }
 
 function getPermissionsForEdit(user) {
-  const savedPermissions = Array.isArray(user.permissions) ? user.permissions : [];
-  const roleDefaults = ROLE_DEFAULTS[user.role] || [];
-  return savedPermissions.length ? savedPermissions : roleDefaults;
+  return Array.isArray(user.permissions) ? user.permissions : (ROLE_DEFAULTS[user.role] || []);
 }
 
 function applyRoleDefaults(role) {
@@ -1503,8 +1503,9 @@ function initializeSectionNavigation() {
 
   links.forEach((link) => {
     link.addEventListener("click", (event) => {
-      event.preventDefault();
       const hash = link.getAttribute("href");
+      if (!hash?.startsWith("#")) return;
+      event.preventDefault();
       openTaskWindow(hash);
     });
   });
@@ -1703,7 +1704,7 @@ function renderDueReportAuditList(reports = []) {
             <span class="helper">${printSummary}</span>
           </div>
           <div class="actions-row" style="margin-top: 12px;">
-            <button class="secondary-btn" data-view-report="${report.id}" type="button">View Report</button>
+            ${hasPermission("view_reports") ? `<button class="secondary-btn" data-view-report="${report.id}" type="button">View Report</button>` : ""}
           </div>
         </div>
       `;

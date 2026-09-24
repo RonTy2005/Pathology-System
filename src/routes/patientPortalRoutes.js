@@ -314,7 +314,7 @@ patientPortalRouter.get("/:token/bill", async (req, res, next) => {
       ...bill,
       businessSettings,
       patientPortalUrl: getPatientPortalUrl(req, visit.patient_portal_token, businessSettings.patientPortalBaseUrl),
-    }));
+    }, { sharedLinkView: true }));
   } catch (error) {
     next(error);
   }

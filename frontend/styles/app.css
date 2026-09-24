@@ -31,6 +31,23 @@ body {
     linear-gradient(180deg, #fbfdf9, #eef3ec);
 }
 
+.desktop-connection-warning {
+  position: fixed;
+  z-index: 10000;
+  left: 50%;
+  bottom: 16px;
+  width: min(620px, calc(100% - 32px));
+  transform: translateX(-50%);
+  padding: 10px 14px;
+  border: 1px solid #d97706;
+  border-radius: 10px;
+  background: #fff7ed;
+  color: #7c2d12;
+  box-shadow: 0 8px 24px rgba(32, 49, 38, 0.16);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
 .login-body {
   min-height: 100vh;
   display: grid;
@@ -59,6 +76,14 @@ body {
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   contain: content; /* Helps browser isolate layout/paint */
+}
+
+/* Avoid repeated translucent-panel compositing in installed desktop windows. */
+.labshield-desktop .login-panel,
+.labshield-desktop .login-aside,
+.labshield-desktop .panel,
+.labshield-desktop .sidebar {
+  backdrop-filter: none;
 }
 
 .login-panel,
@@ -640,6 +665,32 @@ button:disabled {
   overscroll-behavior: contain;
   will-change: scroll-position;
   transform: translateZ(0); /* Trigger GPU acceleration */
+}
+
+/* Keep older Windows desktop GPUs from repainting the long lists in separate layers. */
+.labshield-desktop .scrollable-list,
+.labshield-desktop :is(
+  #recentVisits,
+  #technicianVisits,
+  #patientSearchResults,
+  #resultsSearchResults,
+  #userList,
+  #testList,
+  #doctorList,
+  #associateList,
+  #doctorCommissionList,
+  #associateCommissionList,
+  #dueReportList,
+  #vendorList,
+  #expenseReportList,
+  #accountsLogList,
+  #auditLog,
+  #finReportCategoryList,
+  #finReportVendorList,
+  #idCardSearchResults
+) {
+  will-change: auto;
+  transform: none;
 }
 
 #recentVisits:empty,

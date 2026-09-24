@@ -1,11 +1,12 @@
-const currentUser = protectPage(["admin", "receptionist"]);
+const currentUser = protectPage();
 if (!currentUser) {
   throw new Error("User must be authenticated to access test catalog.");
 }
 
-if (currentUser.role === "receptionist" && !hasPermission("manage_tests")) {
+if (!hasPermission("manage_tests")) {
   alert("You do not have permission to manage tests.");
-  window.location.href = getRoleHome(currentUser.role);
+  window.location.replace(getRoleHome(currentUser.role, currentUser));
+  throw new Error("Manage tests permission is required to access test catalog.");
 }
 
 const testCatalogForm = document.getElementById("testCatalogForm");
@@ -61,7 +62,8 @@ function getSafeReturnTarget(value) {
 
   try {
     const target = new URL(value, window.location.origin);
-    if (target.origin !== window.location.origin || target.pathname === window.location.pathname) return "";
+    if (target.origin !== window.location.origin || target.pathname === window.location.pathname
+      || target.pathname.endsWith("/login.html")) return "";
     return `${target.pathname}${target.search}${target.hash}`;
   } catch (_error) {
     return "";
@@ -71,7 +73,7 @@ function getSafeReturnTarget(value) {
 function returnToOrigin() {
   const requestedReturnTarget = getSafeReturnTarget(new URLSearchParams(window.location.search).get("returnTo"));
   const referrerReturnTarget = getSafeReturnTarget(document.referrer);
-  window.location.href = requestedReturnTarget || referrerReturnTarget || "reception.html";
+  window.location.href = requestedReturnTarget || referrerReturnTarget || getRoleHome(currentUser.role, currentUser);
 }
 
 function getParameterRows() {
@@ -407,6 +409,11 @@ async function submitTestForm(event) {
 }
 
 function init() {
+  if (getRoleHome(currentUser.role, currentUser) === "test-catalog.html"
+    && !getSafeReturnTarget(new URLSearchParams(window.location.search).get("returnTo"))
+    && !getSafeReturnTarget(document.referrer)) {
+    backToOriginBtn.hidden = true;
+  }
   testCatalogForm.addEventListener("submit", submitTestForm);
   testCatalogForm.addEventListener("input", renderReportPreview);
   resetTestBtn.addEventListener("click", resetForm);

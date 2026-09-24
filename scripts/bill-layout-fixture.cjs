@@ -7,7 +7,13 @@ function sampleBill(serviceCount = 5) {
       total: 2400, amount_paid: 2400, amount_due: 0, creator_name: "Reception Team",
     },
     doctor: { name: "Dr. Sample Doctor" },
-    businessSettings: { businessName: "LabShield Diagnostic Centre", facilityType: "Diagnostic Laboratory" },
+    businessSettings: {
+      businessName: "LabShield Diagnostic Centre",
+      facilityType: "Diagnostic Laboratory",
+      address: "123 Laboratory Road, City Centre, Kolkata, West Bengal",
+      businessOpeningTime: "09:00",
+      businessClosingTime: "18:30",
+    },
     tests: Array.from({ length: serviceCount }, (_, index) => ({
       name: `Comprehensive laboratory service ${index + 1} with a readable service name`,
       code: `TEST-${String(index + 1).padStart(3, "0")}`,

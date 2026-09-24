@@ -64,6 +64,10 @@ const API = {
 const DEFAULT_BUSINESS_NAME = "Your Diagnostic Centre";
 let currentBusinessName = DEFAULT_BUSINESS_NAME;
 
+if (window.labLmsDesktop) {
+  document.documentElement.classList.add("labshield-desktop");
+}
+
 function getBusinessName() {
   return currentBusinessName;
 }
@@ -90,6 +94,28 @@ async function loadBusinessBranding() {
 
 loadBusinessBranding();
 
+// Keep the current workspace visible during a brief client/server LAN outage.
+// Electron reports the connection state without reloading the page.
+function showDesktopConnectionStatus(status) {
+  const existing = document.getElementById("desktopConnectionWarning");
+  if (status?.phase !== "offline") {
+    existing?.remove();
+    return;
+  }
+  if (!document.body) return;
+  const warning = existing || document.createElement("div");
+  warning.id = "desktopConnectionWarning";
+  warning.className = "desktop-connection-warning";
+  warning.setAttribute("role", "status");
+  warning.textContent = status.message || "Connection interrupted. This screen will stay open and reconnect automatically.";
+  if (!existing) document.body.appendChild(warning);
+}
+
+if (window.labLmsConnection?.onStatusChanged) {
+  window.labLmsConnection.onStatusChanged(showDesktopConnectionStatus);
+  window.labLmsConnection.getStatus().then(showDesktopConnectionStatus).catch(() => {});
+}
+
 function saveSession(data) {
   localStorage.setItem("labToken", data.token);
   localStorage.setItem("labUser", JSON.stringify(data.user));
@@ -108,6 +134,25 @@ function saveSession(data) {
 function getUser() {
   const raw = localStorage.getItem("labUser");
   return raw ? JSON.parse(raw) : null;
+}
+
+let sessionUserRefresh = null;
+function refreshSessionUser() {
+  if (!localStorage.getItem("labToken")) return Promise.resolve({ user: null, changed: false });
+  if (!sessionUserRefresh) {
+    sessionUserRefresh = API.request("/api/auth/me").then(({ user }) => {
+      const previous = getUser();
+      const accessSnapshot = (value) => JSON.stringify({
+        role: value?.role,
+        permissions: value?.permissions,
+        accessControls: value?.accessControls,
+      });
+      const changed = accessSnapshot(previous) !== accessSnapshot(user);
+      if (changed) localStorage.setItem("labUser", JSON.stringify(user));
+      return { user, changed };
+    }).finally(() => { sessionUserRefresh = null; });
+  }
+  return sessionUserRefresh;
 }
 
 function clearSession() {
@@ -148,6 +193,10 @@ function protectPage(allowedRoles) {
     window.location.href = "login.html";
     return null;
   }
+
+  refreshSessionUser()
+    .then(({ changed }) => { if (changed) window.location.reload(); })
+    .catch(() => {});
 
   if (user.role === "superadmin" && localStorage.getItem("labSetupRequired") === "1"
     && !window.location.pathname.endsWith("setup.html")) {
@@ -193,6 +242,20 @@ function protectPage(allowedRoles) {
         window.location.href = "login.html";
       }
     });
+  }
+
+  // Reception and Admin already expose the catalogue in their own navigation.
+  // Give other permitted roles a direct route back to their current workspace.
+  const pageName = window.location.pathname.split("/").pop();
+  if (hasPermission("manage_tests")
+    && !["admin.html", "reception.html", "test-catalog.html"].includes(pageName)) {
+    const sidebarNav = document.querySelector(".sidebar-nav");
+    if (sidebarNav && !sidebarNav.querySelector('a[href^="test-catalog.html"]')) {
+      const link = document.createElement("a");
+      link.href = `test-catalog.html?returnTo=${encodeURIComponent(`${pageName}${window.location.hash || ""}`)}`;
+      link.textContent = "Test Catalogue";
+      sidebarNav.appendChild(link);
+    }
   }
 
   // Sidebar navigation: show/hide sections
@@ -247,7 +310,13 @@ function getRoleHome(role, user) {
     case "receptionist": return "reception.html";
     case "na": return Array.isArray(user?.permissions) && user.permissions.includes("collect_due_payments")
       ? "reception.html#due-collection"
-      : "login.html";
+      : Array.isArray(user?.permissions) && user.permissions.includes("manage_billing")
+        ? "reception.html#patient-management"
+      : user?.accessControls?.edit_patient_details
+        ? "reception.html#patient-management"
+      : Array.isArray(user?.permissions) && user.permissions.includes("manage_tests")
+        ? "test-catalog.html"
+        : "login.html";
     case "blood_sample_technician": return "reception.html#results-entry";
     case "ct_technician": return "ct_technician.html";
     case "mri_technician": return "mri_technician.html";
@@ -432,11 +501,17 @@ async function shareBillViaWhatsApp(visitId) {
 }
 
 async function downloadBillPdf(visitId, billNo = "") {
+  const billHtml = await API.request(`/api/visits/${visitId}/bill?format=html`);
+  const cleanBillNo = String(billNo || `visit-${visitId}`).replace(/[^a-z0-9_-]/gi, "_");
+  const pdfFileName = `Bill_${cleanBillNo}.pdf`;
+
+  if (window.labLmsDesktop?.saveBillPdf) {
+    return window.labLmsDesktop.saveBillPdf(billHtml, pdfFileName);
+  }
   if (typeof html2pdf !== "function") {
     throw new Error("The PDF generator is not available. Refresh the page and try again.");
   }
 
-  const billHtml = await API.request(`/api/visits/${visitId}/bill?format=html`);
   const iframe = document.createElement("iframe");
   iframe.style.cssText = "position:fixed;left:-10000px;top:0;width:210mm;height:297mm;border:0;visibility:hidden;";
   document.body.appendChild(iframe);
@@ -448,15 +523,34 @@ async function downloadBillPdf(visitId, billNo = "") {
     documentFrame.write(billHtml);
     documentFrame.close();
 
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await Promise.race([
+      Promise.all([
+        documentFrame.fonts?.ready || Promise.resolve(),
+        ...Array.from(documentFrame.images || []).map((image) => image.complete
+          ? Promise.resolve()
+          : new Promise((resolve) => {
+              image.addEventListener("load", resolve, { once: true });
+              image.addEventListener("error", resolve, { once: true });
+            })),
+      ]),
+      new Promise((resolve) => setTimeout(resolve, 5000)),
+    ]);
     const billContent = documentFrame.body;
     if (!billContent?.querySelector(".bill-slip, .receipt")) throw new Error("The bill layout could not be prepared.");
 
-    const cleanBillNo = String(billNo || `visit-${visitId}`).replace(/[^a-z0-9_-]/gi, "_");
+    // html2pdf clones only the supplied body. Carry its original print styles
+    // into that clone, then remove screen-only margins and shadows.
+    Array.from(documentFrame.head.querySelectorAll("style")).forEach((style) => {
+      billContent.insertBefore(style.cloneNode(true), billContent.firstChild);
+    });
+    const pdfLayoutStyle = documentFrame.createElement("style");
+    pdfLayoutStyle.textContent = "html, body { margin: 0 !important; width: 210mm !important; background: #fff !important; } .bill-slip { margin: 0 !important; box-shadow: none !important; }";
+    billContent.insertBefore(pdfLayoutStyle, billContent.querySelector(".bill-slip, .receipt"));
+
     await html2pdf()
       .set({
         margin: 0,
-        filename: `Bill_${cleanBillNo}.pdf`,
+        filename: pdfFileName,
         image: { type: "jpeg", quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, logging: false, scrollY: 0, scrollX: 0 },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },

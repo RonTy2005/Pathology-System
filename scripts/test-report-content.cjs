@@ -10,7 +10,7 @@ const { REPORT_CONTENT, getReportContent, buildSupplementaryNotes, supplementRep
 const { COMBINATIONS, getCombinationDefinition, repairKnownCombinationSchemas } = require('../src/services/reportCombinationRepair');
 const { CELL_REPORT_DEFINITIONS, getCellReportDefinition, getCellReportParameters, getCellReportPreviewValue, repairCellReportSchemas } = require('../src/services/cellReportService');
 const { getFallbackReportParameters } = require('../src/services/reportSchemaService');
-const { ensureAntiInsulinAntibodyTestConfiguration, ensureAntiLeptospiraAntibodyTestConfiguration, ensureAntiMicrosomalAntibodyTestConfiguration, ensureAntiDsDnaAntibodyTestConfiguration, ensureAntiSsDnaAntibodyTestConfiguration, ensureAntiHistoneAntibodyTestConfiguration, ensureAntiRibosomalPAntibodyTestConfiguration, ensureAntiCcpAbTestConfiguration, ensureAntiSpermAntibodyTestConfiguration, ensureApolipoproteinA1TestConfiguration, ensureUrineArsenicTestConfiguration, ensureArthritisProfileTestConfiguration, ensureAsciticFluidGramStainTestConfiguration, ensureAsciticFluidTotalProteinTestConfiguration, ensureBactecAerobicCultureTestConfiguration, ensureBactecAnaerobicCultureTestConfiguration } = require('../src/db/init');
+const { ensureAntiInsulinAntibodyTestConfiguration, ensureAntiLeptospiraAntibodyTestConfiguration, ensureAntiMicrosomalAntibodyTestConfiguration, ensureAntiDsDnaAntibodyTestConfiguration, ensureAntiSsDnaAntibodyTestConfiguration, ensureAntiHistoneAntibodyTestConfiguration, ensureAntiRibosomalPAntibodyTestConfiguration, ensureAntiCcpAbTestConfiguration, ensureAntiSpermAntibodyTestConfiguration, ensureApolipoproteinA1TestConfiguration, ensureUrineArsenicTestConfiguration, ensureArthritisProfileTestConfiguration, ensureAsciticFluidGramStainTestConfiguration, ensureAsciticFluidTotalProteinTestConfiguration, ensureBactecAerobicCultureTestConfiguration, ensureBactecAnaerobicCultureTestConfiguration, ensureBronchialPapCytologyTestConfigurations } = require('../src/db/init');
 const { sampleReport } = require('./audit-report-content.cjs');
 const { isBillingOnlyTest } = require('../frontend/scripts/reportEligibility');
 
@@ -24,7 +24,12 @@ function extractMainContentMarkup(html) {
   let match;
   while ((match = tagPattern.exec(source))) {
     depth += /^<div\b/i.test(match[0]) ? 1 : -1;
-    if (depth === 0) return source.slice(opening.index, tagPattern.lastIndex);
+    if (depth === 0) {
+      // The barcode is header artwork, not a clinical report body. Its source
+      // changed from an external URL to an embedded offline-safe SVG.
+      return source.slice(opening.index, tagPattern.lastIndex)
+        .replace(/<img\b[^>]*\bclass="barcode-img"[^>]*\/>/g, '<barcode-image />');
+    }
   }
   throw new Error('Generated report main content is not balanced.');
 }
@@ -2115,6 +2120,8 @@ test('local catalogue: existing report bodies stay unchanged inside the paginati
       const isAsciticFluidTotalProtein = normalizedInputName === 'asciticfluidforprotein';
       const isBactecAerobicCulture = normalizedInputName === 'bacteccultureforaerobicbacteria';
       const isBactecAnaerobicCulture = normalizedInputName === 'bacteccultureforanaerobicbacteria';
+      const isBronchialBrushingPap = normalizedInputName === 'bronchialbrushingforpap';
+      const isBronchialLavagePap = normalizedInputName === 'bronchiallavageforpap';
       const isTimedUrineAmylase = normalizedInputName === 'amylase24hrsurine'
         || normalizedInputName === 'amylase24hoururine'
         || normalizedInputName === 'amylase24hurine'
@@ -2132,6 +2139,13 @@ test('local catalogue: existing report bodies stay unchanged inside the paginati
       if (isBactecAnaerobicCulture) {
         assert.match(newHtml, /BACTEC ANAEROBIC CULTURE/);
         assert.match(newHtml, /data-report-content="bactec-anaerobic-culture"/);
+        continue;
+      }
+      if ((isBronchialBrushingPap || isBronchialLavagePap) && !String(input.report_body || '').trim()) {
+        assert.match(newHtml, isBronchialBrushingPap ? /BRONCHIAL BRUSHING - PAP CYTOLOGY/ : /BRONCHIAL LAVAGE - PAP CYTOLOGY/);
+        assert.match(newHtml, /class="bronchial-pap-cytology-report"/);
+        assert.match(newHtml, /Specimen Adequacy/);
+        assert.match(newHtml, /Diagnostic Category/);
         continue;
       }
       if (isActh || isAda || isAfbZiehlNeelsen || isAlbertStainKlb || isBaccalSmearBrrBody || isAutoimmuneProfile || isAgRatio || isAnfQualitative || isProstaticAcidPhosphatase || isTotalAcidPhosphatase || isUrineAlcohol || isAldehydeTest || isAldosterone || isBloodAllergy || isDrugAllergy || isRandomUrineAlphaAmylase || isTimedUrineAmylase || isAmmonia || isAndrogenPanel || isAndrostenedione || isComprehensiveAnemia || isAnemiaScreening || isAntenatalProfile || isAntiTpo || isAntiTg || isAntiInsulinAntibody || isAntiLeptospiraAntibody || isAntiMicrosomalAntibody || isAntiDsDnaAntibody || isAntiSsDnaAntibody || isAntiHistoneAntibody || isAntiRibosomalPAntibody || isAntiCcpAb || isAntiSpermAntibody || isApolipoproteinA1 || isUrineArsenic || isArthritisProfile || isAsciticFluidGramStain || isAnticardiolipinIggIgm || isAnticardiolipinIgaIgg || isAnticardiolipinIgaIgm || isAnticardiolipinIga || isAnticardiolipinIgg || isAnticardiolipinIgm || isApolipoproteinB || isAsciticFluidAnalysis || isSerumBicarbonate || isBilirubinFractionation || isMediumSectionBiopsy || isSmallSectionBiopsy || isBloodCultureSensitivity || isBodyFluidCultureSensitivity || isBodyFluidTotalProtein || isBodyFluidChloride || isBoneMarrowAspirationCytology || isBoneMarrowCytology) {
@@ -2488,6 +2502,50 @@ test('local catalogue: existing report bodies stay unchanged inside the paginati
   } finally { await new Promise(resolve => db.close(resolve)); }
 });
 
+test('bronchial brushing and lavage PAP cytology render distinct blank-safe reports', () => {
+  for (const [name, specimen, other] of [
+    ['Bronchial BrushingforPAP', 'Bronchial Brushing', 'Bronchial Lavage'],
+    ['Bronchial LavageforPAp', 'Bronchial Lavage', 'Bronchial Brushing'],
+  ]) {
+    const fields = getFallbackReportParameters({ name });
+    assert.deepEqual(fields.map(field => field.parameterName), [
+      'Specimen / Collection Site', 'Collection Date / Time', 'Clinical Details / Imaging',
+      'Preparation / Stains', 'Specimen Adequacy', 'Cytomorphologic Findings',
+      'Other Findings / Organisms', 'Diagnostic Category', 'Interpretation / Diagnosis',
+      'Ancillary Studies / Correlation', 'Comments / Limitations',
+    ]);
+    assert.ok(fields.every(field => !field.normalRange && field.entryMode === 'manual'));
+
+    const html = buildReportHtml(sampleReport({
+      name, sample_type: specimen, parameters: fields.map(field => ({ parameter_name: field.parameterName, value: '' })),
+    }));
+    assert.match(html, new RegExp(`<div class="test-title">${specimen.toUpperCase()} - PAP CYTOLOGY<\\/div>`));
+    assert.match(html, /class="bronchial-pap-cytology-report"/);
+    assert.match(html, /Specimen Adequacy/);
+    assert.match(html, /Diagnostic Category/);
+    assert.match(html, /A negative cytology result does not exclude a lesion/);
+    assert.doesNotMatch(html, new RegExp(`${other} - PAP CYTOLOGY`));
+    assert.doesNotMatch(html, /ATYPICAL SQUAMOUS CELLS|HIGH RISK HPV RESULT|Satisfactory for evaluation/);
+  }
+
+  const entered = buildReportHtml(sampleReport({
+    name: 'Bronchial BrushingforPAP', sample_type: 'Bronchial Brushing',
+    parameters: [
+      { parameter_name: 'Specimen / Collection Site', value: 'Right upper lobe' },
+      { parameter_name: 'Cytomorphologic Findings', value: 'Reactive cells <review>\nMacrophages present' },
+      { parameter_name: 'Interpretation / Diagnosis', value: 'Pathologist-entered conclusion' },
+    ],
+  }));
+  assert.match(entered, /Reactive cells &lt;review&gt;<br \/>Macrophages present/);
+  assert.match(entered, /Pathologist-entered conclusion/);
+  assert.doesNotMatch(entered, /Reactive cells <review>/);
+  const legacy = buildReportHtml(sampleReport({
+    name: 'Bronchial LavageforPAp', parameters: [{ parameter_name: 'Result', value: 'Legacy recorded finding' }],
+  }));
+  assert.match(legacy, /Legacy recorded finding/);
+  assert.equal(getFallbackReportParameters({ name: 'Bronchial WashingforPAP' }).length, 1);
+});
+
 async function fixture() {
   const raw = new sqlite3.Database(':memory:');
   const db = {
@@ -2520,6 +2578,54 @@ async function fixture() {
   }
   return db;
 }
+
+test('bronchial PAP cytology upgrades only unused blank placeholders and preserves neighbouring tests', async () => {
+  const db = await fixture();
+  try {
+    for (const [id, name, body] of [
+      [800, 'Bronchial BrushingforPAP', ''],
+      [801, 'Bronchial LavageforPAp', ''],
+      [802, 'Bronchial BrushingforPAP', ''],
+      [803, 'Bronchial LavageforPAp', ''],
+      [804, 'Bronchial BrushingforPAP', 'Lab-authored report'],
+      [805, 'Bronchial WashingforPAP', ''],
+      [806, 'Bronchial LavageforPAp', ''],
+      [807, 'Bronchial LavageforPAp', ''],
+    ]) {
+      await db.run('INSERT INTO tests (id,name,category,report_body) VALUES (?,?,?,?)', [id, name, 'Imported legacy catalogue', body]);
+      await db.run(
+        'INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,?,?,?,?,?)',
+        [id, 'Result', '', '', 'manual', 1]
+      );
+    }
+    const originalBrushingId = (await db.get('SELECT id FROM test_parameters WHERE test_id=800')).id;
+    const originalLavageId = (await db.get('SELECT id FROM test_parameters WHERE test_id=801')).id;
+    await db.run('INSERT INTO visit_tests (test_id) VALUES (?)', [802]);
+    await db.run('INSERT INTO test_bundle_items (bundle_test_id,component_test_id) VALUES (?,?)', [803, 805]);
+    await db.run("UPDATE test_parameters SET normal_range='Lab custom' WHERE test_id=806");
+    await db.run("UPDATE tests SET sample_type='Bronchoalveolar Lavage' WHERE id=807");
+
+    await ensureBronchialPapCytologyTestConfigurations(db);
+    await ensureBronchialPapCytologyTestConfigurations(db);
+
+    for (const [id, specimen, originalId] of [
+      [800, 'Bronchial Brushing', originalBrushingId],
+      [801, 'Bronchial Lavage', originalLavageId],
+    ]) {
+      const fields = await db.all('SELECT id,parameter_name,normal_range FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(field => field.parameter_name), getFallbackReportParameters({ name: id === 800 ? 'Bronchial BrushingforPAP' : 'Bronchial LavageforPAp' }).map(field => field.parameterName));
+      assert.equal(fields[8].id, originalId);
+      assert.ok(fields.every(field => !field.normal_range));
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, specimen);
+    }
+    for (const id of [802, 803, 804, 805, 806, 807]) {
+      assert.deepEqual((await db.all('SELECT parameter_name FROM test_parameters WHERE test_id=?', [id])).map(field => field.parameter_name), ['Result']);
+    }
+    assert.equal((await db.get('SELECT normal_range FROM test_parameters WHERE test_id=806')).normal_range, 'Lab custom');
+  } finally {
+    await db.close();
+  }
+});
 
 test('Anti InsulinAntibody upgrades only unused blank placeholders and stays idempotent', async () => {
   const db = await fixture();

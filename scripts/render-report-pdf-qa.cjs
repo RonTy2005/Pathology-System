@@ -11,6 +11,7 @@ function svgDataUrl(svg) {
 async function main() {
   await app.whenReady();
   const anemiaPreview = process.argv.includes("--anemia-preview");
+  const plainPrint = process.argv.includes("--plain");
   const pad = svgDataUrl(`<svg xmlns="http://www.w3.org/2000/svg" width="794" height="1123" viewBox="0 0 794 1123">
     <rect width="794" height="1123" fill="white"/>
     <rect width="794" height="152" fill="#eaf6f4"/>
@@ -94,7 +95,7 @@ async function main() {
     embeddedPreview: anemiaPreview,
     businessName: "We Care Diagnostics",
     digitalReportUrl: "https://reports.wecarediagnostics.in/sample",
-    letterheadDataUrl: pad,
+    letterheadDataUrl: plainPrint ? null : pad,
     reportHeaderSpaceMm: 44,
     reportFooterSpaceMm: 20,
     reportDoctorName: "Dr. Sample Pathologist",
@@ -104,7 +105,7 @@ async function main() {
   });
 
   const outputDirectory = path.resolve(__dirname, "../tmp/pdfs");
-  const outputStem = anemiaPreview ? "anemia-screening-pagination-qa" : "report-whatsapp-letterhead-qa";
+  const outputStem = plainPrint ? "report-without-letterhead-qa" : anemiaPreview ? "anemia-screening-pagination-qa" : "report-whatsapp-letterhead-qa";
   const htmlPath = path.join(outputDirectory, `${outputStem}.html`);
   const pdfPath = path.join(outputDirectory, `${outputStem}.pdf`);
   await fs.mkdir(outputDirectory, { recursive: true });
@@ -119,6 +120,8 @@ async function main() {
       const content = page.querySelector('.report-generated-content');
       return {
         hasLetterhead: Boolean(page.querySelector('.letterhead-background')),
+        barcodeLoaded: Array.from(page.querySelectorAll('.barcode-img')).every((image) => image.complete && image.naturalWidth > 0),
+        barcodeCount: page.querySelectorAll('.barcode-img').length,
         clientHeight: content ? content.clientHeight : 0,
         scrollHeight: content ? content.scrollHeight : 0,
       };

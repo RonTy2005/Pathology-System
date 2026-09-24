@@ -3,17 +3,21 @@ protectPage(["blood_sample_technician", "usg_technician", "mri_technician", "ct_
 const receptionLink = document.getElementById("receptionLink");
 const canOpenDueCollection = hasPermission("collect_due_payments");
 const canOpenReports = hasPermission("view_reports") || hasPermission("print_reports") || hasPermission("download_reports");
-if (hasPermission("manage_patients") || canOpenDueCollection || canOpenReports) {
+if (hasPermission("manage_patients") || canOpenDueCollection || canOpenReports || hasAccessControl("edit_patient_details")) {
   receptionLink.href = hasPermission("manage_patients")
     ? "reception.html#new-visit"
     : canOpenDueCollection
       ? "reception.html#due-collection"
-      : "reception.html#reports";
+      : canOpenReports
+        ? "reception.html#reports"
+        : "reception.html#patient-management";
   receptionLink.textContent = hasPermission("manage_patients")
     ? "Patient Registration"
     : canOpenDueCollection
       ? "Due Collection"
-      : "Reports";
+      : canOpenReports
+        ? "Reports"
+        : "Patient Management";
   receptionLink.hidden = false;
 }
 
@@ -41,6 +45,12 @@ const patientSaveAllResultsBtn = document.getElementById("patientSaveAllResultsB
 const patientFinalizeBtn = document.getElementById("patientFinalizeBtn");
 const patientPrintBtn = document.getElementById("patientPrintBtn");
 const patientViewReportBtn = document.getElementById("patientViewReportBtn");
+for (const button of [printBtn, patientPrintBtn]) {
+  if (button && !hasPermission("print_reports")) button.style.display = "none";
+}
+for (const button of [viewReportBtn, patientViewReportBtn]) {
+  if (button && !hasPermission("view_reports")) button.style.display = "none";
+}
 
 const tabButtons = document.querySelectorAll(".tab-btn");
 const tabContents = document.querySelectorAll(".technician-layout");
@@ -201,8 +211,8 @@ async function loadVisit(visitId) {
     finalizeBtn.disabled = false;
   }
 
-  printBtn.disabled = !reportData?.report?.finalized;
-  viewReportBtn.disabled = !reportData?.report;
+  printBtn.disabled = !hasPermission("print_reports") || !reportData?.report?.finalized;
+  viewReportBtn.disabled = !hasPermission("view_reports") || !reportData?.report;
 }
 
 async function loadPatientVisit(visitId) {
@@ -271,8 +281,8 @@ async function loadPatientVisit(visitId) {
     patientFinalizeBtn.disabled = false;
   }
 
-  patientPrintBtn.disabled = !reportData?.report?.finalized;
-  patientViewReportBtn.disabled = !reportData?.report;
+  patientPrintBtn.disabled = !hasPermission("print_reports") || !reportData?.report?.finalized;
+  patientViewReportBtn.disabled = !hasPermission("view_reports") || !reportData?.report;
 }
 
 document.getElementById("techVisitSearch").addEventListener("input", (event) => {
@@ -294,8 +304,8 @@ finalizeBtn.addEventListener("click", async () => {
   if (!activeVisitId) return;
   try {
     const data = await API.request(`/api/visits/${activeVisitId}/finalize-report`, { method: "POST" });
-    printBtn.disabled = false;
-    viewReportBtn.disabled = false;
+    printBtn.disabled = !hasPermission("print_reports");
+    viewReportBtn.disabled = !hasPermission("view_reports");
     showMessage("techMessage", `Report finalized${data.doctorCreated ? ` • ${data.doctor.name} was added to Doctor Setup.` : ""}`);
     await loadAssignedVisits();
   } catch (error) {
@@ -304,7 +314,7 @@ finalizeBtn.addEventListener("click", async () => {
 });
 
 printBtn.addEventListener("click", async () => {
-  if (!activeVisitId) return;
+  if (!activeVisitId || !hasPermission("print_reports")) return;
   try {
     await API.request(`/api/visits/${activeVisitId}/print`, { method: "POST" });
     openHtmlReport(activeVisitId, true);
@@ -315,7 +325,7 @@ printBtn.addEventListener("click", async () => {
 });
 
 viewReportBtn.addEventListener("click", () => {
-  if (activeVisitId) {
+  if (activeVisitId && hasPermission("view_reports")) {
     openHtmlReport(activeVisitId);
   }
 });
@@ -324,8 +334,8 @@ patientFinalizeBtn.addEventListener("click", async () => {
   if (!activePatientVisitId) return;
   try {
     const data = await API.request(`/api/visits/${activePatientVisitId}/finalize-report`, { method: "POST" });
-    patientPrintBtn.disabled = false;
-    patientViewReportBtn.disabled = false;
+    patientPrintBtn.disabled = !hasPermission("print_reports");
+    patientViewReportBtn.disabled = !hasPermission("view_reports");
     showMessage("patientTechMessage", `Report finalized${data.doctorCreated ? ` • ${data.doctor.name} was added to Doctor Setup.` : ""}`);
     reloadPatientVisits();
   } catch (error) {
@@ -334,7 +344,7 @@ patientFinalizeBtn.addEventListener("click", async () => {
 });
 
 patientPrintBtn.addEventListener("click", async () => {
-  if (!activePatientVisitId) return;
+  if (!activePatientVisitId || !hasPermission("print_reports")) return;
   try {
     await API.request(`/api/visits/${activePatientVisitId}/print`, { method: "POST" });
     openHtmlReport(activePatientVisitId, true);
@@ -345,7 +355,7 @@ patientPrintBtn.addEventListener("click", async () => {
 });
 
 patientViewReportBtn.addEventListener("click", () => {
-  if (activePatientVisitId) {
+  if (activePatientVisitId && hasPermission("view_reports")) {
     openHtmlReport(activePatientVisitId);
   }
 });

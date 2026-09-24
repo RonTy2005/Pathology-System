@@ -4,7 +4,7 @@ const path = require("path");
 const { all, ensureColumn, get, run, transaction } = require("./helpers");
 const { switchDatabasePath, getDatabasePath } = require("./connection");
 const { hashPassword } = require("../services/authService");
-const { DEFAULT_BUSINESS_NAME, DEFAULT_SUPERADMIN_USERNAME, DEFAULT_SUPERADMIN_PASSWORD, PERMISSIONS, ROLES, ROLE_ACCESS_CONTROL_DEFAULTS, ROLE_PERMISSION_DEFAULTS, isAdministrativeRole } = require("../config/constants");
+const { DEFAULT_BUSINESS_NAME, DEFAULT_SUPERADMIN_USERNAME, DEFAULT_SUPERADMIN_PASSWORD, PERMISSIONS, ROLES, ROLE_ACCESS_CONTROL_DEFAULTS, ROLE_PERMISSION_DEFAULTS } = require("../config/constants");
 const { PATHOLOGY_REPORT_CATALOG } = require("./pathologyReportCatalog");
 const { CBC_COMMON_PARAMETERS, CBC_REPORT_TESTS } = require("../config/cbc");
 const { createPatientPortalToken } = require("../utils/patientPortal");
@@ -2648,6 +2648,68 @@ async function ensureBactecAnaerobicCultureTestConfiguration(db = { all, get, ru
           await db.run(
             `UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, display_order = ? WHERE id = ?`,
             [field.parameterName, field.unit, field.normalRange, index + 1, reused.get(index)]
+          );
+        } else {
+          await db.run(
+            `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order)
+             VALUES (?, ?, ?, ?, 'manual', ?)`,
+            [test.id, field.parameterName, field.unit, field.normalRange, index + 1]
+          );
+        }
+      }
+    });
+  }
+}
+
+async function ensureBronchialPapCytologyTestConfigurations(db = { all, get, run, transaction }) {
+  const specimens = new Map([
+    ["bronchialbrushingforpap", "Bronchial Brushing"],
+    ["bronchiallavageforpap", "Bronchial Lavage"],
+  ]);
+  const tests = await db.all(
+    "SELECT id, name, sample_type, report_body FROM tests WHERE LOWER(name) LIKE '%bronchial%'"
+  );
+
+  for (const test of tests) {
+    const normalizedName = String(test.name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    const specimen = specimens.get(normalizedName);
+    if (!specimen || String(test.report_body || "").trim()) continue;
+    if (String(test.sample_type || "").trim()
+      && String(test.sample_type).toLowerCase().replace(/[^a-z0-9]/g, "") !== specimen.toLowerCase().replace(/[^a-z0-9]/g, "")) continue;
+
+    const used = await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id]);
+    if (used) continue;
+    const bundled = await db.get(
+      "SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1",
+      [test.id, test.id]
+    );
+    if (bundled) continue;
+
+    const parameters = await db.all(
+      `SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula
+       FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC`,
+      [test.id]
+    );
+    const placeholder = parameters.length === 1
+      && String(parameters[0].parameter_name || "").trim().toLowerCase() === "result"
+      && !String(parameters[0].unit || "").trim()
+      && !String(parameters[0].normal_range || "").trim()
+      && !String(parameters[0].calculation_formula || "").trim()
+      && (!parameters[0].entry_mode || parameters[0].entry_mode === "manual");
+    if (parameters.length && !placeholder) continue;
+
+    const fields = getFallbackReportParameters({ name: test.name });
+    if (fields.length !== 11) continue;
+
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) {
+        await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", [specimen, test.id]);
+      }
+      for (const [index, field] of fields.entries()) {
+        if (placeholder && index === 8) {
+          await db.run(
+            `UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, display_order = ? WHERE id = ?`,
+            [field.parameterName, field.unit, field.normalRange, index + 1, parameters[0].id]
           );
         } else {
           await db.run(
@@ -8145,36 +8207,11 @@ async function ensureUserDefaults() {
   const users = await all("SELECT id, role, permissions, access_controls, employee_code FROM users");
 
   for (const user of users) {
-    let permissions = ROLE_PERMISSION_DEFAULTS[user.role] || [];
-
+    // Saved permission lists, including [], are authoritative. Role defaults
+    // are only for users that have never had an explicit list saved.
     if (!user.permissions) {
       await run("UPDATE users SET permissions = ? WHERE id = ?", [
-        JSON.stringify(permissions),
-        user.id,
-      ]);
-    } else {
-      try {
-        const parsedPermissions = JSON.parse(user.permissions);
-        if (Array.isArray(parsedPermissions)) {
-          permissions = parsedPermissions;
-        }
-      } catch (_error) {
-        permissions = ROLE_PERMISSION_DEFAULTS[user.role] || [];
-      }
-    }
-
-    if (isAdministrativeRole(user.role) && !permissions.includes(PERMISSIONS.DELETE_PATIENTS)) {
-      permissions = Array.from(new Set([...permissions, PERMISSIONS.DELETE_PATIENTS]));
-      await run("UPDATE users SET permissions = ? WHERE id = ?", [
-        JSON.stringify(permissions),
-        user.id,
-      ]);
-    }
-
-    if (isAdministrativeRole(user.role) && !permissions.includes(PERMISSIONS.SHARE_WHATSAPP_PDF)) {
-      permissions = Array.from(new Set([...permissions, PERMISSIONS.SHARE_WHATSAPP_PDF]));
-      await run("UPDATE users SET permissions = ? WHERE id = ?", [
-        JSON.stringify(permissions),
+        JSON.stringify(ROLE_PERMISSION_DEFAULTS[user.role] || []),
         user.id,
       ]);
     }
@@ -8258,6 +8295,7 @@ async function initializeDatabase() {
     await ensureAsciticFluidTotalProteinTestConfiguration();
     await ensureBactecAerobicCultureTestConfiguration();
     await ensureBactecAnaerobicCultureTestConfiguration();
+    await ensureBronchialPapCytologyTestConfigurations();
     await ensureAnticardiolipinIgaTestConfiguration();
     await ensureAnticardiolipinIgaIggPanelTestConfiguration();
     await ensureAnticardiolipinIgaIgmPanelTestConfiguration();
@@ -8478,6 +8516,7 @@ async function initializeDatabase() {
     await ensureAsciticFluidTotalProteinTestConfiguration();
     await ensureBactecAerobicCultureTestConfiguration();
     await ensureBactecAnaerobicCultureTestConfiguration();
+    await ensureBronchialPapCytologyTestConfigurations();
     await ensureAnticardiolipinIgaTestConfiguration();
     await ensureAnticardiolipinIgaIggPanelTestConfiguration();
     await ensureAnticardiolipinIgaIgmPanelTestConfiguration();
@@ -8669,4 +8708,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { initializeDatabase, ensureAntiInsulinAntibodyTestConfiguration, ensureAntiLeptospiraAntibodyTestConfiguration, ensureAntiMicrosomalAntibodyTestConfiguration, ensureAntiDsDnaAntibodyTestConfiguration, ensureAntiSsDnaAntibodyTestConfiguration, ensureAntiHistoneAntibodyTestConfiguration, ensureAntiRibosomalPAntibodyTestConfiguration, ensureAntiCcpAbTestConfiguration, ensureAntiSpermAntibodyTestConfiguration, ensureApolipoproteinA1TestConfiguration, ensureUrineArsenicTestConfiguration, ensureArthritisProfileTestConfiguration, ensureAsciticFluidGramStainTestConfiguration, ensureAsciticFluidTotalProteinTestConfiguration, ensureBactecAerobicCultureTestConfiguration, ensureBactecAnaerobicCultureTestConfiguration };
+module.exports = { initializeDatabase, ensureUserDefaults, ensureAntiInsulinAntibodyTestConfiguration, ensureAntiLeptospiraAntibodyTestConfiguration, ensureAntiMicrosomalAntibodyTestConfiguration, ensureAntiDsDnaAntibodyTestConfiguration, ensureAntiSsDnaAntibodyTestConfiguration, ensureAntiHistoneAntibodyTestConfiguration, ensureAntiRibosomalPAntibodyTestConfiguration, ensureAntiCcpAbTestConfiguration, ensureAntiSpermAntibodyTestConfiguration, ensureApolipoproteinA1TestConfiguration, ensureUrineArsenicTestConfiguration, ensureArthritisProfileTestConfiguration, ensureAsciticFluidGramStainTestConfiguration, ensureAsciticFluidTotalProteinTestConfiguration, ensureBactecAerobicCultureTestConfiguration, ensureBactecAnaerobicCultureTestConfiguration, ensureBronchialPapCytologyTestConfigurations };

@@ -115,6 +115,38 @@ test("a resumed computer installs an overdue downloaded update immediately", asy
   assert.deepEqual(f.updater.quitAndInstallCalls, [[true, true]]);
 });
 
+test("temporary client health-check failures do not replace or reload the current workspace", () => {
+  const mainSource = fs.readFileSync(path.resolve(__dirname, "../desktop/main.js"), "utf8");
+  const healthCheck = mainSource.match(/function startClientHealthCheck\(serverUrl\) \{[\s\S]*?\n\}(?=\s*async function loadConnectingScreen)/)?.[0];
+  assert.ok(healthCheck);
+  assert.match(healthCheck, /phase: "offline"/);
+  assert.doesNotMatch(healthCheck, /scheduleRetry|loadFile|loadURL|connectedServerUrl = null/);
+  assert.match(mainSource, /if \(appMode === "client" && !connectedServerUrl\) scheduleRetry\(1500\)/);
+  assert.match(mainSource, /webContents\.on\("did-fail-load"/);
+
+  const commonSource = fs.readFileSync(path.resolve(__dirname, "../frontend/scripts/common.js"), "utf8");
+  assert.match(commonSource, /function showDesktopConnectionStatus\(status\)/);
+  assert.match(commonSource, /if \(status\?\.phase !== "offline"\)/);
+  assert.match(commonSource, /document\.documentElement\.classList\.add\("labshield-desktop"\)/);
+  const css = fs.readFileSync(path.resolve(__dirname, "../frontend/styles/app.css"), "utf8");
+  assert.match(css, /\.labshield-desktop \.panel,[\s\S]*?backdrop-filter: none;/);
+  assert.match(css, /\.labshield-desktop \.scrollable-list,[\s\S]*?#testList,[\s\S]*?will-change: auto;\s*transform: none;/);
+});
+
+test("server startup never shows address discovery and clients try their saved server first", () => {
+  const mainSource = fs.readFileSync(path.resolve(__dirname, "../desktop/main.js"), "utf8");
+  assert.match(mainSource, /appMode === "server" \? "server-starting\.html" : "connecting\.html"/);
+  const serverStartup = fs.readFileSync(path.resolve(__dirname, "../desktop/server-starting.html"), "utf8");
+  assert.match(serverStartup, /Starting the laboratory server/);
+  assert.doesNotMatch(serverStartup, /Search again|Enter server address|serverChoices/);
+
+  const clientConnect = mainSource.match(/async function connectToLanServer\([\s\S]*?\n\}(?=\s*async function startLocalServer)/)?.[0];
+  assert.ok(clientConnect);
+  assert.ok(clientConnect.indexOf("readSavedServerUrl()") < clientConnect.indexOf("phase: \"searching\""));
+  assert.match(clientConnect, /useServer\(savedServerUrl, \{ alreadyVerified: true \}\)/);
+  assert.match(clientConnect, /if \(servers\.length === 1\) return useServer\(servers\[0\], \{ alreadyVerified: true \}\)/);
+});
+
 test("Windows 7 and 32-bit installers use compatible runtimes and isolated update channels", () => {
   assert.match(packageMetadata.scripts["build:server-installer"], /--publish never/);
   assert.match(packageMetadata.scripts["build:client-installer"], /--publish never/);
