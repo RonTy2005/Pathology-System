@@ -10,7 +10,7 @@ const { REPORT_CONTENT, getReportContent, buildSupplementaryNotes, supplementRep
 const { COMBINATIONS, getCombinationDefinition, repairKnownCombinationSchemas } = require('../src/services/reportCombinationRepair');
 const { CELL_REPORT_DEFINITIONS, getCellReportDefinition, getCellReportParameters, getCellReportPreviewValue, repairCellReportSchemas } = require('../src/services/cellReportService');
 const { getFallbackReportParameters } = require('../src/services/reportSchemaService');
-const { ensureAntiInsulinAntibodyTestConfiguration, ensureAntiLeptospiraAntibodyTestConfiguration, ensureAntiMicrosomalAntibodyTestConfiguration, ensureAntiDsDnaAntibodyTestConfiguration, ensureAntiSsDnaAntibodyTestConfiguration, ensureAntiHistoneAntibodyTestConfiguration, ensureAntiRibosomalPAntibodyTestConfiguration, ensureAntiCcpAbTestConfiguration, ensureAntiSpermAntibodyTestConfiguration, ensureApolipoproteinA1TestConfiguration, ensureUrineArsenicTestConfiguration, ensureArthritisProfileTestConfiguration, ensureAsciticFluidGramStainTestConfiguration, ensureAsciticFluidTotalProteinTestConfiguration, ensureBactecAerobicCultureTestConfiguration, ensureBactecAnaerobicCultureTestConfiguration, ensureBronchialPapCytologyTestConfigurations } = require('../src/db/init');
+const { ensureAntiInsulinAntibodyTestConfiguration, ensureAntiLeptospiraAntibodyTestConfiguration, ensureAntiMicrosomalAntibodyTestConfiguration, ensureAntiDsDnaAntibodyTestConfiguration, ensureAntiSsDnaAntibodyTestConfiguration, ensureAntiHistoneAntibodyTestConfiguration, ensureAntiRibosomalPAntibodyTestConfiguration, ensureAntiCcpAbTestConfiguration, ensureAntiSpermAntibodyTestConfiguration, ensureApolipoproteinA1TestConfiguration, ensureUrineArsenicTestConfiguration, ensureArthritisProfileTestConfiguration, ensureAsciticFluidGramStainTestConfiguration, ensureAsciticFluidTotalProteinTestConfiguration, ensureBodyFluidBiochemistryTestConfiguration, ensureBodyFluidSpecificGravityTestConfiguration, ensureBronchialWashingCultureSensitivityTestConfiguration, ensureBactecAerobicCultureTestConfiguration, ensureBactecAnaerobicCultureTestConfiguration, ensureBronchialPapCytologyTestConfigurations } = require('../src/db/init');
 const { sampleReport } = require('./audit-report-content.cjs');
 const { isBillingOnlyTest } = require('../frontend/scripts/reportEligibility');
 
@@ -1808,6 +1808,88 @@ test('body-fluid chloride uses a source-specific electrolyte report without borr
   }
 });
 
+test('Body Fluids Biochemistry uses a structured, specimen-aware chemistry panel', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Body Fluids Biochemistry',
+    sample_type: 'Body Fluid',
+    parameters: [
+      { parameter_name: 'Fluid Type / Source', value: 'Pleural fluid, left side' },
+      { parameter_name: 'Collection Date / Time', value: '28-Sep-2026 10:15' },
+      { parameter_name: 'Appearance', value: 'Clear, pale yellow' },
+      { parameter_name: 'Total Protein, Body Fluid', value: '3.4', unit: 'g/dL', normal_range: 'Fluid-specific / interpretive' },
+      { parameter_name: 'Albumin, Body Fluid', value: '1.8', unit: 'g/dL', normal_range: 'Fluid-specific / interpretive' },
+      { parameter_name: 'Glucose, Body Fluid', value: '82', unit: 'mg/dL', normal_range: 'Fluid-specific / interpretive' },
+      { parameter_name: 'LDH, Body Fluid', value: '410', unit: 'U/L', normal_range: 'Fluid-specific / interpretive' },
+      { parameter_name: 'Method / Analyzer', value: 'Laboratory validated analyser' },
+      { parameter_name: 'Comments', value: 'Interpret with paired serum studies.' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">BODY FLUID BIOCHEMISTRY<\/div>/);
+  assert.match(html, /class="results-table single-analyte-table body-fluid-biochemistry-table"/);
+  assert.match(html, /Pleural fluid, left side/);
+  assert.match(html, /TOTAL PROTEIN/);
+  assert.match(html, /ALBUMIN/);
+  assert.match(html, /GLUCOSE/);
+  assert.match(html, /LDH/);
+  assert.match(html, /Fluid values alone do not establish an exudate or transudate/);
+  assert.match(html, /serum-ascites albumin gradient \(SAAG\)/);
+  assert.match(html, /Interpret with paired serum studies\./);
+  const fallback = getFallbackReportParameters({ name: 'Body Fluids Biochemistry', sample_type: 'Body Fluid' });
+  assert.deepEqual(fallback.slice(0, 7).map(field => field.parameterName), [
+    'Fluid Type / Source', 'Collection Date / Time', 'Appearance', 'Total Protein, Body Fluid',
+    'Albumin, Body Fluid', 'Glucose, Body Fluid', 'LDH, Body Fluid',
+  ]);
+});
+
+test('BodyFluids for SpecificGravity uses a source-aware physical examination format', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'BodyFluids for SpecificGravity', sample_type: 'Body Fluid',
+    parameters: [
+      { parameter_name: 'Specific Gravity, Body Fluid', value: '1.022', normal_range: 'Fluid-specific / interpretive' },
+      { parameter_name: 'Fluid Type / Source', value: 'Peritoneal fluid' },
+      { parameter_name: 'Collection Date / Time', value: '28-Sep-2026 11:20' },
+      { parameter_name: 'Appearance', value: 'Clear, straw coloured' },
+      { parameter_name: 'Method / Instrument', value: 'Refractometry' },
+      { parameter_name: 'Comments', value: 'Correlate with fluid protein and albumin.' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">SPECIFIC GRAVITY, BODY FLUID<\/div>/);
+  assert.match(html, /class="results-table single-analyte-table body-fluid-specific-gravity-table"/);
+  assert.match(html, /Peritoneal fluid/);
+  assert.match(html, /Refractometry/);
+  assert.match(html, /There is no universal reference interval for all body fluids/);
+  assert.match(html, /must not be used to classify a fluid as transudate or exudate/);
+  assert.match(html, /Correlate with fluid protein and albumin\./);
+  assert.equal(getFallbackReportParameters({ name: 'BodyFluids for SpecificGravity' })[0].parameterName, 'Specific Gravity, Body Fluid');
+  for (const separateName of ['Pleural Fluid Specific Gravity', 'Joint Fluid for Specific Gravity', 'CSF Fluid for Specific Gravity']) {
+    assert.doesNotMatch(buildReportHtml(sampleReport({ name: separateName, parameters: [] })), /body-fluid-specific-gravity-table/);
+  }
+});
+
+test('Bronchial Washingfor C/s uses a specimen-specific bacterial culture report', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Bronchial Washingfor C/s', sample_type: 'Bronchial Washing',
+    parameters: [
+      { parameter_name: 'Culture Status / Result', value: 'Growth detected', normal_range: 'No growth' },
+      { parameter_name: 'Bronchial Site / Procedure', value: 'Right middle lobe bronchial washing' },
+      { parameter_name: 'Direct Gram Stain', value: 'Few Gram-negative bacilli seen' },
+      { parameter_name: 'Aerobic Culture', value: 'Growth after incubation' },
+      { parameter_name: 'Culture Quantity / Semi-quantitation', value: 'Moderate growth' },
+      { parameter_name: 'Organism(s) Isolated', value: 'Lab-entered isolate' },
+      { parameter_name: 'Antimicrobial Susceptibility', value: 'Lab-entered susceptibility' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">BRONCHIAL WASHING CULTURE & SENSITIVITY<\/div>/);
+  assert.match(html, /class="results-table culture-table bronchial-washing-culture-table"/);
+  assert.match(html, /Right middle lobe bronchial washing/);
+  assert.match(html, /Culture Quantity \/ Semi-quantitation/);
+  assert.match(html, /ANTIMICROBIAL SUSCEPTIBILITY/);
+  assert.match(html, /may reflect lower-respiratory infection, airway colonisation, or contamination/);
+  assert.match(html, /Mycobacterial, fungal, viral, and molecular investigations require separate/);
+  assert.equal(getFallbackReportParameters({ name: 'Bronchial Washingfor C/s' })[0].parameterName, 'Culture Status / Result');
+  assert.doesNotMatch(buildReportHtml(sampleReport({ name: 'Bronchial Washing for PAP', parameters: [] })), /bronchial-washing-culture-table/);
+});
+
 test('bone marrow cytology uses a structured aspirate morphology report distinct from the combined aspiration format', () => {
   const html = buildReportHtml(sampleReport({
     name: 'Bone Marrow Cytology',
@@ -2098,6 +2180,14 @@ test('local catalogue: existing report bodies stay unchanged inside the paginati
         || normalizedInputName === 'bodyfluidforchloride'
         || normalizedInputName === 'chloridebodyfluid'
         || normalizedInputName === 'bodyfluidchloride';
+      const isBodyFluidBiochemistry = normalizedInputName === 'bodyfluidsbiochemistry'
+        || normalizedInputName === 'bodyfluidbiochemistry';
+      const isBodyFluidSpecificGravity = normalizedInputName === 'bodyfluidsforspecificgravity'
+        || normalizedInputName === 'bodyfluidforspecificgravity'
+        || normalizedInputName === 'bodyfluidspecificgravity';
+      const isBronchialWashingCultureSensitivity = normalizedInputName === 'bronchialwashingforcs'
+        || normalizedInputName === 'bronchialwashingcultureandsensitivity'
+        || normalizedInputName === 'bronchialwashingculturesensitivity';
       const isBoneMarrowAspirationCytology = normalizedInputName === 'bonemarrowaspirationcytology';
       const isBoneMarrowCytology = normalizedInputName === 'bonemarrowcytology';
       const isAntiInsulinAntibody = normalizedInputName === 'antiinsulinantibody'
@@ -2148,7 +2238,7 @@ test('local catalogue: existing report bodies stay unchanged inside the paginati
         assert.match(newHtml, /Diagnostic Category/);
         continue;
       }
-      if (isActh || isAda || isAfbZiehlNeelsen || isAlbertStainKlb || isBaccalSmearBrrBody || isAutoimmuneProfile || isAgRatio || isAnfQualitative || isProstaticAcidPhosphatase || isTotalAcidPhosphatase || isUrineAlcohol || isAldehydeTest || isAldosterone || isBloodAllergy || isDrugAllergy || isRandomUrineAlphaAmylase || isTimedUrineAmylase || isAmmonia || isAndrogenPanel || isAndrostenedione || isComprehensiveAnemia || isAnemiaScreening || isAntenatalProfile || isAntiTpo || isAntiTg || isAntiInsulinAntibody || isAntiLeptospiraAntibody || isAntiMicrosomalAntibody || isAntiDsDnaAntibody || isAntiSsDnaAntibody || isAntiHistoneAntibody || isAntiRibosomalPAntibody || isAntiCcpAb || isAntiSpermAntibody || isApolipoproteinA1 || isUrineArsenic || isArthritisProfile || isAsciticFluidGramStain || isAnticardiolipinIggIgm || isAnticardiolipinIgaIgg || isAnticardiolipinIgaIgm || isAnticardiolipinIga || isAnticardiolipinIgg || isAnticardiolipinIgm || isApolipoproteinB || isAsciticFluidAnalysis || isSerumBicarbonate || isBilirubinFractionation || isMediumSectionBiopsy || isSmallSectionBiopsy || isBloodCultureSensitivity || isBodyFluidCultureSensitivity || isBodyFluidTotalProtein || isBodyFluidChloride || isBoneMarrowAspirationCytology || isBoneMarrowCytology) {
+      if (isActh || isAda || isAfbZiehlNeelsen || isAlbertStainKlb || isBaccalSmearBrrBody || isAutoimmuneProfile || isAgRatio || isAnfQualitative || isProstaticAcidPhosphatase || isTotalAcidPhosphatase || isUrineAlcohol || isAldehydeTest || isAldosterone || isBloodAllergy || isDrugAllergy || isRandomUrineAlphaAmylase || isTimedUrineAmylase || isAmmonia || isAndrogenPanel || isAndrostenedione || isComprehensiveAnemia || isAnemiaScreening || isAntenatalProfile || isAntiTpo || isAntiTg || isAntiInsulinAntibody || isAntiLeptospiraAntibody || isAntiMicrosomalAntibody || isAntiDsDnaAntibody || isAntiSsDnaAntibody || isAntiHistoneAntibody || isAntiRibosomalPAntibody || isAntiCcpAb || isAntiSpermAntibody || isApolipoproteinA1 || isUrineArsenic || isArthritisProfile || isAsciticFluidGramStain || isAnticardiolipinIggIgm || isAnticardiolipinIgaIgg || isAnticardiolipinIgaIgm || isAnticardiolipinIga || isAnticardiolipinIgg || isAnticardiolipinIgm || isApolipoproteinB || isAsciticFluidAnalysis || isSerumBicarbonate || isBilirubinFractionation || isMediumSectionBiopsy || isSmallSectionBiopsy || isBloodCultureSensitivity || isBodyFluidCultureSensitivity || isBodyFluidTotalProtein || isBodyFluidChloride || isBodyFluidBiochemistry || isBodyFluidSpecificGravity || isBronchialWashingCultureSensitivity || isBoneMarrowAspirationCytology || isBoneMarrowCytology) {
         if (isAsciticFluidGramStain) {
           assert.match(newHtml, /ASCITIC FLUID GRAM STAIN/);
           assert.match(newHtml, /data-report-content="ascitic-fluid-gram-stain"/);
@@ -2244,6 +2334,26 @@ test('local catalogue: existing report bodies stay unchanged inside the paginati
           assert.match(newHtml, /Fluid Type \/ Source/);
           assert.match(newHtml, /No general reference interval has been established/);
           assert.match(newHtml, /dedicated CSF chloride assay/);
+          continue;
+        }
+        if (isBodyFluidBiochemistry) {
+          assert.match(newHtml, /BODY FLUID BIOCHEMISTRY/);
+          assert.match(newHtml, /Fluid Type \/ Source/);
+          assert.match(newHtml, /Fluid values alone do not establish an exudate or transudate/);
+          assert.match(newHtml, /serum-ascites albumin gradient \(SAAG\)/);
+          continue;
+        }
+        if (isBodyFluidSpecificGravity) {
+          assert.match(newHtml, /SPECIFIC GRAVITY, BODY FLUID/);
+          assert.match(newHtml, /Fluid Type \/ Source/);
+          assert.match(newHtml, /must not be used to classify a fluid as transudate or exudate/);
+          continue;
+        }
+        if (isBronchialWashingCultureSensitivity) {
+          assert.match(newHtml, /BRONCHIAL WASHING CULTURE & SENSITIVITY/);
+          assert.match(newHtml, /DIRECT EXAMINATION/);
+          assert.match(newHtml, /ANTIMICROBIAL SUSCEPTIBILITY/);
+          assert.match(newHtml, /airway colonisation, or contamination/);
           continue;
         }
         if (isBodyFluidTotalProtein) {
@@ -3193,6 +3303,75 @@ test('AsciticFluidforProtein upgrades only unused blank placeholders without cha
     }
     assert.equal((await db.get('SELECT unit FROM test_parameters WHERE test_id=722')).unit, 'Lab custom');
     assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=726')).sample_type, 'Pleural Fluid');
+  } finally {
+    await db.close();
+  }
+});
+
+test('Body Fluids Biochemistry upgrades only unused blank placeholders', async () => {
+  const db = await fixture();
+  try {
+    for (const [id, name, body] of [
+      [730, 'Body Fluids Biochemistry', ''],
+      [731, 'Body Fluids Biochemistry', ''],
+      [732, 'Body Fluids Biochemistry', ''],
+      [733, 'Body Fluids Biochemistry', 'Lab-authored format'],
+      [734, 'Body Fluid Biochemistry', ''],
+      [735, 'Body Fluids Biochemistry', ''],
+    ]) {
+      await db.run('INSERT INTO tests (id,name,category,report_body) VALUES (?,?,?,?)', [id, name, 'Imported legacy catalogue', body]);
+      if (id !== 734) await db.run("INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,'Result','','','manual',1)", [id]);
+    }
+    const originalId = (await db.get('SELECT id FROM test_parameters WHERE test_id=?', [730])).id;
+    await db.run('INSERT INTO visit_tests (test_id) VALUES (?)', [731]);
+    await db.run("UPDATE test_parameters SET unit='Lab custom' WHERE test_id=732");
+    await db.run("UPDATE tests SET sample_type='Pleural Fluid' WHERE id=735");
+
+    await ensureBodyFluidBiochemistryTestConfiguration(db);
+    await ensureBodyFluidBiochemistryTestConfiguration(db);
+
+    const expected = [
+      'Fluid Type / Source', 'Collection Date / Time', 'Appearance', 'Total Protein, Body Fluid',
+      'Albumin, Body Fluid', 'Glucose, Body Fluid', 'LDH, Body Fluid',
+      'Additional Biochemistry / Findings', 'Method / Analyzer', 'Comments',
+    ];
+    for (const id of [730, 734]) {
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, 'Body Fluid');
+      const fields = await db.all('SELECT id,parameter_name,unit FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(field => field.parameter_name), expected);
+      if (id === 730) assert.equal(fields[0].id, originalId);
+    }
+    for (const id of [731, 732, 733, 735]) {
+      assert.equal((await db.get('SELECT parameter_name FROM test_parameters WHERE test_id=?', [id])).parameter_name, 'Result');
+    }
+    assert.equal((await db.get('SELECT unit FROM test_parameters WHERE test_id=?', [732])).unit, 'Lab custom');
+  } finally {
+    await db.close();
+  }
+});
+
+test('BodyFluids for SpecificGravity upgrades only unused blank placeholders', async () => {
+  const db = await fixture();
+  try {
+    for (const [id, body] of [[736, ''], [737, ''], [738, 'Lab-authored format'], [739, '']]) {
+      await db.run('INSERT INTO tests (id,name,category,report_body) VALUES (?,?,?,?)', [id, 'BodyFluids for SpecificGravity', 'Imported legacy catalogue', body]);
+      if (id !== 739) await db.run("INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,'Result','','','manual',1)", [id]);
+    }
+    const originalId = (await db.get('SELECT id FROM test_parameters WHERE test_id=?', [736])).id;
+    await db.run('INSERT INTO visit_tests (test_id) VALUES (?)', [737]);
+
+    await ensureBodyFluidSpecificGravityTestConfiguration(db);
+    await ensureBodyFluidSpecificGravityTestConfiguration(db);
+
+    const expected = ['Specific Gravity, Body Fluid', 'Fluid Type / Source', 'Collection Date / Time', 'Appearance', 'Method / Instrument', 'Comments'];
+    for (const id of [736, 739]) {
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, 'Body Fluid');
+      assert.deepEqual((await db.all('SELECT parameter_name FROM test_parameters WHERE test_id=? ORDER BY display_order', [id])).map(field => field.parameter_name), expected);
+    }
+    assert.equal((await db.get('SELECT id FROM test_parameters WHERE test_id=? ORDER BY display_order', [736])).id, originalId);
+    for (const id of [737, 738]) {
+      assert.equal((await db.get('SELECT parameter_name FROM test_parameters WHERE test_id=?', [id])).parameter_name, 'Result');
+    }
   } finally {
     await db.close();
   }

@@ -3266,6 +3266,151 @@ async function ensureBodyFluidChlorideTestConfiguration() {
   });
 }
 
+async function ensureBodyFluidBiochemistryTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all(
+    "SELECT id, name, sample_type, report_body FROM tests WHERE LOWER(name) IN ('body fluids biochemistry', 'body fluid biochemistry')"
+  );
+  const fields = getFallbackReportParameters({ name: "Body Fluids Biochemistry" });
+
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (String(test.sample_type || "").trim() && !/^body\s*fluid\b/i.test(test.sample_type)) continue;
+    const used = await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id]);
+    if (used) continue;
+    const bundled = await db.get(
+      "SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1",
+      [test.id, test.id]
+    );
+    if (bundled) continue;
+
+    const parameters = await db.all(
+      `SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula
+       FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC`,
+      [test.id]
+    );
+    const placeholder = parameters.length === 1
+      && String(parameters[0].parameter_name || "").trim().toLowerCase() === "result"
+      && !String(parameters[0].unit || "").trim()
+      && !String(parameters[0].normal_range || "").trim()
+      && !String(parameters[0].calculation_formula || "").trim()
+      && (!parameters[0].entry_mode || parameters[0].entry_mode === "manual");
+    if (parameters.length && !placeholder) continue;
+
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) {
+        await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Body Fluid", test.id]);
+      }
+      for (const [index, field] of fields.entries()) {
+        if (placeholder && index === 0) {
+          await db.run(
+            "UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, display_order = ? WHERE id = ?",
+            [field.parameterName, field.unit, field.normalRange, index + 1, parameters[0].id]
+          );
+        } else {
+          await db.run(
+            `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order)
+             VALUES (?, ?, ?, ?, 'manual', ?)`,
+            [test.id, field.parameterName, field.unit, field.normalRange, index + 1]
+          );
+        }
+      }
+    });
+  }
+}
+
+async function ensureBodyFluidSpecificGravityTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all(
+    "SELECT id, name, sample_type, report_body FROM tests WHERE LOWER(name) IN ('bodyfluidsforspecificgravity', 'bodyfluids for specificgravity', 'body fluids for specific gravity', 'body fluid for specific gravity', 'body fluid specific gravity')"
+  );
+  const fields = getFallbackReportParameters({ name: "Body Fluids for Specific Gravity" });
+
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (String(test.sample_type || "").trim() && !/^body\s*fluid\b/i.test(test.sample_type)) continue;
+    const used = await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id]);
+    if (used) continue;
+    const bundled = await db.get(
+      "SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1",
+      [test.id, test.id]
+    );
+    if (bundled) continue;
+    const parameters = await db.all(
+      `SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula
+       FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC`,
+      [test.id]
+    );
+    const placeholder = parameters.length === 1
+      && String(parameters[0].parameter_name || "").trim().toLowerCase() === "result"
+      && !String(parameters[0].unit || "").trim()
+      && !String(parameters[0].normal_range || "").trim()
+      && !String(parameters[0].calculation_formula || "").trim()
+      && (!parameters[0].entry_mode || parameters[0].entry_mode === "manual");
+    if (parameters.length && !placeholder) continue;
+
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) {
+        await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Body Fluid", test.id]);
+      }
+      for (const [index, field] of fields.entries()) {
+        if (placeholder && index === 0) {
+          await db.run(
+            "UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, display_order = ? WHERE id = ?",
+            [field.parameterName, field.unit, field.normalRange, index + 1, parameters[0].id]
+          );
+        } else {
+          await db.run(
+            `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order)
+             VALUES (?, ?, ?, ?, 'manual', ?)`,
+            [test.id, field.parameterName, field.unit, field.normalRange, index + 1]
+          );
+        }
+      }
+    });
+  }
+}
+
+async function ensureBronchialWashingCultureSensitivityTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all(
+    "SELECT id, name, sample_type, report_body FROM tests WHERE LOWER(name) IN ('bronchial washing for c/s', 'bronchialwashingfor c/s', 'bronchial washing culture and sensitivity', 'bronchial washing culture & sensitivity')"
+  );
+  const fields = getFallbackReportParameters({ name: "Bronchial Washing for C/S" });
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (String(test.sample_type || "").trim() && !/^bronchial\s*washing\b/i.test(test.sample_type)) continue;
+    const used = await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id]);
+    if (used) continue;
+    const bundled = await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id]);
+    if (bundled) continue;
+    const parameters = await db.all(
+      `SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula
+       FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC`, [test.id]
+    );
+    const placeholder = parameters.length === 1
+      && String(parameters[0].parameter_name || "").trim().toLowerCase() === "result"
+      && !String(parameters[0].unit || "").trim()
+      && !String(parameters[0].normal_range || "").trim()
+      && !String(parameters[0].calculation_formula || "").trim()
+      && (!parameters[0].entry_mode || parameters[0].entry_mode === "manual");
+    if (parameters.length && !placeholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) {
+        await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Bronchial Washing", test.id]);
+      }
+      for (const [index, field] of fields.entries()) {
+        if (placeholder && index === 0) {
+          await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, display_order = ? WHERE id = ?", [field.parameterName, field.unit, field.normalRange, index + 1, parameters[0].id]);
+        } else {
+          await db.run(
+            `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order)
+             VALUES (?, ?, ?, ?, 'manual', ?)`,
+            [test.id, field.parameterName, field.unit, field.normalRange, index + 1]
+          );
+        }
+      }
+    });
+  }
+}
+
 async function ensureBoneMarrowCytologyTestConfiguration() {
   await ensureReportTableTestConfiguration({
     names: ["Bone Marrow Cytology"],
@@ -8312,6 +8457,9 @@ async function initializeDatabase() {
     await ensureBodyFluidCultureSensitivityTestConfiguration();
     await ensureBodyFluidTotalProteinTestConfiguration();
     await ensureBodyFluidChlorideTestConfiguration();
+    await ensureBodyFluidBiochemistryTestConfiguration();
+    await ensureBodyFluidSpecificGravityTestConfiguration();
+    await ensureBronchialWashingCultureSensitivityTestConfiguration();
     await ensureBoneMarrowAspirationCytologyTestConfiguration();
     await ensureBoneMarrowCytologyTestConfiguration();
     await ensureHba1cTestConfiguration();
@@ -8533,6 +8681,9 @@ async function initializeDatabase() {
     await ensureBodyFluidCultureSensitivityTestConfiguration();
     await ensureBodyFluidTotalProteinTestConfiguration();
     await ensureBodyFluidChlorideTestConfiguration();
+    await ensureBodyFluidBiochemistryTestConfiguration();
+    await ensureBodyFluidSpecificGravityTestConfiguration();
+    await ensureBronchialWashingCultureSensitivityTestConfiguration();
     await ensureBoneMarrowAspirationCytologyTestConfiguration();
     await ensureBoneMarrowCytologyTestConfiguration();
     await ensureHba1cTestConfiguration();
@@ -8708,4 +8859,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { initializeDatabase, ensureUserDefaults, ensureAntiInsulinAntibodyTestConfiguration, ensureAntiLeptospiraAntibodyTestConfiguration, ensureAntiMicrosomalAntibodyTestConfiguration, ensureAntiDsDnaAntibodyTestConfiguration, ensureAntiSsDnaAntibodyTestConfiguration, ensureAntiHistoneAntibodyTestConfiguration, ensureAntiRibosomalPAntibodyTestConfiguration, ensureAntiCcpAbTestConfiguration, ensureAntiSpermAntibodyTestConfiguration, ensureApolipoproteinA1TestConfiguration, ensureUrineArsenicTestConfiguration, ensureArthritisProfileTestConfiguration, ensureAsciticFluidGramStainTestConfiguration, ensureAsciticFluidTotalProteinTestConfiguration, ensureBactecAerobicCultureTestConfiguration, ensureBactecAnaerobicCultureTestConfiguration, ensureBronchialPapCytologyTestConfigurations };
+module.exports = { initializeDatabase, ensureUserDefaults, ensureAntiInsulinAntibodyTestConfiguration, ensureAntiLeptospiraAntibodyTestConfiguration, ensureAntiMicrosomalAntibodyTestConfiguration, ensureAntiDsDnaAntibodyTestConfiguration, ensureAntiSsDnaAntibodyTestConfiguration, ensureAntiHistoneAntibodyTestConfiguration, ensureAntiRibosomalPAntibodyTestConfiguration, ensureAntiCcpAbTestConfiguration, ensureAntiSpermAntibodyTestConfiguration, ensureApolipoproteinA1TestConfiguration, ensureUrineArsenicTestConfiguration, ensureArthritisProfileTestConfiguration, ensureAsciticFluidGramStainTestConfiguration, ensureAsciticFluidTotalProteinTestConfiguration, ensureBodyFluidBiochemistryTestConfiguration, ensureBodyFluidSpecificGravityTestConfiguration, ensureBronchialWashingCultureSensitivityTestConfiguration, ensureBactecAerobicCultureTestConfiguration, ensureBactecAnaerobicCultureTestConfiguration, ensureBronchialPapCytologyTestConfigurations };

@@ -599,6 +599,32 @@ function isBodyFluidChlorideTest(test) {
     || name === "bodyfluidchloride";
 }
 
+function isBodyFluidBiochemistryTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return name === "bodyfluidsbiochemistry"
+    || name === "bodyfluidbiochemistry"
+    || code === "bodyfluidbiochemistry001";
+}
+
+function isBodyFluidSpecificGravityTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return name === "bodyfluidsforspecificgravity"
+    || name === "bodyfluidforspecificgravity"
+    || name === "bodyfluidspecificgravity"
+    || code === "bodyfluidspecificgravity001";
+}
+
+function isBronchialWashingCultureSensitivityTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return name === "bronchialwashingforcs"
+    || name === "bronchialwashingcultureandsensitivity"
+    || name === "bronchialwashingculturesensitivity"
+    || code === "bronchialwashingcs001";
+}
+
 function isStoolCultureTest(test) {
   const name = normalizeParameterName(test?.name);
   const code = normalizeParameterName(test?.code);
@@ -6601,6 +6627,146 @@ function buildBodyFluidChlorideReportBody(test) {
   `;
 }
 
+function buildBodyFluidBiochemistryReportBody(test) {
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const fluidType = field(["Fluid Type / Source", "Fluid Type", "Specimen / Site", "Specimen", "Source"]);
+  const collected = field(["Collection Date / Time", "Collection Time"]);
+  const appearance = field(["Appearance", "Fluid Appearance"]);
+  const method = field(["Method / Analyzer", "Method", "Analyzer"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  const analytes = [
+    { label: "Total Protein", aliases: ["Total Protein, Body Fluid", "Body Fluid Total Protein", "Total Protein"], unit: "g/dL" },
+    { label: "Albumin", aliases: ["Albumin, Body Fluid", "Body Fluid Albumin", "Albumin"], unit: "g/dL" },
+    { label: "Glucose", aliases: ["Glucose, Body Fluid", "Body Fluid Glucose", "Glucose"], unit: "mg/dL" },
+    { label: "LDH", aliases: ["LDH, Body Fluid", "Body Fluid LDH", "Lactate Dehydrogenase, Body Fluid", "LDH"], unit: "U/L" },
+  ];
+  const rows = analytes.map(({ label, aliases, unit }) => {
+    const parameter = field(aliases);
+    const range = parameter.normal_range && parameter.normal_range !== "N/A"
+      ? parameter.normal_range : "Fluid-specific / interpretive";
+    return `<tr><td><strong>${label.toUpperCase()}</strong></td><td>${escapeHtml(value(parameter) || "-")}</td><td>${escapeHtml(range)}</td><td>${escapeHtml(parameter.unit && parameter.unit !== "N/A" ? parameter.unit : unit)}</td></tr>`;
+  }).join("");
+  const additional = field(["Additional Biochemistry / Findings", "Additional Biochemistry", "Other Biochemistry"]);
+
+  return `
+    <table class="results-table single-analyte-table body-fluid-biochemistry-table">
+      <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Fluid Type / Source</strong></td><td colspan="3">${escapeHtml(value(fluidType) || test.sample_type || "Body Fluid")}</td></tr>
+        <tr><td><strong>Collection Date / Time</strong></td><td>${escapeHtml(value(collected) || "-")}</td><td><strong>Appearance:</strong> ${escapeHtml(value(appearance) || "-")}</td><td></td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>BODY FLUID BIOCHEMISTRY</strong></td></tr>
+        ${rows}
+        ${value(additional) ? `<tr><td><strong>Additional Biochemistry / Findings</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(additional)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+        ${value(method) ? `<tr><td><strong>Method / Analyzer</strong></td><td colspan="3">${escapeHtml(value(method))}</td></tr>` : ""}
+        ${value(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes body-fluid-biochemistry-notes">
+      <div class="report-note-heading">Interpretation :</div>
+      <ul>
+        <li>There is no universal normal interval for these measurements across all body-fluid sources. Interpret each result using the specified fluid, clinical question, and laboratory-validated method; serum reference intervals are not interchangeable with fluid intervals.</li>
+        <li>In pleural fluid, protein and LDH are interpreted alongside near-simultaneous serum results for Light&rsquo;s criteria. Fluid values alone do not establish an exudate or transudate.</li>
+        <li>In ascitic fluid, the serum-ascites albumin gradient (SAAG) requires a paired serum albumin result. Ascitic albumin or total protein alone does not establish the cause of ascites.</li>
+        <li>Glucose and LDH must be assessed in context with cell count, microbiology, cytology, imaging, and clinical findings where relevant. A dedicated CSF assay and its validated interval should be used for cerebrospinal fluid.</li>
+      </ul>
+      <div class="report-note-heading">Specimen Note :</div>
+      <p>Record the exact anatomic fluid source and collection time. Only report analytes actually measured; additional studies and decision limits depend on the fluid type and clinical indication.</p>
+    </div>
+  `;
+}
+
+function buildBodyFluidSpecificGravityReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const specificGravity = field(["Specific Gravity, Body Fluid", "Body Fluid Specific Gravity", "Specific Gravity", "Result"]);
+  const fluidType = field(["Fluid Type / Source", "Fluid Type", "Specimen / Site", "Specimen", "Source"]);
+  const collected = field(["Collection Date / Time", "Collection Time"]);
+  const appearance = field(["Appearance", "Fluid Appearance"]);
+  const method = field(["Method / Instrument", "Method / Analyzer", "Method", "Analyzer"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  const range = specificGravity.normal_range && specificGravity.normal_range !== "N/A"
+    ? specificGravity.normal_range : "Fluid-specific / interpretive";
+
+  return `
+    <table class="results-table single-analyte-table body-fluid-specific-gravity-table">
+      <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Fluid Type / Source</strong></td><td colspan="3">${escapeHtml(value(fluidType) || test.sample_type || "Body Fluid")}</td></tr>
+        <tr><td><strong>Collection Date / Time</strong></td><td>${escapeHtml(value(collected) || "-")}</td><td><strong>Appearance:</strong> ${escapeHtml(value(appearance) || "-")}</td><td></td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>BODY FLUID PHYSICAL EXAMINATION</strong></td></tr>
+        <tr><td><strong>SPECIFIC GRAVITY, BODY FLUID</strong><div class="single-analyte-method">${escapeHtml(value(method) || "Laboratory-validated method")}</div></td><td>${escapeHtml(value(specificGravity) || "-")}</td><td>${escapeHtml(range)}</td><td></td></tr>
+        ${value(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes body-fluid-specific-gravity-notes">
+      <div class="report-note-heading">Interpretation :</div>
+      <ul>
+        <li>Specific gravity is a physical measurement whose interpretation depends on the exact fluid source, analytical method, and the laboratory&rsquo;s validated procedure. There is no universal reference interval for all body fluids.</li>
+        <li>For pleural or peritoneal effusions, specific gravity alone must not be used to classify a fluid as transudate or exudate. Use the appropriate paired serum and fluid biochemical studies, cell count, microbiology, cytology, and clinical findings.</li>
+        <li>Do not use urine or serum specific-gravity reference values for this test. Cerebrospinal, joint, pleural, peritoneal, and pericardial fluids require source-specific clinical interpretation.</li>
+      </ul>
+      <div class="report-note-heading">Specimen Note :</div>
+      <p>Record the anatomic source, collection time, and method or instrument. Gross appearance and analytical suitability should be documented according to the laboratory&rsquo;s procedure.</p>
+    </div>
+  `;
+}
+
+function buildBronchialWashingCultureSensitivityReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const textValue = parameter => String(parameter?.value ?? "").trim();
+  const multiline = parameter => escapeHtml(textValue(parameter) || "-").replace(/\r?\n/g, "<br />");
+  const cultureResult = field(["Culture Status / Result", "Bronchial Washing Culture Result", "Culture Result", "Result"]);
+  const procedure = field(["Bronchial Site / Procedure", "Bronchial Site", "Collection Procedure", "Specimen / Collection Site", "Specimen"]);
+  const collected = field(["Collection Date / Time", "Collection Date and Time", "Collection Time"]);
+  const indication = field(["Clinical Indication", "Clinical Details"]);
+  const reportStatus = field(["Report Status", "Culture Report Status"]);
+  const gramStain = field(["Direct Gram Stain", "Gram Stain", "Direct Smear"]);
+  const aerobicCulture = field(["Aerobic Culture", "Aerobic Culture Result"]);
+  const cultureQuantity = field(["Culture Quantity / Semi-quantitation", "Culture Quantity", "Quantitative Culture"]);
+  const organism = field(["Organism(s) Isolated", "Organism Isolated", "Organism", "Isolate"]);
+  const identification = field(["Identification Method", "Organism Identification Method"]);
+  const susceptibility = field(["Antimicrobial Susceptibility", "Antibiotic Sensitivity", "Drug Sensitivity", "Susceptibility"]);
+  const resistance = field(["Resistance Markers / Alerts", "Resistance Markers", "Resistance Alert", "Alerts"]);
+  const comments = field(["Comments", "Comment", "Final Comments", "Remarks"]);
+  const cultureValue = textValue(cultureResult) || "-";
+  const status = getReferenceStatus(cultureValue, cultureResult.normal_range || "No growth");
+
+  return `
+    <table class="results-table culture-table bronchial-washing-culture-table">
+      <thead><tr><th style="width:30%">Investigation</th><th style="width:30%">Result / Findings</th><th style="width:25%">Reference / Guide</th><th style="width:15%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>Bronchial washing</td><td><strong>Bronchial Site / Procedure:</strong> ${multiline(procedure)}</td><td></td></tr>
+        <tr><td><strong>Collection Date / Time</strong></td><td>${multiline(collected)}</td><td><strong>Report Status:</strong> ${multiline(reportStatus)}</td><td></td></tr>
+        <tr><td><strong>Clinical Indication</strong></td><td colspan="3">${multiline(indication)}</td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>DIRECT EXAMINATION</strong></td></tr>
+        <tr><td><strong>Direct Gram Stain</strong></td><td colspan="2">${multiline(gramStain)}</td><td></td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>ROUTINE BACTERIAL CULTURE</strong></td></tr>
+        <tr><td><strong>Culture Status / Result</strong><div class="single-analyte-method">Culture, identification and susceptibility testing as applicable</div></td><td><span class="${status?.className || ""}">${escapeHtml(cultureValue)}</span></td><td>No growth</td><td></td></tr>
+        <tr><td><strong>Aerobic Culture</strong></td><td colspan="2">${multiline(aerobicCulture)}</td><td></td></tr>
+        <tr><td><strong>Culture Quantity / Semi-quantitation</strong></td><td colspan="2">${multiline(cultureQuantity)}</td><td></td></tr>
+        <tr><td><strong>Organism(s) Isolated</strong></td><td colspan="2">${multiline(organism)}</td><td></td></tr>
+        <tr><td><strong>Identification Method</strong></td><td colspan="2">${multiline(identification)}</td><td></td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>ANTIMICROBIAL SUSCEPTIBILITY</strong></td></tr>
+        <tr><td><strong>Antimicrobial / MIC / Interpretation</strong></td><td colspan="3" style="white-space:pre-wrap">${multiline(susceptibility)}</td></tr>
+        <tr><td><strong>Resistance Markers / Alerts</strong></td><td colspan="3" style="white-space:pre-wrap">${multiline(resistance)}</td></tr>
+        <tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${multiline(comments)}</td></tr>
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes bronchial-washing-culture-notes">
+      <div class="report-note-heading">Interpretation :</div>
+      <ul>
+        <li>A positive culture from bronchial washing may reflect lower-respiratory infection, airway colonisation, or contamination. Interpret it with the bronchoscopic site, specimen quality, microscopy, culture quantity when reported, imaging, and clinical findings.</li>
+        <li>No growth does not exclude infection. Prior antimicrobial therapy, low organism burden, transport delay, fastidious organisms, and culture conditions can reduce recovery.</li>
+        <li>Susceptibility interpretations apply only to the reported isolate and laboratory standard. An antimicrobial not reported must not be assumed susceptible.</li>
+        <li>Mycobacterial, fungal, viral, and molecular investigations require separate requested methods and are not included in this routine bacterial culture report unless explicitly stated.</li>
+      </ul>
+      <div class="report-note-heading">Specimen Note :</div>
+      <p>Bronchial washing should be collected aseptically into a laboratory-approved sterile container and transported promptly. Include the bronchial site and relevant antimicrobial exposure where available.</p>
+    </div>
+  `;
+}
+
 function buildDrugAllergyReportBody(test) {
   const result = findReportParameter(test, [
     "Drug-Specific IgE Result / Findings",
@@ -11211,6 +11377,9 @@ function buildBunReportBody(test) {
   if (isBodyFluidCultureSensitivityTest(test)) return buildBodyFluidCultureSensitivityReportBody(test);
   if (isBodyFluidTotalProteinTest(test)) return buildBodyFluidTotalProteinReportBody(test);
   if (isBodyFluidChlorideTest(test)) return buildBodyFluidChlorideReportBody(test);
+  if (isBodyFluidBiochemistryTest(test)) return buildBodyFluidBiochemistryReportBody(test);
+  if (isBodyFluidSpecificGravityTest(test)) return buildBodyFluidSpecificGravityReportBody(test);
+  if (isBronchialWashingCultureSensitivityTest(test)) return buildBronchialWashingCultureSensitivityReportBody(test);
   if (isAfbCultureSensitivityTest(test)) return buildAfbCultureSensitivityReportBody(test);
   if (isStoolCultureTest(test)) return buildCultureReportBody(test, {
     cultureName: "CULTURE, STOOL",
@@ -12564,7 +12733,7 @@ function buildReportHtml(reportData) {
   const bronchialPapTest = singleTest && getBronchialPapSpecimen(singleTest)
     && !String(singleTest.report_body || "").trim() ? singleTest : null;
   const digoxinTest = singleTest && (isAnticardiolipinIggIgmPanelTest(singleTest) || isAnticardiolipinIgaIggPanelTest(singleTest) || isAnticardiolipinIgaIgmPanelTest(singleTest) || isAnticardiolipinIgaTest(singleTest) || isAntenatalProfileTest(singleTest) || isTotalAcidPhosphataseTest(singleTest) || isProstaticAcidPhosphataseTest(singleTest) || isAgRatioTest(singleTest) || isDigoxinTest(singleTest)) ? singleTest : null;
-  const bunTest = singleTest && (isBunTest(singleTest) || isBilirubinFractionationTest(singleTest) || isSerumBicarbonateTest(singleTest) || isAsciticFluidAnalysisTest(singleTest) || isApolipoproteinBTest(singleTest) || isAnticardiolipinIgmTest(singleTest) || isAnticardiolipinIggTest(singleTest) || isAntiTgTest(singleTest) || isAntiTpoTest(singleTest) || isAnemiaScreeningProfileTest(singleTest) || isComprehensiveAnemiaProfileTest(singleTest) || isAndrostenedioneTest(singleTest) || isGroupBStrepTest(singleTest) || isFungusKohPreparationTest(singleTest) || isSputumAfbTest(singleTest) || isBaccalSmearBrrBodyTest(singleTest) || isAutoimmuneProfileTest(singleTest) || isAfbZiehlNeelsenStainTest(singleTest) || isBloodCultureSensitivityTest(singleTest) || isBodyFluidCultureSensitivityTest(singleTest) || isBodyFluidTotalProteinTest(singleTest) || isBodyFluidChlorideTest(singleTest) || isAfbCultureSensitivityTest(singleTest) || isStoolCultureTest(singleTest) || isUrineCultureTest(singleTest) || isMalariaParasiteIdentificationTest(singleTest) || isMycobacteriumCombinedPanelTest(singleTest) || isOvaAndParasiteTest(singleTest) || isTripleMarkerTest(singleTest) || isDoubleMarkerTest(singleTest) || isPax8Test(singleTest) || isGalectin3Test(singleTest) || isHer2Test(singleTest) || isDcpTest(singleTest) || isAfpTumorMarkerTest(singleTest) || isCa199Test(singleTest) || isCa153Test(singleTest) || isCa125Test(singleTest) || isTroponinITest(singleTest) || isTroponinTTest(singleTest) || isDengueNs1Test(singleTest) || isDengueIggTest(singleTest) || isDengueIgmTest(singleTest) || isRastTest(singleTest) || isWidalTest(singleTest) || isCrpTest(singleTest) || isSodiumTest(singleTest) || isIronTest(singleTest) || isLacticAcidTest(singleTest) || isMagnesiumTest(singleTest) || isLipaseTest(singleTest) || isAmylaseTest(singleTest) || isGgtTest(singleTest) || isChlorideTest(singleTest) || isCreatinine24HourUrineTest(singleTest) || isSemenAnalysisTest(singleTest) || isUrineCotinineTest(singleTest) || isUrineGlucoseTest(singleTest) || isPorphyrinsTest(singleTest) || isOccultBloodStoolTest(singleTest) || isCsfAnalysisTest(singleTest) || isTshTest(singleTest) || isThyroidProfileTest(singleTest) || isThyroidAntibodiesTest(singleTest) || isTriiodothyronineTotalTest(singleTest) || isTestosteroneTotalTest(singleTest) || isProgesteroneTest(singleTest) || isCortisoneTest(singleTest) || isActhTest(singleTest) || isAdaTest(singleTest) || isBetaHcgPregnancyTest(singleTest) || isProlactinTest(singleTest) || isDheaTest(singleTest) || isEstradiolTest(singleTest) || isLuteinizingHormoneTest(singleTest) || isFollicleStimulatingHormoneTest(singleTest) || isThyroxineTotalTest(singleTest) || isCalcitoninTest(singleTest) || isInhibinATest(singleTest) || isInhibinBTest(singleTest) || isPappATest(singleTest) || isDheasTest(singleTest) || isBoneMarrowAspirationCytologyTest(singleTest) || isBoneMarrowCytologyTest(singleTest) || isHistopathologyReportTest(singleTest) || isCreatinineTest(singleTest) || isIonizedCalciumTest(singleTest) || isFlecainideTest(singleTest) || isPhenobarbitalTest(singleTest) || isKetoneBodyTest(singleTest) || isUricAcidTest(singleTest) || isTibcTest(singleTest) || isSerumOsmolalityTest(singleTest) || isArterialBloodGasTest(singleTest) || isManganeseBloodTest(singleTest) || isSeleniumSerumTest(singleTest))
+  const bunTest = singleTest && (isBunTest(singleTest) || isBilirubinFractionationTest(singleTest) || isSerumBicarbonateTest(singleTest) || isAsciticFluidAnalysisTest(singleTest) || isApolipoproteinBTest(singleTest) || isAnticardiolipinIgmTest(singleTest) || isAnticardiolipinIggTest(singleTest) || isAntiTgTest(singleTest) || isAntiTpoTest(singleTest) || isAnemiaScreeningProfileTest(singleTest) || isComprehensiveAnemiaProfileTest(singleTest) || isAndrostenedioneTest(singleTest) || isGroupBStrepTest(singleTest) || isFungusKohPreparationTest(singleTest) || isSputumAfbTest(singleTest) || isBaccalSmearBrrBodyTest(singleTest) || isAutoimmuneProfileTest(singleTest) || isAfbZiehlNeelsenStainTest(singleTest) || isBloodCultureSensitivityTest(singleTest) || isBodyFluidCultureSensitivityTest(singleTest) || isBodyFluidTotalProteinTest(singleTest) || isBodyFluidChlorideTest(singleTest) || isBodyFluidBiochemistryTest(singleTest) || isBodyFluidSpecificGravityTest(singleTest) || isBronchialWashingCultureSensitivityTest(singleTest) || isAfbCultureSensitivityTest(singleTest) || isStoolCultureTest(singleTest) || isUrineCultureTest(singleTest) || isMalariaParasiteIdentificationTest(singleTest) || isMycobacteriumCombinedPanelTest(singleTest) || isOvaAndParasiteTest(singleTest) || isTripleMarkerTest(singleTest) || isDoubleMarkerTest(singleTest) || isPax8Test(singleTest) || isGalectin3Test(singleTest) || isHer2Test(singleTest) || isDcpTest(singleTest) || isAfpTumorMarkerTest(singleTest) || isCa199Test(singleTest) || isCa153Test(singleTest) || isCa125Test(singleTest) || isTroponinITest(singleTest) || isTroponinTTest(singleTest) || isDengueNs1Test(singleTest) || isDengueIggTest(singleTest) || isDengueIgmTest(singleTest) || isRastTest(singleTest) || isWidalTest(singleTest) || isCrpTest(singleTest) || isSodiumTest(singleTest) || isIronTest(singleTest) || isLacticAcidTest(singleTest) || isMagnesiumTest(singleTest) || isLipaseTest(singleTest) || isAmylaseTest(singleTest) || isGgtTest(singleTest) || isChlorideTest(singleTest) || isCreatinine24HourUrineTest(singleTest) || isSemenAnalysisTest(singleTest) || isUrineCotinineTest(singleTest) || isUrineGlucoseTest(singleTest) || isPorphyrinsTest(singleTest) || isOccultBloodStoolTest(singleTest) || isCsfAnalysisTest(singleTest) || isTshTest(singleTest) || isThyroidProfileTest(singleTest) || isThyroidAntibodiesTest(singleTest) || isTriiodothyronineTotalTest(singleTest) || isTestosteroneTotalTest(singleTest) || isProgesteroneTest(singleTest) || isCortisoneTest(singleTest) || isActhTest(singleTest) || isAdaTest(singleTest) || isBetaHcgPregnancyTest(singleTest) || isProlactinTest(singleTest) || isDheaTest(singleTest) || isEstradiolTest(singleTest) || isLuteinizingHormoneTest(singleTest) || isFollicleStimulatingHormoneTest(singleTest) || isThyroxineTotalTest(singleTest) || isCalcitoninTest(singleTest) || isInhibinATest(singleTest) || isInhibinBTest(singleTest) || isPappATest(singleTest) || isDheasTest(singleTest) || isBoneMarrowAspirationCytologyTest(singleTest) || isBoneMarrowCytologyTest(singleTest) || isHistopathologyReportTest(singleTest) || isCreatinineTest(singleTest) || isIonizedCalciumTest(singleTest) || isFlecainideTest(singleTest) || isPhenobarbitalTest(singleTest) || isKetoneBodyTest(singleTest) || isUricAcidTest(singleTest) || isTibcTest(singleTest) || isSerumOsmolalityTest(singleTest) || isArterialBloodGasTest(singleTest) || isManganeseBloodTest(singleTest) || isSeleniumSerumTest(singleTest))
     ? singleTest
     : null;
   const typhidotTest = singleTest && (isTyphidotTest(singleTest) || isHbsAgTest(singleTest) || isAntiHbcIgmTest(singleTest) || isHepatitisBProfileTest(singleTest) || isMantouxTest(singleTest) || isHiv12ScreeningTest(singleTest) || isAntiBTitreTest(singleTest) || isAntiATitreTest(singleTest) || isDustAllergyTest(singleTest) || isDengueFeverPanelTest(singleTest) || isG6PdTest(singleTest) || isAntiHbsTest(singleTest) || isGangliosideGm1IggTest(singleTest) || isGangliosideGm1IgmTest(singleTest) || isGangliosideGd1aIggTest(singleTest) || isGangliosideGd1aIgmTest(singleTest) || isGangliosideGd1bIggTest(singleTest) || isGangliosideGq1bIggTest(singleTest) || isAntiHistoneAntibodiesTest(singleTest) || isRibosomePAntibodiesTest(singleTest) || isAntiCcpTest(singleTest) || isImmunoglobulinIggTest(singleTest) || isImmunoglobulinIgeTest(singleTest) || isImmunoglobulinIgmTest(singleTest) || isImmunoglobulinIgaTest(singleTest))
@@ -12733,6 +12902,9 @@ function buildReportHtml(reportData) {
         if (reportData.tests.length === 1 && isBodyFluidCultureSensitivityTest(t)) return "BODY FLUID CULTURE & SENSITIVITY";
         if (reportData.tests.length === 1 && isBodyFluidTotalProteinTest(t)) return "TOTAL PROTEIN, BODY FLUID";
         if (reportData.tests.length === 1 && isBodyFluidChlorideTest(t)) return "CHLORIDE, BODY FLUID";
+        if (reportData.tests.length === 1 && isBodyFluidBiochemistryTest(t)) return "BODY FLUID BIOCHEMISTRY";
+        if (reportData.tests.length === 1 && isBodyFluidSpecificGravityTest(t)) return "SPECIFIC GRAVITY, BODY FLUID";
+        if (reportData.tests.length === 1 && isBronchialWashingCultureSensitivityTest(t)) return "BRONCHIAL WASHING CULTURE & SENSITIVITY";
         if (reportData.tests.length === 1 && isAfbCultureSensitivityTest(t)) return "AFB CULTURE & SENSITIVITY";
         if (reportData.tests.length === 1 && isStoolCultureTest(t)) return "STOOL CULTURE";
         if (reportData.tests.length === 1 && isUrineCultureTest(t)) return "URINE CULTURE";

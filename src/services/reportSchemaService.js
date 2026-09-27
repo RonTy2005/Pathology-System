@@ -104,6 +104,50 @@ function getFallbackReportParameters(test = {}) {
     ];
   }
 
+  if (["bodyfluidsbiochemistry", "bodyfluidbiochemistry"].includes(normalizedName)) {
+    return [
+      createParameter("Fluid Type / Source"),
+      createParameter("Collection Date / Time"),
+      createParameter("Appearance"),
+      createParameter("Total Protein, Body Fluid", { unit: "g/dL", normalRange: "Fluid-specific / interpretive" }),
+      createParameter("Albumin, Body Fluid", { unit: "g/dL", normalRange: "Fluid-specific / interpretive" }),
+      createParameter("Glucose, Body Fluid", { unit: "mg/dL", normalRange: "Fluid-specific / interpretive" }),
+      createParameter("LDH, Body Fluid", { unit: "U/L", normalRange: "Fluid-specific / interpretive" }),
+      createParameter("Additional Biochemistry / Findings"),
+      createParameter("Method / Analyzer"),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (["bodyfluidsforspecificgravity", "bodyfluidforspecificgravity", "bodyfluidspecificgravity"].includes(normalizedName)) {
+    return [
+      createParameter("Specific Gravity, Body Fluid", { normalRange: "Fluid-specific / interpretive" }),
+      createParameter("Fluid Type / Source"),
+      createParameter("Collection Date / Time"),
+      createParameter("Appearance"),
+      createParameter("Method / Instrument"),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (["bronchialwashingforcs", "bronchialwashingcultureandsensitivity", "bronchialwashingculturesensitivity"].includes(normalizedName)) {
+    return [
+      createParameter("Culture Status / Result", { normalRange: "No growth" }),
+      createParameter("Bronchial Site / Procedure"),
+      createParameter("Collection Date / Time"),
+      createParameter("Clinical Indication"),
+      createParameter("Report Status"),
+      createParameter("Direct Gram Stain"),
+      createParameter("Aerobic Culture", { normalRange: "No growth" }),
+      createParameter("Culture Quantity / Semi-quantitation"),
+      createParameter("Organism(s) Isolated", { normalRange: "No growth" }),
+      createParameter("Identification Method"),
+      createParameter("Antimicrobial Susceptibility"),
+      createParameter("Resistance Markers / Alerts"),
+      createParameter("Comments"),
+    ];
+  }
+
   if (["baccalsmearforbrrbody", "buccalsmearforbarrbody"].includes(normalizedName)) {
     return [
       createParameter("Specimen / Collection Site"),
