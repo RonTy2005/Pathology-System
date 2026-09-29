@@ -28,7 +28,118 @@ function getFallbackReportParameters(test = {}) {
   if (cellParameters) return cellParameters;
   const normalizedName = normalizeSchemaName(test.name);
 
-  if (["bronchialbrushingforpap", "bronchiallavageforpap"].includes(normalizedName)) {
+  if (["cmvcytomegalovirusigmigg", "cytomegaloviruscmvigmigg", "cytomegaloviruscmviggigm", "cytomegalovirusigmigg", "cmviggigm"].includes(normalizedName)) {
+    return [
+      createParameter("Cytomegalovirus (CMV) IgM", { normalRange: "Laboratory-validated assay interpretation" }),
+      createParameter("Cytomegalovirus (CMV) IgG", { normalRange: "Laboratory-validated assay interpretation" }),
+      createParameter("Specimen"),
+      createParameter("Method / Analyzer"),
+      createParameter("Clinical Details / Indication"),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (["c3complement3", "c3complement", "complement3", "complementc3"].includes(normalizedName)) {
+    return [
+      createParameter("Complement C3, Serum", { unit: "mg/dL", normalRange: "Laboratory-validated, age-specific reference interval" }),
+      createParameter("Specimen"),
+      createParameter("Collection Date / Time"),
+      createParameter("Method / Analyzer"),
+      createParameter("Clinical Indication"),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (["c4complement4", "c4complement", "complement4", "complementc4"].includes(normalizedName)) {
+    return [
+      createParameter("Complement C4, Serum", { unit: "mg/dL", normalRange: "Laboratory-validated, age-specific reference interval" }),
+      createParameter("Specimen"),
+      createParameter("Collection Date / Time"),
+      createParameter("Method / Analyzer"),
+      createParameter("Clinical Indication"),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (["cancaantipr3", "canca", "antipr3", "proteinase3antibody", "proteinase3antibodies"].includes(normalizedName)) {
+    return [
+      createParameter("cANCA (IIF) Result / Pattern", { normalRange: "Negative" }),
+      createParameter("Anti-PR3 Antibody, IgG", { unit: "U/mL", normalRange: "Laboratory-validated assay interpretation" }),
+      createParameter("Titre / Endpoint Dilution"),
+      createParameter("Specimen"),
+      createParameter("Method / Analyzer"),
+      createParameter("Clinical Details / Indication"),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (["cctcreatinineclearancetest", "creatinineclearancetest", "creatinineclearance", "cct"].includes(normalizedName)) {
+    return [
+      createParameter("Urine Creatinine Concentration", { unit: "mg/dL" }),
+      createParameter("Total Urine Volume", { unit: "mL" }),
+      createParameter("Collection Duration", { unit: "hours", normalRange: "24 hours unless otherwise stated" }),
+      createParameter("Serum Creatinine", { unit: "mg/dL" }),
+      {
+        ...createParameter("Creatinine Clearance (Uncorrected)", { unit: "mL/min", normalRange: "Laboratory-validated, age- and sex-specific reference interval" }),
+        entryMode: "calculated",
+        calculationFormula: "{Urine Creatinine Concentration} * {Total Urine Volume} / {Serum Creatinine} / {Collection Duration} / 60",
+        calculationPrecision: 1,
+      },
+      createParameter("Height", { unit: "cm" }),
+      createParameter("Weight", { unit: "kg" }),
+      createParameter("Method / Analyzer"),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (["cd3lymphocyte", "cd3tlymphocyte", "cd3tcell", "cd3tcellcount"].includes(normalizedName)) {
+    return [
+      createParameter("CD3+ T Lymphocytes", { unit: "% of lymphocytes", normalRange: "Laboratory-validated, age-specific reference interval" }),
+      createParameter("CD3+ T Lymphocytes, Absolute Count", { unit: "cells/µL", normalRange: "Laboratory-validated, age-specific reference interval" }),
+      createParameter("Total Lymphocyte Count", { unit: "cells/µL" }),
+      createParameter("Specimen"),
+      createParameter("Method / Analyzer"),
+      createParameter("Lymphocyte Viability"),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (["cd4lymphocyte", "cd4tlymphocyte", "cd4tcell", "cd4tcellcount"].includes(normalizedName)) {
+    return [
+      createParameter("CD4+ T Lymphocytes", { unit: "% of lymphocytes", normalRange: "Laboratory-validated, age-specific reference interval" }),
+      createParameter("CD4+ T Lymphocytes, Absolute Count", { unit: "cells/µL", normalRange: "Laboratory-validated, age-specific reference interval" }),
+      createParameter("Total Lymphocyte Count", { unit: "cells/µL" }),
+      createParameter("Specimen"),
+      createParameter("Method / Analyzer"),
+      createParameter("Lymphocyte Viability"),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (["cd8lymphocyte", "cd8tlymphocyte", "cd8tcell", "cd8tcellcount"].includes(normalizedName)) {
+    return [
+      createParameter("CD8+ T Lymphocytes", { unit: "% of lymphocytes", normalRange: "Laboratory-validated, age-specific reference interval" }),
+      createParameter("CD8+ T Lymphocytes, Absolute Count", { unit: "cells/µL", normalRange: "Laboratory-validated, age-specific reference interval" }),
+      createParameter("Total Lymphocyte Count", { unit: "cells/µL" }),
+      createParameter("Specimen"), createParameter("Method / Analyzer"), createParameter("Lymphocyte Viability"), createParameter("Comments"),
+    ];
+  }
+
+  if (["ceacarcinoembryonicantigen", "cea"].includes(normalizedName)) {
+    return [createParameter("Carcinoembryonic Antigen (CEA)", { unit: "ng/mL", normalRange: "Laboratory-validated reference interval" }), createParameter("Specimen"), createParameter("Method / Analyzer"), createParameter("Clinical Indication"), createParameter("Comments")];
+  }
+
+  if (["cftcompletefixsationtest", "cftcompletefixationtest", "cftcomplementfixationtest", "complementfixationtest", "cft"].includes(normalizedName)) {
+    return [createParameter("Target Antigen / Assay"), createParameter("Complement Fixation Result", { normalRange: "Laboratory-validated interpretation" }), createParameter("Complement Fixation Titre"), createParameter("Specimen"), createParameter("Method / Laboratory"), createParameter("Comments")];
+  }
+
+  if (["cpkwithckmb", "cpkckmb", "creatinephosphokinasewithckmb"].includes(normalizedName)) return [createParameter("Creatine Phosphokinase (CPK), Total", { unit: "U/L", normalRange: "Laboratory-validated, age- and sex-specific reference interval" }), createParameter("CK-MB", { unit: "U/L", normalRange: "Laboratory-validated reference interval" }), createParameter("Specimen"), createParameter("Method / Analyzer"), createParameter("Clinical Details / Indication"), createParameter("Comments")];
+
+  if (["cpkcreatinephosphokinase", "creatinephosphokinase", "cpk", "cktotal", "totalck"].includes(normalizedName)) return [createParameter("Creatine Phosphokinase (CPK), Total", { unit: "U/L", normalRange: "Laboratory-validated, age- and sex-specific reference interval" }), createParameter("Specimen"), createParameter("Method / Analyzer"), createParameter("Clinical Details / Indication"), createParameter("Comments")];
+
+  if (["ckmb", "creatinekinasemb"].includes(normalizedName)) return [createParameter("CK-MB", { unit: "U/L", normalRange: "Laboratory-validated reference interval" }), createParameter("Specimen"), createParameter("Method / Analyzer"), createParameter("Comments")];
+
+  if (["bronchialbrushingforpap", "bronchiallavageforpap", "bronchialwashingforpap"].includes(normalizedName)) {
     return [
       createParameter("Specimen / Collection Site"),
       createParameter("Collection Date / Time"),
@@ -148,7 +259,8 @@ function getFallbackReportParameters(test = {}) {
     ];
   }
 
-  if (["baccalsmearforbrrbody", "buccalsmearforbarrbody"].includes(normalizedName)) {
+  if (["baccalsmearforbrrbody", "buccalsmearforbarrbody", "buccalsmearforsexchromation", "buccalsmearforsexchromatin"].includes(normalizedName)
+    || normalizedName.startsWith("buccalsmearforsexchromationb")) {
     return [
       createParameter("Specimen / Collection Site"),
       createParameter("Collection Date / Time"),

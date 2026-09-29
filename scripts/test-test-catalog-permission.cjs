@@ -15,6 +15,10 @@ function routeFor(method, routePath) {
 test('a user assigned only manage_tests lands in the catalogue and the page uses permission access', () => {
   const common = fs.readFileSync(path.join(__dirname, '../frontend/scripts/common.js'), 'utf8');
   const catalogue = fs.readFileSync(path.join(__dirname, '../frontend/scripts/testCatalog.js'), 'utf8');
+  const reception = fs.readFileSync(path.join(__dirname, '../frontend/reception.html'), 'utf8');
+  const receptionLogic = fs.readFileSync(path.join(__dirname, '../frontend/scripts/reception.js'), 'utf8');
+  const admin = fs.readFileSync(path.join(__dirname, '../frontend/admin.html'), 'utf8');
+  const adminLogic = fs.readFileSync(path.join(__dirname, '../frontend/scripts/admin.js'), 'utf8');
   const definition = common.match(/function getRoleHome\(role, user\) \{[\s\S]*?\n\}(?=\s*function currency)/)?.[0];
   assert.ok(definition);
   const scope = vm.createContext({});
@@ -24,6 +28,11 @@ test('a user assigned only manage_tests lands in the catalogue and the page uses
   assert.match(catalogue, /const currentUser = protectPage\(\);/);
   assert.match(catalogue, /if \(!hasPermission\("manage_tests"\)\)/);
   assert.match(common, /link\.textContent = "Test Catalogue"/);
+  assert.match(reception, /id="navTestCatalog"/);
+  assert.match(receptionLogic, /navTestCatalog\.href = `test-catalog\.html\?returnTo=\$\{encodeURIComponent\(returnTo\)\}`/);
+  assert.match(receptionLogic, /if \(!href\.startsWith\("#"\)\) return;/);
+  assert.match(admin, /href="#window-test-catalog" id="adminTestCatalogLink" hidden>Test Catalogue/);
+  assert.match(adminLogic, /testCatalogLink\.hidden = !hasPermission\("manage_tests"\)/);
 });
 
 test('every catalogue action and both previews require manage_tests, regardless of role', () => {
@@ -51,10 +60,11 @@ test('a manage_tests-only user can change a catalogue price without other permis
   await connection.switchDatabasePath(':memory:');
   const { run, get } = require('../src/db/helpers');
   try {
-    await run('CREATE TABLE tests (id INTEGER PRIMARY KEY, name TEXT, code TEXT, category TEXT, sample_type TEXT, price REAL, turnaround_hours INTEGER, report_body TEXT, active INTEGER)');
+    await run('CREATE TABLE tests (id INTEGER PRIMARY KEY, name TEXT UNIQUE, code TEXT UNIQUE, category TEXT, sample_type TEXT, price REAL, turnaround_hours INTEGER, report_body TEXT, active INTEGER)');
     await run('CREATE TABLE test_parameters (test_id INTEGER, parameter_name TEXT, unit TEXT, normal_range TEXT, entry_mode TEXT, calculation_formula TEXT, calculation_precision INTEGER, display_order INTEGER)');
     await run('CREATE TABLE logs (user_id INTEGER, action TEXT, entity_type TEXT, entity_id TEXT, meta TEXT, created_at TEXT)');
     await run("INSERT INTO tests (id,name,price,active) VALUES (1,'Sample Test',100,1)");
+    await run("INSERT INTO tests (id,name,price,active) VALUES (2,'Another uncoded test',100,1)");
 
     const route = routeFor('put', '/:id');
     const request = (user) => new Promise((resolve, reject) => {
@@ -66,7 +76,7 @@ test('a manage_tests-only user can change a catalogue price without other permis
       };
       const req = {
         user, params: { id: '1' },
-        body: { name: 'Sample Test', code: 'SAMPLE', category: 'Lab', sampleType: 'Serum', price: 275,
+        body: { name: 'Sample Test', code: '', category: 'Lab', sampleType: 'Serum', price: 275,
           turnaroundHours: 24, active: true, parameters: [{ parameterName: 'Result', unit: '', normalRange: '' }], reportBody: '' },
       };
       function next(error) {
@@ -85,6 +95,7 @@ test('a manage_tests-only user can change a catalogue price without other permis
     const saved = await request({ id: 3, role: ROLES.NA, permissions: [PERMISSIONS.MANAGE_TESTS] });
     assert.equal(saved.statusCode, 200);
     assert.equal((await get('SELECT price FROM tests WHERE id=1')).price, 275);
+    assert.equal((await get('SELECT code FROM tests WHERE id=1')).code, null, 'blank catalogue codes stay NULL so uncoded tests can be edited safely');
     assert.equal((await get('SELECT action FROM logs WHERE entity_id=?', ['1'])).action, 'test_update');
   } finally {
     await connection.closeDatabase();

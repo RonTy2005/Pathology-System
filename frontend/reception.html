@@ -18,6 +18,7 @@
         <a href="#reception-summary" class="active">Overview</a>
         <a href="#new-visit" id="navNewVisit">New Patient</a>
         <a href="#patient-management">Patient Management</a>
+        <a href="test-catalog.html" id="navTestCatalog" hidden>Test Catalogue</a>
         <a href="#results-entry" id="navResultsEntry">Enter Results</a>
         <a href="#reports">Reports</a>
         <a href="#due-collection">Due Collection</a>
@@ -35,7 +36,6 @@
         </div>
         <div>
           <div id="currentUser" class="pill"></div>
-          <button class="secondary-btn" id="openTestCatalogBtn" type="button" hidden>Manage Tests</button>
         </div>
       </header>
 
@@ -795,6 +795,16 @@
   </div>
 
   <script src="scripts/reportEligibility.js"></script>
+  <script>
+    if (window.parent !== window && new URLSearchParams(window.location.search).get("workspace") === "patient-management") {
+      try {
+        if (window.parent.location.origin === window.location.origin) {
+          if (!window.labLmsDesktop) window.labLmsDesktop = window.parent.labLmsDesktop;
+          if (!window.labLmsConnection) window.labLmsConnection = window.parent.labLmsConnection;
+        }
+      } catch (_error) { /* Standalone browser pages have no desktop bridge. */ }
+    }
+  </script>
   <script src="scripts/common.js"></script>
   <script src="scripts/reception.js"></script>
 </body>

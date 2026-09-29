@@ -347,6 +347,11 @@ function getFacilityTypes() {
 }
 
 function canOpenWindow(hash) {
+  if (hash === "#window-patient-management") {
+    return hasAccessControl("edit_patient_details")
+      || hasPermission("manage_patients")
+      || hasPermission("manage_billing");
+  }
   if (SUPERADMIN_ONLY_WINDOWS.has(hash)) return isSuperadminRole();
   return isAdminRole() || !ADMIN_ONLY_WINDOWS.has(hash);
 }
@@ -358,7 +363,9 @@ function configureSectionAccess() {
     else if (ADMIN_ONLY_WINDOWS.has(hash)) link.hidden = !isAdminRole();
   });
   const patientManagementLink = document.getElementById("adminPatientManagementLink");
-  if (patientManagementLink) patientManagementLink.hidden = !hasAccessControl("edit_patient_details");
+  if (patientManagementLink) patientManagementLink.hidden = !canOpenWindow("#window-patient-management");
+  const testCatalogLink = document.getElementById("adminTestCatalogLink");
+  if (testCatalogLink) testCatalogLink.hidden = !hasPermission("manage_tests");
 }
 
 async function loadBusinessSettings() {
@@ -1387,6 +1394,10 @@ function openTaskWindow(hash) {
     windowElement.hidden = windowElement !== target;
   });
   target.hidden = false;
+  if (hash === "#window-patient-management") {
+    const frame = document.getElementById("adminPatientManagementFrame");
+    if (frame && !frame.hasAttribute("src")) frame.src = frame.dataset.src;
+  }
   
   setActiveNavLink(hash);
   updateWorkspaceEmptyState();

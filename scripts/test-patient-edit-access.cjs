@@ -9,6 +9,8 @@ test("patient-detail access reveals the patient-management workspace", () => {
   const reception = fs.readFileSync(path.join(__dirname, "../frontend/scripts/reception.js"), "utf8");
   const technician = fs.readFileSync(path.join(__dirname, "../frontend/scripts/technician.js"), "utf8");
   const admin = fs.readFileSync(path.join(__dirname, "../frontend/admin.html"), "utf8");
+  const adminLogic = fs.readFileSync(path.join(__dirname, "../frontend/scripts/admin.js"), "utf8");
+  const styles = fs.readFileSync(path.join(__dirname, "../frontend/styles/app.css"), "utf8");
   const form = fs.readFileSync(path.join(__dirname, "../frontend/reception.html"), "utf8");
   const definition = common.match(/function getRoleHome\(role, user\) \{[\s\S]*?\n\}(?=\s*function currency)/)?.[0];
   assert.ok(definition);
@@ -19,9 +21,17 @@ test("patient-detail access reveals the patient-management workspace", () => {
   assert.match(reception, /"#patient-management" && canEditPatients/);
   assert.match(reception, /if \(!canManagePatientVisits\) \{/);
   assert.match(technician, /hasAccessControl\("edit_patient_details"\)/);
-  assert.match(admin, /id="adminPatientManagementLink"/);
+  assert.match(admin, /href="#window-patient-management" id="adminPatientManagementLink"/);
+  assert.match(admin, /id="window-patient-management"/);
+  assert.match(admin, /id="adminPatientManagementFrame"[^>]*data-src="reception\.html\?workspace=patient-management#patient-management"/);
+  assert.match(adminLogic, /if \(hash === "#window-patient-management"\) \{[\s\S]*?frame\.src = frame\.dataset\.src;/);
+  assert.match(reception, /embeddedPatientManagement[\s\S]*?classList\.add\("patient-management-embed"\)/);
+  assert.match(reception, /if \(embeddedPatientManagement\) return href === "#patient-management"/);
+  assert.match(styles, /html\.patient-management-embed \.app-shell \.sidebar,[\s\S]*?display: none !important;/);
   assert.match(form, /id="patientVisitEditFields"/);
   assert.match(form, /id="savePatientEditBtn"/);
+  assert.match(form, /window\.parent\.location\.origin === window\.location\.origin/);
+  assert.match(form, /window\.labLmsDesktop = window\.parent\.labLmsDesktop/);
 });
 
 test("editing only patient details leaves existing visit payments untouched", async () => {

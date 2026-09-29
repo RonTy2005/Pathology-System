@@ -367,10 +367,24 @@ function isBTypeNatriureticPeptideTest(test) {
 function isCreatineKinaseTest(test) {
   const name = normalizeParameterName(test?.name);
   const code = normalizeParameterName(test?.code);
-  return code === "ck" || code === "pf023" || code === "creatinekinase"
+  return code === "ck" || code === "ckmb" || code === "cpk" || code === "cpkckmb" || code === "pf023" || code === "creatinekinase"
     || name === "ck"
+    || name === "ckmb"
+    || name === "cpk"
+    || name === "cpkwithckmb"
+    || name === "cpkckmb"
+    || name === "creatinephosphokinasewithckmb"
+    || name === "cpkcreatinephosphokinase"
+    || name === "creatinephosphokinase"
+    || name === "creatinekinasemb"
     || name.includes("creatinekinase")
     || name.includes("totalck");
+}
+
+function isCpkWithCkMbTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "cpkckmb" || ["cpkwithckmb", "cpkckmb", "creatinephosphokinasewithckmb"].includes(name);
 }
 
 function isBeta2MicroglobulinTest(test) {
@@ -531,7 +545,10 @@ function isBaccalSmearBrrBodyTest(test) {
   const code = normalizeParameterName(test?.code);
   return code === "baccalsmearbrrbody001"
     || name === "baccalsmearforbrrbody"
-    || name === "buccalsmearforbarrbody";
+    || name === "buccalsmearforbarrbody"
+    || name === "buccalsmearforsexchromation"
+    || name === "buccalsmearforsexchromatin"
+    || name.startsWith("buccalsmearforsexchromationb");
 }
 
 function isAutoimmuneProfileTest(test) {
@@ -614,6 +631,40 @@ function isBodyFluidSpecificGravityTest(test) {
     || name === "bodyfluidforspecificgravity"
     || name === "bodyfluidspecificgravity"
     || code === "bodyfluidspecificgravity001";
+}
+
+function isComplementC3Test(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "complementc3001"
+    || code === "c3complement001"
+    || name === "c3complement3"
+    || name === "c3complement"
+    || name === "complement3"
+    || name === "complementc3";
+}
+
+function isComplementC4Test(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "complementc4001"
+    || code === "c4complement001"
+    || name === "c4complement4"
+    || name === "c4complement"
+    || name === "complement4"
+    || name === "complementc4";
+}
+
+function isCancaAntiPr3Test(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "cancaantipr3001"
+    || code === "cancaantipr3"
+    || name === "cancaantipr3"
+    || name === "canca"
+    || name === "antipr3"
+    || name === "proteinase3antibody"
+    || name === "proteinase3antibodies";
 }
 
 function isBronchialWashingCultureSensitivityTest(test) {
@@ -809,6 +860,14 @@ function isTorchProfileTest(test) {
   const name = normalizeParameterName(test?.name);
   const code = normalizeParameterName(test?.code);
   return code === "torch" || name.includes("torchprofile") || name.includes("torchpanel");
+}
+
+function isCmvIgmIggTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "cmviggigm"
+    || code === "cmvigmigg"
+    || ["cmvcytomegalovirusigmigg", "cytomegaloviruscmvigmigg", "cytomegaloviruscmviggigm", "cytomegalovirusigmigg", "cmviggigm"].includes(name);
 }
 
 function isTnfAlphaTest(test) {
@@ -1184,7 +1243,8 @@ function isTotalAcidPhosphataseTest(test) {
 function isBunTest(test) {
   const name = normalizeParameterName(test?.name);
   const code = normalizeParameterName(test?.code);
-  return code === "bun"
+  return isComplementFixationTest(test)
+    || code === "bun"
     || name === "bun"
     || name === "bunbloodureanitrogen"
     || name === "bloodureanitrogenbun"
@@ -1359,6 +1419,57 @@ function isCreatinine24HourUrineTest(test) {
   const code = normalizeParameterName(test?.code);
   return code === "creatinine24hoururine" || code === "creatinine24hurine"
     || (name.includes("creatinine") && name.includes("24") && name.includes("urine"));
+}
+
+function isCreatinineClearanceTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "creatinineclearance001"
+    || code === "cctcreatinineclearance001"
+    || name === "cctcreatinineclearancetest"
+    || name === "creatinineclearancetest"
+    || name === "creatinineclearance"
+    || name === "cct";
+}
+
+function isCd3LymphocyteTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "cd3lymphocyte001"
+    || code === "cd3tcell001"
+    || name === "cd3lymphocyte"
+    || name === "cd3tlymphocyte"
+    || name === "cd3tcell"
+    || name === "cd3tcellcount";
+}
+
+function isCd4LymphocyteTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "cd4lymphocyte001"
+    || code === "cd4tcell001"
+    || name === "cd4lymphocyte"
+    || name === "cd4tlymphocyte"
+    || name === "cd4tcell"
+    || name === "cd4tcellcount";
+}
+
+function isCd8LymphocyteTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "cd8lymphocyte001" || code === "cd8tcell001"
+    || name === "cd8lymphocyte" || name === "cd8tlymphocyte" || name === "cd8tcell" || name === "cd8tcellcount";
+}
+
+function isCeaTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "cea001" || code === "cea" || name === "ceacarcinoembryonicantigen" || name === "cea";
+}
+
+function isComplementFixationTest(test) {
+  const name = normalizeParameterName(test?.name); const code = normalizeParameterName(test?.code);
+  return code === "cft001" || code === "complementfixation001" || name === "cftcompletefixsationtest" || name === "cftcompletefixationtest" || name === "cftcomplementfixationtest" || name === "complementfixationtest" || name === "cft";
 }
 
 function isSemenAnalysisTest(test) {
@@ -1852,6 +1963,7 @@ function getBronchialPapSpecimen(test) {
   const name = normalizeParameterName(test?.name);
   if (name === "bronchialbrushingforpap") return "Bronchial Brushing";
   if (name === "bronchiallavageforpap") return "Bronchial Lavage";
+  if (name === "bronchialwashingforpap") return "Bronchial Washing";
   return null;
 }
 
@@ -5001,23 +5113,72 @@ function buildBTypeNatriureticPeptideReportBody(test) {
 }
 
 function buildCreatineKinaseReportBody(test) {
+  if (isCpkWithCkMbTest(test)) return buildCpkWithCkMbReportBody(test);
+  const normalizedName = normalizeParameterName(test?.name);
+  const isCkMb = normalizedName === "ckmb" || normalizedName === "creatinekinasemb";
+  const isCpk = normalizedName === "cpk" || normalizedName === "cpkcreatinephosphokinase" || normalizedName === "creatinephosphokinase";
   return `
     ${buildSingleAnalyteResultTable(test, {
       tableClass: "single-analyte-table creatine-kinase-table",
-      investigation: "CK, SERUM",
-      aliases: ["CK, Serum", "Creatine Kinase (Total CK)", "Creatine Kinase", "Total CK", "CK", "Result"],
-      method: "Agarose Gel Electrophoresis",
-      defaultRange: "< 171.00",
+      investigation: isCkMb ? "CK-MB, SERUM" : isCpk ? "CREATINE PHOSPHOKINASE (CPK), TOTAL, SERUM" : "CK, SERUM",
+      aliases: isCkMb ? ["CK-MB", "Creatine Kinase MB", "CK MB", "Result"] : isCpk ? ["Creatine Phosphokinase (CPK), Total", "CPK (Creatine Phosphokinase)", "Creatine Phosphokinase", "CPK", "Total CK", "CK", "Result"] : ["CK, Serum", "Creatine Kinase (Total CK)", "Creatine Kinase", "Total CK", "CK", "Result"],
+      method: isCkMb ? "Laboratory-validated CK-MB assay" : isCpk ? "Photometric enzymatic assay" : "Agarose Gel Electrophoresis",
+      defaultRange: isCpk ? "Laboratory-validated, age- and sex-specific reference interval" : "< 171.00",
       defaultUnit: "U/L",
     })}
     <div class="single-analyte-notes creatine-kinase-notes">
-      <div class="report-note-heading">Note :</div>
+      ${isCkMb ? `<div class="report-note-heading">Interpretation :</div><p>CK-MB is an isoenzyme result and must be interpreted with the total CK, symptoms, ECG, cardiac troponin where indicated, and the laboratory&rsquo;s assay-specific interval.</p>` : isCpk ? `<div class="report-note-heading">Interpretation :</div><ul>
+        <li>Total CK/CPK is an enzyme activity measurement; serum CK is predominantly CK-MM, but the total result is not source-specific.</li>
+        <li>Raised CPK can occur with muscle injury or inflammation and may also be influenced by recent strenuous exercise, intramuscular injections, trauma, surgery, seizures, and some medicines. Interpret with history and examination.</li>
+        <li>Use the laboratory&rsquo;s age-, sex-, and method-specific reference interval. When serial monitoring is required, compare samples measured by the same method where possible.</li>
+      </ul>` : `<div class="report-note-heading">Note :</div>
       <ol>
         <li>CK activity in normal individuals is mainly due to CK-MM, while contributions from other CK isoenzymes are negligible.</li>
         <li>CK isoenzyme fractions are reported as a percentage of total CK.</li>
       </ol>
       <div class="report-note-heading">Comments :</div>
-      <p>Creatine kinase (CK) activity is found in skeletal muscle, myocardium, and brain as the isoenzymes MM (CK3), MB (CK2), and BB (CK1), respectively. In a normal heart, about 15-20% of CK is CK-MB, with a higher percentage in the right heart than in the left heart. This assay helps indicate the source of raised CK levels.</p>
+      <p>Creatine kinase (CK) activity is found in skeletal muscle, myocardium, and brain as the isoenzymes MM (CK3), MB (CK2), and BB (CK1), respectively. In a normal heart, about 15-20% of CK is CK-MB, with a higher percentage in the right heart than in the left heart. This assay helps indicate the source of raised CK levels.</p>`}
+    </div>
+  `;
+}
+
+function buildCpkWithCkMbReportBody(test) {
+  const definitions = [
+    { label: "CREATINE PHOSPHOKINASE (CPK), TOTAL", aliases: ["Creatine Phosphokinase (CPK), Total", "CPK (Creatine Phosphokinase)", "Creatine Phosphokinase", "CPK", "Total CK", "CK", "Result"], defaultRange: "Laboratory-validated, age- and sex-specific reference interval" },
+    { label: "CK-MB", aliases: ["CK-MB", "Creatine Kinase MB", "CK MB", "CK-MB Mass"], defaultRange: "Laboratory-validated reference interval" },
+  ];
+  const rows = definitions.map(definition => {
+    const result = findReportParameter(test, definition.aliases) || {};
+    const value = String(result.value ?? "").trim() || "-";
+    const range = String(result.normal_range ?? "").trim() || definition.defaultRange;
+    const status = getReferenceStatus(value, range);
+    const statusText = status ? ` <span class="report-result-status ${status.className}">${status.label}</span>` : "";
+    return `<tr><td><strong>${escapeHtml(definition.label)}</strong></td><td><span class="${status?.className || ""}">${escapeHtml(value)}</span>${statusText}</td><td>${escapeHtml(range)}</td><td>${escapeHtml(result.unit || "U/L")}</td></tr>`;
+  }).join("");
+  const specimen = findReportParameter(test, ["Specimen", "Sample Type"]) || {};
+  const method = findReportParameter(test, ["Method / Analyzer", "Method", "Analyzer"]) || {};
+  const indication = findReportParameter(test, ["Clinical Details / Indication", "Clinical Details", "Indication"]) || {};
+  const comments = findReportParameter(test, ["Comments", "Comment", "Remarks"]) || {};
+  const detailRows = [["Method / Analyzer", method.value], ["Clinical Details / Indication", indication.value], ["Comments", comments.value]]
+    .filter(([, value]) => String(value ?? "").trim())
+    .map(([label, value]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3" style="white-space: pre-wrap">${escapeHtml(value)}</td></tr>`).join("");
+  return `
+    <table class="results-table single-analyte-table cpk-ckmb-table">
+      <thead><tr><th style="width: 38%">Investigation</th><th style="width: 22%">Result</th><th style="width: 28%">Reference Interval</th><th style="width: 12%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(specimen.value || test.sample_type || "Serum")}</td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>CREATINE KINASE PANEL: TOTAL CPK &amp; CK-MB</strong></td></tr>
+        ${rows}
+        ${detailRows}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes cpk-ckmb-notes">
+      <div class="report-note-heading">Interpretation :</div>
+      <ul>
+        <li>Total CPK and CK-MB are reported separately. Total CPK is not source-specific and can increase with skeletal-muscle injury or recent exertion.</li>
+        <li>CK-MB must not be interpreted alone as proof of myocardial injury. Correlate with symptoms, ECG, cardiac troponin where clinically indicated, and serial results.</li>
+        <li>Reference intervals, assay units, and decision limits are method-specific. Use the laboratory&rsquo;s validated interpretation printed with each result.</li>
+      </ul>
     </div>
   `;
 }
@@ -6712,6 +6873,121 @@ function buildBodyFluidSpecificGravityReportBody(test) {
   `;
 }
 
+function buildComplementC3ReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const complementC3 = field(["Complement C3, Serum", "Complement C3", "C3 Complement", "C3, Serum", "C3", "Result"]);
+  const specimen = field(["Specimen", "Sample", "Specimen Type"]);
+  const collected = field(["Collection Date / Time", "Collection Date and Time", "Collection Time"]);
+  const method = field(["Method / Analyzer", "Method / Instrument", "Method", "Analyzer"]);
+  const indication = field(["Clinical Indication", "Clinical Details", "Indication"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  const range = complementC3.normal_range && complementC3.normal_range !== "N/A"
+    ? complementC3.normal_range : "Laboratory-validated, age-specific reference interval";
+  const unit = complementC3.unit && complementC3.unit !== "N/A" ? complementC3.unit : "mg/dL";
+
+  return `
+    <table class="results-table single-analyte-table complement-c3-table">
+      <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference Interval</th><th style="width:14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(value(specimen) || test.sample_type || "Serum")}</td></tr>
+        <tr><td><strong>Collection Date / Time</strong></td><td>${escapeHtml(value(collected) || "-")}</td><td><strong>Clinical Indication:</strong> ${escapeHtml(value(indication) || "-")}</td><td></td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>COMPLEMENT COMPONENT C3</strong></td></tr>
+        <tr><td><strong>COMPLEMENT C3, SERUM</strong><div class="single-analyte-method">${escapeHtml(value(method) || "Laboratory-validated method")}</div></td><td>${escapeHtml(value(complementC3) || "-")}</td><td>${escapeHtml(range)}</td><td>${escapeHtml(unit)}</td></tr>
+        ${value(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes complement-c3-notes">
+      <div class="report-note-heading">Interpretation :</div>
+      <ul>
+        <li>This assay measures the concentration of complement component C3. It is not a functional C3 assay; functional complement studies require a separately requested and validated method.</li>
+        <li>Interpret C3 with the laboratory&rsquo;s reference interval, age, clinical history, and other complement studies such as C4 or CH50/AH50 when clinically indicated. A single C3 result does not establish a diagnosis.</li>
+        <li>Reduced C3 may occur with complement consumption or deficiency among other causes. C3 is also an acute-phase reactant and may increase with inflammation.</li>
+      </ul>
+      <div class="report-note-heading">Laboratory Note :</div>
+      <p>Reference intervals and clinical decision limits are method- and age-dependent. The laboratory-validated interval printed above takes precedence; correlate with specimen integrity and the clinical context.</p>
+    </div>
+  `;
+}
+
+function buildComplementC4ReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const complementC4 = field(["Complement C4, Serum", "Complement C4", "C4 Complement", "C4, Serum", "C4", "Result"]);
+  const specimen = field(["Specimen", "Sample", "Specimen Type"]);
+  const collected = field(["Collection Date / Time", "Collection Date and Time", "Collection Time"]);
+  const method = field(["Method / Analyzer", "Method / Instrument", "Method", "Analyzer"]);
+  const indication = field(["Clinical Indication", "Clinical Details", "Indication"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  const range = complementC4.normal_range && complementC4.normal_range !== "N/A"
+    ? complementC4.normal_range : "Laboratory-validated, age-specific reference interval";
+  const unit = complementC4.unit && complementC4.unit !== "N/A" ? complementC4.unit : "mg/dL";
+
+  return `
+    <table class="results-table single-analyte-table complement-c4-table">
+      <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference Interval</th><th style="width:14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(value(specimen) || test.sample_type || "Serum")}</td></tr>
+        <tr><td><strong>Collection Date / Time</strong></td><td>${escapeHtml(value(collected) || "-")}</td><td><strong>Clinical Indication:</strong> ${escapeHtml(value(indication) || "-")}</td><td></td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>COMPLEMENT COMPONENT C4</strong></td></tr>
+        <tr><td><strong>COMPLEMENT C4, SERUM</strong><div class="single-analyte-method">${escapeHtml(value(method) || "Laboratory-validated method")}</div></td><td>${escapeHtml(value(complementC4) || "-")}</td><td>${escapeHtml(range)}</td><td>${escapeHtml(unit)}</td></tr>
+        ${value(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes complement-c4-notes">
+      <div class="report-note-heading">Interpretation :</div>
+      <ul>
+        <li>This assay measures the concentration of complement component C4. It is not a functional C4 assay; functional complement studies require a separately requested and validated method.</li>
+        <li>Interpret C4 with the laboratory&rsquo;s reference interval, age, clinical history, and other complement studies such as C3, C1 inhibitor, or CH50/AH50 when clinically indicated. A single C4 result does not establish a diagnosis.</li>
+        <li>Reduced C4 may occur with complement consumption or deficiency among other causes. Interpretation requires correlation with the clinical setting and any related complement investigations.</li>
+      </ul>
+      <div class="report-note-heading">Laboratory Note :</div>
+      <p>Reference intervals and clinical decision limits are method- and age-dependent. The laboratory-validated interval printed above takes precedence; appropriate specimen handling is important for complement testing.</p>
+    </div>
+  `;
+}
+
+function buildCancaAntiPr3ReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const ifaResult = field(["cANCA (IIF) Result / Pattern", "cANCA Result / Pattern", "cANCA", "ANCA Pattern", "Result"]);
+  const pr3 = field(["Anti-PR3 Antibody, IgG", "Anti-PR3 Antibody", "PR3 Antibody", "Proteinase 3 Antibody", "PR3-ANCA"]);
+  const titre = field(["Titre / Endpoint Dilution", "ANCA Titre", "Titre", "Endpoint Dilution"]);
+  const specimen = field(["Specimen", "Sample", "Specimen Type"]);
+  const method = field(["Method / Analyzer", "Method / Instrument", "Method", "Analyzer"]);
+  const indication = field(["Clinical Details / Indication", "Clinical Indication", "Clinical Details", "Indication"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  const pr3Range = pr3.normal_range && pr3.normal_range !== "N/A"
+    ? pr3.normal_range : "Laboratory-validated assay interpretation";
+  const pr3Unit = pr3.unit && pr3.unit !== "N/A" ? pr3.unit : "U/mL";
+
+  return `
+    <table class="results-table single-analyte-table canca-pr3-table">
+      <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(value(specimen) || test.sample_type || "Serum")}</td></tr>
+        <tr><td><strong>Clinical Details / Indication</strong></td><td colspan="3">${escapeHtml(value(indication) || "-")}</td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>CYTOPLASMIC ANCA / ANTI-PR3</strong></td></tr>
+        <tr><td><strong>cANCA (IIF) RESULT / PATTERN</strong><div class="single-analyte-method">${escapeHtml(value(method) || "Laboratory-validated method")}</div></td><td>${escapeHtml(value(ifaResult) || "-")}</td><td>${escapeHtml(ifaResult.normal_range || "Negative")}</td><td></td></tr>
+        <tr><td><strong>ANTI-PR3 ANTIBODY, IgG</strong></td><td>${escapeHtml(value(pr3) || "-")}</td><td>${escapeHtml(pr3Range)}</td><td>${escapeHtml(pr3Unit)}</td></tr>
+        <tr><td><strong>Titre / Endpoint Dilution</strong></td><td>${escapeHtml(value(titre) || "-")}</td><td>Reported when performed</td><td></td></tr>
+        ${value(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes canca-pr3-notes">
+      <div class="report-note-heading">Interpretation :</div>
+      <ul>
+        <li>Anti-PR3 antibodies may correspond to a cytoplasmic ANCA (cANCA) pattern on indirect immunofluorescence; antigen-specific immunoassay and IIF are different methods and should be reported as performed.</li>
+        <li>A positive cANCA or anti-PR3 result is not diagnostic of ANCA-associated vasculitis. Interpret it with symptoms, organ involvement, imaging, urinalysis, other serology, and tissue findings when indicated.</li>
+        <li>A negative result does not exclude ANCA-associated vasculitis. MPO-ANCA and IIF testing may be relevant where clinical suspicion remains high, according to the laboratory&rsquo;s diagnostic pathway.</li>
+        <li>For serial monitoring, compare results only when the method and reporting scale are comparable; do not use antibody reactivity alone to assess treatment response or flare risk.</li>
+      </ul>
+      <div class="report-note-heading">Laboratory Note :</div>
+      <p>Use the laboratory-validated cut-off and interpretation printed above. Values, titres, and qualitative categories are assay-specific and must not be compared directly across methods.</p>
+    </div>
+  `;
+}
+
 function buildBronchialWashingCultureSensitivityReportBody(test) {
   const field = aliases => findReportParameter(test, aliases) || {};
   const textValue = parameter => String(parameter?.value ?? "").trim();
@@ -7019,6 +7295,7 @@ function getTorchProfileStatus(value, thresholds) {
 }
 
 function buildTorchProfileReportBody(test) {
+  if (isCmvIgmIggTest(test)) return buildCmvIgmIggReportBody(test);
   const definitions = [
     { label: "Toxoplasma IgG", aliases: ["Toxoplasma IgG", "Toxo IgG"], unit: "IU/mL", range: "< 7.20", thresholds: { negative: 7.2, equivocal: 8.8 }, interpretation: ["< 7.20", "7.20- <8.80", "≥8.80"] },
     { label: "Toxoplasma IgM", aliases: ["Toxoplasma IgM", "Toxo IgM"], unit: "AU/mL", range: "< 10.00", thresholds: { negative: 10 }, interpretation: ["< 10.00", "", "≥10.00"] },
@@ -7055,6 +7332,53 @@ function buildTorchProfileReportBody(test) {
     <div class="report-template-notes torch-profile-notes">
       <div class="report-note-heading">Interpretation</div>
       <table class="report-reference-table torch-profile-interpretation-table"><thead><tr><th>Infection</th><th>Unit</th><th>Negative</th><th>Equivocal</th><th>Positive</th></tr></thead><tbody>${interpretationRows}</tbody></table>
+    </div>
+  `;
+}
+
+function buildCmvIgmIggReportBody(test) {
+  const definitions = [
+    { label: "CYTOMEGALOVIRUS (CMV) IgM", aliases: ["Cytomegalovirus (CMV) IgM", "Cytomegalovirus IgM", "CMV IgM", "CMV IgM Antibody", "IgM Result", "Result IgM"] },
+    { label: "CYTOMEGALOVIRUS (CMV) IgG", aliases: ["Cytomegalovirus (CMV) IgG", "Cytomegalovirus IgG", "CMV IgG", "CMV IgG Antibody", "IgG Result", "Result IgG"] },
+  ];
+  const rows = definitions.map(definition => {
+    const result = findReportParameter(test, definition.aliases) || {};
+    const value = String(result.value ?? "").trim() || "-";
+    const range = String(result.normal_range ?? "").trim() || "Laboratory-validated assay interpretation";
+    const status = getQualitativeResultStatus(value) || getReferenceStatus(value, range);
+    const statusText = status ? ` <span class="report-result-status ${status.className}">${status.label}</span>` : "";
+    return `<tr><td><strong>${escapeHtml(definition.label)}</strong><div class="single-analyte-method">Serology</div></td><td><span class="${status?.className || ""}">${escapeHtml(value)}</span>${statusText}</td><td>${escapeHtml(range)}</td><td>${escapeHtml(result.unit || "")}</td></tr>`;
+  }).join("");
+  const detailFields = [
+    ["Specimen", ["Specimen", "Sample Type"], test.sample_type || "Serum"],
+    ["Method / Analyzer", ["Method / Analyzer", "Method", "Analyzer"], ""],
+    ["Clinical Details / Indication", ["Clinical Details / Indication", "Clinical Details", "Indication"], ""],
+    ["Comments", ["Comments", "Comment", "Remarks"], ""],
+  ];
+  const detailRows = detailFields.map(([label, aliases, fallback]) => {
+    const value = findReportParameter(test, aliases)?.value || fallback;
+    return String(value ?? "").trim()
+      ? `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3" style="white-space: pre-wrap">${escapeHtml(value)}</td></tr>`
+      : "";
+  }).join("");
+
+  return `
+    <table class="results-table single-analyte-table cmv-igm-igg-table">
+      <thead><tr><th style="width: 38%">Investigation</th><th style="width: 22%">Result</th><th style="width: 28%">Reference Interval / Interpretation</th><th style="width: 12%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="torch-profile-section"><td colspan="4"><strong>CYTOMEGALOVIRUS (CMV) ANTIBODIES, IgM &amp; IgG</strong></td></tr>
+        ${rows}
+        ${detailRows}
+      </tbody>
+    </table>
+    <div class="report-template-notes cmv-igm-igg-notes">
+      <div class="report-note-heading">Interpretation :</div>
+      <ul>
+        <li>CMV IgG reactivity indicates CMV antibody exposure; by itself it does not establish the timing of infection or diagnose active disease.</li>
+        <li>CMV IgM reactivity may occur with recent primary infection, reactivation, or persistent/nonspecific IgM. It must not be used alone to date infection.</li>
+        <li>For equivocal results or when timing is clinically important, a follow-up specimen and, where appropriate, CMV IgG avidity or molecular testing may be considered according to the treating clinician and laboratory protocol.</li>
+        <li>Use the validated assay cut-offs printed above. Results from different methods are not directly interchangeable and must be interpreted with the clinical context.</li>
+      </ul>
     </div>
   `;
 }
@@ -11355,6 +11679,15 @@ function buildTotalAcidPhosphataseReportBody(test) {
 }
 
 function buildBunReportBody(test) {
+  if (isComplementFixationTest(test)) return buildComplementFixationReportBody(test);
+  if (isCeaTest(test)) return buildCeaReportBody(test);
+  if (isCd8LymphocyteTest(test)) return buildCd8LymphocyteReportBody(test);
+  if (isCd4LymphocyteTest(test)) return buildCd4LymphocyteReportBody(test);
+  if (isCd3LymphocyteTest(test)) return buildCd3LymphocyteReportBody(test);
+  if (isCreatinineClearanceTest(test)) return buildCreatinineClearanceReportBody(test);
+  if (isComplementC3Test(test)) return buildComplementC3ReportBody(test);
+  if (isComplementC4Test(test)) return buildComplementC4ReportBody(test);
+  if (isCancaAntiPr3Test(test)) return buildCancaAntiPr3ReportBody(test);
   if (isBilirubinFractionationTest(test)) return buildBilirubinFractionationReportBody(test);
   if (isSerumBicarbonateTest(test)) return buildSerumBicarbonateReportBody(test);
   if (isAsciticFluidAnalysisTest(test)) return buildAsciticFluidAnalysisReportBody(test);
@@ -12494,6 +12827,193 @@ function buildCreatinine24HourUrineReportBody(test) {
   `;
 }
 
+function buildCreatinineClearanceReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const text = parameter => String(parameter?.value ?? "").trim();
+  const number = parameter => {
+    const value = Number(String(parameter?.value ?? "").replace(/,/g, "").trim());
+    return Number.isFinite(value) ? value : null;
+  };
+  const urineCreatinine = field(["Urine Creatinine Concentration", "Urine Creatinine", "Creatinine, Urine"]);
+  const volume = field(["Total Urine Volume", "Urine Volume", "24-Hour Urine Volume"]);
+  const duration = field(["Collection Duration", "Collection Duration (Hours)", "Duration"]);
+  const serumCreatinine = field(["Serum Creatinine", "Creatinine, Serum"]);
+  const clearance = field(["Creatinine Clearance (Uncorrected)", "Creatinine Clearance", "Creatinine Clearance Test", "Result"]);
+  const height = field(["Height", "Patient Height"]);
+  const weight = field(["Weight", "Body Weight", "Patient Weight"]);
+  const method = field(["Method / Analyzer", "Method / Instrument", "Method", "Analyzer"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  const calculated = !text(clearance) && number(urineCreatinine) !== null && number(volume) !== null
+    && number(duration) !== null && number(serumCreatinine) !== null
+    && number(duration) > 0 && number(serumCreatinine) > 0
+    ? number(urineCreatinine) * number(volume) / number(serumCreatinine) / number(duration) / 60
+    : null;
+  const clearanceValue = text(clearance) || (calculated === null ? "-" : calculated.toFixed(1));
+  const clearanceRange = clearance.normal_range && clearance.normal_range !== "N/A"
+    ? clearance.normal_range : "Laboratory-validated, age- and sex-specific reference interval";
+  const row = (label, parameter, fallbackUnit = "", fallbackRange = "") => {
+    const range = parameter.normal_range && parameter.normal_range !== "N/A" ? parameter.normal_range : fallbackRange;
+    const unit = parameter.unit && parameter.unit !== "N/A" ? parameter.unit : fallbackUnit;
+    return `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(text(parameter) || "-")}</td><td>${escapeHtml(range || "-")}</td><td>${escapeHtml(unit)}</td></tr>`;
+  };
+
+  return `
+    <table class="results-table single-analyte-table creatinine-clearance-table">
+      <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Information</th><th style="width:14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimens</strong></td><td colspan="3">${escapeHtml(test.sample_type || "Serum and timed urine")}</td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>COLLECTION AND INPUTS</strong></td></tr>
+        ${row("Urine Creatinine Concentration", urineCreatinine, "mg/dL")}
+        ${row("Total Urine Volume", volume, "mL")}
+        ${row("Collection Duration", duration, "hours", "24 hours unless otherwise stated")}
+        ${row("Serum Creatinine", serumCreatinine, "mg/dL")}
+        <tr><td><strong>Height / Weight</strong></td><td>${escapeHtml([text(height) && `${text(height)} ${height.unit || "cm"}`, text(weight) && `${text(weight)} ${weight.unit || "kg"}`].filter(Boolean).join(" / ") || "-")}</td><td>Required only if the laboratory reports BSA-corrected clearance</td><td></td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>CREATININE CLEARANCE</strong></td></tr>
+        <tr><td><strong>CREATININE CLEARANCE (UNCORRECTED)</strong><div class="single-analyte-method">${escapeHtml(text(method) || "Calculated from timed urine and serum creatinine")}</div></td><td>${escapeHtml(clearanceValue)}${calculated !== null ? " <span class=\"single-analyte-status normal\">CALCULATED</span>" : ""}</td><td>${escapeHtml(clearanceRange)}</td><td>${escapeHtml(clearance.unit && clearance.unit !== "N/A" ? clearance.unit : "mL/min")}</td></tr>
+        ${text(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(text(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes creatinine-clearance-notes">
+      <div class="report-note-heading">Calculation / Interpretation :</div>
+      <ul>
+        <li>Uncorrected creatinine clearance is calculated from urine creatinine concentration, total urine volume, collection duration, and a serum creatinine obtained during the collection period. The calculation shown is not body-surface-area corrected.</li>
+        <li>Accurate collection timing and complete urine collection are essential. Missing urine, an incorrect duration, or a non-contemporaneous serum specimen can make the clearance unreliable.</li>
+        <li>Creatinine clearance estimates filtration and may differ from estimated GFR. Interpret the result with the laboratory&rsquo;s age- and sex-appropriate interval, clinical context, and any reported eGFR.</li>
+      </ul>
+      <div class="report-note-heading">Laboratory Note :</div>
+      <p>Do not compare uncorrected clearance directly with a body-surface-area-corrected result. If a BSA-corrected clearance is required, record validated height and weight and use the laboratory&rsquo;s approved calculation.</p>
+    </div>
+  `;
+}
+
+function buildCd3LymphocyteReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const text = parameter => String(parameter?.value ?? "").trim();
+  const cd3Percent = field(["CD3+ T Lymphocytes", "CD3 Lymphocytes", "CD3+ Lymphocytes", "CD3 Percentage", "Result"]);
+  const cd3Absolute = field(["CD3+ T Lymphocytes, Absolute Count", "CD3 Absolute Count", "CD3 Count", "Absolute CD3 Count"]);
+  const totalLymphocytes = field(["Total Lymphocyte Count", "Absolute Lymphocyte Count", "Lymphocyte Count"]);
+  const specimen = field(["Specimen", "Sample", "Specimen Type"]);
+  const method = field(["Method / Analyzer", "Method / Instrument", "Method", "Analyzer"]);
+  const viability = field(["Lymphocyte Viability", "Sample Viability", "Viability"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  const row = (label, parameter, fallbackUnit) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(text(parameter) || "-")}</td><td>${escapeHtml(parameter.normal_range && parameter.normal_range !== "N/A" ? parameter.normal_range : "Laboratory-validated, age-specific reference interval")}</td><td>${escapeHtml(parameter.unit && parameter.unit !== "N/A" ? parameter.unit : fallbackUnit)}</td></tr>`;
+
+  return `
+    <table class="results-table single-analyte-table cd3-lymphocyte-table">
+      <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference Interval</th><th style="width:14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(text(specimen) || test.sample_type || "EDTA whole blood")}</td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>CD3+ T-LYMPHOCYTE ENUMERATION</strong></td></tr>
+        ${row("CD3+ T Lymphocytes", cd3Percent, "% of lymphocytes")}
+        ${row("CD3+ T Lymphocytes, Absolute Count", cd3Absolute, "cells/µL")}
+        <tr><td><strong>Total Lymphocyte Count</strong></td><td>${escapeHtml(text(totalLymphocytes) || "-")}</td><td>Used for correlation where applicable</td><td>${escapeHtml(totalLymphocytes.unit && totalLymphocytes.unit !== "N/A" ? totalLymphocytes.unit : "cells/µL")}</td></tr>
+        <tr><td><strong>Method / Analyzer</strong></td><td colspan="3">${escapeHtml(text(method) || "Flow cytometry")}</td></tr>
+        <tr><td><strong>Lymphocyte Viability</strong></td><td colspan="3">${escapeHtml(text(viability) || "-")}</td></tr>
+        ${text(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(text(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes cd3-lymphocyte-notes">
+      <div class="report-note-heading">Interpretation :</div>
+      <ul>
+        <li>CD3 identifies total T lymphocytes. Percentage and absolute count describe different aspects of the result and should be interpreted together when both are reported.</li>
+        <li>Reference intervals vary with age, method, gating strategy, and laboratory. Interpret this individual marker with the clinical history and other requested lymphocyte subsets; this is not a complete T-, B-, and NK-cell panel.</li>
+        <li>For serial monitoring, use comparable specimen handling, laboratory method, and collection timing where possible, as lymphocyte subset counts may vary biologically and pre-analytically.</li>
+      </ul>
+      <div class="report-note-heading">Laboratory Note :</div>
+      <p>Absolute counts may be obtained using the laboratory&rsquo;s validated flow-cytometry approach. Do not derive an absolute CD3 count from percentage alone unless the laboratory has validated that calculation.</p>
+    </div>
+  `;
+}
+
+function buildCd4LymphocyteReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const text = parameter => String(parameter?.value ?? "").trim();
+  const cd4Percent = field(["CD4+ T Lymphocytes", "CD4 Lymphocytes", "CD4+ Lymphocytes", "CD4 Percentage", "Result"]);
+  const cd4Absolute = field(["CD4+ T Lymphocytes, Absolute Count", "CD4 Absolute Count", "CD4 Count", "Absolute CD4 Count"]);
+  const totalLymphocytes = field(["Total Lymphocyte Count", "Absolute Lymphocyte Count", "Lymphocyte Count"]);
+  const specimen = field(["Specimen", "Sample", "Specimen Type"]);
+  const method = field(["Method / Analyzer", "Method / Instrument", "Method", "Analyzer"]);
+  const viability = field(["Lymphocyte Viability", "Sample Viability", "Viability"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  const row = (label, parameter, fallbackUnit) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(text(parameter) || "-")}</td><td>${escapeHtml(parameter.normal_range && parameter.normal_range !== "N/A" ? parameter.normal_range : "Laboratory-validated, age-specific reference interval")}</td><td>${escapeHtml(parameter.unit && parameter.unit !== "N/A" ? parameter.unit : fallbackUnit)}</td></tr>`;
+  return `
+    <table class="results-table single-analyte-table cd4-lymphocyte-table">
+      <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference Interval</th><th style="width:14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(text(specimen) || test.sample_type || "EDTA whole blood")}</td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>CD4+ T-LYMPHOCYTE ENUMERATION</strong></td></tr>
+        ${row("CD4+ T Lymphocytes", cd4Percent, "% of lymphocytes")}
+        ${row("CD4+ T Lymphocytes, Absolute Count", cd4Absolute, "cells/µL")}
+        <tr><td><strong>Total Lymphocyte Count</strong></td><td>${escapeHtml(text(totalLymphocytes) || "-")}</td><td>Used for correlation where applicable</td><td>${escapeHtml(totalLymphocytes.unit && totalLymphocytes.unit !== "N/A" ? totalLymphocytes.unit : "cells/µL")}</td></tr>
+        <tr><td><strong>Method / Analyzer</strong></td><td colspan="3">${escapeHtml(text(method) || "Flow cytometry")}</td></tr>
+        <tr><td><strong>Lymphocyte Viability</strong></td><td colspan="3">${escapeHtml(text(viability) || "-")}</td></tr>
+        ${text(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(text(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes cd4-lymphocyte-notes">
+      <div class="report-note-heading">Interpretation :</div>
+      <ul>
+        <li>CD4 identifies a helper T-cell subset. Percentage and absolute count describe different aspects of the result and should be interpreted together when both are reported.</li>
+        <li>Reference intervals vary with age, method, gating strategy, and laboratory. Interpret this individual marker with the clinical history and other requested lymphocyte subsets; this is not a complete T-, B-, and NK-cell panel.</li>
+        <li>For serial monitoring, use comparable specimen handling, laboratory method, and collection timing where possible, as lymphocyte subset counts may vary biologically and pre-analytically.</li>
+      </ul>
+      <div class="report-note-heading">Laboratory Note :</div>
+      <p>Absolute counts may be obtained using the laboratory&rsquo;s validated flow-cytometry approach. Do not derive an absolute CD4 count from percentage alone unless the laboratory has validated that calculation.</p>
+    </div>
+  `;
+}
+
+function buildCd8LymphocyteReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const text = parameter => String(parameter?.value ?? "").trim();
+  const cd8Percent = field(["CD8+ T Lymphocytes", "CD8 Lymphocytes", "CD8+ Lymphocytes", "CD8 Percentage", "Result"]);
+  const cd8Absolute = field(["CD8+ T Lymphocytes, Absolute Count", "CD8 Absolute Count", "CD8 Count", "Absolute CD8 Count"]);
+  const total = field(["Total Lymphocyte Count", "Absolute Lymphocyte Count", "Lymphocyte Count"]);
+  const specimen = field(["Specimen", "Sample", "Specimen Type"]);
+  const method = field(["Method / Analyzer", "Method / Instrument", "Method", "Analyzer"]);
+  const viability = field(["Lymphocyte Viability", "Sample Viability", "Viability"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  const row = (label, parameter, unit) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(text(parameter) || "-")}</td><td>${escapeHtml(parameter.normal_range && parameter.normal_range !== "N/A" ? parameter.normal_range : "Laboratory-validated, age-specific reference interval")}</td><td>${escapeHtml(parameter.unit && parameter.unit !== "N/A" ? parameter.unit : unit)}</td></tr>`;
+  return `
+    <table class="results-table single-analyte-table cd8-lymphocyte-table">
+      <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference Interval</th><th style="width:14%">Unit</th></tr></thead><tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(text(specimen) || test.sample_type || "EDTA whole blood")}</td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>CD8+ T-LYMPHOCYTE ENUMERATION</strong></td></tr>
+        ${row("CD8+ T Lymphocytes", cd8Percent, "% of lymphocytes")}
+        ${row("CD8+ T Lymphocytes, Absolute Count", cd8Absolute, "cells/µL")}
+        <tr><td><strong>Total Lymphocyte Count</strong></td><td>${escapeHtml(text(total) || "-")}</td><td>Used for correlation where applicable</td><td>${escapeHtml(total.unit && total.unit !== "N/A" ? total.unit : "cells/µL")}</td></tr>
+        <tr><td><strong>Method / Analyzer</strong></td><td colspan="3">${escapeHtml(text(method) || "Flow cytometry")}</td></tr><tr><td><strong>Lymphocyte Viability</strong></td><td colspan="3">${escapeHtml(text(viability) || "-")}</td></tr>
+        ${text(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(text(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody></table>
+    <div class="single-analyte-notes report-template-notes cd8-lymphocyte-notes"><div class="report-note-heading">Interpretation :</div><ul>
+      <li>CD8 identifies a cytotoxic T-cell subset. Percentage and absolute count describe different aspects of the result and should be interpreted together when both are reported.</li>
+      <li>Reference intervals vary with age, method, gating strategy, and laboratory. Interpret this individual marker with the clinical history and other requested lymphocyte subsets; this is not a complete T-, B-, and NK-cell panel.</li>
+      <li>For serial monitoring, use comparable specimen handling, laboratory method, and collection timing where possible, as lymphocyte subset counts may vary biologically and pre-analytically.</li>
+    </ul><div class="report-note-heading">Laboratory Note :</div><p>Absolute counts may be obtained using the laboratory&rsquo;s validated flow-cytometry approach. Do not derive an absolute CD8 count from percentage alone unless the laboratory has validated that calculation.</p></div>
+  `;
+}
+
+function buildCeaReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const text = parameter => String(parameter?.value ?? "").trim();
+  const cea = field(["Carcinoembryonic Antigen (CEA)", "Carcino Embryonic Antigen", "CEA", "Result"]);
+  const specimen = field(["Specimen", "Sample"]); const method = field(["Method / Analyzer", "Method", "Analyzer"]);
+  const indication = field(["Clinical Indication", "Clinical Details", "Indication"]); const comments = field(["Comments", "Comment", "Remarks"]);
+  const range = cea.normal_range && cea.normal_range !== "N/A" ? cea.normal_range : "Laboratory-validated reference interval";
+  return `<table class="results-table single-analyte-table cea-table"><thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference Interval</th><th style="width:14%">Unit</th></tr></thead><tbody>
+    <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(text(specimen) || test.sample_type || "Serum")}</td></tr>
+    <tr><td><strong>Clinical Indication</strong></td><td colspan="3">${escapeHtml(text(indication) || "-")}</td></tr><tr class="thyroid-antibodies-section"><td colspan="4"><strong>CARCINOEMBRYONIC ANTIGEN (CEA)</strong></td></tr>
+    <tr><td><strong>CARCINOEMBRYONIC ANTIGEN (CEA)</strong><div class="single-analyte-method">${escapeHtml(text(method) || "Laboratory-validated immunoassay")}</div></td><td>${escapeHtml(text(cea) || "-")}</td><td>${escapeHtml(range)}</td><td>${escapeHtml(cea.unit && cea.unit !== "N/A" ? cea.unit : "ng/mL")}</td></tr>
+    ${text(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(text(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}</tbody></table>
+    <div class="single-analyte-notes report-template-notes cea-notes"><div class="report-note-heading">Interpretation :</div><ul><li>CEA is primarily used with clinical assessment and other investigations to support monitoring when clinically indicated. It is not a screening test for asymptomatic individuals.</li><li>A single CEA value does not establish or exclude cancer. Serial values, when clinically appropriate, are generally more informative when measured by the same method.</li><li>CEA values are method-dependent and can be influenced by non-malignant conditions and smoking; use the laboratory&rsquo;s reference interval and clinical context.</li></ul></div>`;
+}
+
+function buildComplementFixationReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {}; const text = parameter => String(parameter?.value ?? "").trim();
+  const antigen = field(["Target Antigen / Assay", "Target Antigen", "Assay", "Antigen"]); const result = field(["Complement Fixation Result", "CFT Result", "Result"]); const titre = field(["Complement Fixation Titre", "CFT Titre", "Titre"]); const specimen = field(["Specimen", "Sample"]); const method = field(["Method / Laboratory", "Method", "Analyzer"]); const comments = field(["Comments", "Comment", "Remarks"]);
+  return `<table class="results-table single-analyte-table complement-fixation-table"><thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead><tbody><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(text(specimen) || test.sample_type || "Serum")}</td></tr><tr><td><strong>Target Antigen / Assay</strong></td><td colspan="3">${escapeHtml(text(antigen) || "-")}</td></tr><tr class="thyroid-antibodies-section"><td colspan="4"><strong>COMPLEMENT FIXATION TEST</strong></td></tr><tr><td><strong>COMPLEMENT FIXATION RESULT</strong><div class="single-analyte-method">${escapeHtml(text(method) || "Laboratory-validated complement fixation method")}</div></td><td>${escapeHtml(text(result) || "-")}</td><td>${escapeHtml(result.normal_range || "Laboratory-validated interpretation")}</td><td></td></tr><tr><td><strong>COMPLEMENT FIXATION TITRE</strong></td><td>${escapeHtml(text(titre) || "-")}</td><td>Report when performed</td><td></td></tr>${text(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(text(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}</tbody></table><div class="single-analyte-notes report-template-notes complement-fixation-notes"><div class="report-note-heading">Interpretation :</div><ul><li>Complement-fixation results must be interpreted for the stated target antigen and the laboratory&rsquo;s validated method; a CFT result alone does not identify the underlying disease.</li><li>Titre reporting, positivity thresholds, and serial-result interpretation are assay-specific. Compare serial values only when the same target antigen and method are used.</li><li>Controls and specimen suitability are essential for a valid complement-fixation assay. Correlate with clinical findings and other requested microbiology or serology tests.</li></ul></div>`;
+}
+
 function buildCbcReportBody(test, variant) {
   let currentSection = null;
   const rows = getCbcParameters(variant).map(definition => {
@@ -12667,7 +13187,8 @@ function buildReportHtml(reportData) {
     || isPapSmearTest(singleTest)
   ) ? singleTest : null;
   const toxoplasmaAntibodiesPanelTest = singleTest && isToxoplasmaAntibodiesPanelTest(singleTest) ? singleTest : null;
-  const torchProfileTest = singleTest && isTorchProfileTest(singleTest) ? singleTest : null;
+  const torchProfileTest = singleTest && (isTorchProfileTest(singleTest) || isCmvIgmIggTest(singleTest)) ? singleTest : null;
+  const cmvIgmIggTest = singleTest && isCmvIgmIggTest(singleTest) ? singleTest : null;
   const tnfAlphaTest = singleTest && isTnfAlphaTest(singleTest) ? singleTest : null;
   const rheumatoidFactorTest = singleTest && isRheumatoidFactorTest(singleTest) ? singleTest : null;
   const asoTiterTest = singleTest && isAsoTiterTest(singleTest) ? singleTest : null;
@@ -12733,7 +13254,7 @@ function buildReportHtml(reportData) {
   const bronchialPapTest = singleTest && getBronchialPapSpecimen(singleTest)
     && !String(singleTest.report_body || "").trim() ? singleTest : null;
   const digoxinTest = singleTest && (isAnticardiolipinIggIgmPanelTest(singleTest) || isAnticardiolipinIgaIggPanelTest(singleTest) || isAnticardiolipinIgaIgmPanelTest(singleTest) || isAnticardiolipinIgaTest(singleTest) || isAntenatalProfileTest(singleTest) || isTotalAcidPhosphataseTest(singleTest) || isProstaticAcidPhosphataseTest(singleTest) || isAgRatioTest(singleTest) || isDigoxinTest(singleTest)) ? singleTest : null;
-  const bunTest = singleTest && (isBunTest(singleTest) || isBilirubinFractionationTest(singleTest) || isSerumBicarbonateTest(singleTest) || isAsciticFluidAnalysisTest(singleTest) || isApolipoproteinBTest(singleTest) || isAnticardiolipinIgmTest(singleTest) || isAnticardiolipinIggTest(singleTest) || isAntiTgTest(singleTest) || isAntiTpoTest(singleTest) || isAnemiaScreeningProfileTest(singleTest) || isComprehensiveAnemiaProfileTest(singleTest) || isAndrostenedioneTest(singleTest) || isGroupBStrepTest(singleTest) || isFungusKohPreparationTest(singleTest) || isSputumAfbTest(singleTest) || isBaccalSmearBrrBodyTest(singleTest) || isAutoimmuneProfileTest(singleTest) || isAfbZiehlNeelsenStainTest(singleTest) || isBloodCultureSensitivityTest(singleTest) || isBodyFluidCultureSensitivityTest(singleTest) || isBodyFluidTotalProteinTest(singleTest) || isBodyFluidChlorideTest(singleTest) || isBodyFluidBiochemistryTest(singleTest) || isBodyFluidSpecificGravityTest(singleTest) || isBronchialWashingCultureSensitivityTest(singleTest) || isAfbCultureSensitivityTest(singleTest) || isStoolCultureTest(singleTest) || isUrineCultureTest(singleTest) || isMalariaParasiteIdentificationTest(singleTest) || isMycobacteriumCombinedPanelTest(singleTest) || isOvaAndParasiteTest(singleTest) || isTripleMarkerTest(singleTest) || isDoubleMarkerTest(singleTest) || isPax8Test(singleTest) || isGalectin3Test(singleTest) || isHer2Test(singleTest) || isDcpTest(singleTest) || isAfpTumorMarkerTest(singleTest) || isCa199Test(singleTest) || isCa153Test(singleTest) || isCa125Test(singleTest) || isTroponinITest(singleTest) || isTroponinTTest(singleTest) || isDengueNs1Test(singleTest) || isDengueIggTest(singleTest) || isDengueIgmTest(singleTest) || isRastTest(singleTest) || isWidalTest(singleTest) || isCrpTest(singleTest) || isSodiumTest(singleTest) || isIronTest(singleTest) || isLacticAcidTest(singleTest) || isMagnesiumTest(singleTest) || isLipaseTest(singleTest) || isAmylaseTest(singleTest) || isGgtTest(singleTest) || isChlorideTest(singleTest) || isCreatinine24HourUrineTest(singleTest) || isSemenAnalysisTest(singleTest) || isUrineCotinineTest(singleTest) || isUrineGlucoseTest(singleTest) || isPorphyrinsTest(singleTest) || isOccultBloodStoolTest(singleTest) || isCsfAnalysisTest(singleTest) || isTshTest(singleTest) || isThyroidProfileTest(singleTest) || isThyroidAntibodiesTest(singleTest) || isTriiodothyronineTotalTest(singleTest) || isTestosteroneTotalTest(singleTest) || isProgesteroneTest(singleTest) || isCortisoneTest(singleTest) || isActhTest(singleTest) || isAdaTest(singleTest) || isBetaHcgPregnancyTest(singleTest) || isProlactinTest(singleTest) || isDheaTest(singleTest) || isEstradiolTest(singleTest) || isLuteinizingHormoneTest(singleTest) || isFollicleStimulatingHormoneTest(singleTest) || isThyroxineTotalTest(singleTest) || isCalcitoninTest(singleTest) || isInhibinATest(singleTest) || isInhibinBTest(singleTest) || isPappATest(singleTest) || isDheasTest(singleTest) || isBoneMarrowAspirationCytologyTest(singleTest) || isBoneMarrowCytologyTest(singleTest) || isHistopathologyReportTest(singleTest) || isCreatinineTest(singleTest) || isIonizedCalciumTest(singleTest) || isFlecainideTest(singleTest) || isPhenobarbitalTest(singleTest) || isKetoneBodyTest(singleTest) || isUricAcidTest(singleTest) || isTibcTest(singleTest) || isSerumOsmolalityTest(singleTest) || isArterialBloodGasTest(singleTest) || isManganeseBloodTest(singleTest) || isSeleniumSerumTest(singleTest))
+  const bunTest = singleTest && (isBunTest(singleTest) || isCeaTest(singleTest) || isCd8LymphocyteTest(singleTest) || isCd4LymphocyteTest(singleTest) || isCd3LymphocyteTest(singleTest) || isCreatinineClearanceTest(singleTest) || isComplementC3Test(singleTest) || isComplementC4Test(singleTest) || isCancaAntiPr3Test(singleTest) || isBilirubinFractionationTest(singleTest) || isSerumBicarbonateTest(singleTest) || isAsciticFluidAnalysisTest(singleTest) || isApolipoproteinBTest(singleTest) || isAnticardiolipinIgmTest(singleTest) || isAnticardiolipinIggTest(singleTest) || isAntiTgTest(singleTest) || isAntiTpoTest(singleTest) || isAnemiaScreeningProfileTest(singleTest) || isComprehensiveAnemiaProfileTest(singleTest) || isAndrostenedioneTest(singleTest) || isGroupBStrepTest(singleTest) || isFungusKohPreparationTest(singleTest) || isSputumAfbTest(singleTest) || isBaccalSmearBrrBodyTest(singleTest) || isAutoimmuneProfileTest(singleTest) || isAfbZiehlNeelsenStainTest(singleTest) || isBloodCultureSensitivityTest(singleTest) || isBodyFluidCultureSensitivityTest(singleTest) || isBodyFluidTotalProteinTest(singleTest) || isBodyFluidChlorideTest(singleTest) || isBodyFluidBiochemistryTest(singleTest) || isBodyFluidSpecificGravityTest(singleTest) || isBronchialWashingCultureSensitivityTest(singleTest) || isAfbCultureSensitivityTest(singleTest) || isStoolCultureTest(singleTest) || isUrineCultureTest(singleTest) || isMalariaParasiteIdentificationTest(singleTest) || isMycobacteriumCombinedPanelTest(singleTest) || isOvaAndParasiteTest(singleTest) || isTripleMarkerTest(singleTest) || isDoubleMarkerTest(singleTest) || isPax8Test(singleTest) || isGalectin3Test(singleTest) || isHer2Test(singleTest) || isDcpTest(singleTest) || isAfpTumorMarkerTest(singleTest) || isCa199Test(singleTest) || isCa153Test(singleTest) || isCa125Test(singleTest) || isTroponinITest(singleTest) || isTroponinTTest(singleTest) || isDengueNs1Test(singleTest) || isDengueIggTest(singleTest) || isDengueIgmTest(singleTest) || isRastTest(singleTest) || isWidalTest(singleTest) || isCrpTest(singleTest) || isSodiumTest(singleTest) || isIronTest(singleTest) || isLacticAcidTest(singleTest) || isMagnesiumTest(singleTest) || isLipaseTest(singleTest) || isAmylaseTest(singleTest) || isGgtTest(singleTest) || isChlorideTest(singleTest) || isCreatinine24HourUrineTest(singleTest) || isSemenAnalysisTest(singleTest) || isUrineCotinineTest(singleTest) || isUrineGlucoseTest(singleTest) || isUrineCotinineTest(singleTest) || isUrineGlucoseTest(singleTest) || isPorphyrinsTest(singleTest) || isOccultBloodStoolTest(singleTest) || isCsfAnalysisTest(singleTest) || isTshTest(singleTest) || isThyroidProfileTest(singleTest) || isThyroidAntibodiesTest(singleTest) || isTriiodothyronineTotalTest(singleTest) || isTestosteroneTotalTest(singleTest) || isProgesteroneTest(singleTest) || isCortisoneTest(singleTest) || isActhTest(singleTest) || isAdaTest(singleTest) || isBetaHcgPregnancyTest(singleTest) || isProlactinTest(singleTest) || isDheaTest(singleTest) || isEstradiolTest(singleTest) || isLuteinizingHormoneTest(singleTest) || isFollicleStimulatingHormoneTest(singleTest) || isThyroxineTotalTest(singleTest) || isCalcitoninTest(singleTest) || isInhibinATest(singleTest) || isInhibinBTest(singleTest) || isPappATest(singleTest) || isDheasTest(singleTest) || isBoneMarrowAspirationCytologyTest(singleTest) || isBoneMarrowCytologyTest(singleTest) || isHistopathologyReportTest(singleTest) || isCreatinineTest(singleTest) || isIonizedCalciumTest(singleTest) || isFlecainideTest(singleTest) || isPhenobarbitalTest(singleTest) || isKetoneBodyTest(singleTest) || isUricAcidTest(singleTest) || isTibcTest(singleTest) || isSerumOsmolalityTest(singleTest) || isArterialBloodGasTest(singleTest) || isManganeseBloodTest(singleTest) || isSeleniumSerumTest(singleTest))
     ? singleTest
     : null;
   const typhidotTest = singleTest && (isTyphidotTest(singleTest) || isHbsAgTest(singleTest) || isAntiHbcIgmTest(singleTest) || isHepatitisBProfileTest(singleTest) || isMantouxTest(singleTest) || isHiv12ScreeningTest(singleTest) || isAntiBTitreTest(singleTest) || isAntiATitreTest(singleTest) || isDustAllergyTest(singleTest) || isDengueFeverPanelTest(singleTest) || isG6PdTest(singleTest) || isAntiHbsTest(singleTest) || isGangliosideGm1IggTest(singleTest) || isGangliosideGm1IgmTest(singleTest) || isGangliosideGd1aIggTest(singleTest) || isGangliosideGd1aIgmTest(singleTest) || isGangliosideGd1bIggTest(singleTest) || isGangliosideGq1bIggTest(singleTest) || isAntiHistoneAntibodiesTest(singleTest) || isRibosomePAntibodiesTest(singleTest) || isAntiCcpTest(singleTest) || isImmunoglobulinIggTest(singleTest) || isImmunoglobulinIgeTest(singleTest) || isImmunoglobulinIgmTest(singleTest) || isImmunoglobulinIgaTest(singleTest))
@@ -12857,6 +13378,7 @@ function buildReportHtml(reportData) {
         if (reportData.tests.length === 1 && isBeta2GlycoproteinPanelTest(t)) return "BETA 2 GLYCOPROTEIN I, PANEL";
         if (reportData.tests.length === 1 && isToxoplasmaAntibodiesPanelTest(t)) return "TOXOPLASMA ANTIBODIES PANEL";
         if (reportData.tests.length === 1 && isTorchProfileTest(t)) return "TORCH PROFILE";
+        if (reportData.tests.length === 1 && isCmvIgmIggTest(t)) return "CYTOMEGALOVIRUS (CMV) ANTIBODIES, IgM & IgG";
         if (reportData.tests.length === 1 && isTnfAlphaTest(t)) return "TUMOUR NECROSIS FACTOR (TNF), ALPHA";
         if (reportData.tests.length === 1 && isRheumatoidFactorTest(t)) return "RHEUMATOID FACTOR, RA";
         if (reportData.tests.length === 1 && isAsoTiterTest(t)) return "ANTISTREPTOLYSIN O, ASO TITER";
@@ -12876,7 +13398,7 @@ function buildReportHtml(reportData) {
         if (reportData.tests.length === 1 && isRandomBloodSugarTest(t)) return "RANDOM BLOOD SUGAR (RBS)";
         if (reportData.tests.length === 1 && isFastingBloodSugarTest(t)) return "FASTING PLASMA GLUCOSE (FPG)";
         if (reportData.tests.length === 1 && isBTypeNatriureticPeptideTest(t)) return "B-TYPE NATRIURETIC PEPTIDE (BNP)";
-        if (reportData.tests.length === 1 && isCreatineKinaseTest(t)) return "CREATINE KINASE (CK)";
+        if (reportData.tests.length === 1 && isCreatineKinaseTest(t)) return isCpkWithCkMbTest(t) ? "CPK WITH CK-MB" : normalizeParameterName(t.name) === "ckmb" || normalizeParameterName(t.name) === "creatinekinasemb" ? "CREATINE KINASE-MB (CK-MB)" : ["cpk", "cpkcreatinephosphokinase", "creatinephosphokinase"].includes(normalizeParameterName(t.name)) ? "CREATINE PHOSPHOKINASE (CPK), TOTAL" : "CREATINE KINASE (CK)";
         if (reportData.tests.length === 1 && isBeta2MicroglobulinTest(t)) return "BETA 2 MICROGLOBULIN";
         if (reportData.tests.length === 1 && isAltSgptTest(t)) return "ALANINE AMINOTRANSFERASE (ALT) - SGPT";
         if (reportData.tests.length === 1 && isDnphTest(t)) return "DNPH";
@@ -12904,6 +13426,14 @@ function buildReportHtml(reportData) {
         if (reportData.tests.length === 1 && isBodyFluidChlorideTest(t)) return "CHLORIDE, BODY FLUID";
         if (reportData.tests.length === 1 && isBodyFluidBiochemistryTest(t)) return "BODY FLUID BIOCHEMISTRY";
         if (reportData.tests.length === 1 && isBodyFluidSpecificGravityTest(t)) return "SPECIFIC GRAVITY, BODY FLUID";
+        if (reportData.tests.length === 1 && isComplementC3Test(t)) return "COMPLEMENT C3 (C3), SERUM";
+        if (reportData.tests.length === 1 && isComplementC4Test(t)) return "COMPLEMENT C4 (C4), SERUM";
+        if (reportData.tests.length === 1 && isCancaAntiPr3Test(t)) return "cANCA (ANTI-PR3)";
+        if (reportData.tests.length === 1 && isCreatinineClearanceTest(t)) return "CREATININE CLEARANCE TEST (CCT)";
+        if (reportData.tests.length === 1 && isCd3LymphocyteTest(t)) return "CD3+ T LYMPHOCYTES";
+        if (reportData.tests.length === 1 && isCd4LymphocyteTest(t)) return "CD4+ T LYMPHOCYTES";
+        if (reportData.tests.length === 1 && isCd8LymphocyteTest(t)) return "CD8+ T LYMPHOCYTES";
+        if (reportData.tests.length === 1 && isCeaTest(t)) return "CARCINOEMBRYONIC ANTIGEN (CEA)";
         if (reportData.tests.length === 1 && isBronchialWashingCultureSensitivityTest(t)) return "BRONCHIAL WASHING CULTURE & SENSITIVITY";
         if (reportData.tests.length === 1 && isAfbCultureSensitivityTest(t)) return "AFB CULTURE & SENSITIVITY";
         if (reportData.tests.length === 1 && isStoolCultureTest(t)) return "STOOL CULTURE";

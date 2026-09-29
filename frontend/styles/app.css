@@ -333,6 +333,38 @@ button:disabled {
   gap: 18px;
 }
 
+.patient-management-frame {
+  width: 100%;
+  min-height: max(620px, calc(100vh - 220px));
+  border: 0;
+  border-radius: 14px;
+  background: #fff;
+}
+
+html.patient-management-embed .app-shell {
+  display: block;
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+}
+
+html.patient-management-embed .app-shell .sidebar,
+html.patient-management-embed .app-shell .page-header {
+  display: none !important;
+}
+
+html.patient-management-embed .app-shell .main-content {
+  display: block;
+  padding: 0;
+}
+
+html.patient-management-embed #patient-management {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
 [hidden] {
   display: none !important;
 }

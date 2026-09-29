@@ -870,34 +870,62 @@ testRouter.put("/:id", allowPermissions(PERMISSIONS.MANAGE_TESTS), async (req, r
   try {
     const { name, code, category, sampleType, price, turnaroundHours, active, parameters: requestedParameters = [] } = req.body;
     const reportBody = normalizeReportBody(req.body.reportBody ?? req.body.report_body);
-    const parameters = resolveTestParameters(requestedParameters, { name, category, sampleType });
-    await run(
-      `UPDATE tests
-       SET name = ?, code = ?, category = ?, sample_type = ?, price = ?, turnaround_hours = ?, report_body = ?, active = ?
-       WHERE id = ?`,
-      [name, code, category, sampleType, price, turnaroundHours || 24, reportBody, active ? 1 : 0, req.params.id]
-    );
-    await run("DELETE FROM test_parameters WHERE test_id = ?", [req.params.id]);
-
-    for (let index = 0; index < parameters.length; index += 1) {
-      const parameter = parameters[index];
-      await run(
-        `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, calculation_formula, calculation_precision, display_order)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [req.params.id, parameter.parameterName, parameter.unit, parameter.normalRange, parameter.entryMode, parameter.calculationFormula, parameter.calculationPrecision, index + 1]
-      );
+    const normalizedName = String(name || "").trim();
+    const normalizedCode = String(code || "").trim() || null;
+    const normalizedCategory = String(category || "").trim() || null;
+    const normalizedSampleType = String(sampleType || "").trim() || null;
+    const normalizedPrice = Number(price);
+    const normalizedTurnaroundHours = Math.max(1, Math.min(720, Number(turnaroundHours) || 24));
+    if (!normalizedName) {
+      return res.status(400).json({ message: "Test name is required" });
     }
+    if (!Number.isFinite(normalizedPrice) || normalizedPrice < 0) {
+      return res.status(400).json({ message: "Enter a valid test price" });
+    }
+    const parameters = resolveTestParameters(requestedParameters, {
+      name: normalizedName,
+      category: normalizedCategory,
+      sampleType: normalizedSampleType,
+    });
+
+    await transaction(async () => {
+      const existing = await get("SELECT id FROM tests WHERE id = ?", [req.params.id]);
+      if (!existing) {
+        const error = new Error("Test not found");
+        error.statusCode = 404;
+        throw error;
+      }
+      await run(
+        `UPDATE tests
+         SET name = ?, code = ?, category = ?, sample_type = ?, price = ?, turnaround_hours = ?, report_body = ?, active = ?
+         WHERE id = ?`,
+        [normalizedName, normalizedCode, normalizedCategory, normalizedSampleType, normalizedPrice, normalizedTurnaroundHours, reportBody, active ? 1 : 0, req.params.id]
+      );
+      await run("DELETE FROM test_parameters WHERE test_id = ?", [req.params.id]);
+
+      for (let index = 0; index < parameters.length; index += 1) {
+        const parameter = parameters[index];
+        await run(
+          `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, calculation_formula, calculation_precision, display_order)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [req.params.id, parameter.parameterName, parameter.unit, parameter.normalRange, parameter.entryMode, parameter.calculationFormula, parameter.calculationPrecision, index + 1]
+        );
+      }
+    });
 
     await logAction({
       userId: req.user.id,
       action: "test_update",
       entityType: "test",
       entityId: req.params.id,
-      meta: { name, code },
+      meta: { name: normalizedName, code: normalizedCode },
     });
 
     res.json({ ok: true });
   } catch (error) {
+    if (error?.code === "SQLITE_CONSTRAINT") {
+      return res.status(400).json({ message: "A test with the same name or code already exists" });
+    }
     next(error);
   }
 });

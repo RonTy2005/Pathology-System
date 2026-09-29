@@ -10,7 +10,7 @@ const { REPORT_CONTENT, getReportContent, buildSupplementaryNotes, supplementRep
 const { COMBINATIONS, getCombinationDefinition, repairKnownCombinationSchemas } = require('../src/services/reportCombinationRepair');
 const { CELL_REPORT_DEFINITIONS, getCellReportDefinition, getCellReportParameters, getCellReportPreviewValue, repairCellReportSchemas } = require('../src/services/cellReportService');
 const { getFallbackReportParameters } = require('../src/services/reportSchemaService');
-const { ensureAntiInsulinAntibodyTestConfiguration, ensureAntiLeptospiraAntibodyTestConfiguration, ensureAntiMicrosomalAntibodyTestConfiguration, ensureAntiDsDnaAntibodyTestConfiguration, ensureAntiSsDnaAntibodyTestConfiguration, ensureAntiHistoneAntibodyTestConfiguration, ensureAntiRibosomalPAntibodyTestConfiguration, ensureAntiCcpAbTestConfiguration, ensureAntiSpermAntibodyTestConfiguration, ensureApolipoproteinA1TestConfiguration, ensureUrineArsenicTestConfiguration, ensureArthritisProfileTestConfiguration, ensureAsciticFluidGramStainTestConfiguration, ensureAsciticFluidTotalProteinTestConfiguration, ensureBodyFluidBiochemistryTestConfiguration, ensureBodyFluidSpecificGravityTestConfiguration, ensureBronchialWashingCultureSensitivityTestConfiguration, ensureBactecAerobicCultureTestConfiguration, ensureBactecAnaerobicCultureTestConfiguration, ensureBronchialPapCytologyTestConfigurations } = require('../src/db/init');
+const { ensureAntiInsulinAntibodyTestConfiguration, ensureAntiLeptospiraAntibodyTestConfiguration, ensureAntiMicrosomalAntibodyTestConfiguration, ensureAntiDsDnaAntibodyTestConfiguration, ensureAntiSsDnaAntibodyTestConfiguration, ensureAntiHistoneAntibodyTestConfiguration, ensureAntiRibosomalPAntibodyTestConfiguration, ensureAntiCcpAbTestConfiguration, ensureAntiSpermAntibodyTestConfiguration, ensureApolipoproteinA1TestConfiguration, ensureUrineArsenicTestConfiguration, ensureArthritisProfileTestConfiguration, ensureAsciticFluidGramStainTestConfiguration, ensureAsciticFluidTotalProteinTestConfiguration, ensureBodyFluidBiochemistryTestConfiguration, ensureBodyFluidSpecificGravityTestConfiguration, ensureComplementC3TestConfiguration, ensureComplementC4TestConfiguration, ensureCancaAntiPr3TestConfiguration, ensureBronchialWashingCultureSensitivityTestConfiguration, ensureBactecAerobicCultureTestConfiguration, ensureBactecAnaerobicCultureTestConfiguration, ensureBronchialPapCytologyTestConfigurations } = require('../src/db/init');
 const { sampleReport } = require('./audit-report-content.cjs');
 const { isBillingOnlyTest } = require('../frontend/scripts/reportEligibility');
 
@@ -114,6 +114,29 @@ test('ADA uses a specimen-aware activity report for the imported catalogue name'
   assert.match(html, /Ascitic fluid<\/td><td>&lt; 35 U\/L/);
 });
 
+test('CPK with CK-MB keeps total CPK and CK-MB as separate, cautiously interpreted results', () => {
+  const test = {
+    name: 'CPKwith CK-MB',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Creatine Phosphokinase (CPK), Total', value: '186', unit: 'U/L', normal_range: '24 - 204' },
+      { parameter_name: 'CK-MB', value: '18', unit: 'U/L', normal_range: '0 - 25' },
+    ],
+  };
+  const html = buildReportHtml(sampleReport(test));
+  assert.match(html, /<div class="test-title">CPK WITH CK-MB<\/div>/);
+  assert.match(html, /CREATINE PHOSPHOKINASE \(CPK\), TOTAL/);
+  assert.match(html, /186/);
+  assert.match(html, /CK-MB/);
+  assert.match(html, /18/);
+  assert.match(html, /CK-MB must not be interpreted alone as proof of myocardial injury/);
+  assert.match(html, /symptoms, ECG, cardiac troponin where clinically indicated/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'CPKwith CK-MB' }).slice(0, 2).map(parameter => parameter.parameterName),
+    ['Creatine Phosphokinase (CPK), Total', 'CK-MB'],
+  );
+});
+
 test('AFB Ziehl-Neelsen stain uses a microscopy report instead of a blank narrative', () => {
   const html = buildReportHtml(sampleReport({
     name: 'AFB(Z-NStain)',
@@ -190,8 +213,10 @@ test('BACCAL smear for BRR body uses a dedicated Barr-body cytology screen witho
   assert.ok(fallback.some(field => field.parameterName === 'Smear Adequacy'));
   assert.ok(fallback.some(field => field.parameterName === 'Interpretation / Impression'));
 
-  const separate = buildReportHtml(sampleReport({ name: 'Buccal SmearforSexChromation(B..)', sample_type: 'Buccal Smear', parameters: [] }));
-  assert.doesNotMatch(separate, /class="results-table buccal-barr-body-table"/);
+  const sexChromation = buildReportHtml(sampleReport({ name: 'Buccal SmearforSexChromation(B..)', sample_type: 'Buccal Smear', parameters: [] }));
+  assert.match(sexChromation, /class="results-table buccal-barr-body-table"/);
+  assert.match(sexChromation, /BUCCAL SMEAR FOR BARR BODY \(SEX CHROMATIN\)/);
+  assert.equal(getFallbackReportParameters({ name: 'Buccal Smear for Sex Chromation' }).length, fallback.length);
 });
 
 test('Autoimmune Profile reports ANA, anti-dsDNA and C3 without claiming a diagnosis', () => {
@@ -1866,6 +1891,130 @@ test('BodyFluids for SpecificGravity uses a source-aware physical examination fo
   }
 });
 
+test('C3 (Complement-3) uses a dedicated serum complement concentration report', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'C3 (Complement-3)', sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Complement C3, Serum', value: '86', unit: 'mg/dL', normal_range: '75 - 175' },
+      { parameter_name: 'Specimen', value: 'Serum' },
+      { parameter_name: 'Collection Date / Time', value: '29-Sep-2026 10:15' },
+      { parameter_name: 'Method / Analyzer', value: 'Immunoturbidimetry' },
+      { parameter_name: 'Clinical Indication', value: 'Clinical correlation requested' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">COMPLEMENT C3 \(C3\), SERUM<\/div>/);
+  assert.match(html, /class="results-table single-analyte-table complement-c3-table"/);
+  assert.match(html, /Immunoturbidimetry/);
+  assert.match(html, /This assay measures the concentration of complement component C3/);
+  assert.match(html, /not a functional C3 assay/);
+  assert.match(html, /acute-phase reactant/);
+  assert.equal(getFallbackReportParameters({ name: 'C3 (Complement-3)' })[0].parameterName, 'Complement C3, Serum');
+  for (const separateName of ['C4 (Complement-4)', 'C3 Functional Assay', 'Complement C3d']) {
+    assert.doesNotMatch(buildReportHtml(sampleReport({ name: separateName, parameters: [] })), /complement-c3-table/);
+  }
+});
+
+test('C4 (Complement-4) uses a dedicated serum complement concentration report', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'C4 (Complement-4)', sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Complement C4, Serum', value: '18', unit: 'mg/dL', normal_range: '14 - 40' },
+      { parameter_name: 'Specimen', value: 'Serum' },
+      { parameter_name: 'Collection Date / Time', value: '29-Sep-2026 10:15' },
+      { parameter_name: 'Method / Analyzer', value: 'Nephelometry' },
+      { parameter_name: 'Clinical Indication', value: 'Clinical correlation requested' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">COMPLEMENT C4 \(C4\), SERUM<\/div>/);
+  assert.match(html, /class="results-table single-analyte-table complement-c4-table"/);
+  assert.match(html, /Nephelometry/);
+  assert.match(html, /This assay measures the concentration of complement component C4/);
+  assert.match(html, /not a functional C4 assay/);
+  assert.equal(getFallbackReportParameters({ name: 'C4 (Complement-4)' })[0].parameterName, 'Complement C4, Serum');
+  for (const separateName of ['C3 (Complement-3)', 'C4 Functional Assay', 'Complement C4d']) {
+    assert.doesNotMatch(buildReportHtml(sampleReport({ name: separateName, parameters: [] })), /complement-c4-table/);
+  }
+});
+
+test('C ANCA (Anti-PR3) uses a dedicated cANCA and antigen-specific PR3 report', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'C ANCA (Anti-PR3)', sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'cANCA (IIF) Result / Pattern', value: 'Cytoplasmic pattern detected', normal_range: 'Negative' },
+      { parameter_name: 'Anti-PR3 Antibody, IgG', value: '2.4', unit: 'U/mL', normal_range: 'Laboratory cutoff applies' },
+      { parameter_name: 'Titre / Endpoint Dilution', value: '1:80' },
+      { parameter_name: 'Method / Analyzer', value: 'Antigen-specific immunoassay with IIF correlation' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">cANCA \(ANTI-PR3\)<\/div>/);
+  assert.match(html, /class="results-table single-analyte-table canca-pr3-table"/);
+  assert.match(html, /CYTOPLASMIC ANCA \/ ANTI-PR3/);
+  assert.match(html, /Antigen-specific immunoassay with IIF correlation/);
+  assert.match(html, /not diagnostic of ANCA-associated vasculitis/);
+  assert.match(html, /A negative result does not exclude ANCA-associated vasculitis/);
+  assert.equal(getFallbackReportParameters({ name: 'C ANCA (Anti-PR3)' })[0].parameterName, 'cANCA (IIF) Result / Pattern');
+  for (const separateName of ['P ANCA (Anti - PR3)', 'MPO-ANCA', 'ANCA Vasculitis Panel']) {
+    assert.doesNotMatch(buildReportHtml(sampleReport({ name: separateName, parameters: [] })), /canca-pr3-table/);
+  }
+});
+
+test('CCT (Creatinine Clearance Test) calculates uncorrected clearance from complete timed collection inputs', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'CCT (Creatinine Clearance Test)', sample_type: 'Serum & 24h Urine',
+    parameters: [
+      { parameter_name: 'Urine Creatinine Concentration', value: '100', unit: 'mg/dL' },
+      { parameter_name: 'Total Urine Volume', value: '1440', unit: 'mL' },
+      { parameter_name: 'Collection Duration', value: '24', unit: 'hours' },
+      { parameter_name: 'Serum Creatinine', value: '1.0', unit: 'mg/dL' },
+      { parameter_name: 'Method / Analyzer', value: 'Enzymatic colorimetric assay' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">CREATININE CLEARANCE TEST \(CCT\)<\/div>/);
+  assert.match(html, /class="results-table single-analyte-table creatinine-clearance-table"/);
+  assert.match(html, />100\.0 <span class="single-analyte-status normal">CALCULATED<\/span>/);
+  assert.match(html, /Accurate collection timing and complete urine collection are essential/);
+  assert.match(html, /not body-surface-area corrected/);
+  assert.equal(getFallbackReportParameters({ name: 'CCT (Creatinine Clearance Test)' })[4].entryMode, 'calculated');
+  assert.doesNotMatch(buildReportHtml(sampleReport({ name: 'Creatinine, 24-Hour Urine', parameters: [] })), /creatinine-clearance-table/);
+});
+
+test('CD3Lymphocyte uses a focused flow-cytometry T-lymphocyte report', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'CD3Lymphocyte', sample_type: 'EDTA Whole Blood',
+    parameters: [
+      { parameter_name: 'CD3+ T Lymphocytes', value: '68', unit: '% of lymphocytes', normal_range: 'Laboratory interval' },
+      { parameter_name: 'CD3+ T Lymphocytes, Absolute Count', value: '1224', unit: 'cells/µL', normal_range: 'Laboratory interval' },
+      { parameter_name: 'Total Lymphocyte Count', value: '1800', unit: 'cells/µL' },
+      { parameter_name: 'Method / Analyzer', value: 'Flow cytometry' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">CD3\+ T LYMPHOCYTES<\/div>/);
+  assert.match(html, /class="results-table single-analyte-table cd3-lymphocyte-table"/);
+  assert.match(html, /CD3\+ T Lymphocytes, Absolute Count/);
+  assert.match(html, /Percentage and absolute count describe different aspects of the result/);
+  assert.match(html, /not a complete T-, B-, and NK-cell panel/);
+  assert.equal(getFallbackReportParameters({ name: 'CD3Lymphocyte' })[0].parameterName, 'CD3+ T Lymphocytes');
+  assert.doesNotMatch(buildReportHtml(sampleReport({ name: 'CD4 Lymphocyte', parameters: [] })), /cd3-lymphocyte-table/);
+});
+
+test('CD4Lymphocyte uses a focused flow-cytometry helper T-lymphocyte report', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'CD4Lymphocyte', sample_type: 'EDTA Blood',
+    parameters: [
+      { parameter_name: 'CD4+ T Lymphocytes', value: '42', unit: '% of lymphocytes', normal_range: 'Laboratory interval' },
+      { parameter_name: 'CD4+ T Lymphocytes, Absolute Count', value: '756', unit: 'cells/µL', normal_range: 'Laboratory interval' },
+      { parameter_name: 'Total Lymphocyte Count', value: '1800', unit: 'cells/µL' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">CD4\+ T LYMPHOCYTES<\/div>/);
+  assert.match(html, /class="results-table single-analyte-table cd4-lymphocyte-table"/);
+  assert.match(html, /CD4\+ T Lymphocytes, Absolute Count/);
+  assert.match(html, /CD4 identifies a helper T-cell subset/);
+  assert.match(html, /not a complete T-, B-, and NK-cell panel/);
+  assert.equal(getFallbackReportParameters({ name: 'CD4Lymphocyte' })[0].parameterName, 'CD4+ T Lymphocytes');
+  assert.doesNotMatch(buildReportHtml(sampleReport({ name: 'CD3 Lymphocyte', parameters: [] })), /cd4-lymphocyte-table/);
+});
+
 test('Bronchial Washingfor C/s uses a specimen-specific bacterial culture report', () => {
   const html = buildReportHtml(sampleReport({
     name: 'Bronchial Washingfor C/s', sample_type: 'Bronchial Washing',
@@ -2058,7 +2207,10 @@ test('local catalogue: existing report bodies stay unchanged inside the paginati
         || normalizedInputName === 'albertstainofsmearforklb'
         || normalizedInputName === 'albertstainforklb';
       const isBaccalSmearBrrBody = normalizedInputName === 'baccalsmearforbrrbody'
-        || normalizedInputName === 'buccalsmearforbarrbody';
+        || normalizedInputName === 'buccalsmearforbarrbody'
+        || normalizedInputName === 'buccalsmearforsexchromation'
+        || normalizedInputName === 'buccalsmearforsexchromatin'
+        || normalizedInputName.startsWith('buccalsmearforsexchromationb');
       const isAutoimmuneProfile = normalizedInputName === 'autoimmuneprofile';
       const isAgRatio = normalizedInputName === 'agratio'
         || normalizedInputName === 'albuminglobulinratio';
@@ -2185,6 +2337,55 @@ test('local catalogue: existing report bodies stay unchanged inside the paginati
       const isBodyFluidSpecificGravity = normalizedInputName === 'bodyfluidsforspecificgravity'
         || normalizedInputName === 'bodyfluidforspecificgravity'
         || normalizedInputName === 'bodyfluidspecificgravity';
+      const isComplementC3 = normalizedInputName === 'c3complement3'
+        || normalizedInputName === 'c3complement'
+        || normalizedInputName === 'complement3'
+        || normalizedInputName === 'complementc3';
+      const isComplementC4 = normalizedInputName === 'c4complement4'
+        || normalizedInputName === 'c4complement'
+        || normalizedInputName === 'complement4'
+        || normalizedInputName === 'complementc4';
+      const isCancaAntiPr3 = normalizedInputName === 'cancaantipr3'
+        || normalizedInputName === 'canca'
+        || normalizedInputName === 'antipr3'
+        || normalizedInputName === 'proteinase3antibody'
+        || normalizedInputName === 'proteinase3antibodies';
+      const isCreatinineClearance = normalizedInputName === 'cctcreatinineclearancetest'
+        || normalizedInputName === 'creatinineclearancetest'
+        || normalizedInputName === 'creatinineclearance'
+        || normalizedInputName === 'cct';
+      const isCd3Lymphocyte = normalizedInputName === 'cd3lymphocyte'
+        || normalizedInputName === 'cd3tlymphocyte'
+        || normalizedInputName === 'cd3tcell'
+        || normalizedInputName === 'cd3tcellcount';
+      const isCd4Lymphocyte = normalizedInputName === 'cd4lymphocyte'
+        || normalizedInputName === 'cd4tlymphocyte'
+        || normalizedInputName === 'cd4tcell'
+        || normalizedInputName === 'cd4tcellcount';
+      const isCd8Lymphocyte = normalizedInputName === 'cd8lymphocyte'
+        || normalizedInputName === 'cd8tlymphocyte'
+        || normalizedInputName === 'cd8tcell'
+        || normalizedInputName === 'cd8tcellcount';
+      const isCea = normalizedInputName === 'ceacarcinoembryonicantigen'
+        || normalizedInputName === 'carcinoembryonicantigen'
+        || normalizedInputName === 'cea';
+      const isCft = normalizedInputName === 'cftcompletefixsationtest'
+        || normalizedInputName === 'cftcompletefixationtest'
+        || normalizedInputName === 'complementfixationtest'
+        || normalizedInputName === 'cft';
+      const isCkMb = normalizedInputName === 'ckmb'
+        || normalizedInputName === 'creatinekinasemb';
+      const isCpk = normalizedInputName === 'cpk'
+        || normalizedInputName === 'cpkcreatinephosphokinase'
+        || normalizedInputName === 'creatinephosphokinase';
+      const isCpkWithCkMb = normalizedInputName === 'cpkwithckmb'
+        || normalizedInputName === 'cpkckmb'
+        || normalizedInputName === 'creatinephosphokinasewithckmb';
+      const isCmvIgmIgg = normalizedInputName === 'cmvcytomegalovirusigmigg'
+        || normalizedInputName === 'cytomegaloviruscmvigmigg'
+        || normalizedInputName === 'cytomegaloviruscmviggigm'
+        || normalizedInputName === 'cytomegalovirusigmigg'
+        || normalizedInputName === 'cmviggigm';
       const isBronchialWashingCultureSensitivity = normalizedInputName === 'bronchialwashingforcs'
         || normalizedInputName === 'bronchialwashingcultureandsensitivity'
         || normalizedInputName === 'bronchialwashingculturesensitivity';
@@ -2212,6 +2413,7 @@ test('local catalogue: existing report bodies stay unchanged inside the paginati
       const isBactecAnaerobicCulture = normalizedInputName === 'bacteccultureforanaerobicbacteria';
       const isBronchialBrushingPap = normalizedInputName === 'bronchialbrushingforpap';
       const isBronchialLavagePap = normalizedInputName === 'bronchiallavageforpap';
+      const isBronchialWashingPap = normalizedInputName === 'bronchialwashingforpap';
       const isTimedUrineAmylase = normalizedInputName === 'amylase24hrsurine'
         || normalizedInputName === 'amylase24hoururine'
         || normalizedInputName === 'amylase24hurine'
@@ -2231,14 +2433,17 @@ test('local catalogue: existing report bodies stay unchanged inside the paginati
         assert.match(newHtml, /data-report-content="bactec-anaerobic-culture"/);
         continue;
       }
-      if ((isBronchialBrushingPap || isBronchialLavagePap) && !String(input.report_body || '').trim()) {
-        assert.match(newHtml, isBronchialBrushingPap ? /BRONCHIAL BRUSHING - PAP CYTOLOGY/ : /BRONCHIAL LAVAGE - PAP CYTOLOGY/);
+      if ((isBronchialBrushingPap || isBronchialLavagePap || isBronchialWashingPap) && !String(input.report_body || '').trim()) {
+        const title = isBronchialBrushingPap ? /BRONCHIAL BRUSHING - PAP CYTOLOGY/
+          : isBronchialLavagePap ? /BRONCHIAL LAVAGE - PAP CYTOLOGY/
+            : /BRONCHIAL WASHING - PAP CYTOLOGY/;
+        assert.match(newHtml, title);
         assert.match(newHtml, /class="bronchial-pap-cytology-report"/);
         assert.match(newHtml, /Specimen Adequacy/);
         assert.match(newHtml, /Diagnostic Category/);
         continue;
       }
-      if (isActh || isAda || isAfbZiehlNeelsen || isAlbertStainKlb || isBaccalSmearBrrBody || isAutoimmuneProfile || isAgRatio || isAnfQualitative || isProstaticAcidPhosphatase || isTotalAcidPhosphatase || isUrineAlcohol || isAldehydeTest || isAldosterone || isBloodAllergy || isDrugAllergy || isRandomUrineAlphaAmylase || isTimedUrineAmylase || isAmmonia || isAndrogenPanel || isAndrostenedione || isComprehensiveAnemia || isAnemiaScreening || isAntenatalProfile || isAntiTpo || isAntiTg || isAntiInsulinAntibody || isAntiLeptospiraAntibody || isAntiMicrosomalAntibody || isAntiDsDnaAntibody || isAntiSsDnaAntibody || isAntiHistoneAntibody || isAntiRibosomalPAntibody || isAntiCcpAb || isAntiSpermAntibody || isApolipoproteinA1 || isUrineArsenic || isArthritisProfile || isAsciticFluidGramStain || isAnticardiolipinIggIgm || isAnticardiolipinIgaIgg || isAnticardiolipinIgaIgm || isAnticardiolipinIga || isAnticardiolipinIgg || isAnticardiolipinIgm || isApolipoproteinB || isAsciticFluidAnalysis || isSerumBicarbonate || isBilirubinFractionation || isMediumSectionBiopsy || isSmallSectionBiopsy || isBloodCultureSensitivity || isBodyFluidCultureSensitivity || isBodyFluidTotalProtein || isBodyFluidChloride || isBodyFluidBiochemistry || isBodyFluidSpecificGravity || isBronchialWashingCultureSensitivity || isBoneMarrowAspirationCytology || isBoneMarrowCytology) {
+      if (isActh || isAda || isAfbZiehlNeelsen || isAlbertStainKlb || isBaccalSmearBrrBody || isAutoimmuneProfile || isAgRatio || isAnfQualitative || isProstaticAcidPhosphatase || isTotalAcidPhosphatase || isUrineAlcohol || isAldehydeTest || isAldosterone || isBloodAllergy || isDrugAllergy || isRandomUrineAlphaAmylase || isTimedUrineAmylase || isAmmonia || isAndrogenPanel || isAndrostenedione || isComprehensiveAnemia || isAnemiaScreening || isAntenatalProfile || isAntiTpo || isAntiTg || isAntiInsulinAntibody || isAntiLeptospiraAntibody || isAntiMicrosomalAntibody || isAntiDsDnaAntibody || isAntiSsDnaAntibody || isAntiHistoneAntibody || isAntiRibosomalPAntibody || isAntiCcpAb || isAntiSpermAntibody || isApolipoproteinA1 || isUrineArsenic || isArthritisProfile || isAsciticFluidGramStain || isAnticardiolipinIggIgm || isAnticardiolipinIgaIgg || isAnticardiolipinIgaIgm || isAnticardiolipinIga || isAnticardiolipinIgg || isAnticardiolipinIgm || isApolipoproteinB || isAsciticFluidAnalysis || isSerumBicarbonate || isBilirubinFractionation || isMediumSectionBiopsy || isSmallSectionBiopsy || isBloodCultureSensitivity || isBodyFluidCultureSensitivity || isBodyFluidTotalProtein || isBodyFluidChloride || isBodyFluidBiochemistry || isBodyFluidSpecificGravity || isComplementC3 || isComplementC4 || isCancaAntiPr3 || isCreatinineClearance || isCd3Lymphocyte || isCd4Lymphocyte || isCd8Lymphocyte || isCea || isCft || isCkMb || isCpk || isCpkWithCkMb || isCmvIgmIgg || isBronchialWashingCultureSensitivity || isBoneMarrowAspirationCytology || isBoneMarrowCytology) {
         if (isAsciticFluidGramStain) {
           assert.match(newHtml, /ASCITIC FLUID GRAM STAIN/);
           assert.match(newHtml, /data-report-content="ascitic-fluid-gram-stain"/);
@@ -2347,6 +2552,80 @@ test('local catalogue: existing report bodies stay unchanged inside the paginati
           assert.match(newHtml, /SPECIFIC GRAVITY, BODY FLUID/);
           assert.match(newHtml, /Fluid Type \/ Source/);
           assert.match(newHtml, /must not be used to classify a fluid as transudate or exudate/);
+          continue;
+        }
+        if (isComplementC3) {
+          assert.match(newHtml, /COMPLEMENT C3 \(C3\), SERUM/);
+          assert.match(newHtml, /COMPLEMENT COMPONENT C3/);
+          assert.match(newHtml, /not a functional C3 assay/);
+          continue;
+        }
+        if (isComplementC4) {
+          assert.match(newHtml, /COMPLEMENT C4 \(C4\), SERUM/);
+          assert.match(newHtml, /COMPLEMENT COMPONENT C4/);
+          assert.match(newHtml, /not a functional C4 assay/);
+          continue;
+        }
+        if (isCancaAntiPr3) {
+          assert.match(newHtml, /cANCA \(ANTI-PR3\)/);
+          assert.match(newHtml, /CYTOPLASMIC ANCA \/ ANTI-PR3/);
+          assert.match(newHtml, /not diagnostic of ANCA-associated vasculitis/);
+          continue;
+        }
+        if (isCreatinineClearance) {
+          assert.match(newHtml, /CREATININE CLEARANCE TEST \(CCT\)/);
+          assert.match(newHtml, /CREATININE CLEARANCE/);
+          assert.match(newHtml, /Accurate collection timing and complete urine collection are essential/);
+          continue;
+        }
+        if (isCd3Lymphocyte) {
+          assert.match(newHtml, /CD3\+ T LYMPHOCYTES/);
+          assert.match(newHtml, /CD3\+ T-LYMPHOCYTE ENUMERATION/);
+          assert.match(newHtml, /not a complete T-, B-, and NK-cell panel/);
+          continue;
+        }
+        if (isCd4Lymphocyte) {
+          assert.match(newHtml, /CD4\+ T LYMPHOCYTES/);
+          assert.match(newHtml, /CD4\+ T-LYMPHOCYTE ENUMERATION/);
+          assert.match(newHtml, /not a complete T-, B-, and NK-cell panel/);
+          continue;
+        }
+        if (isCd8Lymphocyte) {
+          assert.match(newHtml, /CD8\+ T LYMPHOCYTES/);
+          assert.match(newHtml, /CD8\+ T-LYMPHOCYTE ENUMERATION/);
+          assert.match(newHtml, /not a complete T-, B-, and NK-cell panel/);
+          continue;
+        }
+        if (isCea) {
+          assert.match(newHtml, /CARCINOEMBRYONIC ANTIGEN \(CEA\)/);
+          assert.match(newHtml, /not a screening test for asymptomatic individuals/);
+          continue;
+        }
+        if (isCft) {
+          assert.match(newHtml, /COMPLEMENT FIXATION TEST/);
+          assert.match(newHtml, /Target Antigen \/ Assay/);
+          continue;
+        }
+        if (isCkMb) {
+          assert.match(newHtml, /CREATINE KINASE-MB \(CK-MB\)/);
+          continue;
+        }
+        if (isCpk) {
+          assert.match(newHtml, /CREATINE PHOSPHOKINASE \(CPK\), TOTAL/);
+          assert.match(newHtml, /Total CK\/CPK is an enzyme activity measurement/);
+          continue;
+        }
+        if (isCpkWithCkMb) {
+          assert.match(newHtml, /CPK WITH CK-MB/);
+          assert.match(newHtml, /CREATINE PHOSPHOKINASE \(CPK\), TOTAL/);
+          assert.match(newHtml, /CK-MB/);
+          assert.match(newHtml, /CK-MB must not be interpreted alone as proof of myocardial injury/);
+          continue;
+        }
+        if (isCmvIgmIgg) {
+          assert.match(newHtml, /CYTOMEGALOVIRUS \(CMV\) ANTIBODIES, IgM &amp; IgG/);
+          assert.match(newHtml, /CMV IgM reactivity may occur/);
+          assert.doesNotMatch(newHtml, /TORCH PANEL, IgG &amp; IgM, SERUM/);
           continue;
         }
         if (isBronchialWashingCultureSensitivity) {
@@ -2612,10 +2891,11 @@ test('local catalogue: existing report bodies stay unchanged inside the paginati
   } finally { await new Promise(resolve => db.close(resolve)); }
 });
 
-test('bronchial brushing and lavage PAP cytology render distinct blank-safe reports', () => {
+test('bronchial brushing, lavage and washing PAP cytology render distinct blank-safe reports', () => {
   for (const [name, specimen, other] of [
     ['Bronchial BrushingforPAP', 'Bronchial Brushing', 'Bronchial Lavage'],
     ['Bronchial LavageforPAp', 'Bronchial Lavage', 'Bronchial Brushing'],
+    ['Bronchial WashingforPAP', 'Bronchial Washing', 'Bronchial Lavage'],
   ]) {
     const fields = getFallbackReportParameters({ name });
     assert.deepEqual(fields.map(field => field.parameterName), [
@@ -2653,7 +2933,7 @@ test('bronchial brushing and lavage PAP cytology render distinct blank-safe repo
     name: 'Bronchial LavageforPAp', parameters: [{ parameter_name: 'Result', value: 'Legacy recorded finding' }],
   }));
   assert.match(legacy, /Legacy recorded finding/);
-  assert.equal(getFallbackReportParameters({ name: 'Bronchial WashingforPAP' }).length, 1);
+  assert.equal(getFallbackReportParameters({ name: 'Bronchial WashingforPAP' }).length, 11);
 });
 
 async function fixture() {
@@ -2701,6 +2981,7 @@ test('bronchial PAP cytology upgrades only unused blank placeholders and preserv
       [805, 'Bronchial WashingforPAP', ''],
       [806, 'Bronchial LavageforPAp', ''],
       [807, 'Bronchial LavageforPAp', ''],
+      [808, 'Bronchial WashingforPAP', ''],
     ]) {
       await db.run('INSERT INTO tests (id,name,category,report_body) VALUES (?,?,?,?)', [id, name, 'Imported legacy catalogue', body]);
       await db.run(
@@ -2710,6 +2991,7 @@ test('bronchial PAP cytology upgrades only unused blank placeholders and preserv
     }
     const originalBrushingId = (await db.get('SELECT id FROM test_parameters WHERE test_id=800')).id;
     const originalLavageId = (await db.get('SELECT id FROM test_parameters WHERE test_id=801')).id;
+    const originalWashingId = (await db.get('SELECT id FROM test_parameters WHERE test_id=808')).id;
     await db.run('INSERT INTO visit_tests (test_id) VALUES (?)', [802]);
     await db.run('INSERT INTO test_bundle_items (bundle_test_id,component_test_id) VALUES (?,?)', [803, 805]);
     await db.run("UPDATE test_parameters SET normal_range='Lab custom' WHERE test_id=806");
@@ -2721,9 +3003,11 @@ test('bronchial PAP cytology upgrades only unused blank placeholders and preserv
     for (const [id, specimen, originalId] of [
       [800, 'Bronchial Brushing', originalBrushingId],
       [801, 'Bronchial Lavage', originalLavageId],
+      [808, 'Bronchial Washing', originalWashingId],
     ]) {
       const fields = await db.all('SELECT id,parameter_name,normal_range FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
-      assert.deepEqual(fields.map(field => field.parameter_name), getFallbackReportParameters({ name: id === 800 ? 'Bronchial BrushingforPAP' : 'Bronchial LavageforPAp' }).map(field => field.parameterName));
+      const name = id === 800 ? 'Bronchial BrushingforPAP' : id === 801 ? 'Bronchial LavageforPAp' : 'Bronchial WashingforPAP';
+      assert.deepEqual(fields.map(field => field.parameter_name), getFallbackReportParameters({ name }).map(field => field.parameterName));
       assert.equal(fields[8].id, originalId);
       assert.ok(fields.every(field => !field.normal_range));
       assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, specimen);
@@ -3372,6 +3656,111 @@ test('BodyFluids for SpecificGravity upgrades only unused blank placeholders', a
     for (const id of [737, 738]) {
       assert.equal((await db.get('SELECT parameter_name FROM test_parameters WHERE test_id=?', [id])).parameter_name, 'Result');
     }
+  } finally {
+    await db.close();
+  }
+});
+
+test('C3 (Complement-3) upgrades only unused blank placeholders', async () => {
+  const db = await fixture();
+  try {
+    for (const [id, name, body] of [
+      [809, 'C3 (Complement-3)', ''],
+      [810, 'C3 (Complement-3)', ''],
+      [811, 'C3 (Complement-3)', 'Lab-authored format'],
+      [812, 'C3 (Complement-3)', ''],
+      [813, 'C4 (Complement-4)', ''],
+    ]) {
+      await db.run('INSERT INTO tests (id,name,category,report_body) VALUES (?,?,?,?)', [id, name, 'Imported legacy catalogue', body]);
+      if (id !== 812) await db.run("INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,'Result','','','manual',1)", [id]);
+    }
+    const originalId = (await db.get('SELECT id FROM test_parameters WHERE test_id=?', [809])).id;
+    await db.run('INSERT INTO visit_tests (test_id) VALUES (?)', [810]);
+    await db.run("UPDATE test_parameters SET normal_range='Lab custom' WHERE test_id=811");
+
+    await ensureComplementC3TestConfiguration(db);
+    await ensureComplementC3TestConfiguration(db);
+
+    const expected = ['Complement C3, Serum', 'Specimen', 'Collection Date / Time', 'Method / Analyzer', 'Clinical Indication', 'Comments'];
+    for (const id of [809, 812]) {
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, 'Serum');
+      assert.deepEqual((await db.all('SELECT parameter_name FROM test_parameters WHERE test_id=? ORDER BY display_order', [id])).map(field => field.parameter_name), expected);
+    }
+    assert.equal((await db.get('SELECT id FROM test_parameters WHERE test_id=? ORDER BY display_order', [809])).id, originalId);
+    for (const id of [810, 811, 813]) {
+      assert.equal((await db.get('SELECT parameter_name FROM test_parameters WHERE test_id=?', [id])).parameter_name, 'Result');
+    }
+    assert.equal((await db.get('SELECT normal_range FROM test_parameters WHERE test_id=?', [811])).normal_range, 'Lab custom');
+  } finally {
+    await db.close();
+  }
+});
+
+test('C4 (Complement-4) upgrades only unused blank placeholders', async () => {
+  const db = await fixture();
+  try {
+    for (const [id, name, body] of [
+      [814, 'C4 (Complement-4)', ''],
+      [815, 'C4 (Complement-4)', ''],
+      [816, 'C4 (Complement-4)', 'Lab-authored format'],
+      [817, 'C4 (Complement-4)', ''],
+      [818, 'C3 (Complement-3)', ''],
+    ]) {
+      await db.run('INSERT INTO tests (id,name,category,report_body) VALUES (?,?,?,?)', [id, name, 'Imported legacy catalogue', body]);
+      if (id !== 817) await db.run("INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,'Result','','','manual',1)", [id]);
+    }
+    const originalId = (await db.get('SELECT id FROM test_parameters WHERE test_id=?', [814])).id;
+    await db.run('INSERT INTO visit_tests (test_id) VALUES (?)', [815]);
+    await db.run("UPDATE test_parameters SET unit='Lab custom' WHERE test_id=816");
+
+    await ensureComplementC4TestConfiguration(db);
+    await ensureComplementC4TestConfiguration(db);
+
+    const expected = ['Complement C4, Serum', 'Specimen', 'Collection Date / Time', 'Method / Analyzer', 'Clinical Indication', 'Comments'];
+    for (const id of [814, 817]) {
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, 'Serum');
+      assert.deepEqual((await db.all('SELECT parameter_name FROM test_parameters WHERE test_id=? ORDER BY display_order', [id])).map(field => field.parameter_name), expected);
+    }
+    assert.equal((await db.get('SELECT id FROM test_parameters WHERE test_id=? ORDER BY display_order', [814])).id, originalId);
+    for (const id of [815, 816, 818]) {
+      assert.equal((await db.get('SELECT parameter_name FROM test_parameters WHERE test_id=?', [id])).parameter_name, 'Result');
+    }
+    assert.equal((await db.get('SELECT unit FROM test_parameters WHERE test_id=?', [816])).unit, 'Lab custom');
+  } finally {
+    await db.close();
+  }
+});
+
+test('C ANCA (Anti-PR3) upgrades only unused blank placeholders', async () => {
+  const db = await fixture();
+  try {
+    for (const [id, name, body] of [
+      [819, 'C ANCA (Anti-PR3)', ''],
+      [820, 'C ANCA (Anti-PR3)', ''],
+      [821, 'C ANCA (Anti-PR3)', 'Lab-authored format'],
+      [822, 'C ANCA (Anti-PR3)', ''],
+      [823, 'P ANCA (Anti - PR3)', ''],
+    ]) {
+      await db.run('INSERT INTO tests (id,name,category,report_body) VALUES (?,?,?,?)', [id, name, 'Imported legacy catalogue', body]);
+      if (id !== 822) await db.run("INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,'Result','','','manual',1)", [id]);
+    }
+    const originalId = (await db.get('SELECT id FROM test_parameters WHERE test_id=?', [819])).id;
+    await db.run('INSERT INTO visit_tests (test_id) VALUES (?)', [820]);
+    await db.run("UPDATE test_parameters SET unit='Lab custom' WHERE test_id=821");
+
+    await ensureCancaAntiPr3TestConfiguration(db);
+    await ensureCancaAntiPr3TestConfiguration(db);
+
+    const expected = ['cANCA (IIF) Result / Pattern', 'Anti-PR3 Antibody, IgG', 'Titre / Endpoint Dilution', 'Specimen', 'Method / Analyzer', 'Clinical Details / Indication', 'Comments'];
+    for (const id of [819, 822]) {
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, 'Serum');
+      assert.deepEqual((await db.all('SELECT parameter_name FROM test_parameters WHERE test_id=? ORDER BY display_order', [id])).map(field => field.parameter_name), expected);
+    }
+    assert.equal((await db.get('SELECT id FROM test_parameters WHERE test_id=? ORDER BY display_order', [819])).id, originalId);
+    for (const id of [820, 821, 823]) {
+      assert.equal((await db.get('SELECT parameter_name FROM test_parameters WHERE test_id=?', [id])).parameter_name, 'Result');
+    }
+    assert.equal((await db.get('SELECT unit FROM test_parameters WHERE test_id=?', [821])).unit, 'Lab custom');
   } finally {
     await db.close();
   }

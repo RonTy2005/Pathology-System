@@ -25,11 +25,11 @@
         <a href="#window-full-financial-report">Full Financial Report</a>
         <a href="#window-financial-reports">Commission Reports</a>
         <a href="#window-patient-data-download">Patient Data Download</a>
-        <a href="reception.html#patient-management" id="adminPatientManagementLink" hidden>Patient Management</a>
+        <a href="#window-patient-management" id="adminPatientManagementLink" hidden>Patient Management</a>
         <a href="#window-vendor-management">Vendor Management</a>
         <a href="#window-associate-setup">Associate Setup</a>
         <a href="#window-doctor-setup">Doctor Setup</a>
-        <a href="#window-test-catalog">Test Catalog</a>
+        <a href="#window-test-catalog" id="adminTestCatalogLink" hidden>Test Catalogue</a>
         <a href="#window-expense-reports">Expense Reports</a>
         <a href="#window-daily-accounts-log">Daily Accounts Log</a>
         <a href="#window-due-reports-audit">Check Due Reports</a>
@@ -982,6 +982,17 @@
               <p id="accountsLogMessage" class="message"></p>
               <div id="accountsLogList" class="list"></div>
             </div>
+          </section>
+
+          <section class="panel task-window" id="window-patient-management" hidden>
+            <div class="window-header">
+              <div>
+                <div class="eyebrow">Patients</div>
+                <h2>Patient Management</h2>
+              </div>
+              <button class="ghost-btn window-close" data-close-window="#window-patient-management" type="button">Close</button>
+            </div>
+            <iframe id="adminPatientManagementFrame" class="patient-management-frame" title="Patient Management" data-src="reception.html?workspace=patient-management#patient-management"></iframe>
           </section>
 
           <section class="panel task-window" id="window-patient-data-download" hidden>

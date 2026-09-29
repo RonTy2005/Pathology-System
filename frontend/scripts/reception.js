@@ -1,5 +1,9 @@
 protectPage(["admin", "manager", "receptionist", "blood_sample_technician", "usg_technician", "mri_technician", "ct_technician", "na"]);
 
+const embeddedPatientManagement = new URLSearchParams(window.location.search).get("workspace") === "patient-management"
+  && ["admin", "superadmin", "manager"].includes(getUser()?.role);
+if (embeddedPatientManagement) document.documentElement.classList.add("patient-management-embed");
+
 const receptionAccessPending = getUser()?.role === "na"
   && !hasPermission("collect_due_payments")
   && !hasPermission("manage_billing")
@@ -32,7 +36,6 @@ const generatedBillActions = document.getElementById("generatedBillActions");
 const generatedBillNumber = document.getElementById("generatedBillNumber");
 const selectedAssociateView = document.getElementById("selectedAssociate");
 const sampleSourceInput = document.getElementById("sampleSource");
-const openTestCatalogBtn = document.getElementById("openTestCatalogBtn");
 let latestGeneratedVisitId = null;
 
 const navLinks = Array.from(document.querySelectorAll(".sidebar-nav a"));
@@ -1359,6 +1362,8 @@ function initializeNavigation() {
   };
 
   function canOpenSection(href) {
+    if (embeddedPatientManagement) return href === "#patient-management"
+      && (hasPermission("manage_patients") || hasPermission("manage_billing") || canEditPatients);
     if (user?.role === "na") {
       return (href === "#due-collection" && hasPermission("collect_due_payments"))
         || (href === "#patient-management" && (hasPermission("manage_billing") || canEditPatients));
@@ -1381,7 +1386,7 @@ function initializeNavigation() {
   }
 
   function activateSection(href) {
-    const fallbackHref = user?.role === "na"
+    const fallbackHref = embeddedPatientManagement ? "#patient-management" : user?.role === "na"
       ? (hasPermission("collect_due_payments") ? "#due-collection" : "#patient-management")
       : hasRegistrationOnlyAccess ? "#new-visit" : "#reception-summary";
     const normalizedHref = normalizeHref(href);
@@ -1451,18 +1456,21 @@ function initializeNavigation() {
   navLinks.forEach((link) => {
     if (link) {
       link.addEventListener("click", (event) => {
+        const href = link.getAttribute("href") || "";
+        if (!href.startsWith("#")) return;
         event.preventDefault();
-        activateSection(link.getAttribute("href"));
+        activateSection(href);
       });
     }
   });
-  const initialSection = window.location.hash || (user?.role === "na"
+  const initialSection = embeddedPatientManagement ? "#patient-management" : window.location.hash || (user?.role === "na"
     ? (hasPermission("collect_due_payments") ? "#due-collection" : "#patient-management")
     : (hasRegistrationOnlyAccess ? "#new-visit" : "#reception-summary"));
   activateSection(initialSection);
 
   navLinks.forEach((link) => {
     const href = normalizeHref(link.getAttribute("href"));
+    if (!href.startsWith("#")) return;
     if (!canOpenSection(href)) {
       link.style.display = "none";
     }
@@ -1474,6 +1482,13 @@ function initializeNavigation() {
   const navDailyAccounts = document.getElementById("navDailyAccounts");
   if (navDailyAccounts && user?.role !== "receptionist") {
     navDailyAccounts.style.display = "none";
+  }
+
+  const navTestCatalog = document.getElementById("navTestCatalog");
+  if (navTestCatalog && hasPermission("manage_tests")) {
+    const returnTo = `${window.location.pathname.split("/").pop() || "reception.html"}${window.location.hash || ""}`;
+    navTestCatalog.href = `test-catalog.html?returnTo=${encodeURIComponent(returnTo)}`;
+    navTestCatalog.hidden = false;
   }
 
 }
@@ -2951,14 +2966,6 @@ function copyQuoteToClipboard() {
     
     const regTimeInput = document.getElementById("registrationTime");
     if (regTimeInput) regTimeInput.value = getLocalDatetime();
-
-    if (hasPermission("manage_tests") && openTestCatalogBtn) {
-      openTestCatalogBtn.hidden = false;
-      openTestCatalogBtn.addEventListener("click", () => {
-        const returnTo = `${window.location.pathname.split("/").pop() || "reception.html"}${window.location.hash || ""}`;
-        window.location.href = `test-catalog.html?returnTo=${encodeURIComponent(returnTo)}`;
-      });
-    }
 
     setDefaultDateRange();
     startRecentVisitsBusinessDayWatcher();
