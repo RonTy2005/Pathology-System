@@ -25,6 +25,31 @@ const CBC_ESR_PARAMETER = {
   method: "Capillary photometry",
 };
 
+const CBC_HB_DLC_ESR_PARAMETERS = [
+  CBC_COMMON_PARAMETERS[0],
+  ...CBC_COMMON_PARAMETERS.filter(parameter => parameter.section === "DIFFERENTIAL WBC COUNT"),
+  CBC_ESR_PARAMETER,
+];
+
+const CBC_HB_TLC_DLC_ESR_PARAMETERS = [
+  CBC_COMMON_PARAMETERS[0],
+  {
+    ...CBC_COMMON_PARAMETERS.find(parameter => parameter.parameterName === "Leukocytes"),
+    label: "Total Leucocyte Count (TLC)",
+    aliases: [
+      "leukocytes",
+      "leucocytes",
+      "total wbc count",
+      "total leucocyte count",
+      "total leukocyte count",
+      "total leucocyte count tlc",
+      "tlc",
+    ],
+  },
+  ...CBC_COMMON_PARAMETERS.filter(parameter => parameter.section === "DIFFERENTIAL WBC COUNT"),
+  CBC_ESR_PARAMETER,
+];
+
 const CBC_ABSOLUTE_PARAMETERS = [
   { parameterName: "Absolute Neutrophils", label: "Absolute Neutrophils", aliases: ["absolute neutrophils", "absolute neutrophil count"], unit: "cells/mcL", normalRange: "1500 - 7500", section: "ABSOLUTE COUNT", entryMode: "calculated", formula: "{Leukocytes} * {Neutrophils} / 100", precision: 0 },
   { parameterName: "Absolute Lymphocytes", label: "Absolute Lymphocytes", aliases: ["absolute lymphocytes", "absolute lymphocyte count"], unit: "cells/mcL", normalRange: "1300 - 3500", section: "ABSOLUTE COUNT", entryMode: "calculated", formula: "{Leukocytes} * {Lymphocytes} / 100", precision: 0 },
@@ -56,6 +81,9 @@ const CBC_REPORT_TESTS = [
 
 function getCbcVariant(name) {
   const normalized = String(name || "").toLowerCase();
+  const compactName = normalized.replace(/[^a-z0-9]/g, "");
+  if (["hbtltcdlcesrprofile", "hbtlctcwbcdlcesrprofile", "hbtlcdlcesr"].includes(compactName)) return "hb-tlc-dlc-esr";
+  if (["hddcesr", "hbdcesr", "hbdlcesr", "hemoglobindifferentialcountesr"].includes(compactName)) return "hb-dlc-esr";
   if (!normalized.includes("complete blood count") && !normalized.includes("cbc")) return null;
   if (normalized.includes("absolute")) return "absolute";
   if (normalized.includes("esr")) return "esr";
@@ -63,12 +91,16 @@ function getCbcVariant(name) {
 }
 
 function getCbcParameters(variant = "standard") {
+  if (variant === "hb-dlc-esr") return CBC_HB_DLC_ESR_PARAMETERS;
+  if (variant === "hb-tlc-dlc-esr") return CBC_HB_TLC_DLC_ESR_PARAMETERS;
   if (variant === "esr") return [...CBC_COMMON_PARAMETERS, CBC_ESR_PARAMETER];
   if (variant === "absolute") return [...CBC_COMMON_PARAMETERS, ...CBC_ABSOLUTE_PARAMETERS];
   return CBC_COMMON_PARAMETERS;
 }
 
 function getCbcHeading(variant = "standard") {
+  if (variant === "hb-dlc-esr") return "Haemoglobin, Differential Leucocyte Count (DLC) & ESR";
+  if (variant === "hb-tlc-dlc-esr") return "Hb + TLC/TC/WBC + DLC + ESR Profile";
   if (variant === "esr") return "Complete Blood Count (CBC) with ESR";
   if (variant === "absolute") return "Complete Blood Count (CBC) with Absolute Count";
   return "Complete Blood Count (CBC)";

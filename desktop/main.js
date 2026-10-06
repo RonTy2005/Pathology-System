@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, ipcMain, net, powerMonitor, powerSaveBlocker, screen, shell } = require("electron");
+const { app, BrowserWindow, dialog, ipcMain, Menu, net, powerMonitor, powerSaveBlocker, screen, shell } = require("electron");
 const { autoUpdater } = require("electron-updater");
 const fs = require("fs/promises");
 const path = require("path");
@@ -71,18 +71,109 @@ function clearClientHealthCheck() {
   clientHealthCheckFailures = 0;
 }
 
-async function checkForDesktopUpdate() {
-  if (updateCheckInProgress || (typeof net.isOnline === "function" && !net.isOnline())) return;
+async function showUpdateCheckResult({ type = "info", title, message, detail }) {
+  const options = { type, title, message, detail, buttons: ["OK"], noLink: true };
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    return dialog.showMessageBox(mainWindow, options);
+  }
+  return dialog.showMessageBox(options);
+}
+
+async function checkForDesktopUpdate({ interactive = false } = {}) {
+  if (!app.isPackaged || process.platform !== "win32") {
+    if (interactive) {
+      await showUpdateCheckResult({
+        title: "Check for updates",
+        message: "Updates are checked by the installed Windows app.",
+        detail: "This development copy does not use the published update channel.",
+      });
+    }
+    return { status: "unavailable" };
+  }
+
+  if (updateCheckInProgress) {
+    if (interactive) {
+      await showUpdateCheckResult({
+        title: "Check for updates",
+        message: "An update check is already in progress.",
+        detail: "LabShield will let you know if a newer version is found.",
+      });
+    }
+    return { status: "checking" };
+  }
+
+  if (typeof net.isOnline === "function" && !net.isOnline()) {
+    if (interactive) {
+      await showUpdateCheckResult({
+        type: "warning",
+        title: "Check for updates",
+        message: "No internet connection is available.",
+        detail: "Connect to the internet and try again.",
+      });
+    }
+    return { status: "offline" };
+  }
 
   updateCheckInProgress = true;
   try {
-    await autoUpdater.checkForUpdates();
+    const result = await autoUpdater.checkForUpdates();
+    const availableVersion = result?.updateInfo?.version;
+    const updateAvailable = Boolean(availableVersion && availableVersion !== app.getVersion());
+
+    if (interactive) {
+      await showUpdateCheckResult(updateAvailable
+        ? {
+          title: "Update found",
+          message: `Version ${availableVersion} is available.`,
+          detail: "It is downloading in the background. You will be notified when it is ready to install.",
+        }
+        : {
+          title: "LabShield is up to date",
+          message: `Version ${app.getVersion()} is the latest published version.`,
+          detail: "LabShield will continue to check automatically while it is running.",
+        });
+    }
+    return { status: updateAvailable ? "available" : "up-to-date", version: availableVersion || app.getVersion() };
   } catch (error) {
     // Updates are optional while offline. Keep the desktop app usable and retry later.
     console.warn("Automatic update check failed:", error?.message || error);
+    if (interactive) {
+      await showUpdateCheckResult({
+        type: "error",
+        title: "Unable to check for updates",
+        message: "LabShield could not reach the update service.",
+        detail: error?.message || "Please check the internet connection and try again.",
+      });
+    }
+    return { status: "error", error: error?.message || "Unable to check for updates" };
   } finally {
     updateCheckInProgress = false;
   }
+}
+
+function createApplicationMenu() {
+  Menu.setApplicationMenu(Menu.buildFromTemplate([
+    {
+      label: "File",
+      submenu: [
+        { label: "Check for updates", click: () => { void checkForDesktopUpdate({ interactive: true }); } },
+        { type: "separator" },
+        { role: "close" },
+      ],
+    },
+    {
+      label: "Edit",
+      submenu: [{ role: "undo" }, { role: "redo" }, { type: "separator" }, { role: "cut" }, { role: "copy" }, { role: "paste" }, { role: "selectAll" }],
+    },
+    {
+      label: "View",
+      submenu: [{ role: "reload" }, { role: "forceReload" }, { type: "separator" }, { role: "resetZoom" }, { role: "zoomIn" }, { role: "zoomOut" }, { type: "separator" }, { role: "togglefullscreen" }],
+    },
+    {
+      label: "Window",
+      submenu: [{ role: "minimize" }, { role: "zoom" }, { type: "separator" }, { role: "close" }],
+    },
+  ]));
 }
 
 function scheduleAutomaticUpdateCheck(delay = INITIAL_UPDATE_CHECK_DELAY_MS) {
@@ -355,6 +446,7 @@ ipcMain.handle("lab-lms:save-report-pdf", (event, payload) => {
 if (hasSingleInstanceLock) app.whenReady().then(async () => {
   ensureAutomaticStartup({ app, shell, appMode });
   serverAvailabilityGuard.start();
+  createApplicationMenu();
   createMainWindow();
   await mainWindow.loadFile(path.join(__dirname, appMode === "server" ? "server-starting.html" : "connecting.html"));
   // A local startup screen must be visible even if an older graphics driver

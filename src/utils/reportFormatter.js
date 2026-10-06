@@ -276,6 +276,17 @@ function isCysticFibrosisNewbornScreenTest(test) {
   return (name.includes("cysticfibrosis") && name.includes("newborn") && name.includes("screen")) || code === "pf066";
 }
 
+function isCysticFibrosisGeneMutationTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "cftrmutation" || code === "cftrgenemutation" || code === "cftrmutationanalysis"
+    || name === "cysticfibrosiscfgenemutation"
+    || name === "cysticfibrosisgenemutation"
+    || name === "cftrgenemutation"
+    || name === "cftrmutationanalysis"
+    || name === "cysticfibrosismutationanalysis";
+}
+
 function isKftTest(test) {
   const name = normalizeParameterName(test?.name);
   const code = normalizeParameterName(test?.code);
@@ -410,6 +421,168 @@ function isDnphTest(test) {
   const name = normalizeParameterName(test?.name);
   const code = normalizeParameterName(test?.code);
   return code === "dnph" || name === "dnph" || name.includes("dinitrophenylhydrazine");
+}
+
+function isDiabeticProfileTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "diabeticprofile001"
+    || ["diabeticprofile", "diabetesprofile", "diabetesmellitusprofile", "diabetescheckupprofile"].includes(name);
+}
+
+function isExtendedDiabeticProfileTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "diabeticprofileextended001"
+    || ["diabeticprofileextended", "diabetesprofileextended", "extendeddiabeticprofile"].includes(name);
+}
+
+function isDiabeticRenalProfileTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "diabeticrenalprofile001"
+    || ["diabeticrenalprofile", "diabetesrenalprofile", "diabetickidneyprofile"].includes(name);
+}
+
+function isEarSwabGramStainTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return name === "earcuwahgamstain" || name === "earswabgramstain";
+}
+
+function isEarSwabAfbStainTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return name === "earswabafbstain" || name === "earafbstain";
+}
+
+function isFshPrlTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["fshprl", "fshprolactin", "folliclestimulatinghormoneprolactin"].includes(name);
+}
+
+function isFshLhPrlTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["fshlhprl", "fshlhprolactin", "fshlhandprl"].includes(name);
+}
+
+function isFemaleInfertilityProfileTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["femaleinfertilityprofile", "femaleinfertilitypanel", "infertilityprofilefemale"].includes(name);
+}
+
+function isFernTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["ferntest", "ferntestcollcharges10oextra", "cervicalmucusferning", "cervicalmucusferntest"].includes(name);
+}
+
+function isWuchereriaBancroftiAntigenTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["filariawuchereriabancroftiantigenedtabloimmuno", "filariawuchereriabancroftiantigen", "wuchereriabancroftiantigen"].includes(name);
+}
+
+function isFilariaAntigenTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["filariaantigen", "filarialantigen", "circulatingfilarialantigen"].includes(name);
+}
+
+function isFluidAspirationCytologyTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["fluidaspirationcytology", "bodyfluidaspirationcytology", "fluidcytology"].includes(name);
+}
+
+function isFoetalHaemoglobinTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["foetalhaemoglobin", "fetalhaemoglobin", "fetalhemoglobin", "hemoglobinf", "haemoglobinf"].includes(name);
+}
+
+function isHbElectrophoresisTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["hbelectrophoresis", "hemoglobinelectrophoresis", "haemoglobinelectrophoresis", "hemoglobinopathyassessment", "haemoglobinopathyassessment"].includes(name);
+}
+
+function isFoetalHaemoglobinByHplcTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["foetalhaemoglobinbyhplc", "fetalhaemoglobinbyhplc", "fetalhemoglobinbyhplc", "hemoglobinfbyhplc", "haemoglobinfbyhplc"].includes(name);
+}
+
+function isFreeBetaHcgTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["freebetahcg", "freebetahcgquantitative", "freebhcg", "freebetahumanchorionicgonadotropin"].includes(name);
+}
+
+function isFreeCholesterolTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["freecholesterol", "cholesterolfree", "nonesterifiedcholesterol", "unesterifiedcholesterol"].includes(name);
+}
+
+function isFreeEstradiolTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["freeestradiol", "estradiolfree", "freee2", "estradiolfreefraction"].includes(name);
+}
+
+function isFreePsaTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["freepsa", "fpsa", "freeprostatespecificantigen", "freeprostateantigen"].includes(name);
+}
+
+function isFreeTestosteroneTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["freetestosterone", "testosteronefree", "freet", "freeandrogentestosterone"].includes(name);
+}
+
+function isGad65AntibodyTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["gad65antibody", "gad65ab", "gad65", "glutamicaciddecarboxylasegad65antibody", "gadantibody"].includes(name);
+}
+
+function isGh90MinutesAfterGlucoseTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["gh90minutesafterglucose", "growthhormone90minutesafterglucose", "growthhormone90minafterglucose", "gh90minafterglucose"].includes(name);
+}
+
+function isGhFastingGlucoseTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["ghfastingglucose", "growthhormonefastingglucose", "fastinggrowthhormoneglucose"].includes(name);
+}
+
+function isGrowthHormoneTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["ghgrowthhormone", "growthhormone", "humangrowthhormone", "hgh", "somatotropin"].includes(name);
+}
+
+function isGlucoseToleranceTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["gttglucosetolerancetest", "glucosetolerancetest", "oralglucosetolerancetest", "ogtt"].includes(name);
+}
+
+function isGastrinLevelTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["gastrinlevel", "gastrin", "serumgastrin"].includes(name);
+}
+
+function isRandomGlucoseTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["glucoserandom", "randomglucose", "randombloodglucose"].includes(name);
+}
+
+function isFungusCultureTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["fungusculture", "fungalculture", "mycologicalculture"].includes(name);
+}
+
+function isFungusCultureSensitivityTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["funguscultureandsensitivity", "fungalcultureandsensitivity", "fungusculturesensitivity", "fungalculturesensitivity"].includes(name);
+}
+
+function isFactorIiMutationTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "pf011" || ["factoriimutation", "prothrombinmutation", "f2mutation"].includes(name);
+}
+
+function isFactorViiiImmunodepletedTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["factorviiimmunodepleted", "factorviiiimmunodepleted", "f8immunodepleted"].includes(name);
 }
 
 function isPrealbuminTest(test) {
@@ -557,6 +730,28 @@ function isAutoimmuneProfileTest(test) {
   return code === "autoimmuneprofile001" || name === "autoimmuneprofile";
 }
 
+function isCsfFluidAfbStainTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "csfafbstain001" || code === "afbstaincsf"
+    || name === "csffluidforafbstain"
+    || name === "csffluidafbstain"
+    || name === "afbstaincsf"
+    || name === "csfafbstain"
+    || name === "cerebrospinalfluidafbstain";
+}
+
+function isCsfFluidGramStainTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "csfgramstain001" || code === "gramstaincsf"
+    || name === "csffluidforgramstain"
+    || name === "csffluidgramstain"
+    || name === "gramstaincsf"
+    || name === "csfgramstain"
+    || name === "cerebrospinalfluidgramstain";
+}
+
 function isAfbZiehlNeelsenStainTest(test) {
   const name = normalizeParameterName(test?.name);
   const code = normalizeParameterName(test?.code);
@@ -614,6 +809,52 @@ function isBodyFluidChlorideTest(test) {
     || name === "bodyfluidforchloride"
     || name === "chloridebodyfluid"
     || name === "bodyfluidchloride";
+}
+
+function isCsfFluidChlorideTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "csfchloride001"
+    || code === "chloridecsf"
+    || name === "csffluidforchloride"
+    || name === "csffluidchloride"
+    || name === "chloridecsf"
+    || name === "csfchloride"
+    || name === "cerebrospinalfluidchloride";
+}
+
+function isCsfFluidProteinTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "csfprotein001" || code === "proteincsf"
+    || name === "csffluidforprotein"
+    || name === "csffluidprotein"
+    || name === "proteincsf"
+    || name === "csfprotein"
+    || name === "cerebrospinalfluidprotein";
+}
+
+function isCsfFluidSpecificGravityTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "csfspecificgravity001" || code === "specificgravitycsf"
+    || name === "csffluidforspecificgravity"
+    || name === "csffluidspecificgravity"
+    || name === "specificgravitycsf"
+    || name === "csfspecificgravity"
+    || name === "cerebrospinalfluidspecificgravity";
+}
+
+function isCsfFluidGlucoseTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "csfglucose001" || code === "glucosecsf"
+    || name === "csffluidforsugar"
+    || name === "csffluidforsugar"
+    || name === "csffluidglucose"
+    || name === "glucosecsf"
+    || name === "csfglucose"
+    || name === "cerebrospinalfluidglucose";
 }
 
 function isBodyFluidBiochemistryTest(test) {
@@ -674,6 +915,37 @@ function isBronchialWashingCultureSensitivityTest(test) {
     || name === "bronchialwashingcultureandsensitivity"
     || name === "bronchialwashingculturesensitivity"
     || code === "bronchialwashingcs001";
+}
+
+function isGndCultureTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "cultureforgnd" || code === "gndculture" || code === "gonococcalculture"
+    || name === "cultureforgnd"
+    || name === "cultureforgndiplococci"
+    || name === "gndculture"
+    || name === "gonococcalculture"
+    || name === "neisseriagonorrhoeaeculture";
+}
+
+function isGonorrheaTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["gonorrhea", "gonorrhoea", "gonorrheatest", "gonorrhoeatest"].includes(name);
+}
+
+function isUrethralDischargeGramStainTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["gramstainofurethraldischarge", "urethraldischargegramstain", "gramstainurethraldischarge"].includes(name);
+}
+
+function isGeneralGramStainTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["gramstainofsmears", "gramstainsmears", "gramstainsmear", "gramsmearexamination"].includes(name);
+}
+
+function isGeneralHealthCheckUpTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["generalhealthcheckup", "generalhealthcheck", "healthcheckupgeneral", "healthcheckup"].includes(name);
 }
 
 function isStoolCultureTest(test) {
@@ -870,6 +1142,16 @@ function isCmvIgmIggTest(test) {
     || ["cmvcytomegalovirusigmigg", "cytomegaloviruscmvigmigg", "cytomegaloviruscmviggigm", "cytomegalovirusigmigg", "cmviggigm"].includes(name);
 }
 
+function isCmvIggTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "cmvigg" || code === "cytomegalovirusigg"
+    || name === "cytomegaloviruscmvigg"
+    || name === "cytomegalovirusigg"
+    || name === "cmvigg"
+    || name === "cmvantibodyigg";
+}
+
 function isTnfAlphaTest(test) {
   const name = normalizeParameterName(test?.name);
   const code = normalizeParameterName(test?.code);
@@ -915,7 +1197,42 @@ function isTyphidotTest(test) {
   // own detectors run before the Typhidot fallback.
   return isAldehydeTest(test)
     || isAnfQualitativeTest(test)
+    || isHdvAntibodyTest(test)
+    || isHevTotalAntibodyTest(test)
+    || isHlaB27Test(test)
+    || isHangingDropPreparationTest(test)
     || code === "typ1509" || code === "typhidot" || name.includes("typhidot");
+}
+
+function isHdvAntibodyTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["hdvantibody", "anti hdv".replace(/\s/g, ""), "hepatitisdvirusantibody", "antihdvantibody"].includes(name);
+}
+
+function isHevTotalAntibodyTest(test) {
+  if (isHevAntibodyIggTest(test) || isHevAntibodyIgmTest(test)) return true;
+  const name = normalizeParameterName(test?.name);
+  return ["hevtotaliggigm", "hevtotal", "hepatitisevirustotalantibody", "totalantihev"].includes(name);
+}
+
+function isHevAntibodyIggTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["hepatitisevirushevantibodyigg", "hevantibodyigg", "hepatitiseantibodyigg", "antihevigg"].includes(name);
+}
+
+function isHevAntibodyIgmTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["hepatitisevirushevantibodyigm", "hevantibodyigm", "hepatitiseantibodyigm", "antihevigm"].includes(name);
+}
+
+function isHlaB27Test(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "hlab27" || ["hlab27", "hlab27antigen"].includes(name);
+}
+
+function isHangingDropPreparationTest(test) {
+  return normalizeParameterName(test?.name) === "hangingdroppreparation";
 }
 
 function isVdrlTest(test) {
@@ -924,7 +1241,13 @@ function isVdrlTest(test) {
   return code === "vdr4178" || code === "rpr8017" || code === "vdrlrpr" || name.includes("vdrl") || name === "rpr" || name === "rprtest";
 }
 
+function isHavTotalTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["havtotaliggigm", "havtotal", "hepatitisatotalantibody", "hepatitisatotalantibodies", "totalantihav"].includes(name);
+}
+
 function isHavIggTest(test) {
+  if (isHavTotalTest(test)) return false;
   const name = normalizeParameterName(test?.name);
   const code = normalizeParameterName(test?.code);
   return code === "hep5558" || code === "ant4603" || code === "havigg" || ((name.includes("hepatitisa") || name.includes("antihav")) && name.includes("igg"));
@@ -936,16 +1259,56 @@ function isHavIgmTest(test) {
   return code === "hep7606" || code === "havigm" || ((name.includes("hepatitisa") || name.includes("antihav")) && name.includes("igm"));
 }
 
+function isHbdhTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["hbdhldh1", "hbdh", "alphahydroxybutyratedehydrogenase", "hydroxybutyratedehydrogenase", "ldh1"].includes(name);
+}
+
 function isHcvRapidScreeningTest(test) {
+  if (isHcvTotalAntibodyTest(test)) return true;
+  if (isHepatitisCRnaPcrQuantitativeTest(test)) return true;
   const name = normalizeParameterName(test?.name);
   const code = normalizeParameterName(test?.code);
   return code === "hcv3176" || code === "ant4369" || code === "hcvrapid" || ((name.includes("hcv") || name.includes("hepatitisc")) && (name.includes("rapid") || name.includes("card"))) || name === "antihcvantibody";
 }
 
+function isHepatitisCRnaPcrQuantitativeTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["hepatitiscrnapcrquantitative", "hcvrnapcrquantitative", "hcvrnaquantitative", "hcvquantitativepcr"].includes(name);
+}
+
+function isHcvTotalAntibodyTest(test) {
+  if (isHcvAntibodyIggTest(test) || isHcvAntibodyIgmTest(test)) return true;
+  const name = normalizeParameterName(test?.name);
+  return ["hcvtotaligmigg", "hcvtotalantibody", "hepatitisctotalantibody", "totalantihcv", "antihcvtotaligmigg"].includes(name);
+}
+
+function isHcvAntibodyIggTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["hepatitiscvirushcvantibodyigg", "hcvantibodyigg", "hepatitiscantibodyigg", "antihcvigg"].includes(name);
+}
+
+function isHcvAntibodyIgmTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["hepatitiscvirushcvantibodyigm", "hcvantibodyigm", "hepatitiscantibodyigm", "antihcvigm"].includes(name);
+}
+
 function isHbsAgTest(test) {
+  if (isHbsAgQuantitativeTest(test)) return true;
+  if (isHepatitisBViralDnaQualitativeTest(test)) return true;
   const name = normalizeParameterName(test?.name);
   const code = normalizeParameterName(test?.code);
-  return code === "hbsag" || name === "hbsag" || (name.includes("hepatitisbsurfaceantigen") && !name.includes("quantitative") && !name.includes("profile"));
+  return code === "hbsag" || name === "hbsag" || (name.includes("hepatitisbsurfaceantigen") && !name.includes("profile"));
+}
+
+function isHepatitisBViralDnaQualitativeTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["hepatitisbviraldnaqualitative", "hbvdnaqualitative", "hepatitisbdnaqualitative", "hbvdnapcrqualitative"].includes(name);
+}
+
+function isHbsAgQuantitativeTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["hbsagquantitative", "quantitativehbsag", "hepatitisbsurfaceantigenquantitative", "hbsagquant"].includes(name);
 }
 
 function isAntiHbcIgmTest(test) {
@@ -960,6 +1323,48 @@ function isHepatitisBProfileTest(test) {
   return code === "hepbprofile" || name === "hepatitisbprofile" || name === "hbvprofile" || name.includes("hepatitisbviralprofile");
 }
 
+function isHepatitisBVirusTreatmentFollowUpTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["hepatitisbvirustreatmentfollowup", "hepatitisbvirustreatmentfollow", "hepatitisbtreatmentfollowup", "hbvtreatmentfollowup", "hbvfollowup"].includes(name);
+}
+
+function isHepatitisProfileTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["hepatitisprofile", "viralhepatitisprofile", "hepatitisviralscreeningprofile"].includes(name);
+}
+
+function isHsv2IggTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["herpessimplexvirus2hsv2igg", "hsv2igg", "herpessimplex2igg", "herpessimplexvirus2igg"].includes(name);
+}
+
+function isHsv2IgmTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["herpessimplexvirus2hsv2igm", "hsv2igm", "herpessimplex2igm", "herpessimplexvirus2igm"].includes(name);
+}
+
+function isHsv1IggTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["herpessimplexvirus1hsv1igg", "hsv1igg", "herpessimplex1igg", "herpessimplexvirus1igg"].includes(name);
+}
+
+function isHsv1IgmTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["herpessimplexvirus1hsv1igm", "hsv1igm", "herpessimplex1igm", "herpessimplexvirus1igm"].includes(name);
+}
+
+function isHomocystineBloodTest(test) {
+  return ["homocystineblood", "homocysteinblood", "homocysteineblood"].includes(normalizeParameterName(test?.name));
+}
+
+function isHomocystineUrineTest(test) {
+  return ["homocystineurine", "homocysteinurine", "homocysteineurine"].includes(normalizeParameterName(test?.name));
+}
+
+function isHypertensionProfileTest(test) {
+  return ["hypertensionprofile", "hypertensionworkupprofile", "hypertensiveprofile"].includes(normalizeParameterName(test?.name));
+}
+
 function isMantouxTest(test) {
   const name = normalizeParameterName(test?.name);
   const code = normalizeParameterName(test?.code);
@@ -969,7 +1374,11 @@ function isMantouxTest(test) {
 function isHiv12ScreeningTest(test) {
   const name = normalizeParameterName(test?.name);
   const code = normalizeParameterName(test?.code);
-  return code === "hiv12screen" || name.includes("hiv12antibodiesscreening") || name.includes("hiv1and2antibodies");
+  return code === "hiv12screen" || name === "hiviii" || name.includes("hiv12antibodiesscreening") || name.includes("hiv1and2antibodies");
+}
+
+function isHivIAndIiTest(test) {
+  return normalizeParameterName(test?.name) === "hiviii";
 }
 
 function isAntiBTitreTest(test) {
@@ -1106,6 +1515,11 @@ function isVitaminKTest(test) {
   const name = normalizeParameterName(test?.name);
   const code = normalizeParameterName(test?.code);
   return code === "vitk" || name === "vitamink" || name.includes("phylloquinone");
+}
+
+function isHdlLdlRatioTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["hdlldl", "hdlldlratio", "ldlhdlratio", "hdlcholesteroll dlcholesterolratio".replace(/\s/g, "")].includes(name);
 }
 
 function isLdlCholesterolTest(test) {
@@ -1321,7 +1735,7 @@ function isGgtTest(test) {
   const name = normalizeParameterName(test?.name);
   const code = normalizeParameterName(test?.code);
   return code === "ggt" || code === "ggtp" || name === "ggt" || name === "ggtp"
-    || name === "gammaglutamyltransferase" || name === "gammaglutamyltransferaseggt";
+    || name === "ggtgammagt" || name === "gammaglutamyltransferase" || name === "gammaglutamyltransferaseggt";
 }
 
 function isChlorideTest(test) {
@@ -1421,6 +1835,60 @@ function isCreatinine24HourUrineTest(test) {
     || (name.includes("creatinine") && name.includes("24") && name.includes("urine"));
 }
 
+function isUrineCalcium24HourTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "calcium24hoururine" || code === "calcium24hurine"
+    || (name.includes("calcium") && name.includes("24") && name.includes("urine"));
+}
+
+function isCapillaryFragilityTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "capillaryfragility" || name === "capillaryfragilitytest" || name === "tourniquettest";
+}
+
+function isCardiacProfileTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "cardiacprofile" || name === "cardiacprofile" || name === "cardiacmarkerprofile";
+}
+
+function isColorectalCancerMonitorProfileTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "colorectalcancermonitorprofile" || code === "crcmonitor"
+    || name === "colorectalcancermonitorprofile"
+    || name === "colorectalcancermonitor"
+    || name === "coloncancermonitorprofile";
+}
+
+function isCeruloplasminTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "ceruloplasmin" || name === "ceruloplasmin" || name === "ceruloplasminserum";
+}
+
+function isUrineCopper24HourTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "coppe24hrsurine" || code === "copper24hoururine" || code === "urinecopper24hour"
+    || name === "coppe24hrsurine"
+    || name === "copper24hrsurine"
+    || name === "copper24hoursurine"
+    || name === "copper24hoururine"
+    || name === "urinecopper24hour";
+}
+
+function isRandomUrineCopperTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "copperurine" || code === "urinecopper" || code === "randomurinecopper"
+    || name === "copperurine"
+    || name === "urinecopper"
+    || name === "randomurinecopper";
+}
+
 function isCreatinineClearanceTest(test) {
   const name = normalizeParameterName(test?.name);
   const code = normalizeParameterName(test?.code);
@@ -1469,7 +1937,33 @@ function isCeaTest(test) {
 
 function isComplementFixationTest(test) {
   const name = normalizeParameterName(test?.name); const code = normalizeParameterName(test?.code);
-  return code === "cft001" || code === "complementfixation001" || name === "cftcompletefixsationtest" || name === "cftcompletefixationtest" || name === "cftcomplementfixationtest" || name === "complementfixationtest" || name === "cft";
+  return code === "cft001" || code === "complementfixation001" || name === "cftcompletefixsationtest" || name === "cftcompletefixationtest" || name === "cftcomplementfixationtest" || name === "complementfixationtest" || name === "complimentfixsationtest" || name === "cft";
+}
+
+function isBilateralConjunctivalSwabTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "conjswabbotheye" || code === "bilateralconjswab"
+    || name === "conjswabbotheye"
+    || name === "conjunctivalswabbotheye"
+    || name === "bilateralconjunctivalswab";
+}
+
+function isRightConjunctivalSwabCultureTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "conjswabcsrteye" || code === "rightconjswabcs"
+    || name === "conjswabcsrteye"
+    || name === "conjunctivalswabcultureandsensitivityrighteye"
+    || name === "rightconjunctivalswabcultureandsensitivity";
+}
+
+function isConjunctivalSwabCultureTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "conjunctivalswabculture" || code === "conjswabculture"
+    || name === "conjunctivalswabculture"
+    || name === "conjswabculturesensitivity";
 }
 
 function isSemenAnalysisTest(test) {
@@ -1834,6 +2328,62 @@ function isCortisoneTest(test) {
     || name === "cortisone" || name === "cortisoneserum";
 }
 
+function isEveningCortisolTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "cortisolevening" || code === "pmcortisol" || code === "eveningcortisol"
+    || name === "cortisolevening"
+    || name === "pmcortisol"
+    || name === "eveningcortisol";
+}
+
+function isMidnightCortisolTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "cortisolmidnight" || code === "midnightcortisol" || code === "latenightcortisol"
+    || name === "cortisolmidnight"
+    || name === "midnightcortisol"
+    || name === "latenightcortisol";
+}
+
+function isMorningEveningCortisolTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "cortisolmorningevening" || code === "morningeveningcortisol" || code === "amandpmcortisol"
+    || name === "cortisolmorningevening"
+    || name === "morningeveningcortisol"
+    || name === "amandpmcortisol";
+}
+
+function isMorningCortisolTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "cortisolmorning" || code === "morningcortisol" || code === "amcortisol"
+    || name === "cortisolmorning"
+    || name === "morningcortisol"
+    || name === "amcortisol";
+}
+
+function isMorningEveningMidnightCortisolTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "cortisolmorningeveningmidnight" || code === "morningeveningmidnightcortisol" || code === "amandpmmidnightcortisol"
+    || name === "cortisolmorningeveningmidnight"
+    || name === "morningeveningmidnightcortisol"
+    || name === "amandpmmidnightcortisol";
+}
+
+function isCryoglobulinsScreeningTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "cryoglobulinsscreeningtest" || code === "cryoglobulinscreeningtest" || code === "cryoglobulinscreen"
+    || name === "cryoglobulinsscreeningtest"
+    || name === "cryoglobulinscreeningtest"
+    || name === "cryoglobulinscreen"
+    || name === "cryoglobulinscreening"
+    || name === "cryoglobulintest";
+}
+
 function isActhTest(test) {
   const name = normalizeParameterName(test?.name);
   const code = normalizeParameterName(test?.code);
@@ -1959,6 +2509,91 @@ function isPapSmearTest(test) {
     || name === "papsmear" || name === "cytologypapsmearexamination";
 }
 
+function isCervicalPapSmearTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "cervicalsmearpap" || code === "cervicalpap"
+    || name === "cervicalsmearforpapstain" || name === "cervicalsmearpapstain"
+    || name === "cervicalpapsmear" || name === "cervicalcytologypapsmear";
+}
+
+function isCervicalSwabGramStainTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "cervicalswabgramstain" || code === "cervicalgramstain"
+    || name === "cervicalswabgramstain" || name === "cervicalgramstain"
+    || name === "endocervicalswabgramstain";
+}
+
+function isCervicalSwabAfbStainTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "cervicalswabafbstain" || code === "cervicalafbsmear"
+    || name === "cervicalswabafbstain" || name === "cervicalafbsmear"
+    || name === "endocervicalswabafbstain";
+}
+
+function isChikungunyaIggTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "chikungunyaigg" || name === "chikungunyaigg"
+    || name === "chikungunyavirusigg" || name === "antichikungunyaigg";
+}
+
+function isChikungunyaIgmTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "chikungunyaigm" || name === "chikungunyaigm"
+    || name === "chikungunyavirusigm" || name === "antichikungunyaigm";
+}
+
+function isChlamydiaAntibodyIggIgmTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return ["chlamydiaantibodyiggigm", "chlamydiaiggigm", "chlamydiatrachomatisiggigm", "chlamydiatrachomatisantibodyiggigm"].includes(code)
+    || ["chlamydiaantibodyiggigm", "chlamydiaiggigm", "chlamydiatrachomatisiggigm", "chlamydiatrachomatisantibodyiggigm"].includes(name);
+}
+
+function isChlamydiaAntigenTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return ["chlamydiaantigen", "chlamydiatrachomatisantigen", "ctantigen"].includes(code)
+    || ["chlamydiaantigen", "chlamydiatrachomatisantigen", "ctantigen"].includes(name);
+}
+
+function isRandomUrineChlorideTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return ["chloriderandom", "randomurinechloride", "urinechloriderandom"].includes(code)
+    || ["chloriderandom", "randomurinechloride", "urinechloriderandom"].includes(name);
+}
+
+function isSerumChlorideTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return ["chlorideserum", "serumchloride", "plasmachloride"].includes(code)
+    || ["chlorideserum", "serumchloride", "plasmachloride"].includes(name);
+}
+
+function is24HourUrineChlorideTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return ["chloride24hrsure", "chloride24hrsurine", "chloride24hoururine", "24hoururinechloride", "urinechloride24hour"].includes(code)
+    || ["chloride24hrsure", "chloride24hrsurine", "chloride24hoururine", "24hoururinechloride", "urinechloride24hour"].includes(name);
+}
+
+function isTotalCholesterolTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return ["cholesteroltotal", "totalcholesterol", "cholesterol", "cholesterolserum"].includes(code)
+    || ["cholesteroltotal", "totalcholesterol", "cholesterol", "cholesterolserum"].includes(name);
+}
+
+function isClostridioidesDifficileToxinTest(test) {
+  const name = normalizeParameterName(test?.name); const code = normalizeParameterName(test?.code);
+  return ["clostridioidesdifficiletoxin", "clostridiumdifficiletoxin", "cdifftoxin"].includes(code) || ["clostridioidesdifficiletoxin", "clostridiumdifficiletoxin", "cdifftoxin"].includes(name);
+}
+
 function getBronchialPapSpecimen(test) {
   const name = normalizeParameterName(test?.name);
   if (name === "bronchialbrushingforpap") return "Bronchial Brushing";
@@ -2000,12 +2635,17 @@ function isSmallSectionBiopsyTest(test) {
 function isHistopathologyReportTest(test) {
   const name = normalizeParameterName(test?.name);
   const code = normalizeParameterName(test?.code);
-  return isMediumSectionBiopsyTest(test)
+  return isHistologyBiopsyPerSectionTest(test)
+    || isMediumSectionBiopsyTest(test)
     || isSmallSectionBiopsyTest(test)
     || ["pf057", "pf058", "skinbio001", "colonbio001"].includes(code)
     || name === "prostatebiopsy" || name === "liverbiopsy" || name === "histopathologyskinbiopsy"
     || name === "skinbiopsy" || name === "histopathologycolonoscopywithpolypectomybiopsy"
     || name === "colonoscopywithpolypectomybiopsy";
+}
+
+function isHistologyBiopsyPerSectionTest(test) {
+  return normalizeParameterName(test?.name) === "histologybiopsypersection";
 }
 
 function isArterialBloodGasTest(test) {
@@ -4542,6 +5182,36 @@ function buildCysticFibrosisNewbornScreenReportBody(test) {
   `;
 }
 
+function buildCysticFibrosisGeneMutationReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const narrative = parameter => escapeHtml(value(parameter) || "-").replace(/\r?\n/g, "<br />");
+  const specimen = field(["Specimen", "Sample"]);
+  const method = field(["CFTR Test Method / Panel", "Test Method / Panel", "CFTR Method", "Method / Panel"]);
+  const variants = field(["CFTR Variant(s) Detected", "CFTR Variants", "Variant(s) Detected", "Mutation(s) Detected", "Result"]);
+  const zygosity = field(["Zygosity / Phase", "Zygosity", "Phase"]);
+  const classification = field(["Variant Classification", "Classification"]);
+  const interpretation = field(["Overall Interpretation", "Interpretation"]);
+  const limitations = field(["Test Limitations / Coverage", "Limitations / Coverage", "Limitations"]);
+  const comments = field(["Comments / Genetic Counselling", "Comments", "Comment", "Remarks", "Genetic Counselling"]);
+  return `
+    <table class="results-table molecular-genetics-table cftr-mutation-table" data-report-content="cftr-gene-mutation">
+      <thead><tr><th style="width:34%">Investigation</th><th style="width:66%">Result / Interpretation</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${narrative(specimen || { value: test.sample_type || "Whole blood / laboratory-approved specimen" })}</td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="2"><strong>CFTR GENE MUTATION ANALYSIS</strong></td></tr>
+        <tr><td><strong>CFTR Test Method / Panel</strong></td><td>${narrative(method)}</td></tr>
+        <tr><td><strong>CFTR Variant(s) Detected</strong></td><td style="white-space:pre-wrap">${narrative(variants)}</td></tr>
+        <tr><td><strong>Zygosity / Phase</strong></td><td>${narrative(zygosity)}</td></tr>
+        <tr><td><strong>Variant Classification</strong></td><td>${narrative(classification)}</td></tr>
+        <tr><td><strong>Overall Interpretation</strong></td><td style="white-space:pre-wrap">${narrative(interpretation)}</td></tr>
+        <tr><td><strong>Test Limitations / Coverage</strong></td><td style="white-space:pre-wrap">${narrative(limitations)}</td></tr>
+        ${value(comments) ? `<tr><td><strong>Comments / Genetic Counselling</strong></td><td style="white-space:pre-wrap">${narrative(comments)}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes cftr-mutation-notes"><div class="report-note-heading">Interpretation :</div><ul><li>Report CFTR variants using the laboratory&rsquo;s reference transcript and accepted variant nomenclature, with the classification applicable to the stated condition and inheritance pattern.</li><li>Detection of a variant does not by itself establish cystic fibrosis. Diagnostic interpretation requires the complete genotype, phase when relevant, clinical features, and CFTR functional assessment such as sweat chloride testing where indicated.</li><li>A negative result does not exclude cystic fibrosis or a CFTR-related disorder because panel scope, sequence coverage, copy-number analysis, deep intronic variants, and other technical limitations differ by method.</li><li>Carrier status, reproductive implications, and variants of uncertain significance should be discussed with the treating clinician and genetic counselling service as appropriate.</li></ul></div>`;
+}
+
 function buildKftReportBody(test) {
   const parameters = [
     { name: "Urea", aliases: ["Urea"], method: "Urease UV", unit: "mg/dL", range: "13 - 43" },
@@ -5246,14 +5916,761 @@ function buildAltSgptReportBody(test) {
 }
 
 function buildDnphReportBody(test) {
-  return buildSingleAnalyteResultTable(test, {
-    tableClass: "single-analyte-table dnph-table",
-    investigation: "DNPH, URINE",
-    aliases: ["DNPH, Urine", "DNPH", "Dinitrophenylhydrazine", "Result"],
-    method: "Chemical",
-    defaultRange: "",
-    defaultUnit: "",
-  });
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const result = field(["DNPH, Urine", "DNPH Test Result", "DNPH", "2,4-DNPH", "Dinitrophenylhydrazine", "Result"]);
+  const observation = field(["Observation / Precipitate", "Observation", "Reaction / Precipitate", "Appearance"]);
+  const collection = field(["Specimen / Collection Time", "Collection Date / Time", "Collection Time"]);
+  const method = field(["Method / Kit", "Method", "Kit / Analyzer"]);
+  const comments = field(["Comments", "Comments / Limitations", "Clinical Details / Indication"]);
+  const value = (parameter) => String(parameter?.value ?? "").trim();
+  const resultValue = value(result) || "-";
+  const reference = String(result?.normal_range || "").trim() || "Negative";
+  const specimen = String(test?.sample_type || "").trim() || "Urine";
+  const optionalRows = [
+    ["Observation", value(observation)],
+    ["Collection details", value(collection)],
+    ["Method / kit", value(method)],
+    ["Comments", value(comments)],
+  ].filter(([, rowValue]) => rowValue);
+
+  return `
+    <table class="results-table single-analyte-table dnph-table" data-report-content="dnph-urine-screen">
+      <thead>
+        <tr>
+          <th style="width: 34%">Investigation</th>
+          <th style="width: 27%">Result</th>
+          <th style="width: 25%">Reference / Expected Finding</th>
+          <th style="width: 14%">Unit</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="single-analyte-sample-row">
+          <td><strong>Specimen</strong></td>
+          <td>${escapeHtml(specimen)}</td>
+          <td colspan="2"><strong>Report type:</strong> Qualitative metabolic screen</td>
+        </tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>2,4-DINITROPHENYLHYDRAZINE (DNPH) URINE SCREEN</strong></td></tr>
+        <tr>
+          <td><strong>DNPH reaction</strong><div class="single-analyte-method">${escapeHtml(value(method) || "Qualitative chemical reaction")}</div></td>
+          <td>${escapeHtml(resultValue)}</td>
+          <td>${escapeHtml(reference)}</td>
+          <td></td>
+        </tr>
+        ${optionalRows.map(([label, rowValue]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${escapeHtml(rowValue).replace(/\n/g, "<br />")}</td></tr>`).join("")}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes dnph-notes">
+      <div class="report-note-heading">Interpretation :</div>
+      <ul>
+        <li>This is a qualitative screen for urinary alpha-ketoacids. A positive reaction indicates that ketoacids are detected; it does not identify a specific compound or establish a diagnosis by itself.</li>
+        <li>A negative screen does not exclude an inherited metabolic disorder or an acute metabolic decompensation. Interpret the result with age, symptoms, dietary status, specimen timing, and the laboratory&rsquo;s validated procedure.</li>
+        <li>An unexpected positive or indeterminate result should be correlated promptly with the treating clinician and, where indicated, confirmed by quantitative plasma amino acids (including alloisoleucine) and urine organic-acid analysis using an appropriate validated method.</li>
+      </ul>
+      <div class="report-note-heading">Laboratory note :</div>
+      <p>Report the observed laboratory reaction and any specimen limitation. This screen is not a substitute for confirmatory biochemical or molecular testing.</p>
+    </div>
+  `;
+}
+
+function buildDiabeticProfileReportBody(test, { extended = false } = {}) {
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const value = (parameter) => String(parameter?.value ?? "").trim();
+  const specimen = String(test?.sample_type || "").trim() || "Blood / Urine";
+  const analytes = [
+    {
+      section: "GLYCAEMIC STATUS",
+      label: "Fasting Plasma Glucose",
+      parameter: field(["Fasting Plasma Glucose", "Fasting Blood Sugar", "FBS", "FPG"]),
+      unit: "mg/dL",
+      range: "70 - 99",
+      method: "Laboratory-validated glucose method",
+    },
+    {
+      section: "GLYCAEMIC STATUS",
+      label: "Postprandial Plasma Glucose (2 Hours)",
+      parameter: field(["Postprandial Plasma Glucose (2 Hours)", "Postprandial Blood Sugar", "PPBS", "2 Hour Plasma Glucose"]),
+      unit: "mg/dL",
+      range: "< 140",
+      method: "Laboratory-validated glucose method",
+    },
+    {
+      section: "GLYCAEMIC STATUS",
+      label: "HbA1c",
+      parameter: field(["HbA1c", "Glycated Hemoglobin", "Glycosylated Hemoglobin"]),
+      unit: "%",
+      range: "< 5.7",
+      method: "NGSP/IFCC-traceable method",
+    },
+    {
+      section: "GLYCAEMIC STATUS",
+      label: "Estimated Average Glucose (eAG)",
+      parameter: field(["Estimated Average Glucose (eAG)", "eAG"]),
+      unit: "mg/dL",
+      range: "Calculated from HbA1c",
+      method: "Calculated",
+    },
+    ...(extended ? [
+      {
+        section: "LIPID ASSESSMENT",
+        label: "Total Cholesterol",
+        parameter: field(["Total Cholesterol", "Cholesterol - Total", "Cholesterol, Total"]),
+        unit: "mg/dL",
+        range: "Laboratory-validated reference interval",
+        method: "Laboratory-validated method",
+      },
+      {
+        section: "LIPID ASSESSMENT",
+        label: "Triglycerides",
+        parameter: field(["Triglycerides", "Triglyceride"]),
+        unit: "mg/dL",
+        range: "Laboratory-validated reference interval",
+        method: "Laboratory-validated method",
+      },
+      {
+        section: "LIPID ASSESSMENT",
+        label: "HDL Cholesterol",
+        parameter: field(["HDL Cholesterol", "HDL-C"]),
+        unit: "mg/dL",
+        range: "Laboratory-validated reference interval",
+        method: "Laboratory-validated method",
+      },
+      {
+        section: "LIPID ASSESSMENT",
+        label: "LDL Cholesterol",
+        parameter: field(["LDL Cholesterol", "LDL-C"]),
+        unit: "mg/dL",
+        range: "Laboratory-validated reference interval",
+        method: "Laboratory-validated method",
+      },
+      {
+        section: "LIPID ASSESSMENT",
+        label: "VLDL Cholesterol",
+        parameter: field(["VLDL Cholesterol", "VLDL-C"]),
+        unit: "mg/dL",
+        range: "Laboratory-validated reference interval",
+        method: "Laboratory-validated method",
+      },
+    ] : []),
+    {
+      section: "URINE SCREEN",
+      label: "Urine Glucose",
+      parameter: field(["Urine Glucose", "Glucose, Urine"]),
+      unit: "",
+      range: "Negative",
+      method: "Routine urine chemistry",
+    },
+    {
+      section: "URINE SCREEN",
+      label: "Urine Ketones",
+      parameter: field(["Urine Ketones", "Ketones, Urine"]),
+      unit: "",
+      range: "Negative",
+      method: "Routine urine chemistry",
+    },
+  ];
+  const method = field(["Method / Analyzer", "Method", "Analyzer"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  let activeSection = "";
+  const resultRows = analytes.map((analyte) => {
+    const parameter = analyte.parameter;
+    const sectionRow = analyte.section === activeSection
+      ? ""
+      : `<tr class="thyroid-antibodies-section"><td colspan="4"><strong>${escapeHtml(analyte.section)}</strong></td></tr>`;
+    activeSection = analyte.section;
+    const observed = value(parameter) || "-";
+    const unit = String(parameter?.unit || "").trim() || analyte.unit;
+    const range = String(parameter?.normal_range || "").trim() || analyte.range;
+    const rowMethod = analyte.method || "Laboratory-validated method";
+    return `${sectionRow}
+      <tr>
+        <td><strong>${escapeHtml(analyte.label)}</strong><div class="single-analyte-method">${escapeHtml(rowMethod)}</div></td>
+        <td>${escapeHtml(observed)}</td>
+        <td>${escapeHtml(range)}</td>
+        <td>${escapeHtml(unit)}</td>
+      </tr>`;
+  }).join("");
+  const optionalRows = [
+    ["Method / analyzer", value(method)],
+    ["Comments", value(comments)],
+  ].filter(([, rowValue]) => rowValue);
+
+  return `
+    <table class="results-table diabetic-profile-table" data-report-content="${extended ? "diabetic-profile-extended" : "diabetic-profile"}">
+      <thead>
+        <tr>
+          <th style="width: 38%">Investigation</th>
+          <th style="width: 22%">Result</th>
+          <th style="width: 28%">Reference / Expected Finding</th>
+          <th style="width: 12%">Unit</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="single-analyte-sample-row">
+          <td><strong>Specimen</strong></td>
+          <td>${escapeHtml(specimen)}</td>
+          <td colspan="2"><strong>Profile:</strong> ${extended ? "Extended glycaemic and lipid assessment with routine urine screen" : "Glycaemic assessment with routine urine screen"}</td>
+        </tr>
+        ${resultRows}
+        ${optionalRows.map(([label, rowValue]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${escapeHtml(rowValue).replace(/\n/g, "<br />")}</td></tr>`).join("")}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes diabetic-profile-notes">
+      <div class="report-note-heading">Interpretation :</div>
+      <ul>
+        <li>Fasting plasma glucose, post-meal glucose, and HbA1c are complementary measures of glycaemia. Interpret each result using the laboratory&rsquo;s validated interval and the documented specimen timing.</li>
+        <li>In the absence of unequivocal hyperglycaemia, an abnormal screening or diagnostic result generally requires confirmation on a separate day according to the treating clinician&rsquo;s protocol.</li>
+        <li>HbA1c may be misleading when red-cell survival or haemoglobin is altered. Estimated average glucose is calculated from HbA1c and is not a separately measured glucose result.</li>
+        ${extended ? "<li>Lipid results are reported as individual measurements. Their clinical interpretation should consider cardiovascular risk, treatment, fasting status where relevant, and the laboratory&rsquo;s method-specific intervals.</li>" : ""}
+        <li>Urine glucose and ketone findings are screening observations; correlate them with symptoms, blood glucose, hydration, medicines, and clinical urgency.</li>
+      </ul>
+      <div class="report-note-heading">Laboratory note :</div>
+      <p>This profile supports clinical assessment and does not by itself establish the type or cause of diabetes. Laboratory-validated methods and reference intervals take precedence.</p>
+    </div>
+  `;
+}
+
+function buildDiabeticRenalProfileReportBody(test) {
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const value = (parameter) => String(parameter?.value ?? "").trim();
+  const specimen = String(test?.sample_type || "").trim() || "Blood / Urine";
+  const analytes = [
+    { section: "GLYCAEMIC STATUS", label: "Fasting Plasma Glucose", parameter: field(["Fasting Plasma Glucose", "Fasting Blood Sugar", "FBS", "FPG"]), unit: "mg/dL", range: "70 - 99", method: "Laboratory-validated glucose method" },
+    { section: "GLYCAEMIC STATUS", label: "HbA1c", parameter: field(["HbA1c", "Glycated Hemoglobin", "Glycosylated Hemoglobin"]), unit: "%", range: "< 5.7", method: "NGSP/IFCC-traceable method" },
+    { section: "GLYCAEMIC STATUS", label: "Estimated Average Glucose (eAG)", parameter: field(["Estimated Average Glucose (eAG)", "eAG"]), unit: "mg/dL", range: "Calculated from HbA1c", method: "Calculated" },
+    { section: "SERUM RENAL ASSESSMENT", label: "Serum Creatinine", parameter: field(["Serum Creatinine", "Creatinine, Serum"]), unit: "mg/dL", range: "Laboratory-validated reference interval", method: "Laboratory-validated method" },
+    { section: "SERUM RENAL ASSESSMENT", label: "Estimated GFR (eGFR)", parameter: field(["Estimated GFR (eGFR)", "eGFR", "Estimated Glomerular Filtration Rate"]), unit: "mL/min/1.73 m²", range: "Laboratory-reported, equation-specific", method: "Laboratory-reported calculation" },
+    { section: "SERUM RENAL ASSESSMENT", label: "Blood Urea Nitrogen (BUN)", parameter: field(["Blood Urea Nitrogen (BUN)", "BUN", "Blood Urea Nitrogen"]), unit: "mg/dL", range: "Laboratory-validated reference interval", method: "Laboratory-validated method" },
+    { section: "URINE ALBUMIN ASSESSMENT", label: "Urine Albumin (Microalbumin)", parameter: field(["Urine Albumin (Microalbumin)", "Urine Microalbumin", "Microalbumin, Urine"]), unit: "mg/L", range: "Laboratory-validated reference interval", method: "Laboratory-validated method" },
+    { section: "URINE ALBUMIN ASSESSMENT", label: "Urine Creatinine", parameter: field(["Urine Creatinine", "Creatinine, Urine"]), unit: "mg/dL", range: "Laboratory-validated reference interval", method: "Laboratory-validated method" },
+    { section: "URINE ALBUMIN ASSESSMENT", label: "Urine Albumin-Creatinine Ratio (UACR)", parameter: field(["Urine Albumin-Creatinine Ratio (UACR)", "UACR", "Albumin Creatinine Ratio"]), unit: "mg/g", range: "< 30", method: "Calculated from urine albumin and creatinine" },
+  ];
+  const method = field(["Method / Analyzer", "Method", "Analyzer"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  let activeSection = "";
+  const resultRows = analytes.map((analyte) => {
+    const sectionRow = analyte.section === activeSection ? "" : `<tr class="thyroid-antibodies-section"><td colspan="4"><strong>${escapeHtml(analyte.section)}</strong></td></tr>`;
+    activeSection = analyte.section;
+    const parameter = analyte.parameter;
+    return `${sectionRow}<tr><td><strong>${escapeHtml(analyte.label)}</strong><div class="single-analyte-method">${escapeHtml(analyte.method)}</div></td><td>${escapeHtml(value(parameter) || "-")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || analyte.range)}</td><td>${escapeHtml(String(parameter?.unit || "").trim() || analyte.unit)}</td></tr>`;
+  }).join("");
+  const optionalRows = [["Method / analyzer", value(method)], ["Comments", value(comments)]].filter(([, rowValue]) => rowValue);
+
+  return `
+    <table class="results-table diabetic-renal-profile-table" data-report-content="diabetic-renal-profile">
+      <thead><tr><th style="width: 38%">Investigation</th><th style="width: 22%">Result</th><th style="width: 28%">Reference / Expected Finding</th><th style="width: 12%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(specimen)}</td><td colspan="2"><strong>Profile:</strong> Glycaemic and renal monitoring assessment</td></tr>
+        ${resultRows}
+        ${optionalRows.map(([label, rowValue]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${escapeHtml(rowValue).replace(/\n/g, "<br />")}</td></tr>`).join("")}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes diabetic-renal-profile-notes">
+      <div class="report-note-heading">Interpretation :</div>
+      <ul>
+        <li>Urine albumin and eGFR are complementary markers used to assess kidney involvement. A spot urine albumin-creatinine ratio helps account for variation in urine concentration.</li>
+        <li>eGFR is an estimate calculated from stable serum creatinine using the laboratory&rsquo;s stated equation. It can be less reliable with rapidly changing creatinine or unusual muscle mass and body size.</li>
+        <li>An abnormal albumin or eGFR result should be correlated with prior results, clinical context, and repeat testing where clinically appropriate. This profile does not establish chronic kidney disease or its cause by itself.</li>
+        <li>HbA1c and calculated eAG support assessment of glycaemia but do not replace clinical evaluation.</li>
+      </ul>
+      <div class="report-note-heading">Laboratory note :</div>
+      <p>Laboratory-validated methods, reference intervals, and the reported eGFR equation take precedence. Consider serial UACR and eGFR trends rather than an isolated value alone.</p>
+    </div>
+  `;
+}
+
+function buildEarSwabGramStainReportBody(test) {
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const value = (parameter) => String(parameter?.value ?? "").trim();
+  const rows = [
+    ["Specimen / collection site", field(["Specimen / Collection Site", "Specimen", "Collection Site"]), "Ear swab"],
+    ["Smear method / preparation", field(["Smear Method / Preparation", "Gram Stain Method", "Method"]), ""],
+    ["Inflammatory cells / PMNs", field(["Inflammatory Cells / PMNs", "Pus Cells", "PMNs"]), ""],
+    ["Gram stain findings", field(["Gram Stain Findings", "Findings", "Result"]), "Direct microscopy finding"],
+    ["Gram reaction / bacterial morphology", field(["Gram Reaction / Bacterial Morphology", "Gram Reaction", "Bacterial Morphology"]), ""],
+    ["Epithelial cells / debris", field(["Epithelial Cells / Debris", "Epithelial Cells", "Debris"]), ""],
+    ["Impression", field(["Impression", "Interpretation"]), ""],
+    ["Culture / molecular test status", field(["Culture / Molecular Test Status", "Culture Status", "Culture"]), ""],
+    ["Comments", field(["Comments", "Comment", "Remarks"]), ""],
+  ];
+  return `
+    <table class="results-table ear-swab-gram-stain-table" data-report-content="ear-swab-gram-stain">
+      <thead><tr><th style="width: 36%">Microscopy item</th><th style="width: 42%">Observation</th><th style="width: 22%">Reference / note</th></tr></thead>
+      <tbody>
+        <tr class="thyroid-antibodies-section"><td colspan="3"><strong>EAR SWAB - GRAM STAIN DIRECT MICROSCOPY</strong></td></tr>
+        ${rows.map(([label, parameter, note]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-").replace(/\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td></tr>`).join("")}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes ear-swab-gram-stain-notes">
+      <div class="report-note-heading">Interpretation :</div>
+      <ul><li>Gram stain is a direct microscopy result from the submitted ear swab. It can describe inflammatory cells and visible bacterial morphology, but it does not provide definitive organism identification or antimicrobial susceptibility.</li><li>Report the observed smear findings exactly as seen. A negative smear does not exclude infection, particularly with low organism burden or prior antimicrobial exposure.</li><li>Culture and susceptibility, where requested, must be reported separately and should be correlated with the specimen site and clinical findings.</li></ul>
+    </div>`;
+}
+
+function buildEarSwabAfbStainReportBody(test) {
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const value = (parameter) => String(parameter?.value ?? "").trim();
+  const rows = [
+    ["Specimen / collection site", field(["Specimen / Collection Site", "Specimen", "Collection Site"]), "Ear swab"],
+    ["AFB smear microscopy result", field(["AFB Smear Microscopy Result", "Findings", "Result"]), "No acid-fast bacilli seen"],
+    ["AFB smear grade / quantitation", field(["AFB Smear Grade / Quantitation", "Smear Grade", "Grade"]), ""],
+    ["Stain method", field(["Stain Method", "Method"]), ""],
+    ["Specimen adequacy / volume", field(["Specimen Adequacy / Volume", "Specimen Adequacy"]), ""],
+    ["Microscopy remarks", field(["Microscopy Remarks", "Remarks"]), ""],
+    ["Culture / molecular test status", field(["Culture / Molecular Test Status", "Culture Status", "Culture"]), ""],
+    ["Comments", field(["Comments", "Comment"]), ""],
+  ];
+  return `<table class="results-table ear-swab-afb-stain-table" data-report-content="ear-swab-afb-stain"><thead><tr><th style="width: 36%">Microscopy item</th><th style="width: 42%">Observation</th><th style="width: 22%">Reference / note</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="3"><strong>EAR SWAB - AFB DIRECT MICROSCOPY</strong></td></tr>${rows.map(([label, parameter, note]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-").replace(/\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes ear-swab-afb-stain-notes"><div class="report-note-heading">Interpretation :</div><ul><li>An AFB smear is a direct microscopy result only. It does not identify the species or confirm <em>Mycobacterium tuberculosis</em>; other acid-fast organisms or material may be seen.</li><li>A negative smear does not exclude mycobacterial infection. Culture and validated molecular testing should be correlated where clinically indicated.</li><li>Report the specimen site, stain method, and smear grade exactly as performed. Do not infer culture, molecular, or drug-susceptibility results from microscopy.</li></ul></div>`;
+}
+
+function buildFshPrlReportBody(test, { includeLh = false } = {}) {
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const value = (parameter) => String(parameter?.value ?? "").trim();
+  const rows = [
+    ["Follicle Stimulating Hormone (FSH), Serum", field(["Follicle Stimulating Hormone (FSH), Serum", "FSH, Serum", "FSH"]), "mIU/mL", "Laboratory-validated, sex- and phase-specific reference interval"],
+    ...(includeLh ? [["Luteinizing Hormone (LH), Serum", field(["Luteinizing Hormone (LH), Serum", "LH, Serum", "LH"]), "mIU/mL", "Laboratory-validated, sex- and phase-specific reference interval"]] : []),
+    ["Prolactin (PRL), Serum", field(["Prolactin (PRL), Serum", "Prolactin, Serum", "PRL"]), "ng/mL", "Laboratory-validated, sex- and physiologic-state-specific reference interval"],
+  ];
+  const details = [["Menstrual cycle phase / physiologic state", field(["Menstrual Cycle Phase / Physiologic State", "Cycle Phase"] )], ["Clinical details / medication history", field(["Clinical Details / Medication History", "Clinical Details"] )], ["Method / analyzer", field(["Method / Analyzer", "Method"] )], ["Comments", field(["Comments", "Comment"] )]].filter(([, parameter]) => value(parameter));
+  return `<table class="results-table fsh-prl-table" data-report-content="fsh-prl"><thead><tr><th style="width: 38%">Investigation</th><th style="width: 22%">Result</th><th style="width: 28%">Reference interval</th><th style="width: 12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>GONADOTROPIN &amp; PROLACTIN ASSESSMENT</strong></td></tr>${rows.map(([label, parameter, defaultUnit, defaultRange]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || defaultRange)}</td><td>${escapeHtml(String(parameter?.unit || "").trim() || defaultUnit)}</td></tr>`).join("")}${details.map(([label, parameter]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${escapeHtml(value(parameter)).replace(/\n/g, "<br />")}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes fsh-prl-notes"><div class="report-note-heading">Interpretation :</div><ul><li>FSH and prolactin are interpreted using the laboratory&rsquo;s sex-, age-, menstrual-phase-, pregnancy-, and physiologic-state-specific reference intervals where applicable.</li><li>Cycle timing, pregnancy/lactation, medicines, stress, and collection conditions can affect interpretation. Correlate with clinical history and other requested endocrine tests.</li><li>This paired result supports endocrine assessment and does not establish a specific reproductive or pituitary diagnosis by itself.</li></ul></div>`;
+}
+
+function buildFemaleInfertilityProfileReportBody(test) {
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const value = (parameter) => String(parameter?.value ?? "").trim();
+  const groups = [
+    ["OVARIAN / OVULATORY ASSESSMENT", [
+      ["Follicle Stimulating Hormone (FSH), Serum", field(["Follicle Stimulating Hormone (FSH), Serum", "FSH, Serum", "FSH"]), "mIU/mL", "Laboratory-validated, sex- and phase-specific reference interval"],
+      ["Luteinizing Hormone (LH), Serum", field(["Luteinizing Hormone (LH), Serum", "LH, Serum", "LH"]), "mIU/mL", "Laboratory-validated, sex- and phase-specific reference interval"],
+      ["Estradiol (E2), Serum", field(["Estradiol (E2), Serum", "Estradiol, Serum", "E2", "Estradiol"]), "pg/mL", "Laboratory-validated, sex- and phase-specific reference interval"],
+      ["Anti-Mullerian Hormone (AMH), Serum", field(["Anti-Mullerian Hormone (AMH), Serum", "Anti-Müllerian Hormone (AMH), Serum", "AMH"]), "ng/mL", "Laboratory-validated, age- and assay-specific reference interval"],
+    ]],
+    ["OTHER ENDOCRINE COMPONENTS", [
+      ["Thyroid Stimulating Hormone (TSH), Serum", field(["Thyroid Stimulating Hormone (TSH), Serum", "TSH, Serum", "TSH"]), "mIU/L", "Laboratory-validated reference interval"],
+      ["Prolactin (PRL), Serum", field(["Prolactin (PRL), Serum", "Prolactin, Serum", "PRL"]), "ng/mL", "Laboratory-validated, sex- and physiologic-state-specific reference interval"],
+    ]],
+    ["LUTEAL / CYCLE-TIMED COMPONENT", [
+      ["Progesterone, Serum", field(["Progesterone, Serum", "Serum Progesterone", "Progesterone"]), "ng/mL", "Laboratory-validated, cycle-day-specific reference interval"],
+    ]],
+  ];
+  const details = [
+    ["Menstrual cycle day / physiologic state", field(["Menstrual Cycle Day / Physiologic State", "Menstrual Cycle Phase / Physiologic State", "Cycle Day", "Cycle Phase"])],
+    ["Clinical details / medication history", field(["Clinical Details / Medication History", "Clinical Details"])],
+    ["Method / analyzer", field(["Method / Analyzer", "Method"])],
+    ["Comments", field(["Comments", "Comment"])],
+  ].filter(([, parameter]) => value(parameter));
+  return `<table class="results-table female-infertility-profile-table" data-report-content="female-infertility-profile"><thead><tr><th style="width: 38%">Investigation</th><th style="width: 22%">Result</th><th style="width: 28%">Reference interval</th><th style="width: 12%">Unit</th></tr></thead><tbody><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(String(test?.sample_type || "").trim() || "Serum")}</td><td colspan="2">Female infertility endocrine profile</td></tr>${groups.map(([heading, rows]) => `<tr class="thyroid-antibodies-section"><td colspan="4"><strong>${escapeHtml(heading)}</strong></td></tr>${rows.map(([label, parameter, defaultUnit, defaultRange]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || defaultRange)}</td><td>${escapeHtml(String(parameter?.unit || "").trim() || defaultUnit)}</td></tr>`).join("")}`).join("")}${details.map(([label, parameter]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${escapeHtml(value(parameter)).replace(/\n/g, "<br />")}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes female-infertility-profile-notes"><div class="report-note-heading">Interpretation :</div><ul><li>Interpret requested components with menstrual cycle day, age, clinical history, treatment or medication, pregnancy/lactation, and the laboratory&rsquo;s validated method and reference intervals.</li><li>Basal FSH and estradiol are conventionally interpreted together in the early follicular phase (days 2-4); AMH may be collected at any time in the cycle.</li><li>Ovarian reserve markers can guide treatment planning but do not by themselves confirm infertility or predict spontaneous conception.</li><li>Results do not assess tubal patency, uterine or ovarian anatomy, or partner factors. Correlate with the complete fertility evaluation where clinically indicated.</li></ul></div>`;
+}
+
+function buildFernTestReportBody(test) {
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const value = (parameter) => String(parameter?.value ?? "").trim();
+  const rows = [
+    ["Specimen / collection site", field(["Specimen / Collection Site", "Specimen", "Collection Site"]), "Cervical mucus; collection details as supplied"],
+    ["Collection date / time", field(["Collection Date / Time", "Collection Time"]), ""],
+    ["Menstrual cycle day / last menstrual period", field(["Menstrual Cycle Day / Last Menstrual Period", "Cycle Day", "LMP"]), ""],
+    ["Fern test result", field(["Fern Test Result", "Result", "Findings"]), "Positive / Negative / Indeterminate; correlate with cycle context"],
+    ["Ferning pattern / grade", field(["Ferning Pattern / Grade", "Fern Pattern", "Grade"]), ""],
+    ["Microscopy remarks", field(["Microscopy Remarks", "Remarks"]), ""],
+    ["Clinical details / indication", field(["Clinical Details / Indication", "Clinical Details"]), ""],
+    ["Method / preparation", field(["Method / Preparation", "Method"]), ""],
+    ["Comments", field(["Comments", "Comment"]), ""],
+  ];
+  return `<table class="results-table fern-test-table" data-report-content="fern-test"><thead><tr><th style="width: 38%">Microscopy item</th><th style="width: 40%">Result / observation</th><th style="width: 22%">Reference / note</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="3"><strong>CERVICAL MUCUS FERN TEST</strong></td></tr>${rows.map(([label, parameter, note]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-").replace(/\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes fern-test-notes"><div class="report-note-heading">Interpretation :</div><ul><li>Ferning is a microscopic observation of a dried cervical-mucus specimen. Record the specimen source, collection conditions, cycle timing, and observed pattern exactly as performed.</li><li>Cervical mucus normally changes around ovulation, but collection technique, blood, semen, infection, lubricants, medicines, and cycle context can affect the finding.</li><li>This result is not a stand-alone confirmation of ovulation, fertility, infertility, or a cervical-factor diagnosis. Correlate with the clinical assessment and other requested investigations.</li></ul></div>`;
+}
+
+function buildWuchereriaBancroftiAntigenReportBody(test) {
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const value = (parameter) => String(parameter?.value ?? "").trim();
+  const rows = [
+    ["Wuchereria bancrofti antigen", field(["Wuchereria bancrofti Antigen", "Filaria Antigen", "Result"]), "Not detected"],
+    ["Result interpretation", field(["Result Interpretation", "Interpretation"]), "Detected / Not detected / Invalid"],
+    ["Specimen", field(["Specimen", "Specimen Type"]), "EDTA whole blood"],
+    ["Collection date / time", field(["Collection Date / Time", "Collection Time"]), ""],
+    ["Assay / device / kit", field(["Assay / Device / Kit", "Assay", "Device", "Kit"]), ""],
+    ["Quality control / validity", field(["Quality Control / Validity", "Quality Control", "Validity"]), ""],
+    ["Microscopy / microfilaria correlation", field(["Microscopy / Microfilaria Correlation", "Microfilaria Correlation", "Microscopy"]), ""],
+    ["Clinical details / indication", field(["Clinical Details / Indication", "Clinical Details"]), ""],
+    ["Comments", field(["Comments", "Comment"]), ""],
+  ];
+  return `<table class="results-table wuchereria-bancrofti-antigen-table" data-report-content="wuchereria-bancrofti-antigen"><thead><tr><th style="width: 38%">Assay element</th><th style="width: 40%">Result</th><th style="width: 22%">Reference / note</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="3"><strong>WUCHERERIA BANCROFTI ANTIGEN, EDTA WHOLE BLOOD</strong></td></tr>${rows.map(([label, parameter, note]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-").replace(/\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes wuchereria-bancrofti-antigen-notes"><div class="report-note-heading">Interpretation :</div><ul><li>This qualitative immunoassay detects circulating <em>Wuchereria bancrofti</em> antigen in blood using the stated laboratory method. The report applies only to the analyte and assay used.</li><li>Unlike microfilaria microscopy, circulating filarial antigen may be detected from blood collected at any time of day. Do not infer a microscopy result, parasite count, species other than <em>W. bancrofti</em>, or treatment response from this antigen result alone.</li><li>Correlate with symptoms, exposure or endemic-area history, physical findings, and other parasitology testing where indicated. An invalid result requires repeat testing according to the assay instructions.</li></ul></div>`;
+}
+
+function buildFilariaAntigenReportBody(test) {
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const value = (parameter) => String(parameter?.value ?? "").trim();
+  const rows = [
+    ["Filarial antigen", field(["Filarial Antigen", "Filaria Antigen", "Result"]), "Laboratory-validated qualitative interpretation"],
+    ["Assay target / scope", field(["Assay Target / Scope", "Target", "Scope"]), "State the antigen target and assay scope used"],
+    ["Result interpretation", field(["Result Interpretation", "Interpretation"]), "Detected / Not detected / Invalid"],
+    ["Specimen", field(["Specimen", "Specimen Type"]), "Serum; confirm with assay instructions"],
+    ["Collection date / time", field(["Collection Date / Time", "Collection Time"]), ""],
+    ["Assay / device / kit", field(["Assay / Device / Kit", "Assay", "Device", "Kit"]), ""],
+    ["Quality control / validity", field(["Quality Control / Validity", "Quality Control", "Validity"]), ""],
+    ["Microscopy / microfilaria correlation", field(["Microscopy / Microfilaria Correlation", "Microfilaria Correlation", "Microscopy"]), ""],
+    ["Clinical details / indication", field(["Clinical Details / Indication", "Clinical Details"]), ""],
+    ["Comments", field(["Comments", "Comment"]), ""],
+  ];
+  return `<table class="results-table filaria-antigen-table" data-report-content="filaria-antigen"><thead><tr><th style="width: 38%">Assay element</th><th style="width: 40%">Result</th><th style="width: 22%">Reference / note</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="3"><strong>FILARIAL ANTIGEN, SERUM</strong></td></tr>${rows.map(([label, parameter, note]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-").replace(/\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes filaria-antigen-notes"><div class="report-note-heading">Interpretation :</div><ul><li>This is a qualitative antigen result. Its target, specimen requirement, analytical limitations, and interpretation depend on the stated laboratory kit or method.</li><li>Do not assume species identification, parasite burden, microfilaria microscopy, or treatment response from a generic filarial-antigen result alone.</li><li>Correlate with symptoms, exposure or endemic-area history, physical findings, and other parasitology testing where clinically indicated. An invalid result requires repeat testing according to the assay instructions.</li></ul></div>`;
+}
+
+function buildFluidAspirationCytologyReportBody(test) {
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const value = (parameter) => String(parameter?.value ?? "").trim();
+  const rows = [
+    ["Specimen / aspiration site", field(["Specimen / Aspiration Site", "Specimen", "Aspiration Site"]), "State the exact fluid type and anatomical site"],
+    ["Fluid volume / gross appearance", field(["Fluid Volume / Gross Appearance", "Gross Appearance", "Volume"]), ""],
+    ["Clinical history / imaging findings", field(["Clinical History / Imaging Findings", "Clinical History", "Imaging Findings"]), ""],
+    ["Preparation / stains", field(["Preparation / Stains", "Preparation", "Stains"]), ""],
+    ["Specimen adequacy / cellularity", field(["Specimen Adequacy / Cellularity", "Specimen Adequacy", "Cellularity"]), ""],
+    ["Microscopic description", field(["Microscopic Description", "Cytomorphologic Findings", "Cytology Findings", "Findings"]), ""],
+    ["Diagnostic category", field(["Diagnostic Category", "Category"]), "Laboratory-approved cytology category"],
+    ["Cytologic impression / diagnosis", field(["Cytologic Impression / Diagnosis", "Impression", "Diagnosis"]), ""],
+    ["Ancillary studies / cell block", field(["Ancillary Studies / Cell Block", "Ancillary Studies", "Cell Block"]), "Only studies actually performed and reported"],
+    ["Advice / correlation", field(["Advice / Correlation", "Advice", "Correlation"]), ""],
+    ["Comments", field(["Comments", "Comment"]), ""],
+  ];
+  return `<table class="results-table fluid-aspiration-cytology-table" data-report-content="fluid-aspiration-cytology"><thead><tr><th style="width: 38%">Report element</th><th style="width: 40%">Observation</th><th style="width: 22%">Reference / note</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="3"><strong>FLUID ASPIRATION - CYTOLOGY</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen type</strong></td><td>${escapeHtml(String(test?.sample_type || "").trim() || "Body fluid")}</td><td>Qualitative cytology report</td></tr>${rows.map(([label, parameter, note]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-").replace(/\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes fluid-aspiration-cytology-notes"><div class="report-note-heading">Laboratory note :</div><ul><li>State the precise fluid type, collection site, specimen adequacy, preparation method, and observed cytomorphology. Do not use a generic fluid label when the site is known.</li><li>Adequacy and interpretation depend on cellularity, preservation, background material, and the clinical question. Record the reason when a specimen is unsatisfactory or limited.</li><li>Cytology is distinct from cell count, biochemistry, microbiology, and imaging. Report ancillary stains, cell-block, immunocytochemistry, microbiology, or molecular studies only when actually performed.</li><li>A negative or non-diagnostic fluid cytology result does not exclude disease outside the sampled material; correlate with the clinical, imaging, and other laboratory findings.</li></ul></div>`;
+}
+
+function buildHbElectrophoresisReportBody(test) {
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const value = (parameter) => String(parameter?.value ?? "").trim();
+  const fractions = [
+    ["Hemoglobin A (HbA)", field(["Hemoglobin A (HbA)", "Haemoglobin A (HbA)", "HbA", "Hemoglobin A"])],
+    ["Hemoglobin A2 (HbA2)", field(["Hemoglobin A2 (HbA2)", "Haemoglobin A2 (HbA2)", "HbA2", "Hemoglobin A2"])],
+    ["Hemoglobin F (HbF)", field(["Hemoglobin F (HbF)", "Haemoglobin F (HbF)", "HbF", "Hemoglobin F"])],
+    ["Hemoglobin S (HbS), if detected", field(["Hemoglobin S (HbS), if detected", "Hemoglobin S (HbS)", "HbS", "Hemoglobin S"])],
+    ["Hemoglobin C (HbC), if detected", field(["Hemoglobin C (HbC), if detected", "Hemoglobin C (HbC)", "HbC", "Hemoglobin C"])],
+    ["Hemoglobin E (HbE), if detected", field(["Hemoglobin E (HbE), if detected", "Hemoglobin E (HbE)", "HbE", "Hemoglobin E"])],
+    ["Other hemoglobin fraction / variant", field(["Other Hemoglobin Fraction / Variant", "Other Fraction", "Variant", "Variant Window"])],
+  ];
+  const details = [
+    ["Specimen", field(["Specimen", "Specimen Type"])],
+    ["Method / analyzer", field(["Method / Analyzer", "Method", "Analyzer"])],
+    ["Age / clinical details", field(["Age / Clinical Details", "Age", "Clinical Details"])],
+    ["Transfusion history / date of last transfusion", field(["Transfusion History / Date of Last Transfusion", "Transfusion History", "Last Transfusion"])],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"])],
+  ];
+  return `<table class="results-table hb-electrophoresis-table" data-report-content="hb-electrophoresis"><thead><tr><th style="width: 38%">Hemoglobin fraction</th><th style="width: 22%">Result</th><th style="width: 28%">Reference interval / comment</th><th style="width: 12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>HEMOGLOBIN ELECTROPHORESIS / FRACTIONATION</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(details[0][1]) || String(test?.sample_type || "").trim() || "EDTA whole blood")}</td><td colspan="2">Hemoglobin fraction analysis</td></tr>${fractions.map(([label, parameter]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || "Laboratory-validated, age- and method-specific reference interval")}</td><td>${escapeHtml(String(parameter?.unit || "").trim() || "%")}</td></tr>`).join("")}${details.slice(1).map(([label, parameter]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${escapeHtml(value(parameter) || "-").replace(/\n/g, "<br />")}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes hb-electrophoresis-notes"><div class="report-note-heading">Method and interpretation :</div><ul><li>Hemoglobin electrophoresis separates and quantifies hemoglobin fractions. Report the method or analyzer used, because fraction identification and quantitation are method dependent.</li><li>Use the laboratory&rsquo;s validated age-specific intervals; the expected fraction pattern differs between newborns, children, and adults.</li><li>Recent transfusion and some variants can affect the observed pattern. Interpret this report with the complete blood count, smear where available, clinical and family history, and confirmatory or molecular testing when indicated.</li><li>This report records the measured fraction pattern and laboratory interpretation. It must not assign a hemoglobinopathy diagnosis from an unreviewed result alone.</li></ul></div>`;
+}
+
+function buildFoetalHaemoglobinReportBody(test) {
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const value = (parameter) => String(parameter?.value ?? "").trim();
+  const rows = [
+    ["Hemoglobin F (HbF)", field(["Hemoglobin F (HbF)", "Haemoglobin F (HbF)", "HbF", "Result"]), "%", "Laboratory-validated, age-specific reference interval"],
+    ["Hemoglobin A2 (HbA2), if measured", field(["Hemoglobin A2 (HbA2), if measured", "Hemoglobin A2 (HbA2)", "HbA2"]), "%", "Laboratory-validated, age-specific reference interval"],
+  ];
+  const details = [
+    ["Specimen", field(["Specimen", "Specimen Type"])],
+    ["Method / analyzer", field(["Method / Analyzer", "Method"])],
+    ["Age / gestational age", field(["Age / Gestational Age (if applicable)", "Age", "Gestational Age"])],
+    ["Other hemoglobin fractions / variant comment", field(["Other Hemoglobin Fractions / Variant Comment", "Variant Comment", "Other Fractions"])],
+    ["Interpretation", field(["Interpretation"])],
+    ["Clinical details / transfusion history", field(["Clinical Details / Transfusion History", "Clinical Details", "Transfusion History"])],
+    ["Comments", field(["Comments", "Comment"])],
+  ].filter(([, parameter]) => value(parameter));
+  return `<table class="results-table foetal-haemoglobin-table" data-report-content="foetal-haemoglobin"><thead><tr><th style="width: 38%">Hemoglobin fraction</th><th style="width: 22%">Result</th><th style="width: 28%">Reference interval</th><th style="width: 12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>FOETAL HAEMOGLOBIN (HbF) QUANTITATION</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(field(["Specimen", "Specimen Type"])) || String(test?.sample_type || "").trim() || "Whole blood")}</td><td colspan="2">Hemoglobin fraction analysis</td></tr>${rows.map(([label, parameter, defaultUnit, defaultRange]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || defaultRange)}</td><td>${escapeHtml(String(parameter?.unit || "").trim() || defaultUnit)}</td></tr>`).join("")}${details.filter(([label]) => label !== "Specimen").map(([label, parameter]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${escapeHtml(value(parameter)).replace(/\n/g, "<br />")}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes foetal-haemoglobin-notes"><div class="report-note-heading">Interpretation :</div><ul><li>HbF is strongly age-dependent, particularly in infancy. Use the laboratory&rsquo;s validated age-specific interval and record gestational age where relevant.</li><li>HbF quantitation may be performed by methods such as HPLC, capillary electrophoresis, or validated chemical techniques. The reported result and any fraction pattern apply only to the method used.</li><li>Interpret HbF together with the complete blood count, HbA2 and other hemoglobin fractions when measured, clinical history, transfusion status, and any haemoglobinopathy work-up. This isolated result does not identify every hemoglobin variant or establish a diagnosis by itself.</li></ul></div>`;
+}
+
+function buildFoetalHaemoglobinByHplcReportBody(test) {
+  if (isHbElectrophoresisTest(test)) return buildHbElectrophoresisReportBody(test);
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const value = (parameter) => String(parameter?.value ?? "").trim();
+  const rows = [
+    ["Hemoglobin F (HbF)", field(["Hemoglobin F (HbF)", "HbF", "Foetal Haemoglobin", "Fetal Haemoglobin"]), "%"],
+    ["Hemoglobin A (HbA), if measured", field(["Hemoglobin A (HbA), if measured", "HbA", "Hemoglobin A"]), "%"],
+    ["Hemoglobin A2 (HbA2), if measured", field(["Hemoglobin A2 (HbA2), if measured", "HbA2", "Hemoglobin A2"]), "%"],
+    ["Other hemoglobin fraction / variant window", field(["Other Hemoglobin Fraction / Variant Window", "Variant Window", "Other Hemoglobin Fraction"]), ""],
+  ];
+  const details = [
+    ["Specimen", field(["Specimen", "Specimen Type"])],
+    ["HPLC analyzer / program", field(["HPLC Analyzer / Program", "Analyzer", "HPLC Program"])],
+    ["Age / gestational age", field(["Age / Gestational Age (if applicable)", "Age", "Gestational Age"])],
+    ["Clinical details / transfusion history", field(["Clinical Details / Transfusion History", "Transfusion History", "Clinical Details"])],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"])],
+  ];
+  return `<table class="results-table foetal-haemoglobin-hplc-table" data-report-content="foetal-haemoglobin-hplc"><thead><tr><th style="width: 38%">HPLC hemoglobin fraction</th><th style="width: 22%">Result</th><th style="width: 28%">Reference interval / comment</th><th style="width: 12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>FOETAL HAEMOGLOBIN (HbF) BY HPLC</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(details[0][1]) || String(test?.sample_type || "").trim() || "Whole blood")}</td><td colspan="2">HPLC hemoglobin fraction analysis</td></tr>${rows.map(([label, parameter, defaultUnit]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || "Laboratory-validated, age-specific reference interval")}</td><td>${escapeHtml(String(parameter?.unit || "").trim() || defaultUnit)}</td></tr>`).join("")}${details.slice(1).map(([label, parameter]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${escapeHtml(value(parameter) || "-").replace(/\n/g, "<br />")}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes foetal-haemoglobin-hplc-notes"><div class="report-note-heading">Method and interpretation :</div><ul><li>Fractions are reported from the HPLC method and program used by this laboratory. Do not compare values across methods without laboratory guidance.</li><li>HbF and other hemoglobin fractions are age-dependent. Apply the laboratory&rsquo;s validated age-specific interval and include age or gestational age where relevant.</li><li>Recent transfusion, sample quality, and co-eluting or variant peaks can affect fraction interpretation. Correlate with the blood count, clinical history, and any further hemoglobinopathy work-up.</li></ul></div>`;
+}
+
+function buildFreeBetaHcgReportBody(test) {
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const value = (parameter) => String(parameter?.value ?? "").trim();
+  const freeBeta = field(["Free Beta hCG", "Free β-hCG", "Free Beta HCG", "Free bhCG"]);
+  const mom = field(["Multiple of Median (MoM), if calculated", "MoM", "Multiple of Median"]);
+  const details = [
+    ["Specimen", field(["Specimen", "Specimen Type"])],
+    ["Method / analyzer", field(["Method / Analyzer", "Method", "Analyzer"])],
+    ["Gestational age / crown-rump length", field(["Gestational Age / Crown-Rump Length (if available)", "Gestational Age", "Crown-Rump Length", "CRL"])],
+    ["Collection date / time", field(["Collection Date / Time", "Collection Date", "Collection Time"])],
+    ["Screening context / adjustment factors", field(["Screening Context / Adjustment Factors", "Adjustment Factors", "Screening Context"])],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"])],
+  ];
+  return `<table class="results-table free-beta-hcg-table" data-report-content="free-beta-hcg"><thead><tr><th style="width: 38%">Analyte</th><th style="width: 22%">Result</th><th style="width: 28%">Reference interval / interpretation</th><th style="width: 12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>FREE BETA hCG</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(details[0][1]) || String(test?.sample_type || "").trim() || "Serum")}</td><td colspan="2">Maternal serum screening marker when clinically requested</td></tr><tr><td><strong>Free Beta hCG</strong></td><td>${escapeHtml(value(freeBeta) || "-")}</td><td>${escapeHtml(String(freeBeta?.normal_range || "").trim() || "Laboratory-validated, gestational-age-specific reference interval")}</td><td>${escapeHtml(String(freeBeta?.unit || "").trim())}</td></tr><tr><td><strong>Multiple of Median (MoM), if calculated</strong></td><td>${escapeHtml(value(mom) || "-")}</td><td>${escapeHtml(String(mom?.normal_range || "").trim() || "Calculated only when the required screening information is available")}</td><td>${escapeHtml(String(mom?.unit || "").trim())}</td></tr>${details.slice(1).map(([label, parameter]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${escapeHtml(value(parameter) || "-").replace(/\n/g, "<br />")}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes free-beta-hcg-notes"><div class="report-note-heading">Screening note :</div><ul><li>Free beta hCG is interpreted using the laboratory&rsquo;s method- and gestational-age-specific data. Do not apply a universal numeric interval.</li><li>When used for antenatal screening, a MoM and chance calculation require the requested screening programme inputs; this isolated result is not a diagnostic result.</li><li>Correlate the result with the stated gestational age, clinical information, ultrasound findings, and other screening markers where applicable.</li></ul></div>`;
+}
+
+function buildFreeCholesterolReportBody(test) {
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const value = (parameter) => String(parameter?.value ?? "").trim();
+  const free = field(["Free Cholesterol (Non-esterified)", "Free Cholesterol", "Non-esterified Cholesterol", "Unesterified Cholesterol"]);
+  const total = field(["Total Cholesterol, if measured", "Total Cholesterol"]);
+  const esters = field(["Cholesteryl Esters, if measured", "Cholesteryl Esters", "Cholesterol Esters"]);
+  const ratio = field(["Free / Total Cholesterol Ratio, if calculated", "Free / Total Cholesterol Ratio", "Free Total Ratio"]);
+  const details = [
+    ["Specimen", field(["Specimen", "Specimen Type"])],
+    ["Method / analyzer", field(["Method / Analyzer", "Method", "Analyzer"])],
+    ["Fasting status / clinical details", field(["Fasting Status / Clinical Details", "Fasting Status", "Clinical Details"])],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"])],
+  ];
+  const rows = [
+    ["Free Cholesterol (Non-esterified)", free, "Laboratory-validated, method-specific reference interval"],
+    ["Total Cholesterol, if measured", total, "Report only if measured"],
+    ["Cholesteryl Esters, if measured", esters, "Report only if measured"],
+    ["Free / Total Cholesterol Ratio, if calculated", ratio, "Calculated only when both components are available"],
+  ];
+  return `<table class="results-table free-cholesterol-table" data-report-content="free-cholesterol"><thead><tr><th style="width: 38%">Analyte</th><th style="width: 22%">Result</th><th style="width: 28%">Reference interval / note</th><th style="width: 12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>FREE CHOLESTEROL (NON-ESTERIFIED)</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(details[0][1]) || String(test?.sample_type || "").trim() || "Serum")}</td><td colspan="2">Fraction-specific cholesterol measurement</td></tr>${rows.map(([label, parameter, note]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim())}</td></tr>`).join("")}${details.slice(1).map(([label, parameter]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${escapeHtml(value(parameter) || "-").replace(/\n/g, "<br />")}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes free-cholesterol-notes"><div class="report-note-heading">Laboratory note :</div><ul><li>Free cholesterol means non-esterified cholesterol. It is not interchangeable with the total cholesterol result in a routine lipid profile.</li><li>Use the laboratory&rsquo;s validated method-specific interval and unit. Total cholesterol, cholesteryl esters, and ratios must be reported only when actually measured or calculated.</li><li>Interpret this specialized fraction measurement with the clinical indication and other lipid results; it does not independently establish a diagnosis.</li></ul></div>`;
+}
+
+function buildFreeEstradiolReportBody(test) {
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const value = (parameter) => String(parameter?.value ?? "").trim();
+  const free = field(["Free Estradiol", "Estradiol, Free", "Free E2"]);
+  const percent = field(["Free Estradiol, Percent (if reported)", "Free Estradiol %", "Free Estradiol Percent"]);
+  const total = field(["Total Estradiol (E2), if reported", "Total Estradiol", "Estradiol (E2)", "Estradiol"]);
+  const shbg = field(["Sex Hormone-Binding Globulin (SHBG), if reported", "SHBG", "Sex Hormone Binding Globulin"]);
+  const details = [
+    ["Specimen", field(["Specimen", "Specimen Type"])],
+    ["Method / analyzer", field(["Method / Analyzer", "Method", "Analyzer"])],
+    ["Sex / age / cycle phase or menopausal status", field(["Sex / Age / Cycle Phase or Menopausal Status", "Cycle Phase", "Menopausal Status", "Sex", "Age"])],
+    ["Hormone therapy / relevant clinical details", field(["Hormone Therapy / Relevant Clinical Details", "Hormone Therapy", "Clinical Details"])],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"])],
+  ];
+  const rows = [
+    ["Free Estradiol", free, "Laboratory-validated, age/sex- and method-specific reference interval"],
+    ["Free Estradiol, Percent (if reported)", percent, "Report only if provided by the performing method"],
+    ["Total Estradiol (E2), if reported", total, "Report only if measured"],
+    ["Sex Hormone-Binding Globulin (SHBG), if reported", shbg, "Report only if measured"],
+  ];
+  return `<table class="results-table free-estradiol-table" data-report-content="free-estradiol"><thead><tr><th style="width: 38%">Analyte</th><th style="width: 22%">Result</th><th style="width: 28%">Reference interval / note</th><th style="width: 12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>FREE ESTRADIOL</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(details[0][1]) || String(test?.sample_type || "").trim() || "Serum")}</td><td colspan="2">Free-fraction estradiol measurement</td></tr>${rows.map(([label, parameter, note]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim())}</td></tr>`).join("")}${details.slice(1).map(([label, parameter]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${escapeHtml(value(parameter) || "-").replace(/\n/g, "<br />")}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes free-estradiol-notes"><div class="report-note-heading">Laboratory note :</div><ul><li>Free estradiol is a fraction-specific measurement. Do not substitute it for total estradiol or compare values between methods without laboratory guidance.</li><li>Use the laboratory&rsquo;s validated age-, sex-, treatment-, cycle-, and method-specific interval where applicable.</li><li>Report total estradiol, free estradiol percentage, and SHBG only when provided by the performing method. Interpret the result with the clinical indication and relevant hormone measurements.</li></ul></div>`;
+}
+
+function buildFreePsaReportBody(test) {
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const value = (parameter) => String(parameter?.value ?? "").trim();
+  const free = field(["Free PSA", "Free P S A", "fPSA"]);
+  const total = field(["Total PSA, same specimen", "Total PSA", "PSA Total"]);
+  const ratio = field(["Free PSA / Total PSA Ratio, if calculated", "Free PSA / Total PSA Ratio", "Free / Total PSA Ratio"]);
+  const percent = field(["Percent Free PSA, if calculated", "Percent Free PSA", "% Free PSA"]);
+  const details = [
+    ["Specimen", field(["Specimen", "Specimen Type"])],
+    ["Method / analyzer", field(["Method / Analyzer", "Method", "Analyzer"])],
+    ["Age / relevant clinical details", field(["Age / Relevant Clinical Details", "Age", "Clinical Details"])],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"])],
+  ];
+  const rows = [
+    ["Free PSA", free, "Laboratory-validated, method-specific reference interval", "ng/mL"],
+    ["Total PSA, same specimen", total, "Laboratory-validated, age- and method-specific reference interval", "ng/mL"],
+    ["Free PSA / Total PSA Ratio, if calculated", ratio, "Calculated only when both PSA results are available from the same specimen", ""],
+    ["Percent Free PSA, if calculated", percent, "Calculated only when both PSA results are available from the same specimen", "%"],
+  ];
+  return `<table class="results-table free-psa-table" data-report-content="free-psa"><thead><tr><th style="width: 38%">Analyte</th><th style="width: 22%">Result</th><th style="width: 28%">Reference interval / note</th><th style="width: 12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>FREE PROSTATE-SPECIFIC ANTIGEN (FREE PSA)</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(details[0][1]) || String(test?.sample_type || "").trim() || "Serum")}</td><td colspan="2">Free and total PSA comparison when both are measured</td></tr>${rows.map(([label, parameter, note, defaultUnit]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim() || defaultUnit)}</td></tr>`).join("")}${details.slice(1).map(([label, parameter]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${escapeHtml(value(parameter) || "-").replace(/\n/g, "<br />")}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes free-psa-notes"><div class="report-note-heading">Interpretation note :</div><ul><li>Free PSA and total PSA should be measured on the same specimen using compatible methods before calculating a ratio or percent free PSA.</li><li>Apply the laboratory&rsquo;s assay-specific reference information. A free/total PSA result is an aid to clinical assessment, not a diagnostic result by itself.</li><li>Interpret serial results with the clinical history, examination, prior PSA measurements, treatments, and the requesting clinician&rsquo;s assessment.</li></ul></div>`;
+}
+
+function buildFreeTestosteroneReportBody(test) {
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const value = (parameter) => String(parameter?.value ?? "").trim();
+  const free = field(["Free Testosterone", "Testosterone, Free", "Free T"]);
+  const method = field(["Free Testosterone Method (Measured / Calculated)", "Free Testosterone Method", "Method / Analyzer", "Method"]);
+  const total = field(["Total Testosterone, if measured", "Total Testosterone", "Testosterone Total"]);
+  const shbg = field(["Sex Hormone-Binding Globulin (SHBG), if measured", "SHBG", "Sex Hormone Binding Globulin"]);
+  const albumin = field(["Albumin, if used for calculation", "Albumin"]);
+  const details = [
+    ["Specimen", field(["Specimen", "Specimen Type"])],
+    ["Sex / age / pubertal or menopausal status", field(["Sex / Age / Pubertal or Menopausal Status", "Sex", "Age", "Pubertal Status", "Menopausal Status"])],
+    ["Collection time / hormone therapy details", field(["Collection Time / Hormone Therapy Details", "Collection Time", "Hormone Therapy Details", "Hormone Therapy"])],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"])],
+  ];
+  const rows = [
+    ["Free Testosterone", free, "Laboratory-validated, age/sex- and method-specific reference interval"],
+    ["Free Testosterone Method (Measured / Calculated)", method, "State whether measured or calculated"],
+    ["Total Testosterone, if measured", total, "Report only if measured"],
+    ["Sex Hormone-Binding Globulin (SHBG), if measured", shbg, "Report only if measured"],
+    ["Albumin, if used for calculation", albumin, "Report when used by the calculation"],
+  ];
+  return `<table class="results-table free-testosterone-table" data-report-content="free-testosterone"><thead><tr><th style="width: 38%">Analyte</th><th style="width: 22%">Result</th><th style="width: 28%">Reference interval / note</th><th style="width: 12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>FREE TESTOSTERONE</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(details[0][1]) || String(test?.sample_type || "").trim() || "Serum")}</td><td colspan="2">Free testosterone measurement or calculation, as stated</td></tr>${rows.map(([label, parameter, note]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim())}</td></tr>`).join("")}${details.slice(1).map(([label, parameter]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${escapeHtml(value(parameter) || "-").replace(/\n/g, "<br />")}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes free-testosterone-notes"><div class="report-note-heading">Laboratory note :</div><ul><li>State whether free testosterone was directly measured or calculated. Results from different methods are not necessarily interchangeable.</li><li>When calculated, the result depends on the input measurements and calculation approach; total testosterone, SHBG, and albumin should be reported only when actually measured or used.</li><li>Use the laboratory&rsquo;s validated age-, sex-, treatment-, and method-specific interval. Interpret with the clinical history and other relevant hormone measurements.</li></ul></div>`;
+}
+
+function buildGastrinLevelReportBody(test) {
+  if (isRandomGlucoseTest(test)) return buildRandomGlucoseReportBody(test);
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const value = (parameter) => String(parameter?.value ?? "").trim();
+  const gastrin = field(["Gastrin, Serum", "Serum Gastrin", "Gastrin", "Result"]);
+  const rows = [
+    ["Gastrin, serum", gastrin, "Laboratory-validated fasting reference interval", "pg/mL"],
+    ["Fasting duration / collection time", field(["Fasting Duration / Collection Time", "Fasting Duration", "Collection Time"]), "Record the actual fasting interval and collection time", ""],
+    ["Acid-suppression medication / PPI history", field(["Acid-Suppression Medication / PPI History", "PPI History", "Acid Suppression Medication"]), "Document current or recent therapy when known", ""],
+    ["Gastrointestinal motility medication history", field(["Gastrointestinal Motility Medication History", "Motility Medication History"]), "Document relevant medicines when known", ""],
+    ["Method / analyzer", field(["Method / Analyzer", "Method", "Analyzer"]), "State the assay or platform used", ""],
+    ["Clinical context / indication", field(["Clinical Context / Indication", "Clinical Context", "Indication"]), "Clinical information supplied with the request", ""],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"]), "", ""],
+  ];
+  const specimen = field(["Specimen", "Specimen Type"]);
+  return `<table class="results-table gastrin-level-table" data-report-content="gastrin-level"><thead><tr><th style="width: 38%">Analyte / report element</th><th style="width: 22%">Result</th><th style="width: 28%">Reference interval / note</th><th style="width: 12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>GASTRIN, SERUM</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(specimen) || String(test?.sample_type || "").trim() || "Serum")}</td><td colspan="2">Fasting serum specimen, unless collection conditions are stated otherwise</td></tr>${rows.map(([label, parameter, note, defaultUnit]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-").replace(/\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim() || defaultUnit)}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes gastrin-level-notes"><div class="report-note-heading">Interpretation note :</div><ul><li>Interpret gastrin only with documented fasting status and the laboratory&rsquo;s validated assay-specific reference interval.</li><li>Acid-suppression medicines, especially proton-pump inhibitors, can increase serum gastrin and must be considered before interpreting an elevation.</li><li>An isolated gastrin result does not establish a cause of hypergastrinaemia or a diagnosis; correlate with gastric acid status, clinical history, and further testing when indicated.</li></ul></div>`;
+}
+
+function buildRandomGlucoseReportBody(test) {
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const value = (parameter) => String(parameter?.value ?? "").trim();
+  const randomGlucose = field(["Random Plasma Glucose", "Glucose, Random, Plasma", "Random Glucose", "Random Blood Glucose", "Glucose Random", "Result"]);
+  const rows = [
+    ["Random plasma glucose", randomGlucose, "Laboratory-validated random glucose reference interval", "mg/dL"],
+    ["Collection date / time", field(["Collection Date / Time", "Collection Time", "Collection Date"]), "Record actual collection date and time", ""],
+    ["Time since last meal / meal context", field(["Time Since Last Meal / Meal Context", "Time Since Last Meal", "Meal Context"]), "Record when provided; random collection is not fasting", ""],
+    ["Method / analyzer", field(["Method / Analyzer", "Method", "Analyzer"]), "State the assay or platform used", ""],
+    ["Clinical context / symptoms, if provided", field(["Clinical Context / Symptoms, if provided", "Clinical Context", "Symptoms"]), "Clinical information supplied with the request", ""],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"]), "", ""],
+  ];
+  const specimen = field(["Specimen", "Specimen Type"]);
+  return `<table class="results-table random-glucose-table" data-report-content="random-glucose"><thead><tr><th style="width: 38%">Analyte / report element</th><th style="width: 22%">Result</th><th style="width: 28%">Reference interval / note</th><th style="width: 12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>RANDOM PLASMA GLUCOSE</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(specimen) || String(test?.sample_type || "").trim() || "Specify laboratory-validated specimen")}</td><td colspan="2">Random collection; fasting is not required</td></tr>${rows.map(([label, parameter, note, defaultUnit]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-").replace(/\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim() || defaultUnit)}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes random-glucose-notes"><div class="report-note-heading">Interpretation note :</div><ul><li>Random glucose is collected without a required fasting interval; record the meal context when it is available.</li><li>Interpret the result with the laboratory&rsquo;s validated assay-specific reference interval, collection conditions, and clinical setting. Do not infer fasting or postprandial status from this result.</li><li>An isolated random glucose result does not establish diabetes; when findings are not unequivocal, confirmatory testing is required.</li></ul></div>`;
+}
+
+function buildGlucoseToleranceTestReportBody(test) {
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const value = (parameter) => String(parameter?.value ?? "").trim();
+  const rows = [
+    ["Fasting plasma glucose (0 minute)", field(["Fasting Plasma Glucose (0 Minute)", "Fasting Plasma Glucose", "Fasting Glucose", "0 Minute Glucose"]), "Laboratory-validated, protocol-specific reference interval"],
+    ["Glucose, 30 minutes after load, if collected", field(["Glucose, 30 Minutes After Load, if collected", "Glucose 30 Minutes", "30 Minute Glucose"]), "Report only when collected"],
+    ["Glucose, 60 minutes after load, if collected", field(["Glucose, 60 Minutes After Load, if collected", "Glucose 60 Minutes", "60 Minute Glucose"]), "Report only when collected"],
+    ["Glucose, 90 minutes after load, if collected", field(["Glucose, 90 Minutes After Load, if collected", "Glucose 90 Minutes", "90 Minute Glucose"]), "Report only when collected"],
+    ["Glucose, 120 minutes after load, if collected", field(["Glucose, 120 Minutes After Load, if collected", "Glucose 120 Minutes", "120 Minute Glucose", "2 Hour Glucose"]), "Laboratory-validated, protocol-specific reference interval"],
+  ];
+  const details = [
+    ["Glucose load / protocol", field(["Glucose Load / Protocol", "Glucose Load", "Protocol"])],
+    ["Fasting duration / collection details", field(["Fasting Duration / Collection Details", "Fasting Duration", "Collection Details"])],
+    ["Specimen", field(["Specimen", "Specimen Type"])],
+    ["Method / analyzer", field(["Method / Analyzer", "Method", "Analyzer"])],
+    ["Pregnancy / clinical context, if applicable", field(["Pregnancy / Clinical Context, if applicable", "Pregnancy Status", "Clinical Context"])],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"])],
+  ];
+  return `<table class="results-table glucose-tolerance-test-table" data-report-content="glucose-tolerance-test"><thead><tr><th style="width: 38%">Timepoint / report element</th><th style="width: 22%">Glucose result</th><th style="width: 28%">Reference interval / note</th><th style="width: 12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>GLUCOSE TOLERANCE TEST (GTT)</strong></td></tr>${rows.map(([label, parameter, note]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim() || "mg/dL")}</td></tr>`).join("")}${details.map(([label, parameter]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${escapeHtml(value(parameter) || (label === "Specimen" ? String(test?.sample_type || "").trim() || "Specify laboratory-validated specimen" : "-")).replace(/\n/g, "<br />")}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes glucose-tolerance-test-notes"><div class="report-note-heading">Protocol note :</div><ul><li>Record the actual glucose load, fasting duration, sample timepoints, and specimen type. GTT protocols differ by clinical indication, pregnancy status, and local laboratory practice.</li><li>Only timepoints actually collected should be reported. Do not create an intermediate result or apply a reference limit intended for a different protocol.</li><li>Interpret the complete, documented study using the laboratory&rsquo;s validated protocol-specific criteria. In the absence of unequivocal hyperglycaemia, diagnostic findings generally require clinical confirmation.</li></ul></div>`;
+}
+
+function buildGrowthHormoneReportBody(test) {
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const value = (parameter) => String(parameter?.value ?? "").trim();
+  const gh = field(["Growth Hormone (GH)", "Growth Hormone", "Human Growth Hormone", "hGH", "GH", "Result"]);
+  const rows = [
+    ["Growth hormone (GH)", gh, "Laboratory-validated age/sex- and method-specific reference interval", "ng/mL"],
+    ["Collection time / fasting status", field(["Collection Time / Fasting Status", "Collection Time", "Fasting Status"]), "Record relevant collection conditions", ""],
+    ["Method / analyzer", field(["Method / Analyzer", "Method", "Analyzer"]), "State the assay or platform used", ""],
+    ["Age / sex / pubertal status, if applicable", field(["Age / Sex / Pubertal Status, if applicable", "Age / Sex", "Pubertal Status"]), "Use an appropriate laboratory-specific interval", ""],
+    ["Clinical context / indication", field(["Clinical Context / Indication", "Clinical Context", "Indication"]), "Clinical information supplied with the request", ""],
+    ["Dynamic testing context, if applicable", field(["Dynamic Testing Context, if applicable", "Dynamic Testing Context"]), "State a stimulation or suppression protocol only when performed", ""],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"]), "", ""],
+  ];
+  const specimen = field(["Specimen", "Specimen Type"]);
+  return `<table class="results-table growth-hormone-table" data-report-content="growth-hormone"><thead><tr><th style="width: 38%">Analyte / report element</th><th style="width: 22%">Result</th><th style="width: 28%">Reference interval / note</th><th style="width: 12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>GROWTH HORMONE (GH)</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(specimen) || String(test?.sample_type || "").trim() || "Serum")}</td><td colspan="2">Serum, unless another specimen is specifically validated and stated</td></tr>${rows.map(([label, parameter, note, defaultUnit]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-").replace(/\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim() || defaultUnit)}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes growth-hormone-notes"><div class="report-note-heading">Interpretation note :</div><ul><li>Apply the laboratory&rsquo;s validated age-, sex-, and method-specific reference interval. Results from different GH assays may not be interchangeable.</li><li>GH secretion is pulsatile, so an isolated measurement has limited diagnostic value and must be interpreted with the clinical setting and related endocrine testing.</li><li>Do not infer growth hormone excess or deficiency from this standalone measurement. Dynamic stimulation or suppression testing must be reported as a separately documented protocol.</li></ul></div>`;
+}
+
+function buildGhFastingGlucoseReportBody(test) {
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const value = (parameter) => String(parameter?.value ?? "").trim();
+  const gh = field(["Growth Hormone (GH), Fasting", "Fasting GH", "Growth Hormone", "GH", "Result"]);
+  const glucose = field(["Fasting Plasma Glucose", "Fasting Glucose", "Glucose"]);
+  const rows = [
+    ["Growth hormone (GH), fasting", gh, "Laboratory-validated age/sex- and method-specific reference interval", "ng/mL"],
+    ["Fasting plasma glucose", glucose, "Laboratory-validated fasting glucose reference interval", "mg/dL"],
+    ["Fasting duration / collection time", field(["Fasting Duration / Collection Time", "Fasting Duration", "Collection Time"]), "Record the actual fasting duration and collection time", ""],
+    ["Specimen(s)", field(["Specimen(s)", "Specimen", "Specimen Type"]), "Serum for GH; use the laboratory-validated specimen for glucose", ""],
+    ["Method / analyzer", field(["Method / Analyzer", "Method", "Analyzer"]), "State the relevant assay or platform", ""],
+    ["Clinical context / indication", field(["Clinical Context / Indication", "Clinical Context", "Indication"]), "Clinical information supplied with the request", ""],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"]), "", ""],
+  ];
+  return `<table class="results-table gh-fasting-glucose-table" data-report-content="gh-fasting-glucose"><thead><tr><th style="width: 38%">Analyte / report element</th><th style="width: 22%">Result</th><th style="width: 28%">Reference interval / note</th><th style="width: 12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>GROWTH HORMONE (GH) WITH FASTING GLUCOSE</strong></td></tr>${rows.map(([label, parameter, note, defaultUnit]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-").replace(/\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim() || defaultUnit)}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes gh-fasting-glucose-notes"><div class="report-note-heading">Interpretation note :</div><ul><li>Fasting glucose and fasting GH are separate measurements with their own specimen requirements and laboratory-specific reference intervals.</li><li>GH secretion is pulsatile; a single fasting GH value has limited diagnostic value and should be interpreted with the clinical setting and any appropriate dynamic testing.</li><li>This format is not a glucose-suppression series. Do not infer a post-glucose GH response without separately documented timed samples.</li></ul></div>`;
+}
+
+function buildGh90MinutesAfterGlucoseReportBody(test) {
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const value = (parameter) => String(parameter?.value ?? "").trim();
+  const gh = field(["Growth Hormone (GH), 90 Minutes After Glucose", "GH, 90 Minutes After Glucose", "GH 90 Minutes", "Growth Hormone", "GH", "Result"]);
+  const glucose = field(["Glucose, 90 Minutes After Load, if measured", "Glucose, 90 Minutes After Load", "Glucose 90 Minutes", "90 Minute Glucose"]);
+  const rows = [
+    ["Growth hormone (GH), 90 minutes after glucose", gh, "Laboratory-validated glucose-suppression protocol interpretation", "ng/mL"],
+    ["Glucose, 90 minutes after load, if measured", glucose, "Report only when measured as part of the protocol", "mg/dL"],
+    ["Time after glucose load", field(["Time After Glucose Load", "Collection Timepoint"]), "90 minutes after the documented glucose load", ""],
+    ["Glucose load / fasting confirmation", field(["Glucose Load / Fasting Confirmation", "Glucose Load", "Fasting Confirmation"]), "Record the actual laboratory protocol", ""],
+    ["Method / analyzer", field(["Method / Analyzer", "Method", "Analyzer"]), "State the GH assay or platform used", ""],
+    ["Baseline GH / IGF-1, if available", field(["Baseline GH / IGF-1, if available", "Baseline GH", "IGF-1"]), "Report only separately measured results", ""],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"]), "", ""],
+  ];
+  const specimen = field(["Specimen", "Specimen Type"]);
+  return `<table class="results-table gh-90-glucose-table" data-report-content="gh-90-glucose"><thead><tr><th style="width: 38%">Analyte / report element</th><th style="width: 22%">Result</th><th style="width: 28%">Reference interval / note</th><th style="width: 12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>GROWTH HORMONE (GH) - 90 MINUTES AFTER GLUCOSE</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(specimen) || String(test?.sample_type || "").trim() || "Serum")}</td><td colspan="2">Timed serum specimen from the documented glucose-suppression protocol</td></tr>${rows.map(([label, parameter, note, defaultUnit]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-").replace(/\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim() || defaultUnit)}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes gh-90-glucose-notes"><div class="report-note-heading">Protocol note :</div><ul><li>This is a timed component of a glucose-suppression study. Verify the documented glucose load, fasting state, collection timepoint, and assay method before interpretation.</li><li>The 90-minute GH value should be interpreted with the complete suppression series and clinical context; it is not a diagnostic result by itself.</li><li>Use the laboratory&rsquo;s validated assay- and protocol-specific decision limits. Do not apply a cut-off from a different GH method or protocol.</li></ul></div>`;
+}
+
+function buildGad65AntibodyReportBody(test) {
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const value = (parameter) => String(parameter?.value ?? "").trim();
+  const gad65 = field(["GAD65 Antibody", "GAD 65 Antibody", "GAD65 Ab", "Glutamic Acid Decarboxylase Antibody", "Result"]);
+  const rows = [
+    ["GAD65 antibody", gad65, "Laboratory-validated, method-specific reference interval"],
+    ["Assay qualitative interpretation, if reported", field(["Assay Qualitative Interpretation, if reported", "Qualitative Interpretation", "Result Interpretation"]), "Report the assay-specific qualitative call only when issued"],
+    ["Method / analyzer", field(["Method / Analyzer", "Method", "Analyzer"]), "State the method or platform used"],
+    ["Clinical context / indication", field(["Clinical Context / Indication", "Clinical Context", "Indication"]), "Clinical information supplied with the request"],
+    ["Other islet autoantibodies, if ordered", field(["Other Islet Autoantibodies, if ordered", "Other Islet Autoantibodies"]), "Report only tests separately ordered and performed"],
+    ["Relevant neurologic autoantibody context, if applicable", field(["Relevant Neurologic Autoantibody Context, if applicable", "Neurologic Autoantibody Context"]), "Report only when clinically requested"],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"]), ""],
+  ];
+  const specimen = field(["Specimen", "Specimen Type"]);
+  return `<table class="results-table gad65-antibody-table" data-report-content="gad65-antibody"><thead><tr><th style="width: 38%">Report element</th><th style="width: 40%">Result</th><th style="width: 22%">Reference / note</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="3"><strong>GLUTAMIC ACID DECARBOXYLASE 65 (GAD65) ANTIBODY</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(specimen) || String(test?.sample_type || "").trim() || "Serum")}</td><td>Serum, unless another specimen is specifically validated and stated</td></tr>${rows.map(([label, parameter, note]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-").replace(/\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes gad65-antibody-notes"><div class="report-note-heading">Interpretation note :</div><ul><li>Use the laboratory&rsquo;s validated method-specific unit, analytical cut-off, and reference interval. Results from different assay platforms are not necessarily interchangeable.</li><li>A GAD65 antibody result is one component of clinical and laboratory assessment; it must not be used alone to assign a diabetes subtype, neurologic syndrome, or other diagnosis.</li><li>When clinically indicated, interpret with the requesting clinician&rsquo;s history and any separately ordered islet or neurologic autoantibody tests.</li></ul></div>`;
+}
+
+function buildFungusCultureReportBody(test) {
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const value = (parameter) => String(parameter?.value ?? "").trim();
+  const rows = [
+    ["Direct microscopy / stain, if performed", field(["Direct Microscopy / Stain, if performed", "Direct Microscopy", "KOH", "Fungal Smear"]), "Report only if performed"],
+    ["Culture status", field(["Culture Status (Preliminary / Final)", "Culture Status", "Status"]), "Preliminary or final, as applicable"],
+    ["Culture result", field(["Culture Result", "Result"]), "Laboratory culture interpretation"],
+    ["Organism(s) isolated", field(["Organism(s) Isolated", "Organism Isolated", "Isolate"]), "Report only when recovered and identified"],
+    ["Identification method, if performed", field(["Identification Method, if performed", "Identification Method", "Identification"]), "Report only if performed"],
+    ["Antifungal susceptibility, if performed", field(["Antifungal Susceptibility, if performed", "Antifungal Susceptibility", "Susceptibility"]), "Report only if performed and interpreted"],
+    ["Incubation / report status", field(["Incubation / Report Status", "Incubation", "Report Status"]), "Laboratory-specific incubation and reporting status"],
+    ["Comments / clinical correlation", field(["Comments / Clinical Correlation", "Comments", "Comment", "Clinical Correlation"]), ""],
+  ];
+  const specimen = field(["Specimen / Collection Site", "Specimen", "Collection Site", "Source"]);
+  return `<table class="results-table fungus-culture-table" data-report-content="fungus-culture"><thead><tr><th style="width: 38%">Report element</th><th style="width: 40%">Observation</th><th style="width: 22%">Reference / note</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="3"><strong>FUNGUS CULTURE</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen / collection site</strong></td><td>${escapeHtml(value(specimen) || String(test?.sample_type || "").trim() || "Specify specimen / collection site")}</td><td>Site-specific mycology culture</td></tr>${rows.map(([label, parameter, note]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-").replace(/\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes fungus-culture-notes"><div class="report-note-heading">Laboratory note :</div><ul><li>Record the precise specimen and collection site. Culture, direct microscopy, identification, and antifungal susceptibility are separate steps and must be reported only when performed.</li><li>A culture report may be preliminary while incubation or organism work-up continues. Do not substitute a preliminary observation for a final culture result.</li><li>Recovered fungi may represent infection, colonization, or contamination depending on the specimen and clinical setting; correlate with the clinical assessment and other laboratory findings.</li></ul></div>`;
+}
+
+function buildFungusCultureSensitivityReportBody(test) {
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const value = (parameter) => String(parameter?.value ?? "").trim();
+  const rows = [
+    ["Direct microscopy / stain, if performed", field(["Direct Microscopy / Stain, if performed", "Direct Microscopy", "KOH", "Fungal Smear"]), "Report only if performed"],
+    ["Culture status", field(["Culture Status (Preliminary / Final)", "Culture Status", "Status"]), "Preliminary or final, as applicable"],
+    ["Culture result", field(["Culture Result", "AFB Culture Result", "Result"]), "Laboratory culture interpretation"],
+    ["Organism(s) isolated", field(["Organism(s) Isolated", "Organism Isolated", "Isolate"]), "Report only when recovered and identified"],
+    ["Identification method, if performed", field(["Identification Method, if performed", "Identification Method", "Identification"]), "Report only if performed"],
+    ["Antifungal susceptibility method, if performed", field(["Antifungal Susceptibility Method, if performed", "Antifungal Susceptibility Method", "Susceptibility Method"]), "Report only if performed"],
+    ["Antifungal agent / MIC or category, if reported", field(["Antifungal Agent / MIC or Category, if reported", "Antifungal Agent", "MIC", "Drug Sensitivity"]), "Report only if tested"],
+    ["Susceptibility interpretation, if reported", field(["Susceptibility Interpretation, if reported", "Susceptibility Interpretation", "Antifungal Susceptibility"]), "Use the laboratory&rsquo;s validated reporting convention"],
+    ["Comments / clinical correlation", field(["Comments / Clinical Correlation", "Comments", "Comment", "Clinical Correlation"]), ""],
+  ];
+  const specimen = field(["Specimen / Collection Site", "Specimen", "Collection Site", "Source"]);
+  return `<table class="results-table fungus-culture-sensitivity-table" data-report-content="fungus-culture-sensitivity"><thead><tr><th style="width: 38%">Report element</th><th style="width: 40%">Observation</th><th style="width: 22%">Reference / note</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="3"><strong>FUNGUS CULTURE &amp; ANTIFUNGAL SUSCEPTIBILITY</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen / collection site</strong></td><td>${escapeHtml(value(specimen) || String(test?.sample_type || "").trim() || "Specify specimen / collection site")}</td><td>Site-specific mycology culture and susceptibility, if performed</td></tr>${rows.map(([label, parameter, note]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-").replace(/\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes fungus-culture-sensitivity-notes"><div class="report-note-heading">Laboratory note :</div><ul><li>Antifungal susceptibility is not interchangeable with antibacterial drug sensitivity. Report the tested agent, MIC or category, method, and interpretation only when testing has been performed.</li><li>Culture status, organism identification, and susceptibility may finalize at different times. Preserve the report stage and do not infer susceptibility from organism identification alone.</li><li>Recovered fungi may represent infection, colonization, or contamination depending on the specimen and clinical setting; correlate with the clinical assessment and other laboratory findings.</li></ul></div>`;
+}
+
+function buildFactorIiMutationReportBody(test) {
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const value = (parameter) => String(parameter?.value ?? "").trim();
+  const rows = [["Target variant / assay", field(["Target Variant / Assay", "Target Variant"]), "Laboratory-validated assay target"], ["Genotype result", field(["Genotype Result", "Result"]), "Detected / Not detected / Indeterminate"], ["Zygosity", field(["Zygosity"]), ""], ["Method / platform", field(["Method / Platform", "Method"]), ""], ["Interpretation", field(["Interpretation"]), ""], ["Test limitations", field(["Test Limitations", "Limitations"]), ""], ["Comments / genetic counselling", field(["Comments / Genetic Counselling", "Comments"]), ""]];
+  return `<table class="results-table factor-ii-mutation-table" data-report-content="factor-ii-mutation"><thead><tr><th style="width: 35%">Report element</th><th style="width: 43%">Result</th><th style="width: 22%">Reference / note</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="3"><strong>FACTOR II (PROTHROMBIN) MUTATION ANALYSIS</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(String(test?.sample_type || "").trim() || "Whole blood")}</td><td>Molecular genetic test</td></tr>${rows.map(([label, parameter, note]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-").replace(/\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes factor-ii-mutation-notes"><div class="report-note-heading">Laboratory note :</div><p>This targeted molecular result applies only to the variant(s) and method reported. It does not assess every inherited or acquired cause of thrombosis and should be interpreted with clinical history and genetic counselling where appropriate.</p></div>`;
+}
+
+function buildFactorViiiImmunodepletedReportBody(test) {
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const value = (parameter) => String(parameter?.value ?? "").trim();
+  const rows = [["Assay / immunodepletion protocol", field(["Assay / Immunodepletion Protocol", "Assay", "Protocol"]), ""], ["Factor VIII activity (FVIII:C)", field(["Factor VIII Activity (FVIII:C)", "FVIII:C", "Factor VIII Activity"]), "Laboratory-validated assay reference interval"], ["Immunodepleted plasma / control result", field(["Immunodepleted Plasma / Control Result", "Control Result"]), ""], ["Inhibitor screen / mixing study result", field(["Inhibitor Screen / Mixing Study Result", "Inhibitor Screen"]), ""], ["Factor VIII inhibitor titre", field(["Factor VIII Inhibitor Titre", "Bethesda Titre"]), "Laboratory-validated assay interpretation"], ["Interpretation", field(["Interpretation"]), ""], ["Method / analyzer", field(["Method / Analyzer", "Method"]), ""], ["Comments", field(["Comments", "Comment"]), ""]];
+  return `<table class="results-table factor-viii-immunodepleted-table" data-report-content="factor-viii-immunodepleted"><thead><tr><th style="width: 38%">Assay element</th><th style="width: 40%">Result</th><th style="width: 22%">Reference / note</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="3"><strong>FACTOR VIII IMMUNODEPLETION ASSAY</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(String(test?.sample_type || "").trim() || "Citrated plasma")}</td><td>Specialized coagulation assay</td></tr>${rows.map(([label, parameter, note]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-").replace(/\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes factor-viii-immunodepleted-notes"><div class="report-note-heading">Laboratory note :</div><p>Interpret this specialized assay only with the laboratory&rsquo;s validated method, controls, and clinical coagulation history. It is not interchangeable with a routine Factor VIII activity result or a complete inhibitor evaluation.</p></div>`;
 }
 
 function buildPrealbuminReportBody(test) {
@@ -5951,6 +7368,83 @@ function buildAfbZiehlNeelsenStainReportBody(test) {
         <li>Detection of acid-fast bacilli on a Ziehl-Neelsen smear is a microscopy finding; it does not identify the mycobacterial species or determine drug susceptibility.</li>
         <li>A negative smear does not exclude tuberculosis or other mycobacterial infection, particularly with low organism burden or a poor-quality specimen.</li>
         <li>Where clinically indicated, correlate with mycobacterial culture, nucleic-acid testing, and clinical/radiological findings.</li>
+      </ul>
+    </div>
+  `;
+}
+
+function buildCsfFluidAfbStainReportBody(test) {
+  const valueFor = (aliases, fallback = "-") => {
+    const parameter = findReportParameter(test, aliases) || {};
+    return String(parameter.value || "").trim() || fallback;
+  };
+  const specimen = valueFor(["Specimen", "Specimen Type", "Type of Specimen"], test.sample_type || "Cerebrospinal Fluid (CSF)");
+  const result = valueFor(["AFB Smear Microscopy Result", "AFB Smear Result", "Ziehl-Neelsen Result", "Findings", "Result"]);
+  const grade = valueFor(["AFB Smear Grade / Quantitation", "AFB Smear Grade", "Smear Grade", "Grade", "Quantitation"]);
+  const method = valueFor(["Stain Method", "Method", "Stain / Method"], "As reported by laboratory");
+  const adequacy = valueFor(["Specimen Adequacy / Volume", "Specimen Adequacy", "Volume / Adequacy"], "-");
+  const remarks = valueFor(["Microscopy Remarks", "Remarks", "Comments", "Comment"], "");
+
+  return `
+    <table class="results-table csf-afb-stain-table">
+      <thead><tr><th style="width: 38%">Investigation</th><th style="width: 25%">Result</th><th style="width: 25%">Reference / Guide</th><th style="width: 12%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(specimen)}</td></tr>
+        <tr><td><strong>AFB STAIN, CEREBROSPINAL FLUID</strong><div class="single-analyte-method">Direct microscopy</div></td><td>${escapeHtml(result)}</td><td>Report microscopic observation</td><td></td></tr>
+        <tr><td><strong>Smear Grade / Quantitation</strong></td><td>${escapeHtml(grade)}</td><td>Only if performed and laboratory-validated</td><td></td></tr>
+        <tr><td><strong>Stain Method</strong></td><td colspan="3">${escapeHtml(method)}</td></tr>
+        <tr><td><strong>Specimen Adequacy / Volume</strong></td><td colspan="3">${escapeHtml(adequacy)}</td></tr>
+        ${remarks !== "-" ? `<tr><td><strong>Microscopy Remarks</strong></td><td colspan="3" style="white-space: pre-wrap">${escapeHtml(remarks).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes csf-afb-stain-notes">
+      <div class="report-note-heading">Interpretation :</div>
+      <ul>
+        <li>An acid-fast stain is a direct microscopy finding. Acid-fast organisms seen on smear do not identify the species or confirm <em>Mycobacterium tuberculosis</em> complex.</li>
+        <li>A negative CSF AFB smear does not exclude tuberculous meningitis or another mycobacterial infection, especially when organism burden is low.</li>
+        <li>When clinically indicated, interpret alongside CSF cell count, chemistry, culture and molecular testing, as well as the patient&rsquo;s clinical and imaging findings.</li>
+        <li>Culture, molecular identification and drug-susceptibility results are separate investigations and should be reported separately.</li>
+      </ul>
+    </div>
+  `;
+}
+
+function buildCsfFluidGramStainReportBody(test) {
+  const valueFor = (aliases, fallback = "-") => {
+    const parameter = findReportParameter(test, aliases) || {};
+    return String(parameter.value || "").trim() || fallback;
+  };
+  const specimen = valueFor(["Specimen / Collection Site", "Specimen", "Specimen Type", "Type of Specimen"], test.sample_type || "Cerebrospinal Fluid (CSF)");
+  const method = valueFor(["Smear Method / Preparation", "Gram Stain Method", "Method / Preparation", "Method"], "As reported by laboratory");
+  const inflammatoryCells = valueFor(["Inflammatory Cells / PMNs", "Inflammatory Cells", "PMNs", "Cellular Findings"]);
+  const findings = valueFor(["Gram Stain Findings", "Direct Gram Stain", "Gram Stain", "Findings", "Result"]);
+  const morphology = valueFor(["Gram Reaction / Bacterial Morphology", "Gram Reaction", "Bacterial Morphology", "Morphology"]);
+  const impression = valueFor(["Impression", "Interpretation"]);
+  const cultureStatus = valueFor(["Culture / Molecular Test Status", "Culture Status", "Molecular Test Status"], "Not part of this direct-stain report");
+  const comments = valueFor(["Comments", "Comment", "Remarks"], "");
+
+  return `
+    <table class="results-table csf-gram-stain-table">
+      <thead><tr><th style="width: 38%">Investigation</th><th style="width: 25%">Result / Findings</th><th style="width: 25%">Reference / Guide</th><th style="width: 12%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(specimen)}</td></tr>
+        <tr><td><strong>Smear Method / Preparation</strong></td><td colspan="3">${escapeHtml(method)}</td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>DIRECT MICROSCOPY</strong></td></tr>
+        <tr><td><strong>CSF GRAM STAIN FINDINGS</strong></td><td colspan="2" style="white-space: pre-wrap">${escapeHtml(findings).replace(/\r?\n/g, "<br />")}</td><td></td></tr>
+        <tr><td><strong>Gram Reaction / Bacterial Morphology</strong></td><td colspan="3" style="white-space: pre-wrap">${escapeHtml(morphology).replace(/\r?\n/g, "<br />")}</td></tr>
+        <tr><td><strong>Inflammatory Cells / PMNs</strong></td><td colspan="3" style="white-space: pre-wrap">${escapeHtml(inflammatoryCells).replace(/\r?\n/g, "<br />")}</td></tr>
+        <tr><td><strong>Impression</strong></td><td colspan="3" style="white-space: pre-wrap">${escapeHtml(impression).replace(/\r?\n/g, "<br />")}</td></tr>
+        <tr><td><strong>Culture / Molecular Test Status</strong></td><td colspan="3">${escapeHtml(cultureStatus)}</td></tr>
+        ${comments !== "-" ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space: pre-wrap">${escapeHtml(comments).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes csf-gram-stain-notes">
+      <div class="report-note-heading">Interpretation :</div>
+      <ul>
+        <li>Gram stain is a direct microscopy examination. It can describe bacteria and cellular material seen in the prepared CSF smear, but it does not provide definitive organism identification or antimicrobial susceptibility.</li>
+        <li>A negative CSF Gram stain does not exclude infection, particularly after prior antimicrobial treatment or when organism burden is low.</li>
+        <li>CSF bacterial culture is a separate investigation. Molecular testing and blood cultures may also be clinically indicated and should be reported separately.</li>
+        <li>Interpret the microscopy result with CSF cell count, glucose, protein, culture and the patient&rsquo;s clinical findings; this report alone does not establish or exclude meningitis.</li>
       </ul>
     </div>
   `;
@@ -6788,6 +8282,188 @@ function buildBodyFluidChlorideReportBody(test) {
   `;
 }
 
+function buildCsfFluidChlorideReportBody(test) {
+  const chloride = findReportParameter(test, [
+    "Chloride, CSF",
+    "CSF Chloride",
+    "Chloride, Cerebrospinal Fluid",
+    "Cerebrospinal Fluid Chloride",
+    "Chloride",
+    "Result",
+  ]) || {};
+  const collectionDateTime = findReportParameter(test, ["Collection Date / Time", "Collection Date and Time", "Collection Time"]) || {};
+  const appearance = findReportParameter(test, ["Appearance", "Fluid Appearance"]) || {};
+  const method = findReportParameter(test, ["Method / Analyzer", "Method", "Analyzer"]) || {};
+  const comments = findReportParameter(test, ["Comments", "Comment", "Remarks", "Clinical Interpretation"]) || {};
+  const textValue = parameter => String(parameter?.value ?? "").trim();
+  const value = textValue(chloride) || "-";
+  const configuredRange = String(chloride.normal_range ?? "").trim();
+  const range = configuredRange || "Laboratory-validated, age-specific reference interval";
+  const canClassify = configuredRange && !/laboratory-validated|age-specific|adult|infant/i.test(configuredRange);
+  const status = canClassify ? getReferenceStatus(value, configuredRange) : null;
+  const unit = String(chloride.unit ?? "").trim() || "mmol/L";
+
+  return `
+    <table class="results-table single-analyte-table csf-chloride-table">
+      <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference Interval</th><th style="width:14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">Cerebrospinal Fluid (CSF)</td></tr>
+        <tr><td><strong>Collection Date / Time</strong></td><td>${escapeHtml(textValue(collectionDateTime) || "-")}</td><td><strong>Appearance:</strong> ${escapeHtml(textValue(appearance) || "-")}</td><td></td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>CSF ELECTROLYTE</strong></td></tr>
+        <tr>
+          <td><strong>CHLORIDE, CEREBROSPINAL FLUID</strong><div class="single-analyte-method">${escapeHtml(textValue(method) || "Quantitative ion-selective electrode")}</div></td>
+          <td><span class="${status?.className || ""}">${escapeHtml(value)}</span>${status ? ` <span class="single-analyte-status ${status.className}">${status.label}</span>` : ""}</td>
+          <td>${escapeHtml(range)}</td>
+          <td>${escapeHtml(unit)}</td>
+        </tr>
+        ${textValue(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(textValue(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes csf-chloride-notes">
+      <div class="report-note-heading">Interpretation :</div>
+      <ul>
+        <li>Use the performing laboratory&rsquo;s age- and method-specific CSF chloride reference interval. Published intervals vary; an adult interval must not be applied to an infant result.</li>
+        <li>CSF chloride may vary with serum chloride status and should be interpreted with the clinical presentation and the relevant CSF studies.</li>
+        <li>CSF chloride is not recommended as a routine stand-alone test for suspected tuberculous meningitis. It does not replace CSF glucose, protein, cell count, microbiology, or other indicated diagnostic tests.</li>
+      </ul>
+      <div class="report-note-heading">Specimen Note :</div>
+      <p>Report the specimen specifically as cerebrospinal fluid. Use the laboratory&rsquo;s validated collection, transport, and analytical procedure for CSF electrolytes.</p>
+    </div>
+  `;
+}
+
+function buildCsfFluidProteinReportBody(test) {
+  const protein = findReportParameter(test, [
+    "Total Protein, CSF", "CSF Total Protein", "Protein, Cerebrospinal Fluid",
+    "Cerebrospinal Fluid Protein", "CSF Protein", "Protein", "Result",
+  ]) || {};
+  const collectionDateTime = findReportParameter(test, ["Collection Date / Time", "Collection Date and Time", "Collection Time"]) || {};
+  const appearance = findReportParameter(test, ["Appearance", "Fluid Appearance"]) || {};
+  const method = findReportParameter(test, ["Method / Analyzer", "Method", "Analyzer"]) || {};
+  const specimenQuality = findReportParameter(test, ["Specimen Quality / Blood Contamination", "Specimen Quality", "Blood Contamination"]) || {};
+  const comments = findReportParameter(test, ["Comments", "Comment", "Remarks", "Clinical Interpretation"]) || {};
+  const textValue = parameter => String(parameter?.value ?? "").trim();
+  const value = textValue(protein) || "-";
+  const configuredRange = String(protein.normal_range ?? "").trim();
+  const range = configuredRange || "Laboratory-validated, age-specific reference interval";
+  const canClassify = configuredRange && !/laboratory-validated|age-specific|adult|infant|neonat/i.test(configuredRange);
+  const status = canClassify ? getReferenceStatus(value, configuredRange) : null;
+  const unit = String(protein.unit ?? "").trim() || "mg/dL";
+
+  return `
+    <table class="results-table single-analyte-table csf-protein-table">
+      <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference Interval</th><th style="width:14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">Cerebrospinal Fluid (CSF)</td></tr>
+        <tr><td><strong>Collection Date / Time</strong></td><td>${escapeHtml(textValue(collectionDateTime) || "-")}</td><td><strong>Appearance:</strong> ${escapeHtml(textValue(appearance) || "-")}</td><td></td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>CSF BIOCHEMISTRY</strong></td></tr>
+        <tr>
+          <td><strong>TOTAL PROTEIN, CEREBROSPINAL FLUID</strong><div class="single-analyte-method">${escapeHtml(textValue(method) || "Laboratory-validated quantitative method")}</div></td>
+          <td><span class="${status?.className || ""}">${escapeHtml(value)}</span>${status ? ` <span class="single-analyte-status ${status.className}">${status.label}</span>` : ""}</td>
+          <td>${escapeHtml(range)}</td>
+          <td>${escapeHtml(unit)}</td>
+        </tr>
+        <tr><td><strong>Specimen Quality / Blood Contamination</strong></td><td colspan="3">${escapeHtml(textValue(specimenQuality) || "-")}</td></tr>
+        ${textValue(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(textValue(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes csf-protein-notes">
+      <div class="report-note-heading">Interpretation :</div>
+      <ul>
+        <li>Use the performing laboratory&rsquo;s age- and method-specific CSF protein reference interval. Published intervals vary substantially in neonates and infants and must not be interpreted using an adult interval.</li>
+        <li>An increased CSF total protein is sensitive but nonspecific. It may accompany inflammation, infection, hemorrhage, impaired blood&ndash;CSF barrier function, neoplastic processes, or other neurological conditions.</li>
+        <li>Blood contamination from a traumatic lumbar puncture or central nervous system hemorrhage can affect the result. Document specimen quality and interpret with the CSF red-cell count where available.</li>
+        <li>This result alone does not establish or exclude meningitis or another neurological diagnosis. Interpret alongside CSF cells, glucose, microbiology, clinical findings, and other indicated studies.</li>
+      </ul>
+    </div>
+  `;
+}
+
+function buildCsfFluidSpecificGravityReportBody(test) {
+  const gravity = findReportParameter(test, ["Specific Gravity, CSF", "CSF Specific Gravity", "Specific Gravity, Cerebrospinal Fluid", "Specific Gravity", "Result"]) || {};
+  const collectionDateTime = findReportParameter(test, ["Collection Date / Time", "Collection Date and Time", "Collection Time"]) || {};
+  const appearance = findReportParameter(test, ["Appearance", "Fluid Appearance"]) || {};
+  const method = findReportParameter(test, ["Method / Instrument", "Method / Analyzer", "Method", "Instrument"]) || {};
+  const specimenQuality = findReportParameter(test, ["Specimen Quality / Blood Contamination", "Specimen Quality", "Blood Contamination"]) || {};
+  const comments = findReportParameter(test, ["Comments", "Comment", "Remarks"]) || {};
+  const textValue = parameter => String(parameter?.value ?? "").trim();
+  const value = textValue(gravity) || "-";
+  const configuredRange = String(gravity.normal_range ?? "").trim();
+  const range = configuredRange || "Laboratory-validated, method-specific reference interval";
+  const canClassify = configuredRange && !/laboratory-validated|method-specific|adult|infant|neonat/i.test(configuredRange);
+  const status = canClassify ? getReferenceStatus(value, configuredRange) : null;
+
+  return `
+    <table class="results-table single-analyte-table csf-specific-gravity-table">
+      <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference Interval</th><th style="width:14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">Cerebrospinal Fluid (CSF)</td></tr>
+        <tr><td><strong>Collection Date / Time</strong></td><td>${escapeHtml(textValue(collectionDateTime) || "-")}</td><td><strong>Appearance:</strong> ${escapeHtml(textValue(appearance) || "-")}</td><td></td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>CSF PHYSICAL EXAMINATION</strong></td></tr>
+        <tr>
+          <td><strong>SPECIFIC GRAVITY, CEREBROSPINAL FLUID</strong><div class="single-analyte-method">${escapeHtml(textValue(method) || "Laboratory-validated refractometric method")}</div></td>
+          <td><span class="${status?.className || ""}">${escapeHtml(value)}</span>${status ? ` <span class="single-analyte-status ${status.className}">${status.label}</span>` : ""}</td>
+          <td>${escapeHtml(range)}</td><td></td>
+        </tr>
+        <tr><td><strong>Specimen Quality / Blood Contamination</strong></td><td colspan="3">${escapeHtml(textValue(specimenQuality) || "-")}</td></tr>
+        ${textValue(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(textValue(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes csf-specific-gravity-notes">
+      <div class="report-note-heading">Interpretation :</div>
+      <ul>
+        <li>CSF specific gravity is a physical measurement that must be interpreted using the laboratory&rsquo;s validated method, calibration, temperature conditions, and reference interval.</li>
+        <li>Published CSF specific-gravity values vary with method and source. A value from another laboratory or fluid type must not be substituted for the interval printed on this report.</li>
+        <li>Protein, cells, blood contamination, and other dissolved material can influence the measurement. Record specimen appearance and quality with the result.</li>
+        <li>Specific gravity alone does not establish or exclude infection, hemorrhage, or any neurological diagnosis; interpret with the complete CSF analysis and clinical findings.</li>
+      </ul>
+    </div>
+  `;
+}
+
+function buildCsfFluidGlucoseReportBody(test) {
+  const glucose = findReportParameter(test, ["Glucose, CSF", "CSF Glucose", "Sugar, CSF", "CSF Sugar", "Glucose", "Sugar", "Result"]) || {};
+  const serumGlucose = findReportParameter(test, ["Paired Serum / Plasma Glucose", "Serum Glucose", "Plasma Glucose", "Blood Glucose"]) || {};
+  const ratio = findReportParameter(test, ["CSF / Serum Glucose Ratio", "CSF-to-Serum Glucose Ratio", "CSF Serum Glucose Ratio"]) || {};
+  const collectionDateTime = findReportParameter(test, ["Collection Date / Time", "Collection Date and Time", "Collection Time"]) || {};
+  const method = findReportParameter(test, ["Method / Analyzer", "Method", "Analyzer"]) || {};
+  const comments = findReportParameter(test, ["Comments", "Comment", "Remarks", "Clinical Interpretation"]) || {};
+  const textValue = parameter => String(parameter?.value ?? "").trim();
+  const value = textValue(glucose) || "-";
+  const configuredRange = String(glucose.normal_range ?? "").trim();
+  const range = configuredRange || "Laboratory-validated, age-specific reference interval";
+  const canClassify = configuredRange && !/laboratory-validated|age-specific|serum|plasma/i.test(configuredRange);
+  const status = canClassify ? getReferenceStatus(value, configuredRange) : null;
+  const unit = String(glucose.unit ?? "").trim() || "mg/dL";
+  const ratioValue = textValue(ratio);
+  const calculatedRatio = (!ratioValue && Number.isFinite(Number.parseFloat(value)) && Number.parseFloat(textValue(serumGlucose)) > 0)
+    ? (Number.parseFloat(value) / Number.parseFloat(textValue(serumGlucose))).toFixed(2) : ratioValue || "-";
+
+  return `
+    <table class="results-table single-analyte-table csf-glucose-table">
+      <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">Cerebrospinal Fluid (CSF)</td></tr>
+        <tr><td><strong>Collection Date / Time</strong></td><td colspan="3">${escapeHtml(textValue(collectionDateTime) || "-")}</td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>CSF BIOCHEMISTRY</strong></td></tr>
+        <tr><td><strong>GLUCOSE, CEREBROSPINAL FLUID</strong><div class="single-analyte-method">${escapeHtml(textValue(method) || "Laboratory-validated quantitative method")}</div></td><td><span class="${status?.className || ""}">${escapeHtml(value)}</span>${status ? ` <span class="single-analyte-status ${status.className}">${status.label}</span>` : ""}</td><td>${escapeHtml(range)}</td><td>${escapeHtml(unit)}</td></tr>
+        <tr><td><strong>Paired Serum / Plasma Glucose</strong></td><td>${escapeHtml(textValue(serumGlucose) || "-")}</td><td>Collect as near-simultaneously as possible</td><td>${escapeHtml(String(serumGlucose.unit ?? "").trim() || unit)}</td></tr>
+        <tr><td><strong>CSF / Serum Glucose Ratio</strong></td><td>${escapeHtml(calculatedRatio)}</td><td>Laboratory-validated interpretation; paired sample required</td><td></td></tr>
+        ${textValue(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(textValue(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes csf-glucose-notes">
+      <div class="report-note-heading">Interpretation :</div>
+      <ul>
+        <li>CSF glucose should be interpreted with a paired serum or plasma glucose collected at approximately the same time. The CSF-to-serum ratio is more informative than an isolated CSF value when blood glucose is altered.</li>
+        <li>Use the performing laboratory&rsquo;s age- and method-specific interval. Published CSF-to-serum ratio guides vary; do not substitute a fixed cut-off for the laboratory&rsquo;s validated interpretation.</li>
+        <li>Delayed processing can lower CSF glucose. Document collection timing and follow the laboratory&rsquo;s specimen-handling requirements.</li>
+        <li>This result alone does not establish or exclude meningitis or another neurological diagnosis; interpret with CSF cells, protein, microbiology, and clinical findings.</li>
+      </ul>
+    </div>
+  `;
+}
+
 function buildBodyFluidBiochemistryReportBody(test) {
   const field = (aliases) => findReportParameter(test, aliases) || {};
   const value = parameter => String(parameter?.value ?? "").trim();
@@ -7043,6 +8719,148 @@ function buildBronchialWashingCultureSensitivityReportBody(test) {
   `;
 }
 
+function buildGonorrheaReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const textValue = parameter => String(parameter?.value ?? "").trim();
+  const multiline = parameter => escapeHtml(textValue(parameter) || "-").replace(/\r?\n/g, "<br />");
+  const specimen = field(["Specimen / Collection Site", "Specimen", "Collection Site", "Site"]);
+  const method = field(["Test Method (NAAT / Culture / Other)", "Test Method", "Method"]);
+  const result = field(["Neisseria gonorrhoeae Result", "Gonorrhea Result", "Gonorrhoea Result", "Result"]);
+  const microscopy = field(["Direct Microscopy / Gram Stain, if performed", "Direct Microscopy / Gram Stain", "Gram Stain"]);
+  const culture = field(["Culture / Identification Result, if performed", "Culture / Identification Result", "Culture Result"]);
+  const susceptibility = field(["Antimicrobial Susceptibility / MIC, if performed", "Antimicrobial Susceptibility / MIC", "Antibiotic Sensitivity", "Susceptibility"]);
+  const chlamydia = field(["Chlamydia Co-test Result, if ordered", "Chlamydia Co-test Result"]);
+  const reportStatus = field(["Report Status", "Status"]);
+  const comments = field(["Comments / Clinical Correlation", "Comments", "Comment", "Remarks"]);
+  return `
+    <table class="results-table gonorrhea-test-table" data-report-content="gonorrhea">
+      <thead><tr><th style="width:30%">Investigation</th><th style="width:30%">Result / Findings</th><th style="width:25%">Reference / Guide</th><th style="width:15%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen / Collection Site</strong></td><td colspan="3">${multiline(specimen)}</td></tr>
+        <tr><td><strong>Test Method</strong></td><td colspan="3">${multiline(method)}</td></tr>
+        <tr><td><strong>Report Status</strong></td><td colspan="3">${multiline(reportStatus)}</td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>NEISSERIA GONORRHOEAE DETECTION</strong></td></tr>
+        <tr><td><strong>Neisseria gonorrhoeae Result</strong><div class="single-analyte-method">Report only the validated method and specimen-specific result.</div></td><td>${multiline(result)}</td><td>${escapeHtml(String(result.normal_range || "").trim() || "Laboratory-validated qualitative interpretation")}</td><td></td></tr>
+        <tr><td><strong>Direct Microscopy / Gram Stain, if performed</strong></td><td colspan="3">${multiline(microscopy)}</td></tr>
+        <tr><td><strong>Culture / Identification Result, if performed</strong></td><td colspan="3">${multiline(culture)}</td></tr>
+        <tr><td><strong>Antimicrobial Susceptibility / MIC, if performed</strong></td><td colspan="3">${multiline(susceptibility)}</td></tr>
+        <tr><td><strong>Chlamydia Co-test Result, if ordered</strong></td><td colspan="3">${multiline(chlamydia)}</td></tr>
+        <tr><td><strong>Comments / Clinical Correlation</strong></td><td colspan="3">${multiline(comments)}</td></tr>
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes gonorrhea-test-notes"><div class="report-note-heading">Method note :</div><ul><li>State the anatomical collection site and the validated test method. NAAT and culture are separate methods; do not substitute one result for the other.</li><li>Culture and antimicrobial susceptibility are relevant only when they were actually performed on a recoverable isolate. A NAAT result does not provide antimicrobial susceptibility.</li><li>Direct microscopy must be interpreted for its specific specimen and clinical setting; it does not replace validated molecular or culture testing where those are indicated.</li><li>Report the laboratory result without inferring infection status from another site, an unperformed test, or a co-test.</li></ul></div>`;
+}
+
+function buildGramStainOfUrethralDischargeReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const multiline = parameter => escapeHtml(value(parameter) || "-").replace(/\r?\n/g, "<br />");
+  const rows = [
+    ["Smear method / preparation", field(["Smear Method / Preparation", "Gram Stain Method", "Method"]), "State the stain or preparation used"],
+    ["Inflammatory cells / PMNs", field(["Inflammatory Cells / PMNs", "PMNs", "Pus Cells"]), "Direct microscopy finding"],
+    ["Epithelial cells", field(["Epithelial Cells"]), "Direct microscopy finding"],
+    ["Gram stain findings / bacterial morphology", field(["Gram Stain Findings / Bacterial Morphology", "Gram Stain Findings", "Findings"]), "Describe only what is observed"],
+    ["Intracellular gram-negative diplococci, if observed", field(["Intracellular Gram-Negative Diplococci, if observed", "Intracellular Gram Negative Diplococci"]), "Report only if observed"],
+    ["Culture / NAAT correlation, if ordered", field(["Culture / NAAT Correlation, if ordered", "Culture / NAAT Correlation", "Culture / NAAT"]), "Separate requested investigation"],
+    ["Comments / clinical correlation", field(["Comments / Clinical Correlation", "Comments", "Comment", "Impression"]), ""],
+  ];
+  const specimen = field(["Specimen / Collection Site", "Specimen", "Collection Site"]);
+  return `<table class="results-table urethral-discharge-gram-stain-table" data-report-content="urethral-discharge-gram-stain"><thead><tr><th style="width:38%">Investigation</th><th style="width:22%">Result / finding</th><th style="width:28%">Reference / note</th><th style="width:12%">Unit</th></tr></thead><tbody><tr class="single-analyte-sample-row"><td><strong>Specimen / collection site</strong></td><td colspan="3">${multiline(specimen) || "Urethral discharge"}</td></tr><tr class="thyroid-antibodies-section"><td colspan="4"><strong>URETHRAL DISCHARGE - GRAM STAIN</strong></td></tr>${rows.map(([label, parameter, note]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${multiline(parameter)}</td><td colspan="2">${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes urethral-discharge-gram-stain-notes"><div class="report-note-heading">Microscopy note :</div><ul><li>This direct smear report describes the submitted urethral discharge only; record the collection site and observed morphology precisely.</li><li>Direct microscopy does not provide definitive species identification or antimicrobial susceptibility. Culture and nucleic-acid testing must be reported separately when performed.</li><li>A negative or non-specific smear finding must not be used alone to exclude infection; interpret with symptoms, collection quality, and the validated method.</li></ul></div>`;
+}
+
+function buildGeneralGramStainReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const multiline = parameter => escapeHtml(value(parameter) || "-").replace(/\r?\n/g, "<br />");
+  const rows = [
+    ["Smear method / preparation", field(["Smear Method / Preparation", "Gram Stain Method", "Method"]), "State the stain or preparation used"],
+    ["Inflammatory cells / PMNs", field(["Inflammatory Cells / PMNs", "PMNs", "Pus Cells"]), "Direct microscopy finding"],
+    ["Epithelial cells", field(["Epithelial Cells"]), "Direct microscopy finding"],
+    ["Gram-positive organisms / morphology, if seen", field(["Gram-Positive Organisms / Morphology, if seen", "Gram Positive Organisms", "Gram Positive Morphology"]), "Report only if seen"],
+    ["Gram-negative organisms / morphology, if seen", field(["Gram-Negative Organisms / Morphology, if seen", "Gram Negative Organisms", "Gram Negative Morphology"]), "Report only if seen"],
+    ["Yeast / fungal elements, if seen", field(["Yeast / Fungal Elements, if seen", "Yeast", "Fungal Elements"]), "Report only if seen"],
+    ["Overall gram stain findings", field(["Overall Gram Stain Findings", "Gram Stain Findings", "Findings", "Impression"]), "Describe only what is observed"],
+    ["Culture / other correlation, if ordered", field(["Culture / Other Correlation, if ordered", "Culture / Other Correlation", "Culture"]), "Separate requested investigation"],
+    ["Comments", field(["Comments", "Comment"]), ""],
+  ];
+  const specimen = field(["Specimen / Collection Site", "Specimen", "Collection Site"]);
+  return `<table class="results-table general-gram-stain-table" data-report-content="gram-stain-smears"><thead><tr><th style="width:38%">Investigation</th><th style="width:22%">Result / finding</th><th style="width:28%">Reference / note</th><th style="width:12%">Unit</th></tr></thead><tbody><tr class="single-analyte-sample-row"><td><strong>Specimen / collection site</strong></td><td colspan="3">${multiline(specimen)}</td></tr><tr class="thyroid-antibodies-section"><td colspan="4"><strong>GRAM STAIN OF SMEARS</strong></td></tr>${rows.map(([label, parameter, note]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${multiline(parameter)}</td><td colspan="2">${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes general-gram-stain-notes"><div class="report-note-heading">Microscopy note :</div><ul><li>Record the submitted specimen and direct microscopic observations exactly as seen. Do not infer an organism, susceptibility pattern, or infection site from morphology alone.</li><li>Culture, antigen, molecular, and susceptibility studies are separate investigations and must be reported only when they were requested and performed.</li><li>Interpret smear quality and findings with the collection site and clinical information.</li></ul></div>`;
+}
+
+function buildGeneralHealthCheckUpReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const rows = [
+    ["Complete blood count summary, if ordered", field(["Complete Blood Count Summary, if ordered", "Complete Blood Count Summary", "CBC Summary"])],
+    ["Glucose assessment, if ordered", field(["Glucose Assessment, if ordered", "Glucose Assessment"])],
+    ["HbA1c, if ordered", field(["HbA1c, if ordered", "HbA1c"])],
+    ["Lipid profile summary, if ordered", field(["Lipid Profile Summary, if ordered", "Lipid Profile Summary"])],
+    ["Liver function summary, if ordered", field(["Liver Function Summary, if ordered", "Liver Function Summary"])],
+    ["Renal function summary, if ordered", field(["Renal Function Summary, if ordered", "Renal Function Summary"])],
+    ["Thyroid assessment, if ordered", field(["Thyroid Assessment, if ordered", "Thyroid Assessment"])],
+    ["Urinalysis summary, if ordered", field(["Urinalysis Summary, if ordered", "Urinalysis Summary"])],
+    ["Other ordered investigations", field(["Other Ordered Investigations", "Other Investigations"])],
+    ["Laboratory comments / clinical correlation", field(["Laboratory Comments / Clinical Correlation", "Laboratory Comments", "Comments", "Comment"])],
+  ];
+  const collection = field(["Specimen(s) / Collection Conditions", "Specimens / Collection Conditions", "Collection Conditions"]);
+  return `<table class="results-table general-health-checkup-table" data-report-content="general-health-check-up"><thead><tr><th style="width:42%">Screening component</th><th style="width:58%">Reported result / summary</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="2"><strong>GENERAL HEALTH CHECK UP</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen(s) / collection conditions</strong></td><td>${escapeHtml(value(collection) || String(test?.sample_type || "").trim() || "State specimens and collection conditions").replace(/\r?\n/g, "<br />")}</td></tr>${rows.map(([label, parameter]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-").replace(/\r?\n/g, "<br />")}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes general-health-checkup-notes"><div class="report-note-heading">Screening note :</div><ul><li>This check-up is a summary only of investigations actually ordered and reported. Do not infer missing results, normality, or a diagnosis from an unperformed component.</li><li>Each component must retain its own laboratory-validated method, unit, reference interval, and interpretive comment in its individual result.</li><li>Clinical review should consider the patient&rsquo;s history, symptoms, medicines, and any prior results.</li></ul></div>`;
+}
+
+function buildHbdhReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const hbdh = field(["Alpha-Hydroxybutyrate Dehydrogenase (HBDH)", "Alpha-HBDH", "HBDH", "LDH-1", "Result"]);
+  const rows = [
+    ["Alpha-hydroxybutyrate dehydrogenase (HBDH)", hbdh, "Laboratory-validated, method-specific reference interval", "U/L"],
+    ["Method / analyzer", field(["Method / Analyzer", "Method", "Analyzer"]), "State the assay or platform used", ""],
+    ["Total LDH, if measured", field(["Total LDH, if measured", "Total LDH", "LDH"]), "Report only when measured on the same laboratory report", "U/L"],
+    ["HBDH / LDH ratio, if calculated", field(["HBDH / LDH Ratio, if calculated", "HBDH / LDH Ratio"]), "Calculated value; state formula or method when reported", ""],
+    ["Hemolysis / specimen quality comment", field(["Hemolysis / Specimen Quality Comment", "Hemolysis Comment", "Specimen Quality"]), "Document significant pre-analytical interference", ""],
+    ["Clinical context / indication", field(["Clinical Context / Indication", "Clinical Context", "Indication"]), "Clinical information supplied with the request", ""],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"]), "", ""],
+  ];
+  const specimen = field(["Specimen", "Specimen Type"]);
+  return `<table class="results-table hbdh-table" data-report-content="hbdh"><thead><tr><th style="width:38%">Analyte / report element</th><th style="width:22%">Result</th><th style="width:28%">Reference interval / note</th><th style="width:12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>ALPHA-HYDROXYBUTYRATE DEHYDROGENASE (HBDH / LDH-1)</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(specimen) || String(test?.sample_type || "").trim() || "Serum")}</td><td colspan="2">Serum or plasma only when validated by the performing laboratory</td></tr>${rows.map(([label, parameter, note, defaultUnit]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-").replace(/\r?\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim() || defaultUnit)}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes hbdh-notes"><div class="report-note-heading">Interpretation note :</div><ul><li>HBDH is an LDH isoenzyme-related activity measurement. Interpret it with the laboratory&rsquo;s assay-specific reference interval and, when available, total LDH and relevant clinical findings.</li><li>Do not use an isolated HBDH or HBDH/LDH result to diagnose a cardiac, haemolytic, renal, or other condition.</li><li>Haemolysis and specimen quality can affect enzyme activity measurements; apply the performing laboratory&rsquo;s pre-analytical acceptance criteria.</li></ul></div>`;
+}
+
+function buildGndCultureReportBody(test) {
+  if (isGonorrheaTest(test)) return buildGonorrheaReportBody(test);
+  if (isUrethralDischargeGramStainTest(test)) return buildGramStainOfUrethralDischargeReportBody(test);
+  if (isGeneralGramStainTest(test)) return buildGeneralGramStainReportBody(test);
+  if (isGeneralHealthCheckUpTest(test)) return buildGeneralHealthCheckUpReportBody(test);
+  if (isHbdhTest(test)) return buildHbdhReportBody(test);
+  if (isCysticFibrosisGeneMutationTest(test)) return buildCysticFibrosisGeneMutationReportBody(test);
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const textValue = parameter => String(parameter?.value ?? "").trim();
+  const multiline = parameter => escapeHtml(textValue(parameter) || "-").replace(/\r?\n/g, "<br />");
+  const specimen = field(["Specimen / Collection Site", "Specimen", "Collection Site", "Site"]);
+  const microscopy = field(["Direct Microscopy / Gram Stain", "Gram Stain", "Direct Smear"]);
+  const result = field(["Gonococcal Culture Result", "Culture Result", "Culture Status / Result", "Result"]);
+  const identification = field(["Organism Identification / Confirmation", "Organism Identification", "Identification / Confirmation", "Organism Isolated"]);
+  const susceptibility = field(["Antimicrobial Susceptibility / MIC", "Antimicrobial Susceptibility", "Antibiotic Sensitivity", "Drug Sensitivity", "Susceptibility"]);
+  const reportStatus = field(["Report Status", "Culture Report Status"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  const cultureValue = textValue(result) || "-";
+  const status = getReferenceStatus(cultureValue, result.normal_range || "No Neisseria gonorrhoeae isolated");
+  return `
+    <table class="results-table culture-table gnd-culture-table" data-report-content="gnd-culture">
+      <thead><tr><th style="width:30%">Investigation</th><th style="width:30%">Result / Findings</th><th style="width:25%">Reference / Guide</th><th style="width:15%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen / Collection Site</strong></td><td colspan="3">${multiline(specimen)}</td></tr>
+        <tr><td><strong>Report Status</strong></td><td colspan="3">${multiline(reportStatus)}</td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>DIRECT MICROSCOPY</strong></td></tr>
+        <tr><td><strong>Direct Microscopy / Gram Stain</strong></td><td colspan="3">${multiline(microscopy)}</td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>GONOCOCCAL CULTURE</strong></td></tr>
+        <tr><td><strong>Gonococcal Culture Result</strong><div class="single-analyte-method">Selective culture, identification and susceptibility testing as applicable</div></td><td><span class="${status?.className || ""}">${escapeHtml(cultureValue)}</span></td><td>${escapeHtml(result.normal_range || "No Neisseria gonorrhoeae isolated")}</td><td></td></tr>
+        <tr><td><strong>Organism Identification / Confirmation</strong></td><td colspan="3">${multiline(identification)}</td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>ANTIMICROBIAL SUSCEPTIBILITY</strong></td></tr>
+        <tr><td><strong>Antimicrobial / MIC / Interpretation</strong></td><td colspan="3" style="white-space:pre-wrap">${multiline(susceptibility)}</td></tr>
+        <tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${multiline(comments)}</td></tr>
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes gnd-culture-notes"><div class="report-note-heading">Interpretation :</div><ul><li>“G.N.D.” is reported here as a gonococcal culture request. Record the anatomical site because the significance and performance of culture vary by specimen source.</li><li>Gram-negative diplococci on direct microscopy are not by themselves a final culture identification. Confirmation must follow the laboratory&rsquo;s validated identification procedure.</li><li>No growth does not exclude infection; collection quality, prior antimicrobials, organism viability, transport, and incubation conditions can affect recovery.</li><li>Antimicrobial susceptibility applies only to the confirmed isolate tested. Culture remains important when susceptibility information is needed.</li></ul></div>`;
+}
+
 function buildDrugAllergyReportBody(test) {
   const result = findReportParameter(test, [
     "Drug-Specific IgE Result / Findings",
@@ -7295,7 +9113,7 @@ function getTorchProfileStatus(value, thresholds) {
 }
 
 function buildTorchProfileReportBody(test) {
-  if (isCmvIgmIggTest(test)) return buildCmvIgmIggReportBody(test);
+  if (isCmvIgmIggTest(test) || isCmvIggTest(test)) return buildCmvIgmIggReportBody(test);
   const definitions = [
     { label: "Toxoplasma IgG", aliases: ["Toxoplasma IgG", "Toxo IgG"], unit: "IU/mL", range: "< 7.20", thresholds: { negative: 7.2, equivocal: 8.8 }, interpretation: ["< 7.20", "7.20- <8.80", "≥8.80"] },
     { label: "Toxoplasma IgM", aliases: ["Toxoplasma IgM", "Toxo IgM"], unit: "AU/mL", range: "< 10.00", thresholds: { negative: 10 }, interpretation: ["< 10.00", "", "≥10.00"] },
@@ -7337,6 +9155,7 @@ function buildTorchProfileReportBody(test) {
 }
 
 function buildCmvIgmIggReportBody(test) {
+  if (isCmvIggTest(test)) return buildCmvIggReportBody(test);
   const definitions = [
     { label: "CYTOMEGALOVIRUS (CMV) IgM", aliases: ["Cytomegalovirus (CMV) IgM", "Cytomegalovirus IgM", "CMV IgM", "CMV IgM Antibody", "IgM Result", "Result IgM"] },
     { label: "CYTOMEGALOVIRUS (CMV) IgG", aliases: ["Cytomegalovirus (CMV) IgG", "Cytomegalovirus IgG", "CMV IgG", "CMV IgG Antibody", "IgG Result", "Result IgG"] },
@@ -7381,6 +9200,30 @@ function buildCmvIgmIggReportBody(test) {
       </ul>
     </div>
   `;
+}
+
+function buildCmvIggReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const result = field(["Cytomegalovirus (CMV) IgG", "Cytomegalovirus IgG", "CMV IgG", "CMV IgG Antibody", "Result"]);
+  const specimen = field(["Specimen", "Sample"]);
+  const method = field(["Method / Analyzer", "Method", "Analyzer"]);
+  const clinical = field(["Clinical Details / Indication", "Clinical Details", "Indication"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  const range = String(result.normal_range ?? "").trim() || "Laboratory-validated assay interpretation";
+  const resultValue = value(result) || "-";
+  return `
+    <table class="results-table single-analyte-table cmv-igg-table" data-report-content="cmv-igg">
+      <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(value(specimen) || test.sample_type || "Serum")}</td></tr>
+        <tr class="torch-profile-section"><td colspan="4"><strong>CYTOMEGALOVIRUS (CMV) IgG ANTIBODY</strong></td></tr>
+        <tr><td><strong>CYTOMEGALOVIRUS (CMV) IgG</strong><div class="single-analyte-method">${escapeHtml(value(method) || "Laboratory-validated CMV IgG immunoassay")}</div></td><td>${escapeHtml(resultValue)}</td><td>${escapeHtml(range)}</td><td>${escapeHtml(String(result.unit ?? "").trim())}</td></tr>
+        ${value(clinical) ? `<tr><td><strong>Clinical Details / Indication</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(clinical)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+        ${value(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes cmv-igg-notes"><div class="report-note-heading">Interpretation :</div><ul><li>A positive CMV IgG result indicates prior exposure or infection at some point; a single result does not establish the timing of infection or active CMV disease.</li><li>Use the assay-specific interpretation above. Equivocal results or suspected recent primary infection may require a follow-up specimen, paired serology, IgG avidity, or other testing according to the clinical context.</li><li>CMV antibody testing alone cannot diagnose congenital CMV infection. Molecular testing on the appropriate specimen is required when congenital infection is being evaluated.</li></ul></div>`;
 }
 
 function getTnfAlphaStatus(value) {
@@ -8023,6 +9866,187 @@ function buildCortisoneReportBody(test) {
       <p>Cortisone is one of the main hormone released by the adrenal gland in response to stress. Measurement of Cortisone is useful in diagnosing patients with low-renin hypertension caused by apparent mineralocorticoid excess. This may be due to either an inherited defect in 11HSDβ2 enzyme or an acquired inhibitor of the enzyme by such compounds as glycyrrhizic acid, a component of natural licorice. Suppressed cortisone levels may also be observed in Primary adrenal insufficiency.</p>
     </div>
   `;
+}
+
+function buildEveningCortisolReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const result = field(["Cortisol, Evening", "Evening Cortisol", "PM Cortisol", "Cortisol", "Result"]);
+  const collectionDateTime = field(["Collection Date / Time", "Collected At"]);
+  const collectionTime = field(["Collection Time", "Time of Collection"]);
+  const specimen = field(["Specimen", "Sample"]);
+  const method = field(["Method / Analyzer", "Method", "Analyzer"]);
+  const clinical = field(["Clinical Details / Indication", "Clinical Details", "Indication"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  const range = String(result.normal_range ?? "").trim() || "Laboratory-validated p.m. reference interval";
+  const status = /laboratory-validated|p\.m\./i.test(range) ? null : getReferenceStatus(value(result), range);
+  return `
+    <table class="results-table single-analyte-table hormone-table evening-cortisol-table" data-report-content="evening-cortisol">
+      <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference Interval</th><th style="width:14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(value(specimen) || test.sample_type || "Serum")}</td></tr>
+        <tr><td><strong>Collection Date / Time</strong></td><td colspan="3">${escapeHtml(value(collectionDateTime) || "-")}</td></tr>
+        <tr><td><strong>Collection Time</strong></td><td colspan="3">${escapeHtml(value(collectionTime) || "-")}</td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>EVENING CORTISOL</strong></td></tr>
+        <tr><td><strong>CORTISOL, EVENING</strong><div class="single-analyte-method">${escapeHtml(value(method) || "Laboratory-validated cortisol assay")}</div></td><td><span class="${status?.className || ""}">${escapeHtml(value(result) || "-")}</span>${status ? ` <span class="single-analyte-status ${status.className}">${status.label}</span>` : ""}</td><td>${escapeHtml(range)}</td><td>${escapeHtml(String(result.unit ?? "").trim() || "mcg/dL")}</td></tr>
+        ${value(clinical) ? `<tr><td><strong>Clinical Details / Indication</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(clinical)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+        ${value(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes evening-cortisol-notes"><div class="report-note-heading">Interpretation :</div><ul><li>Cortisol has a marked diurnal rhythm. The collection time and the laboratory&rsquo;s p.m.-specific reference interval are essential for interpretation.</li><li>Stress, acute illness, pregnancy, exogenous glucocorticoids, estrogen exposure, and changes in cortisol-binding proteins can affect total serum cortisol.</li><li>An evening cortisol result alone does not diagnose or exclude adrenal insufficiency or cortisol excess. Interpret with symptoms, medicines, collection timing, and any requested dynamic endocrine testing.</li></ul></div>`;
+}
+
+function buildMidnightCortisolReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const result = field(["Cortisol, Midnight", "Midnight Cortisol", "Late-Night Cortisol", "Cortisol", "Result"]);
+  const collectionDateTime = field(["Collection Date / Time", "Collected At"]);
+  const collectionTime = field(["Collection Time", "Time of Collection"]);
+  const specimen = field(["Specimen", "Sample"]);
+  const method = field(["Method / Analyzer", "Method", "Analyzer"]);
+  const clinical = field(["Clinical Details / Indication", "Clinical Details", "Indication"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  const range = String(result.normal_range ?? "").trim() || "Laboratory-validated late-night reference interval";
+  const status = /laboratory-validated|late-night/i.test(range) ? null : getReferenceStatus(value(result), range);
+  return `
+    <table class="results-table single-analyte-table hormone-table midnight-cortisol-table" data-report-content="midnight-cortisol">
+      <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference Interval</th><th style="width:14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(value(specimen) || test.sample_type || "-")}</td></tr>
+        <tr><td><strong>Collection Date / Time</strong></td><td colspan="3">${escapeHtml(value(collectionDateTime) || "-")}</td></tr>
+        <tr><td><strong>Collection Time</strong></td><td colspan="3">${escapeHtml(value(collectionTime) || "-")}</td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>MIDNIGHT CORTISOL</strong></td></tr>
+        <tr><td><strong>CORTISOL, MIDNIGHT</strong><div class="single-analyte-method">${escapeHtml(value(method) || "Laboratory-validated cortisol assay")}</div></td><td><span class="${status?.className || ""}">${escapeHtml(value(result) || "-")}</span>${status ? ` <span class="single-analyte-status ${status.className}">${status.label}</span>` : ""}</td><td>${escapeHtml(range)}</td><td>${escapeHtml(String(result.unit ?? "").trim() || "-")}</td></tr>
+        ${value(clinical) ? `<tr><td><strong>Clinical Details / Indication</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(clinical)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+        ${value(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes midnight-cortisol-notes"><div class="report-note-heading">Interpretation :</div><ul><li>Midnight cortisol must be interpreted using the stated specimen type, exact collection time, assay method, and the performing laboratory&rsquo;s late-night reference interval.</li><li>Cortisol normally reaches a low point late at night. Sleep schedule, stress, acute illness, alcohol, medicines, and exogenous glucocorticoids can affect the result.</li><li>A single midnight cortisol result does not establish or exclude Cushing syndrome or another cortisol disorder. Follow the requested testing protocol and correlate with clinical and specialist assessment.</li></ul></div>`;
+}
+
+function buildMorningEveningCortisolReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const morning = field(["Cortisol, Morning", "Morning Cortisol", "AM Cortisol"]);
+  const evening = field(["Cortisol, Evening", "Evening Cortisol", "PM Cortisol"]);
+  const morningTime = field(["Morning Collection Date / Time", "Morning Collection Time", "AM Collection Time"]);
+  const eveningTime = field(["Evening Collection Date / Time", "Evening Collection Time", "PM Collection Time"]);
+  const specimen = field(["Specimen", "Sample"]);
+  const method = field(["Method / Analyzer", "Method", "Analyzer"]);
+  const clinical = field(["Clinical Details / Indication", "Clinical Details", "Indication"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  const row = (label, parameter, collectedAt, fallbackRange) => {
+    const range = String(parameter.normal_range ?? "").trim() || fallbackRange;
+    const status = /laboratory-validated|a\.m\.|p\.m\./i.test(range) ? null : getReferenceStatus(value(parameter), range);
+    return `<tr><td><strong>${escapeHtml(label)}</strong><div class="single-analyte-method">Collected: ${escapeHtml(value(collectedAt) || "-")}</div></td><td><span class="${status?.className || ""}">${escapeHtml(value(parameter) || "-")}</span>${status ? ` <span class="single-analyte-status ${status.className}">${status.label}</span>` : ""}</td><td>${escapeHtml(range)}</td><td>${escapeHtml(String(parameter.unit ?? "").trim() || "mcg/dL")}</td></tr>`;
+  };
+  return `
+    <table class="results-table single-analyte-table hormone-table morning-evening-cortisol-table" data-report-content="morning-evening-cortisol">
+      <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference Interval</th><th style="width:14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(value(specimen) || test.sample_type || "Serum")}</td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>DIURNAL CORTISOL PROFILE</strong></td></tr>
+        ${row("CORTISOL, MORNING", morning, morningTime, "Laboratory-validated a.m. reference interval")}
+        ${row("CORTISOL, EVENING", evening, eveningTime, "Laboratory-validated p.m. reference interval")}
+        <tr><td><strong>Method / Analyzer</strong></td><td colspan="3">${escapeHtml(value(method) || "Laboratory-validated cortisol assay")}</td></tr>
+        ${value(clinical) ? `<tr><td><strong>Clinical Details / Indication</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(clinical)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+        ${value(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes morning-evening-cortisol-notes"><div class="report-note-heading">Interpretation :</div><ul><li>Morning and evening results must be interpreted separately using their stated collection times and the laboratory&rsquo;s time-specific reference intervals.</li><li>Cortisol normally has an early-morning peak and lower later-day concentration. The expected pattern can be altered by stress, acute illness, sleep disruption, medicines, pregnancy, estrogen exposure, and assay interference.</li><li>This paired profile does not independently diagnose or exclude an adrenal or pituitary disorder. Correlate with the clinical question and any requested endocrine dynamic testing.</li></ul></div>`;
+}
+
+function buildMorningCortisolReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const result = field(["Cortisol, Morning", "Morning Cortisol", "AM Cortisol", "Cortisol", "Result"]);
+  const collectionDateTime = field(["Collection Date / Time", "Collected At"]);
+  const collectionTime = field(["Collection Time", "Time of Collection"]);
+  const specimen = field(["Specimen", "Sample"]);
+  const method = field(["Method / Analyzer", "Method", "Analyzer"]);
+  const clinical = field(["Clinical Details / Indication", "Clinical Details", "Indication"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  const range = String(result.normal_range ?? "").trim() || "Laboratory-validated a.m. reference interval";
+  const status = /laboratory-validated|a\.m\./i.test(range) ? null : getReferenceStatus(value(result), range);
+  return `
+    <table class="results-table single-analyte-table hormone-table morning-cortisol-table" data-report-content="morning-cortisol">
+      <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference Interval</th><th style="width:14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(value(specimen) || test.sample_type || "Serum")}</td></tr>
+        <tr><td><strong>Collection Date / Time</strong></td><td colspan="3">${escapeHtml(value(collectionDateTime) || "-")}</td></tr>
+        <tr><td><strong>Collection Time</strong></td><td colspan="3">${escapeHtml(value(collectionTime) || "-")}</td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>MORNING CORTISOL</strong></td></tr>
+        <tr><td><strong>CORTISOL, MORNING</strong><div class="single-analyte-method">${escapeHtml(value(method) || "Laboratory-validated cortisol assay")}</div></td><td><span class="${status?.className || ""}">${escapeHtml(value(result) || "-")}</span>${status ? ` <span class="single-analyte-status ${status.className}">${status.label}</span>` : ""}</td><td>${escapeHtml(range)}</td><td>${escapeHtml(String(result.unit ?? "").trim() || "mcg/dL")}</td></tr>
+        ${value(clinical) ? `<tr><td><strong>Clinical Details / Indication</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(clinical)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+        ${value(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes morning-cortisol-notes"><div class="report-note-heading">Interpretation :</div><ul><li>Cortisol has a marked diurnal rhythm. The morning collection time and the laboratory&rsquo;s a.m.-specific reference interval are essential for interpretation.</li><li>Stress, acute illness, pregnancy, exogenous glucocorticoids, estrogen exposure, and changes in cortisol-binding proteins can affect total serum cortisol.</li><li>A morning cortisol result alone does not diagnose or exclude adrenal insufficiency or cortisol excess. Interpret with symptoms, medicines, collection timing, and any requested dynamic endocrine testing.</li></ul></div>`;
+}
+
+function buildMorningEveningMidnightCortisolReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const morning = field(["Cortisol, Morning", "Morning Cortisol", "AM Cortisol"]);
+  const evening = field(["Cortisol, Evening", "Evening Cortisol", "PM Cortisol"]);
+  const midnight = field(["Cortisol, Midnight", "Midnight Cortisol", "Late-Night Cortisol"]);
+  const morningTime = field(["Morning Collection Date / Time", "Morning Collection Time", "AM Collection Time"]);
+  const eveningTime = field(["Evening Collection Date / Time", "Evening Collection Time", "PM Collection Time"]);
+  const midnightTime = field(["Midnight Collection Date / Time", "Midnight Collection Time", "Late-Night Collection Time"]);
+  const specimen = field(["Specimen", "Sample"]);
+  const method = field(["Method / Analyzer", "Method", "Analyzer"]);
+  const clinical = field(["Clinical Details / Indication", "Clinical Details", "Indication"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  const row = (label, parameter, collectedAt, fallbackRange, fallbackUnit) => {
+    const range = String(parameter.normal_range ?? "").trim() || fallbackRange;
+    const status = /laboratory-validated|a\.m\.|p\.m\.|late-night/i.test(range) ? null : getReferenceStatus(value(parameter), range);
+    return `<tr><td><strong>${escapeHtml(label)}</strong><div class="single-analyte-method">Collected: ${escapeHtml(value(collectedAt) || "-")}</div></td><td><span class="${status?.className || ""}">${escapeHtml(value(parameter) || "-")}</span>${status ? ` <span class="single-analyte-status ${status.className}">${status.label}</span>` : ""}</td><td>${escapeHtml(range)}</td><td>${escapeHtml(String(parameter.unit ?? "").trim() || fallbackUnit)}</td></tr>`;
+  };
+  return `
+    <table class="results-table single-analyte-table hormone-table morning-evening-midnight-cortisol-table" data-report-content="morning-evening-midnight-cortisol">
+      <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference Interval</th><th style="width:14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(value(specimen) || test.sample_type || "Serum")}</td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>DIURNAL CORTISOL PROFILE</strong></td></tr>
+        ${row("CORTISOL, MORNING", morning, morningTime, "Laboratory-validated a.m. reference interval", "mcg/dL")}
+        ${row("CORTISOL, EVENING", evening, eveningTime, "Laboratory-validated p.m. reference interval", "mcg/dL")}
+        ${row("CORTISOL, MIDNIGHT", midnight, midnightTime, "Laboratory-validated late-night reference interval", "-")}
+        <tr><td><strong>Method / Analyzer</strong></td><td colspan="3">${escapeHtml(value(method) || "Laboratory-validated cortisol assay")}</td></tr>
+        ${value(clinical) ? `<tr><td><strong>Clinical Details / Indication</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(clinical)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+        ${value(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes morning-evening-midnight-cortisol-notes"><div class="report-note-heading">Interpretation :</div><ul><li>Each cortisol result must be interpreted with its own collection time, specimen type, assay method, and laboratory-specific reference interval.</li><li>Cortisol normally peaks in the early morning and declines later in the day, reaching a low point late at night. Stress, illness, sleep disruption, medicines, pregnancy, estrogen exposure, and assay interference can affect this pattern.</li><li>This profile does not independently diagnose or exclude an adrenal, pituitary, or cortisol-excess disorder. Correlate with clinical findings and the requested endocrine testing protocol.</li></ul></div>`;
+}
+
+function buildCryoglobulinsScreeningReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const screen = field(["Cryoglobulin Screen", "Cryoglobulins Screen", "Cryoglobulin Screening Result", "Cryoglobulins", "Result"]);
+  const cryocrit = field(["Cryoprecipitate / Cryocrit", "Cryocrit", "Cryoprecipitate", "Cryoglobulin Concentration"]);
+  const observation = field(["Incubation / Observation Period", "Observation Period", "Incubation Period"]);
+  const specimen = field(["Specimen", "Sample"]);
+  const temperature = field(["Collection / Transport Temperature", "Collection Temperature", "Transport Temperature", "Specimen Handling"]);
+  const method = field(["Method / Analyzer", "Method", "Analyzer"]);
+  const comments = field(["Comments / Reflex Testing", "Comments", "Comment", "Remarks", "Reflex Testing"]);
+  const screenRange = String(screen.normal_range ?? "").trim() || "Negative";
+  const screenValue = value(screen) || "-";
+  const status = /^(negative|not detected)$/i.test(screenValue) ? { className: "status-normal", label: "Negative" }
+    : /^(positive|detected|present)$/i.test(screenValue) ? { className: "status-high", label: "Detected" } : null;
+  return `
+    <table class="results-table single-analyte-table cryoglobulins-screening-table" data-report-content="cryoglobulins-screening">
+      <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(value(specimen) || test.sample_type || "Serum")}</td></tr>
+        <tr><td><strong>Collection / Transport Temperature</strong></td><td colspan="3">${escapeHtml(value(temperature) || "Per laboratory cryoglobulin handling protocol")}</td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>CRYOGLOBULINS SCREEN</strong></td></tr>
+        <tr><td><strong>CRYOGLOBULIN SCREEN</strong><div class="single-analyte-method">${escapeHtml(value(method) || "Laboratory-validated cold-precipitation method")}</div></td><td><span class="${status?.className || ""}">${escapeHtml(screenValue)}</span>${status ? ` <span class="single-analyte-status ${status.className}">${status.label}</span>` : ""}</td><td>${escapeHtml(screenRange)}</td><td></td></tr>
+        <tr><td><strong>CRYOPRECIPITATE / CRYOCRIT</strong></td><td>${escapeHtml(value(cryocrit) || "-")}</td><td>${escapeHtml(String(cryocrit.normal_range ?? "").trim() || "Report when detected / quantified")}</td><td>${escapeHtml(String(cryocrit.unit ?? "").trim() || "%")}</td></tr>
+        <tr><td><strong>INCUBATION / OBSERVATION PERIOD</strong></td><td colspan="3">${escapeHtml(value(observation) || "Laboratory-validated protocol")}</td></tr>
+        ${value(comments) ? `<tr><td><strong>Comments / Reflex Testing</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes cryoglobulins-screening-notes"><div class="report-note-heading">Interpretation :</div><ul><li>Cryoglobulins are proteins that may precipitate on cooling and redissolve on warming. A positive screen should be interpreted with the laboratory&rsquo;s reporting criteria, clinical features, and any confirmatory characterization performed.</li><li>Strict warm collection, clotting, separation, and transport conditions are essential. Inappropriate specimen handling may produce a false-negative result.</li><li>A negative screen does not independently exclude a clinically suspected cryoglobulinemic disorder. If the screen is positive, additional characterization such as immunofixation may be performed according to the laboratory&rsquo;s protocol.</li></ul></div>`;
 }
 
 function buildAntiTpoReportBody(test) {
@@ -9744,6 +11768,312 @@ function buildBronchialPapCytologyReportBody(test) {
   `;
 }
 
+function buildClostridioidesDifficileToxinReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {}; const value = p => String(p?.value ?? "").trim();
+  const toxin = field(["C. difficile Toxin A/B", "C. difficile Toxin", "Clostridioides difficile Toxin", "Result"]); const specimen = field(["Specimen / Consistency", "Specimen", "Stool Consistency"]);
+  const method = field(["Method / Assay", "Method", "Assay"]); const gdh = field(["GDH Antigen (If Performed)", "GDH Antigen", "GDH"]); const naat = field(["NAAT / PCR (If Performed)", "NAAT", "PCR"]); const comments = field(["Comments / Limitations", "Comments", "Limitations"]);
+  const row = (label, p, range = "Not reported") => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(p) || "-")}</td><td>${escapeHtml(String(p.normal_range ?? "").trim() || range)}</td><td></td></tr>`;
+  return `<table class="results-table single-analyte-table c-diff-toxin-table" data-report-content="c-diff-toxin"><thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead><tbody><tr class="single-analyte-sample-row"><td><strong>Specimen / Consistency</strong></td><td colspan="3">${escapeHtml(value(specimen) || test.sample_type || "Stool")}</td></tr><tr class="thyroid-antibodies-section"><td colspan="4"><strong>CLOSTRIDIOIDES DIFFICILE TOXIN DETECTION</strong></td></tr>${row("C. difficile Toxin A/B", toxin, "Not detected")}${row("GDH Antigen (If Performed)", gdh)}${row("NAAT / PCR (If Performed)", naat)}<tr><td><strong>Method / Assay</strong></td><td colspan="3">${escapeHtml(value(method) || "Laboratory-validated toxin assay")}</td></tr>${value(comments) ? `<tr><td><strong>Comments / Limitations</strong></td><td colspan="3">${escapeHtml(value(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}</tbody></table><div class="single-analyte-notes report-template-notes c-diff-toxin-notes"><div class="report-note-heading">Interpretation :</div><ul><li>Interpret this toxin result only with compatible symptoms and an appropriate unformed stool specimen. A laboratory result alone does not establish C. difficile infection.</li><li>Toxin EIAs can be less sensitive than molecular or multistep testing. Where used, interpret GDH and NAAT/PCR results only if actually performed and reported.</li><li>C. difficile toxin is unstable at room temperature; delayed testing or improper storage can cause false-negative results. Do not use this report as a test of cure or infer colonization, severity, or treatment response.</li></ul></div>`;
+}
+
+function buildTotalCholesterolReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const total = field(["Total Cholesterol", "Cholesterol Total", "Cholesterol", "Result"]);
+  const specimen = field(["Specimen", "Sample"]);
+  const fasting = field(["Fasting Status", "Fasting"]);
+  const method = field(["Method / Analyzer", "Method", "Analyzer"]);
+  const hdl = field(["HDL Cholesterol (If Performed)", "HDL Cholesterol", "HDL"]);
+  const ldl = field(["LDL Cholesterol (If Performed)", "LDL Cholesterol", "LDL"]);
+  const triglycerides = field(["Triglycerides (If Performed)", "Triglycerides"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  const optionalRow = (label, parameter) => value(parameter) ? `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter))}</td><td>${escapeHtml(String(parameter.normal_range ?? "").trim() || "Laboratory-validated interval")}</td><td>${escapeHtml(String(parameter.unit ?? "").trim() || "mg/dL")}</td></tr>` : "";
+  return `
+    <table class="results-table single-analyte-table total-cholesterol-table" data-report-content="total-cholesterol"><thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Classification</th><th style="width:14%">Unit</th></tr></thead><tbody>
+      <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(value(specimen) || test.sample_type || "Serum")}</td></tr>
+      <tr class="thyroid-antibodies-section"><td colspan="4"><strong>TOTAL CHOLESTEROL</strong></td></tr>
+      <tr><td><strong>Total Cholesterol</strong></td><td>${escapeHtml(value(total) || "-")}</td><td>${escapeHtml(String(total.normal_range ?? "").trim() || "< 200")}</td><td>${escapeHtml(String(total.unit ?? "").trim() || "mg/dL")}</td></tr>
+      <tr><td><strong>Fasting Status</strong></td><td colspan="3">${escapeHtml(value(fasting) || "Not reported")}</td></tr>
+      <tr><td><strong>Method / Analyzer</strong></td><td colspan="3">${escapeHtml(value(method) || "Laboratory-validated enzymatic assay")}</td></tr>
+      ${optionalRow("HDL Cholesterol (If Performed)", hdl)}${optionalRow("LDL Cholesterol (If Performed)", ldl)}${optionalRow("Triglycerides (If Performed)", triglycerides)}
+      ${value(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3">${escapeHtml(value(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+    </tbody></table>
+    <div class="single-analyte-notes report-template-notes total-cholesterol-notes"><div class="report-note-heading">Interpretation :</div><ul><li>For adults, total cholesterol below 200 mg/dL is commonly used as a screening benchmark. Use the performing laboratory&rsquo;s interval and interpret results with age, clinical history, and cardiovascular risk.</li><li>Total cholesterol includes multiple lipoprotein fractions. It should not be used alone to assign cardiovascular risk or a treatment target; correlate with HDL, LDL, triglycerides, non-HDL cholesterol, and clinical risk assessment when available.</li><li>Do not infer fasting status, LDL cholesterol, non-HDL cholesterol, or a lipid-profile result unless it was measured or calculated and reported.</li></ul></div>`;
+}
+
+function build24HourUrineChlorideReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const chloride = field(["Urine Chloride, 24 Hour", "Urine Chloride", "Chloride", "Result"]);
+  const start = field(["Collection Start Date / Time", "Collection Start", "Start Date / Time"]);
+  const end = field(["Collection End Date / Time", "Collection End", "End Date / Time"]);
+  const duration = field(["Collection Duration", "Duration"]);
+  const volume = field(["Total Urine Volume", "Urine Volume", "Total Volume"]);
+  const method = field(["Method / Analyzer", "Method", "Analyzer"]);
+  const completeness = field(["Collection Completeness / Comments", "Collection Completeness", "Comments", "Remarks"]);
+  return `
+    <table class="results-table single-analyte-table urine-chloride-24-hour-table" data-report-content="urine-chloride-24-hour"><thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference Interval</th><th style="width:14%">Unit</th></tr></thead><tbody>
+      <tr class="single-analyte-sample-row"><td><strong>Specimen / Collection</strong></td><td colspan="3">${escapeHtml(test.sample_type || "24-hour urine collection")}</td></tr>
+      <tr class="thyroid-antibodies-section"><td colspan="4"><strong>24-HOUR URINE ELECTROLYTE</strong></td></tr>
+      <tr><td><strong>Urine Chloride, 24 Hour</strong></td><td>${escapeHtml(value(chloride) || "-")}</td><td>${escapeHtml(String(chloride.normal_range ?? "").trim() || "110 - 250")}</td><td>${escapeHtml(String(chloride.unit ?? "").trim() || "mmol/24 h")}</td></tr>
+      <tr><td><strong>Collection Start Date / Time</strong></td><td colspan="3">${escapeHtml(value(start) || "-")}</td></tr>
+      <tr><td><strong>Collection End Date / Time</strong></td><td colspan="3">${escapeHtml(value(end) || "-")}</td></tr>
+      <tr><td><strong>Collection Duration</strong></td><td colspan="3">${escapeHtml(value(duration) || "24 hours")}</td></tr>
+      <tr><td><strong>Total Urine Volume</strong></td><td>${escapeHtml(value(volume) || "-")}</td><td></td><td>${escapeHtml(String(volume.unit ?? "").trim() || "mL")}</td></tr>
+      <tr><td><strong>Method / Analyzer</strong></td><td colspan="3">${escapeHtml(value(method) || "Laboratory-validated electrolyte method")}</td></tr>
+      <tr><td><strong>Collection Completeness / Comments</strong></td><td colspan="3">${escapeHtml(value(completeness) || "Not reported")}</td></tr>
+    </tbody></table>
+    <div class="single-analyte-notes report-template-notes urine-chloride-24-hour-notes"><div class="report-note-heading">Interpretation :</div><ul><li>This is a timed 24-hour urinary chloride measurement. Results depend on dietary salt and fluid intake; use the performing laboratory&rsquo;s stated interval and collection requirements.</li><li>Interpret with collection duration and completeness, total urine volume, clinical context, and related serum or urine electrolytes when relevant. An incomplete or incorrectly timed collection can make a total daily result unreliable.</li><li>Do not compare this total daily excretion directly with a random urine chloride concentration, or infer a specific renal, gastrointestinal, or acid-base diagnosis from this result alone.</li></ul></div>`;
+}
+
+function buildSerumChlorideReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const chloride = field(["Serum Chloride", "Chloride", "Result"]);
+  const specimen = field(["Specimen", "Sample"]);
+  const method = field(["Method / Analyzer", "Method", "Analyzer"]);
+  const sodium = field(["Serum Sodium", "Sodium"]);
+  const potassium = field(["Serum Potassium", "Potassium"]);
+  const bicarbonate = field(["Serum Bicarbonate / Total CO2", "Bicarbonate / Total CO2", "Bicarbonate", "Total CO2", "CO2"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  const relatedRow = (label, parameter, unit = "mmol/L") => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "Not reported")}</td><td>${escapeHtml(String(parameter.normal_range ?? "").trim() || "Laboratory-validated interval")}</td><td>${escapeHtml(String(parameter.unit ?? "").trim() || unit)}</td></tr>`;
+  return `
+    <table class="results-table single-analyte-table serum-chloride-table" data-report-content="serum-chloride"><thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference Interval</th><th style="width:14%">Unit</th></tr></thead><tbody>
+      <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(value(specimen) || test.sample_type || "Serum")}</td></tr>
+      <tr class="thyroid-antibodies-section"><td colspan="4"><strong>SERUM ELECTROLYTE</strong></td></tr>
+      <tr><td><strong>Serum Chloride</strong></td><td>${escapeHtml(value(chloride) || "-")}</td><td>${escapeHtml(String(chloride.normal_range ?? "").trim() || "98 - 107")}</td><td>${escapeHtml(String(chloride.unit ?? "").trim() || "mmol/L")}</td></tr>
+      <tr><td><strong>Method / Analyzer</strong></td><td colspan="3">${escapeHtml(value(method) || "Laboratory-validated electrolyte method")}</td></tr>
+      ${relatedRow("Serum Sodium", sodium)}
+      ${relatedRow("Serum Potassium", potassium)}
+      ${relatedRow("Serum Bicarbonate / Total CO2", bicarbonate)}
+      ${value(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3">${escapeHtml(value(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+    </tbody></table>
+    <div class="single-analyte-notes report-template-notes serum-chloride-notes"><div class="report-note-heading">Interpretation :</div><ul><li>Serum chloride is an electrolyte assessed with sodium, potassium, bicarbonate/total carbon dioxide, fluid balance, and acid-base status. Use the interval reported by the performing laboratory; intervals and methods may differ between laboratories.</li><li>An isolated result should be interpreted in clinical context, including fluid losses or gains, kidney function, medicines, and related electrolytes. It does not by itself establish the cause of an electrolyte or acid-base disorder.</li><li>Do not infer an anion gap, acid-base diagnosis, or treatment requirement unless the necessary measured results and clinical assessment are available.</li></ul></div>`;
+}
+
+function buildRandomUrineChlorideReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const chloride = field(["Urine Chloride", "Chloride", "Result"]);
+  const specimen = field(["Specimen / Collection Type", "Specimen", "Collection Type"]);
+  const collection = field(["Collection Date / Time", "Collection Date and Time", "Collection Time"]);
+  const method = field(["Method / Analyzer", "Method", "Analyzer"]);
+  const serum = field(["Concurrent Serum Electrolytes / Bicarbonate", "Serum Electrolytes / Bicarbonate", "Concurrent Serum Electrolytes"]);
+  const urineElectrolytes = field(["Urine Sodium / Potassium (If Performed)", "Urine Sodium / Potassium", "Urine Electrolytes"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  return `
+    <table class="results-table single-analyte-table random-urine-chloride-table" data-report-content="random-urine-chloride"><thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead><tbody>
+      <tr class="single-analyte-sample-row"><td><strong>Specimen / Collection Type</strong></td><td colspan="3">${escapeHtml(value(specimen) || test.sample_type || "Random urine")}</td></tr>
+      <tr class="thyroid-antibodies-section"><td colspan="4"><strong>RANDOM URINE ELECTROLYTE</strong></td></tr>
+      <tr><td><strong>Urine Chloride</strong></td><td>${escapeHtml(value(chloride) || "-")}</td><td>${escapeHtml(String(chloride.normal_range ?? "").trim() || "Laboratory-validated interpretation; random urine reference interval not established")}</td><td>${escapeHtml(String(chloride.unit ?? "").trim() || "mmol/L")}</td></tr>
+      <tr><td><strong>Collection Date / Time</strong></td><td colspan="3">${escapeHtml(value(collection) || "-")}</td></tr>
+      <tr><td><strong>Method / Analyzer</strong></td><td colspan="3">${escapeHtml(value(method) || "Laboratory-validated electrolyte method")}</td></tr>
+      <tr><td><strong>Concurrent Serum Electrolytes / Bicarbonate</strong></td><td colspan="3">${escapeHtml(value(serum) || "Not reported")}</td></tr>
+      <tr><td><strong>Urine Sodium / Potassium (If Performed)</strong></td><td colspan="3">${escapeHtml(value(urineElectrolytes) || "Not reported")}</td></tr>
+      ${value(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3">${escapeHtml(value(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+    </tbody></table>
+    <div class="single-analyte-notes report-template-notes random-urine-chloride-notes"><div class="report-note-heading">Interpretation :</div><ul><li>Random urine chloride is concentration-dependent and influenced by dietary salt intake, hydration, renal handling, medicines, and collection timing. Do not apply a 24-hour urine chloride reference interval to this random result.</li><li>Interpret alongside the clinical setting and, where relevant, serum electrolytes, bicarbonate, urine sodium, urine potassium, and acid-base assessment. This result alone does not determine the cause of an electrolyte or acid-base disturbance.</li><li>Do not calculate chloride excretion, fractional excretion, or assign a volume-status diagnosis unless the required measured values and collection details are available and reported.</li></ul></div>`;
+}
+
+function buildChlamydiaAntigenReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const antigen = field(["Chlamydia trachomatis Antigen", "Chlamydia Antigen", "Result"]);
+  const specimen = field(["Specimen / Collection Site", "Specimen", "Collection Site"]);
+  const collection = field(["Collection Date / Time", "Collection Date and Time", "Collection Time"]);
+  const method = field(["Method / Kit / Analyzer", "Method", "Kit", "Analyzer"]);
+  const control = field(["Assay Control Status", "Control Status", "Assay Control"]);
+  const naat = field(["NAAT Result (If Performed)", "NAAT Result", "Direct Detection / NAAT Result (If Performed)"]);
+  const comments = field(["Comments / Limitations", "Comments", "Limitations", "Remarks"]);
+  return `
+    <table class="results-table single-analyte-table chlamydia-antigen-table" data-report-content="chlamydia-antigen"><thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead><tbody>
+      <tr class="single-analyte-sample-row"><td><strong>Specimen / Collection Site</strong></td><td colspan="3">${escapeHtml(value(specimen) || test.sample_type || "-")}</td></tr>
+      <tr class="thyroid-antibodies-section"><td colspan="4"><strong>CHLAMYDIA TRACHOMATIS ANTIGEN DETECTION</strong></td></tr>
+      <tr><td><strong>Chlamydia trachomatis Antigen</strong></td><td>${escapeHtml(value(antigen) || "-")}</td><td>${escapeHtml(String(antigen.normal_range ?? "").trim() || "Laboratory-validated assay interpretation")}</td><td></td></tr>
+      <tr><td><strong>Collection Date / Time</strong></td><td colspan="3">${escapeHtml(value(collection) || "-")}</td></tr>
+      <tr><td><strong>Method / Kit / Analyzer</strong></td><td colspan="3">${escapeHtml(value(method) || "Laboratory-validated antigen assay")}</td></tr>
+      <tr><td><strong>Assay Control Status</strong></td><td colspan="3">${escapeHtml(value(control) || "Not reported")}</td></tr>
+      <tr><td><strong>NAAT Result (If Performed)</strong></td><td colspan="3">${escapeHtml(value(naat) || "Not reported")}</td></tr>
+      ${value(comments) ? `<tr><td><strong>Comments / Limitations</strong></td><td colspan="3">${escapeHtml(value(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+    </tbody></table>
+    <div class="single-analyte-notes report-template-notes chlamydia-antigen-notes"><div class="report-note-heading">Interpretation :</div><ul><li>This report records the result of the stated antigen assay on the submitted specimen. It is not an antibody-serology result and it is not a nucleic-acid amplification test (NAAT) result.</li><li>For routine diagnosis of urogenital <em>Chlamydia trachomatis</em> infection, use a validated NAAT on an appropriate specimen where available. Interpret this antigen result only with the assay&rsquo;s validated performance, specimen site, collection quality, and clinical context.</li><li>Do not infer organism viability, antimicrobial susceptibility, anatomical involvement, or a NAAT result unless it was actually performed and reported. Repeat or confirmatory testing should follow the laboratory&rsquo;s procedure and local clinical guidance.</li></ul></div>`;
+}
+
+function buildChlamydiaAntibodyIggIgmReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const igg = field(["Chlamydia trachomatis IgG", "Chlamydia IgG", "IgG"]);
+  const igm = field(["Chlamydia trachomatis IgM", "Chlamydia IgM", "IgM", "Result"]);
+  const specimen = field(["Specimen", "Sample"]);
+  const method = field(["Method / Analyzer", "Method", "Analyzer"]);
+  const clinical = field(["Clinical Details / Indication", "Clinical Details", "Clinical History", "Indication"]);
+  const directDetection = field(["Direct Detection / NAAT Result (If Performed)", "NAAT Result", "Direct Detection", "Chlamydia Trachomatis Results"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  const row = (label, parameter) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-")}</td><td>${escapeHtml(String(parameter.normal_range ?? "").trim() || "Laboratory-validated assay interpretation")}</td><td></td></tr>`;
+  return `
+    <table class="results-table single-analyte-table chlamydia-antibody-igg-igm-table" data-report-content="chlamydia-antibody-igg-igm"><thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead><tbody>
+      <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(value(specimen) || test.sample_type || "Serum")}</td></tr>
+      <tr class="thyroid-antibodies-section"><td colspan="4"><strong>CHLAMYDIA TRACHOMATIS ANTIBODY SEROLOGY</strong></td></tr>
+      ${row("Chlamydia trachomatis IgG", igg)}
+      ${row("Chlamydia trachomatis IgM", igm)}
+      <tr><td><strong>Clinical Details / Indication</strong></td><td colspan="3">${escapeHtml(value(clinical) || "-")}</td></tr>
+      <tr><td><strong>Method / Analyzer</strong></td><td colspan="3">${escapeHtml(value(method) || "Laboratory-validated serologic assay")}</td></tr>
+      <tr><td><strong>Direct Detection / NAAT Result (If Performed)</strong></td><td colspan="3">${escapeHtml(value(directDetection) || "Not reported")}</td></tr>
+      ${value(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3">${escapeHtml(value(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+    </tbody></table>
+    <div class="single-analyte-notes report-template-notes chlamydia-antibody-igg-igm-notes"><div class="report-note-heading">Interpretation :</div><ul><li>Chlamydia antibody results reflect a systemic immune response. IgG may persist after prior exposure, and an IgM result alone does not establish an active uncomplicated genital <em>Chlamydia trachomatis</em> infection.</li><li>For diagnosis of current urogenital infection, use a validated direct-detection test such as NAAT on the appropriate specimen. Correlate any serology result with the assay instructions, clinical indication, and other laboratory findings.</li><li>Do not infer active infection, anatomical site, treatment response, or a direct-detection result unless it was actually performed and reported. Specialist or public-health consultation may be appropriate for selected complex presentations.</li></ul></div>`;
+}
+
+function buildChikungunyaIgmReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const igm = field(["Chikungunya Virus IgM", "Chikungunya IgM", "Result"]);
+  const igg = field(["Chikungunya Virus IgG", "Chikungunya IgG"]);
+  const specimen = field(["Specimen", "Sample"]);
+  const method = field(["Method / Analyzer", "Method", "Analyzer"]);
+  const days = field(["Days Since Symptom Onset", "Days of Illness"]);
+  const clinical = field(["Clinical Details / Travel History", "Clinical Details", "Travel History"]);
+  const confirmation = field(["Confirmatory Neutralizing Antibody Test / Referral", "Confirmatory Neutralizing Antibody Test", "Confirmatory Test", "Referral"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  const row = (label, parameter, range = "Laboratory-validated assay interpretation") => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-")}</td><td>${escapeHtml(String(parameter.normal_range ?? "").trim() || range)}</td><td></td></tr>`;
+  return `
+    <table class="results-table single-analyte-table chikungunya-igm-table" data-report-content="chikungunya-igm"><thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead><tbody>
+      <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(value(specimen) || test.sample_type || "Serum")}</td></tr>
+      <tr class="thyroid-antibodies-section"><td colspan="4"><strong>CHIKUNGUNYA VIRUS SEROLOGY</strong></td></tr>
+      ${row("CHIKUNGUNYA VIRUS IgM", igm)}
+      ${row("Chikungunya Virus IgG", igg)}
+      <tr><td><strong>Days Since Symptom Onset</strong></td><td colspan="3">${escapeHtml(value(days) || "-")}</td></tr>
+      <tr><td><strong>Clinical Details / Travel History</strong></td><td colspan="3">${escapeHtml(value(clinical) || "-")}</td></tr>
+      <tr><td><strong>Method / Analyzer</strong></td><td colspan="3">${escapeHtml(value(method) || "Laboratory-validated serologic assay")}</td></tr>
+      <tr><td><strong>Confirmatory Neutralizing Antibody Test / Referral</strong></td><td colspan="3">${escapeHtml(value(confirmation) || "Not reported")}</td></tr>
+      ${value(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3">${escapeHtml(value(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+    </tbody></table>
+    <div class="single-analyte-notes report-template-notes chikungunya-igm-notes"><div class="report-note-heading">Interpretation :</div><ul><li>A reactive chikungunya virus-specific IgM screen supports recent infection only in the appropriate clinical and epidemiologic context; it is not a stand-alone confirmation.</li><li>False-positive or cross-reactive serologic results can occur. Confirmatory neutralizing antibody testing or public-health referral may be appropriate according to the laboratory and local guidance.</li><li>During the first week of illness, viral RNA testing is generally preferred; record days since symptom onset and do not infer molecular or confirmatory results that were not performed.</li></ul></div>`;
+}
+
+function buildChikungunyaIggReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const igg = field(["Chikungunya Virus IgG", "Chikungunya IgG", "Result"]);
+  const igm = field(["Chikungunya Virus IgM", "Chikungunya IgM"]);
+  const specimen = field(["Specimen", "Sample"]);
+  const method = field(["Method / Analyzer", "Method", "Analyzer"]);
+  const days = field(["Days Since Symptom Onset", "Days of Illness"]);
+  const clinical = field(["Clinical Details / Travel History", "Clinical Details", "Travel History"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  const row = (label, parameter, range = "Laboratory-validated assay interpretation") => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-")}</td><td>${escapeHtml(String(parameter.normal_range ?? "").trim() || range)}</td><td></td></tr>`;
+  return `
+    <table class="results-table single-analyte-table chikungunya-igg-table" data-report-content="chikungunya-igg"><thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead><tbody>
+      <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(value(specimen) || test.sample_type || "Serum")}</td></tr>
+      <tr class="thyroid-antibodies-section"><td colspan="4"><strong>CHIKUNGUNYA VIRUS SEROLOGY</strong></td></tr>
+      ${row("CHIKUNGUNYA VIRUS IgG", igg)}
+      ${row("Chikungunya Virus IgM", igm)}
+      <tr><td><strong>Days Since Symptom Onset</strong></td><td colspan="3">${escapeHtml(value(days) || "-")}</td></tr>
+      <tr><td><strong>Clinical Details / Travel History</strong></td><td colspan="3">${escapeHtml(value(clinical) || "-")}</td></tr>
+      <tr><td><strong>Method / Analyzer</strong></td><td colspan="3">${escapeHtml(value(method) || "Laboratory-validated serologic assay")}</td></tr>
+      ${value(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3">${escapeHtml(value(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+    </tbody></table>
+    <div class="single-analyte-notes report-template-notes chikungunya-igg-notes"><div class="report-note-heading">Interpretation :</div><ul><li>An isolated IgG result can indicate prior exposure or immune response and does not by itself establish acute chikungunya virus disease.</li><li>Interpret serology with symptom-onset timing, clinical features, exposure or travel history, and the assay&rsquo;s validated interpretation. During the early acute phase, viral RNA testing is generally more appropriate.</li><li>Do not infer an IgM, neutralizing-antibody, molecular, or confirmatory result unless it is reported. Consider confirmatory or paired-sample testing where clinically or epidemiologically indicated.</li></ul></div>`;
+}
+
+function buildCervicalSwabAfbStainReportBody(test) {
+  const value = aliases => String(findReportParameter(test, aliases)?.value ?? "").trim();
+  const narrative = aliases => escapeHtml(value(aliases) || "-").replace(/\r?\n/g, "<br />");
+  const specimen = value(["Specimen / Collection Site", "Specimen", "Collection Site"]) || test.sample_type || "Cervical swab";
+  return `
+    <div class="cervical-swab-afb-stain-report" data-report-content="cervical-swab-afb-stain">
+      <table class="results-table cervical-swab-afb-stain-table"><thead><tr><th style="width:31%">Section / Parameter</th><th style="width:69%">Findings</th></tr></thead><tbody>
+        <tr class="thyroid-antibodies-section"><td colspan="2"><strong>SPECIMEN AND AFB DIRECT MICROSCOPY</strong></td></tr>
+        <tr><td><strong>Specimen / Collection Site</strong></td><td>${escapeHtml(specimen)}</td></tr>
+        <tr><td><strong>Collection Date / Time</strong></td><td>${narrative(["Collection Date / Time", "Collection Time"])}</td></tr>
+        <tr><td><strong>Stain Method</strong></td><td>${narrative(["Stain Method", "Method", "Preparation / Stain Method"])}</td></tr>
+        <tr><td><strong>AFB Smear Microscopy Result</strong></td><td>${narrative(["AFB Smear Microscopy Result", "AFB Result", "Result"])}</td></tr>
+        <tr><td><strong>AFB Smear Grade / Quantitation</strong></td><td>${narrative(["AFB Smear Grade / Quantitation", "AFB Grade", "Grade / Quantitation"])}</td></tr>
+        <tr><td><strong>Specimen Adequacy / Volume</strong></td><td>${narrative(["Specimen Adequacy / Volume", "Specimen Adequacy", "Adequacy / Volume"])}</td></tr>
+        <tr><td><strong>Microscopy Remarks</strong></td><td>${narrative(["Microscopy Remarks", "Remarks", "Microscopy"])}</td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="2"><strong>CONFIRMATORY TESTING / LIMITATIONS</strong></td></tr>
+        <tr><td><strong>Culture / Molecular Test Status</strong></td><td>${narrative(["Culture / Molecular Test Status", "Culture Status", "Molecular Test Status", "NAAT Status"])}</td></tr>
+        <tr><td><strong>Comments / Limitations</strong></td><td>${narrative(["Comments / Limitations", "Comments", "Limitations", "Notes"])}</td></tr>
+      </tbody></table>
+      <div class="single-analyte-notes report-template-notes cervical-swab-afb-stain-notes"><div class="report-note-heading">Interpretation :</div><ul><li>An AFB smear is direct microscopy only. It does not identify the species or confirm <em>Mycobacterium tuberculosis</em>; nontuberculous mycobacteria and other acid-fast material may be seen.</li><li>A negative smear does not exclude mycobacterial infection. Culture and validated molecular testing should be correlated where clinically indicated.</li><li>Report the specimen site, stain method, and smear grade exactly as performed. Do not infer culture, molecular, or drug-susceptibility results from microscopy.</li></ul></div>
+    </div>`;
+}
+
+function buildCervicalSwabGramStainReportBody(test) {
+  const value = aliases => String(findReportParameter(test, aliases)?.value ?? "").trim();
+  const narrative = aliases => escapeHtml(value(aliases) || "-").replace(/\r?\n/g, "<br />");
+  const specimen = value(["Specimen / Collection Site", "Specimen", "Collection Site"]) || test.sample_type || "Cervical swab";
+  return `
+    <div class="cervical-swab-gram-stain-report" data-report-content="cervical-swab-gram-stain">
+      <table class="results-table cervical-swab-gram-stain-table">
+        <thead><tr><th style="width:31%">Section / Parameter</th><th style="width:69%">Findings</th></tr></thead>
+        <tbody>
+          <tr class="thyroid-antibodies-section"><td colspan="2"><strong>SPECIMEN AND DIRECT MICROSCOPY</strong></td></tr>
+          <tr><td><strong>Specimen / Collection Site</strong></td><td>${escapeHtml(specimen)}</td></tr>
+          <tr><td><strong>Collection Date / Time</strong></td><td>${narrative(["Collection Date / Time", "Collection Time"])}</td></tr>
+          <tr><td><strong>Smear Preparation / Stain Method</strong></td><td>${narrative(["Smear Preparation / Stain Method", "Smear Method / Preparation", "Stain Method", "Method"])}</td></tr>
+          <tr><td><strong>Inflammatory Cells / PMNs</strong></td><td>${narrative(["Inflammatory Cells / PMNs", "Inflammatory Cells", "PMNs", "Pus Cells"])}</td></tr>
+          <tr><td><strong>Epithelial Cells / Clue Cells</strong></td><td>${narrative(["Epithelial Cells / Clue Cells", "Epithelial Cells", "Clue Cells"])}</td></tr>
+          <tr><td><strong>Gram Stain Findings</strong></td><td>${narrative(["Gram Stain Findings", "Direct Gram Stain", "Microscopy Findings", "Result"])}</td></tr>
+          <tr><td><strong>Gram Reaction / Morphology</strong></td><td>${narrative(["Gram Reaction / Morphology", "Gram Reaction", "Morphology"])}</td></tr>
+          <tr class="thyroid-antibodies-section"><td colspan="2"><strong>INTERPRETATION AND CORRELATION</strong></td></tr>
+          <tr><td><strong>Nugent Score (If Performed)</strong></td><td>${narrative(["Nugent Score (If Performed)", "Nugent Score"])}</td></tr>
+          <tr><td><strong>Impression</strong></td><td>${narrative(["Impression", "Interpretation", "Conclusion"])}</td></tr>
+          <tr><td><strong>Culture / NAAT Correlation</strong></td><td>${narrative(["Culture / NAAT Correlation", "Culture Correlation", "NAAT Correlation", "Culture / Molecular Test Status"])}</td></tr>
+          <tr><td><strong>Comments / Limitations</strong></td><td>${narrative(["Comments / Limitations", "Comments", "Limitations", "Notes"])}</td></tr>
+        </tbody>
+      </table>
+      <div class="single-analyte-notes report-template-notes cervical-swab-gram-stain-notes">
+        <div class="report-note-heading">Interpretation :</div>
+        <ul>
+          <li>Record direct microscopy separately from culture or nucleic-acid testing. A Gram stain describes what is seen on the submitted smear; it does not provide definitive organism identification or antimicrobial susceptibility.</li>
+          <li>A Nugent score is applicable only when the laboratory has performed and documented the validated vaginal Gram-stain scoring method. Do not enter or infer a score for a cervical swab if that method was not performed.</li>
+          <li>Increased inflammatory cells on an endocervical Gram stain are not a standardized or sufficiently sensitive test for chlamydia or gonorrhoea. Use validated NAAT or culture where clinically indicated.</li>
+        </ul>
+      </div>
+    </div>
+  `;
+}
+
+function buildCervicalPapSmearReportBody(test) {
+  const value = aliases => String(findReportParameter(test, aliases)?.value ?? "").trim();
+  const narrative = aliases => escapeHtml(value(aliases) || "-").replace(/\r?\n/g, "<br />");
+  const specimen = value(["Specimen / Collection Site", "Specimen", "Collection Site"]) || test.sample_type || "Cervical smear";
+  return `
+    <div class="cervical-pap-smear-report" data-report-content="cervical-pap-smear">
+      <table class="results-table cervical-pap-smear-table">
+        <thead><tr><th style="width:31%">Section / Parameter</th><th style="width:69%">Findings</th></tr></thead>
+        <tbody>
+          <tr class="thyroid-antibodies-section"><td colspan="2"><strong>SPECIMEN AND SCREENING DETAILS</strong></td></tr>
+          <tr><td><strong>Specimen / Collection Site</strong></td><td>${escapeHtml(specimen)}</td></tr>
+          <tr><td><strong>Collection Date / Time</strong></td><td>${narrative(["Collection Date / Time", "Collection Date and Time", "Collection Time"])}</td></tr>
+          <tr><td><strong>Clinical Details / Screening History</strong></td><td>${narrative(["Clinical Details / Screening History", "Clinical Details", "Screening History", "Clinical History"])}</td></tr>
+          <tr><td><strong>Preparation / Stain Method</strong></td><td>${narrative(["Preparation / Stain Method", "Preparation / Stains", "Stain Method", "Method"])}</td></tr>
+          <tr class="thyroid-antibodies-section"><td colspan="2"><strong>SPECIMEN ADEQUACY</strong></td></tr>
+          <tr><td><strong>Specimen Adequacy</strong></td><td>${narrative(["Specimen Adequacy", "Adequacy"])}</td></tr>
+          <tr><td><strong>Transformation Zone / Endocervical Component</strong></td><td>${narrative(["Transformation Zone / Endocervical Component", "Transformation Zone", "Endocervical Component"])}</td></tr>
+          <tr class="thyroid-antibodies-section"><td colspan="2"><strong>CERVICAL CYTOLOGY INTERPRETATION</strong></td></tr>
+          <tr><td><strong>General Categorization</strong></td><td>${narrative(["General Categorization", "Category"])}</td></tr>
+          <tr><td><strong>Epithelial Cell Abnormality / Cytologic Interpretation</strong></td><td>${narrative(["Epithelial Cell Abnormality / Cytologic Interpretation", "Cytologic Interpretation", "Pap Diagnosis", "Diagnosis", "Interpretation", "Result"])}</td></tr>
+          <tr><td><strong>Additional Findings / Organisms</strong></td><td>${narrative(["Additional Findings / Organisms", "Additional Cytologic Findings", "Other Findings", "Organisms"])}</td></tr>
+          <tr><td><strong>HPV Test / Ancillary Studies</strong></td><td>${narrative(["HPV Test / Ancillary Studies", "High Risk HPV Result", "HPV Result", "Ancillary Studies"])}</td></tr>
+          <tr class="thyroid-antibodies-section"><td colspan="2"><strong>CONCLUSION</strong></td></tr>
+          <tr><td><strong>Recommendations / Follow-up</strong></td><td>${narrative(["Recommendations / Follow-up", "Recommendations", "Follow-up", "Advice"])}</td></tr>
+          <tr><td><strong>Comments / Limitations</strong></td><td>${narrative(["Comments / Limitations", "Comments", "Limitations", "Notes"])}</td></tr>
+        </tbody>
+      </table>
+      <div class="single-analyte-notes report-template-notes cervical-pap-smear-notes">
+        <div class="report-note-heading">Reporting Note :</div>
+        <ul>
+          <li>Report specimen adequacy before interpretation. A specimen may be unsatisfactory when there are insufficient cells or when blood, mucus, inflammation, or poor preparation obscures evaluation.</li>
+          <li>Use the laboratory&rsquo;s approved cervical-cytology terminology. A negative result may be reported as negative for intraepithelial lesion or malignancy (NILM); do not add a cytologic category, HPV result, organism, or recommendation unless it was actually assessed and documented.</li>
+          <li>An abnormal Pap result does not by itself establish cervical cancer. Follow-up depends on the exact cytology result, HPV status where available, previous screening history, age, symptoms, and current clinical guidance.</li>
+        </ul>
+      </div>
+    </div>
+  `;
+}
+
 // Reporting structure follows ICSH bone-marrow examination guidance:
 // https://onlinelibrary.wiley.com/doi/full/10.1111/ijlh.70214
 // https://www.icsh.org/guidelines-for-the-standardization-of-bone-marrow-specimens-and-reports
@@ -9918,6 +12248,7 @@ function formatHistopathologyText(value) {
 function getHistopathologyTitle(test) {
   const name = normalizeParameterName(test?.name);
   const code = normalizeParameterName(test?.code);
+  if (isHistologyBiopsyPerSectionTest(test)) return "HISTOLOGY BIOPSY - PER SECTION";
   if (isMediumSectionBiopsyTest(test)) return "HISTOPATHOLOGY - BIOPSY (MEDIUM SECTION)";
   if (isSmallSectionBiopsyTest(test)) return "HISTOPATHOLOGY - BIOPSY (SMALL SECTION)";
   if (code === "colonbio001" || name.includes("colonoscopy") || name.includes("polypectomy")) return "HISTOPATHOLOGY COLONOSCOPY WITH POLYPECTOMY BIOPSY";
@@ -10183,8 +12514,21 @@ function buildAldehydeTestReportBody(test) {
 function buildTyphidotReportBody(test) {
   if (isAldehydeTest(test)) return buildAldehydeTestReportBody(test);
   if (isAnfQualitativeTest(test)) return buildAnfQualitativeReportBody(test);
+  if (isHdvAntibodyTest(test)) return buildHdvAntibodyReportBody(test);
+  if (isHevTotalAntibodyTest(test)) return buildHevTotalAntibodyReportBody(test);
+  if (isHlaB27Test(test)) return buildHlaB27ReportBody(test);
+  if (isHangingDropPreparationTest(test)) return buildHangingDropPreparationReportBody(test);
   if (isHbsAgTest(test)) return buildHbsAgReportBody(test);
   if (isAntiHbcIgmTest(test)) return buildAntiHbcIgmReportBody(test);
+  if (isHepatitisBVirusTreatmentFollowUpTest(test)) return buildHepatitisBVirusTreatmentFollowUpReportBody(test);
+  if (isHepatitisProfileTest(test)) return buildHepatitisProfileReportBody(test);
+  if (isHomocystineBloodTest(test)) return buildHomocystineReportBody(test, "blood");
+  if (isHomocystineUrineTest(test)) return buildHomocystineReportBody(test, "urine");
+  if (isHypertensionProfileTest(test)) return buildHypertensionProfileReportBody(test);
+  if (isHsv1IgmTest(test)) return buildHsv1IgmReportBody(test);
+  if (isHsv1IggTest(test)) return buildHsv1IggReportBody(test);
+  if (isHsv2IgmTest(test)) return buildHsv2IgmReportBody(test);
+  if (isHsv2IggTest(test)) return buildHsv2IggReportBody(test);
   if (isHepatitisBProfileTest(test)) return buildHepatitisBProfileReportBody(test);
   if (isMantouxTest(test)) return buildMantouxReportBody(test);
   if (isHiv12ScreeningTest(test)) return buildHiv12ScreeningReportBody(test);
@@ -10235,6 +12579,103 @@ function buildTyphidotReportBody(test) {
   `;
 }
 
+function buildHdvAntibodyReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const antibody = field(["Anti-HDV Antibody", "HDV Antibody", "Hepatitis D Virus Antibody", "Result"]);
+  const rows = [
+    ["Anti-HDV antibody", antibody, "Laboratory-validated qualitative interpretation", ""],
+    ["Assay / method", field(["Assay / Method", "Method", "Assay"]), "State the assay or platform used", ""],
+    ["HBsAg status, if available", field(["HBsAg Status, if available", "HBsAg Status", "HBsAg"]), "HDV requires hepatitis B surface antigen for propagation", ""],
+    ["HDV RNA, if performed", field(["HDV RNA, if performed", "HDV RNA"]), "Report only if performed", ""],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"]), "", ""],
+  ];
+  const specimen = field(["Specimen", "Specimen Type"]);
+  return `<table class="results-table hdv-antibody-table" data-report-content="hdv-antibody"><thead><tr><th style="width:38%">Analyte / report element</th><th style="width:22%">Result</th><th style="width:28%">Reference interval / note</th><th style="width:12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>HEPATITIS D VIRUS (HDV) ANTIBODY</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(specimen) || String(test?.sample_type || "").trim() || "Serum")}</td><td colspan="2">Serum or plasma, as validated by the laboratory</td></tr>${rows.map(([label, parameter, note, unit]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-").replace(/\r?\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim() || unit)}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes hdv-antibody-notes"><div class="report-note-heading">Interpretation note :</div><ul><li>Anti-HDV antibody detection indicates exposure or immune response to HDV; it does not by itself establish active viraemic infection.</li><li>Interpret results with hepatitis B serology. HDV RNA testing is used to assess active HDV viraemia when clinically indicated.</li><li>Use the performing laboratory&rsquo;s validated assay interpretation and correlate with clinical and epidemiological information.</li></ul></div>`;
+}
+
+function buildHevTotalAntibodyReportBody(test) {
+  if (isHevAntibodyIgmTest(test)) return buildHevAntibodyIgmReportBody(test);
+  if (isHevAntibodyIggTest(test)) return buildHevAntibodyIggReportBody(test);
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const total = field(["Total Anti-HEV (IgG + IgM)", "HEV Total (IgG + IgM)", "HEV Total Antibody", "Result"]);
+  const rows = [
+    ["Total anti-HEV (IgG + IgM)", total, "Laboratory-validated qualitative interpretation", ""],
+    ["Assay / method", field(["Assay / Method", "Method", "Assay"]), "State the assay or platform used", ""],
+    ["Anti-HEV IgM, if performed", field(["Anti-HEV IgM, if performed", "HEV IgM", "Anti-HEV IgM"]), "Report only if separately performed", ""],
+    ["HEV RNA, if performed", field(["HEV RNA, if performed", "HEV RNA"]), "Report only if performed", ""],
+    ["Exposure or symptom timing, if provided", field(["Exposure or Symptom Timing, if provided", "Exposure Timing", "Clinical Context"]), "Clinical information supplied with the request", ""],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"]), "", ""],
+  ];
+  const specimen = field(["Specimen", "Specimen Type"]);
+  return `<table class="results-table hev-total-antibody-table" data-report-content="hev-total-antibody"><thead><tr><th style="width:38%">Analyte / report element</th><th style="width:22%">Result</th><th style="width:28%">Reference interval / note</th><th style="width:12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>HEPATITIS E VIRUS (HEV) TOTAL ANTIBODY (IgG + IgM)</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(specimen) || String(test?.sample_type || "").trim() || "Serum")}</td><td colspan="2">Serum or plasma, as validated by the laboratory</td></tr>${rows.map(([label, parameter, note, unit]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-").replace(/\r?\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim() || unit)}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes hev-total-antibody-notes"><div class="report-note-heading">Interpretation note :</div><ul><li>Total anti-HEV combines IgG and IgM antibody detection and should not be used alone to determine acute HEV infection.</li><li>When recent hepatitis E is suspected, interpret with a separately measured anti-HEV IgM result and clinical timing; HEV RNA may be required in selected situations.</li><li>Interpret with liver tests, symptoms, exposure history, and the performing laboratory&rsquo;s validated assay information.</li></ul></div>`;
+}
+
+function buildHevAntibodyIggReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const antibody = field(["Anti-HEV IgG", "HEV Antibody IgG", "Hepatitis E Virus (HEV) Antibody IgG", "HEV IgG", "Result"]);
+  const rows = [
+    ["Anti-HEV IgG", antibody, "Reactive / Non-reactive / Indeterminate"],
+    ["Assay / method", field(["Assay / Method", "Method", "Assay"]), "State the assay or platform used"],
+    ["Signal / cutoff index, if reported", field(["Signal / Cutoff Index, if reported", "Cutoff Index", "COI", "Signal / Cutoff"]), "Assay-specific; do not apply across methods"],
+    ["Anti-HEV IgM, if performed", field(["Anti-HEV IgM, if performed", "HEV IgM", "Anti-HEV IgM"]), "Report only if separately performed"],
+    ["HEV RNA, if performed", field(["HEV RNA, if performed", "HEV RNA"]), "Report only if performed"],
+    ["Exposure or symptom timing, if provided", field(["Exposure or Symptom Timing, if provided", "Exposure Timing", "Symptom Timing"]), "Clinical information supplied with the request"],
+    ["Immunocompromised status, if relevant", field(["Immunocompromised Status, if relevant", "Immunocompromised Status"]), "May affect antibody detection"],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"]), ""],
+  ];
+  const specimen = field(["Specimen", "Specimen Type"]);
+  return `<table class="results-table hev-antibody-igg-table" data-report-content="hev-antibody-igg"><thead><tr><th style="width:38%">Analyte / report element</th><th style="width:22%">Result</th><th style="width:28%">Reference interval / note</th><th style="width:12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>HEPATITIS E VIRUS (HEV) ANTIBODY IgG</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(specimen) || String(test?.sample_type || "").trim() || "Serum / Plasma")}</td><td colspan="2">Serum or plasma, as validated by the performing laboratory</td></tr>${rows.map(([label, parameter, note], index) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${index === 0 ? `<span class="${getQualitativeResultStatus(value(parameter))?.className || ""}">${escapeHtml(value(parameter) || "-")}</span>` : escapeHtml(value(parameter) || "-").replace(/\r?\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim())}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes hev-antibody-igg-notes"><div class="report-note-heading">Interpretation note :</div><ul><li>A reactive anti-HEV IgG result indicates antibody detection and is commonly consistent with previous exposure; it must not alone establish current or recent hepatitis E infection.</li><li>When recent hepatitis E is suspected, interpret with a separately measured anti-HEV IgM result, exposure timing, liver tests, and symptoms.</li><li>HEV RNA testing may be required in selected situations, including when active infection needs clarification.</li><li>A non-reactive result may occur before seroconversion after recent exposure or in immunocompromised patients.</li></ul></div>`;
+}
+
+function buildHevAntibodyIgmReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const antibody = field(["Anti-HEV IgM", "HEV Antibody IgM", "Hepatitis E Virus (HEV) Antibody IgM", "HEV IgM", "Result"]);
+  const rows = [
+    ["Anti-HEV IgM", antibody, "Reactive / Non-reactive / Indeterminate"],
+    ["Assay / method", field(["Assay / Method", "Method", "Assay"]), "State the assay or platform used"],
+    ["Signal / cutoff index, if reported", field(["Signal / Cutoff Index, if reported", "Cutoff Index", "COI", "Signal / Cutoff"]), "Assay-specific; do not apply across methods"],
+    ["Anti-HEV IgG, if performed", field(["Anti-HEV IgG, if performed", "HEV IgG", "Anti-HEV IgG"]), "Report only if separately performed"],
+    ["HEV RNA, if performed", field(["HEV RNA, if performed", "HEV RNA"]), "Report only if performed"],
+    ["Exposure or symptom timing, if provided", field(["Exposure or Symptom Timing, if provided", "Exposure Timing", "Symptom Timing"]), "Clinical information supplied with the request"],
+    ["Immunocompromised status, if relevant", field(["Immunocompromised Status, if relevant", "Immunocompromised Status"]), "May affect antibody detection"],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"]), ""],
+  ];
+  const specimen = field(["Specimen", "Specimen Type"]);
+  return `<table class="results-table hev-antibody-igm-table" data-report-content="hev-antibody-igm"><thead><tr><th style="width:38%">Analyte / report element</th><th style="width:22%">Result</th><th style="width:28%">Reference interval / note</th><th style="width:12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>HEPATITIS E VIRUS (HEV) ANTIBODY IgM</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(specimen) || String(test?.sample_type || "").trim() || "Serum / Plasma")}</td><td colspan="2">Serum or plasma, as validated by the performing laboratory</td></tr>${rows.map(([label, parameter, note], index) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${index === 0 ? `<span class="${getQualitativeResultStatus(value(parameter))?.className || ""}">${escapeHtml(value(parameter) || "-")}</span>` : escapeHtml(value(parameter) || "-").replace(/\r?\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim())}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes hev-antibody-igm-notes"><div class="report-note-heading">Interpretation note :</div><ul><li>A reactive anti-HEV IgM result may support recent hepatitis E when aligned with symptoms, liver tests, and exposure timing; it must not alone confirm acute infection.</li><li>Interpret with anti-HEV IgG and consider HEV RNA testing when active infection needs clarification.</li><li>False-reactive or persistent antibody results can occur; the laboratory&rsquo;s validated assay and the complete clinical assessment take precedence.</li><li>A non-reactive result may occur before seroconversion after recent exposure or in immunocompromised patients.</li></ul></div>`;
+}
+
+function buildHlaB27ReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const result = field(["HLA-B27 Result", "HLA B27", "HLA-B27", "Result"]);
+  const rows = [
+    ["HLA-B27", result, "Present / absent, according to the validated assay", ""],
+    ["Method / platform", field(["Method / Platform", "Method", "Assay / Method", "Assay"]), "State the testing method or platform used", ""],
+    ["Specimen", field(["Specimen", "Specimen Type"]), "Whole blood, unless otherwise validated by the laboratory", ""],
+    ["Clinical indication", field(["Clinical Indication", "Clinical Context", "Indication"]), "Clinical information supplied with the request", ""],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"]), "", ""],
+  ];
+  return `<table class="results-table hla-b27-table" data-report-content="hla-b27"><thead><tr><th style="width:38%">Analyte / report element</th><th style="width:22%">Result</th><th style="width:28%">Reference interval / note</th><th style="width:12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>HLA-B27</strong></td></tr>${rows.map(([label, parameter, note, unit]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-").replace(/\r?\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim() || unit)}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes hla-b27-notes"><div class="report-note-heading">Interpretation note :</div><ul><li>HLA-B27 is a genetic marker. A positive result can support assessment of spondyloarthritis in an appropriate clinical setting, but does not establish a diagnosis by itself.</li><li>HLA-B27 occurs in some healthy people, and a negative result does not exclude spondyloarthritis or other inflammatory disease.</li><li>Interpret with symptoms, examination, imaging, inflammatory markers, and specialist assessment where appropriate.</li></ul></div>`;
+}
+
+function buildHangingDropPreparationReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const rows = [
+    ["Specimen / source", field(["Specimen / Source", "Specimen", "Sample Source"]), "State the specimen examined", ""],
+    ["Macroscopic description", field(["Macroscopic Description", "Appearance"]), "Document only the observed appearance", ""],
+    ["Motility observation", field(["Motility Observation", "Hanging Drop Result", "Result"]), "Direct microscopy observation", ""],
+    ["Organism morphology / observation", field(["Organism Morphology / Observation", "Morphology", "Microscopy Findings"]), "Report only what was observed", ""],
+    ["Method / magnification", field(["Method / Magnification", "Method", "Magnification"]), "State the method used", ""],
+    ["Correlation / follow-up", field(["Correlation / Follow-up", "Culture Correlation", "Comments"]), "Culture or molecular confirmation when indicated", ""],
+  ];
+  return `<table class="results-table hanging-drop-table" data-report-content="hanging-drop-preparation"><thead><tr><th style="width:38%">Report element</th><th style="width:22%">Result</th><th style="width:28%">Reference / note</th><th style="width:12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>HANGING DROP PREPARATION</strong></td></tr>${rows.map(([label, parameter, note, unit]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-").replace(/\r?\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim() || unit)}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes hanging-drop-notes"><div class="report-note-heading">Interpretation note :</div><ul><li>Report direct microscopy observations only. Motility must be distinguished from Brownian movement and fluid flow artefact.</li><li>A hanging-drop observation alone does not identify an organism or confirm an infectious diagnosis; correlate with culture, antigen, or molecular testing when indicated.</li><li>Document specimen quality, timing, and any limitation that could affect microscopy.</li></ul></div>`;
+}
+
 function buildVdrlReportBody(test) {
   const aliases = ["VDRL (RPR), Serum", "VDRL", "RPR TEST", "RPR", "Result"];
   return `
@@ -10265,6 +12706,7 @@ function buildVdrlReportBody(test) {
 }
 
 function buildHavIggReportBody(test) {
+  if (isHavTotalTest(test)) return buildHavTotalReportBody(test);
   const aliases = ["Anti HAV, IgG, Serum", "Anti HAV IgG", "HAV IgG", "Hepatitis A IgG", "Result"];
   const result = getInfectiousResult(test, aliases);
   const value = String(result.value || "").trim() || "-";
@@ -10293,6 +12735,21 @@ function buildHavIggReportBody(test) {
       <p>Hepatitis A Virus ( HAV) is a RNA virus of Picornavirus family transmitted by fecal- oral route. Infection with HAV is self limiting though 5-10% cases may show a secondary rise in enzymes. Since symptomatic Hepatitis A virus infections are clinically indistinguishable from Hepatitis B or C virus, serological testing is an extremely important tool to achieve proper diagnosis. Anti HAV IgG antibodies develop within 1-2 weeks of IgM antibodies and typically remain positive for life.</p>
     </div>
   `;
+}
+
+function buildHavTotalReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const total = field(["Total Anti-HAV (IgG + IgM)", "Total Anti-HAV", "HAV Total", "Hepatitis A Total Antibody", "Result"]);
+  const rows = [
+    ["Total anti-HAV (IgG + IgM)", total, "Laboratory-validated qualitative interpretation"],
+    ["Assay / method", field(["Assay / Method", "Method", "Assay"]), "State the assay used"],
+    ["Anti-HAV IgM, if performed", field(["Anti-HAV IgM, if performed", "Anti HAV IgM", "HAV IgM"]), "Report separately if measured"],
+    ["Clinical indication / vaccination history, if provided", field(["Clinical Indication / Vaccination History, if provided", "Clinical Indication", "Vaccination History"]), "Clinical information supplied with the request"],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"]), ""],
+  ];
+  const specimen = field(["Specimen", "Specimen Type"]);
+  return `<table class="results-table hav-total-table" data-report-content="hav-total"><thead><tr><th style="width:38%">Analyte / report element</th><th style="width:22%">Result</th><th style="width:28%">Reference interval / note</th><th style="width:12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>HEPATITIS A TOTAL ANTIBODY (ANTI-HAV, IgG + IgM)</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(specimen) || String(test?.sample_type || "").trim() || "Serum")}</td><td colspan="2">Serum specimen, unless otherwise validated by the laboratory</td></tr>${rows.map(([label, parameter, note]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-").replace(/\r?\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim())}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes hav-total-notes"><div class="report-note-heading">Interpretation note :</div><ul><li>Total anti-HAV measures combined IgG and IgM antibodies. A reactive total result alone does not distinguish current or recent infection from past infection or vaccination.</li><li>When acute hepatitis A is clinically suspected, interpret a total anti-HAV result with anti-HAV IgM and the clinical presentation; do not use total antibody alone to diagnose acute illness.</li><li>Use the performing laboratory&rsquo;s validated assay-specific result interpretation. A nonreactive result does not exclude very early exposure when clinical suspicion remains.</li></ul></div>`;
 }
 
 function buildHavIgmReportBody(test) {
@@ -10327,7 +12784,29 @@ function buildHavIgmReportBody(test) {
   `;
 }
 
+function buildHepatitisCRnaPcrQuantitativeReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const viralLoad = field(["HCV RNA, Quantitative", "HCV RNA Quantitative", "HCV RNA", "Viral Load", "Result"]);
+  const rows = [
+    ["HCV RNA, quantitative", viralLoad, "Undetected or assay-specific quantification range", "IU/mL"],
+    ["HCV RNA, log10", field(["HCV RNA, Log10", "HCV RNA Log10", "Log10", "Log Viral Load"]), "Assay-specific quantification range", "log10 IU/mL"],
+    ["Result interpretation", field(["Result Interpretation", "Interpretation", "Qualitative Interpretation"]), "Undetected / Detected below quantification limit / Quantified / Invalid", ""],
+    ["Assay / method", field(["Assay / Method", "Method", "Assay"]), "State the RT-PCR or other validated molecular method", ""],
+    ["Lower / upper limit of quantification", field(["Lower / Upper Limit of Quantification", "Quantification Limit", "LLOQ / ULOQ"]), "Use the performing laboratory's assay range", ""],
+    ["Internal control / run validity", field(["Internal Control / Run Validity", "Internal Control", "Run Validity"]), "Valid / invalid / inhibited, as reported", ""],
+    ["HCV antibody / prior RNA context, if available", field(["HCV Antibody / Prior RNA Context, if available", "HCV Antibody", "Prior HCV RNA"]), "Interpret with the testing sequence and prior results", ""],
+    ["Collection date / time", field(["Collection Date / Time", "Collection Date", "Collection Time"]), "", ""],
+    ["Antiviral treatment status / monitoring timepoint, if provided", field(["Antiviral Treatment Status / Monitoring Timepoint, if provided", "Treatment Status", "Monitoring Timepoint"]), "", ""],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Comments", "Comment"]), "", ""],
+  ];
+  const specimen = field(["Specimen", "Specimen Type"]);
+  return `<table class="results-table hcv-rna-quantitative-table" data-report-content="hcv-rna-quantitative"><thead><tr><th style="width:38%">Analyte / report element</th><th style="width:22%">Result</th><th style="width:28%">Reference / note</th><th style="width:12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>HEPATITIS C VIRUS (HCV) RNA PCR - QUANTITATIVE</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(specimen) || String(test?.sample_type || "").trim() || "Serum / Plasma")}</td><td colspan="2">Use the specimen validated for the stated molecular assay</td></tr>${rows.map(([label, parameter, note, defaultUnit]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-").replace(/\r?\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim() || defaultUnit)}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes hcv-rna-quantitative-notes"><div class="report-note-heading">Interpretation note :</div><ul><li>An undetected result means HCV RNA was not detected in this specimen by the stated assay. Detected below the lower quantification limit is not equivalent to undetected.</li><li>A quantified result is reported in the assay&rsquo;s units and range. Compare serial values only when collection context, method, and units are documented.</li><li>An invalid, inhibited, or inconclusive result requires repeat collection or testing according to the performing laboratory&rsquo;s procedure.</li><li>Interpret HCV RNA with the HCV antibody result, exposure timing, clinical context, and treatment history. A single RNA result must not alone determine disease stage or treatment decisions.</li></ul></div>`;
+}
+
 function buildHcvRapidScreeningReportBody(test) {
+  if (isHepatitisCRnaPcrQuantitativeTest(test)) return buildHepatitisCRnaPcrQuantitativeReportBody(test);
+  if (isHcvTotalAntibodyTest(test)) return buildHcvTotalAntibodyReportBody(test);
   const aliases = ["HCV Rapid Screening Test, Serum", "HCV Rapid", "HCV Antibody", "Anti HCV Antibody", "Anti HCV", "Result"];
   return `
     ${buildInfectiousResultTable({
@@ -10355,7 +12834,83 @@ function buildHcvRapidScreeningReportBody(test) {
   `;
 }
 
+function buildHcvAntibodyIggReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const antibody = field(["HCV Antibody IgG", "Hepatitis C Virus (HCV) Antibody IgG", "Anti-HCV IgG", "HCV IgG", "Result"]);
+  const rows = [
+    ["HCV antibody IgG", antibody, "Reactive / Non-reactive / Indeterminate"],
+    ["Assay / method", field(["Assay / Method", "Method", "Assay"]), "State the assay or platform used"],
+    ["Signal / cutoff index, if reported", field(["Signal / Cutoff Index, if reported", "Cutoff Index", "COI", "Signal / Cutoff"]), "Assay-specific; do not apply across methods"],
+    ["HCV antibody screen / confirmation context, if available", field(["HCV Antibody Screen / Confirmation Context, if available", "HCV Antibody Screen", "Confirmation Context"]), "Report only tests actually performed"],
+    ["HCV RNA / NAT, if performed", field(["HCV RNA / NAT, if performed", "HCV RNA", "HCV NAT"]), "Needed to identify current viraemia after a reactive antibody result"],
+    ["Exposure or symptom timing, if provided", field(["Exposure or Symptom Timing, if provided", "Exposure Timing", "Symptom Timing"]), "Clinical information supplied with the request"],
+    ["Immunocompromised status, if relevant", field(["Immunocompromised Status, if relevant", "Immunocompromised Status"]), "May affect antibody detection"],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"]), ""],
+  ];
+  const specimen = field(["Specimen", "Specimen Type"]);
+  return `<table class="results-table hcv-antibody-igg-table" data-report-content="hcv-antibody-igg"><thead><tr><th style="width:38%">Analyte / report element</th><th style="width:22%">Result</th><th style="width:28%">Reference interval / note</th><th style="width:12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>HEPATITIS C VIRUS (HCV) ANTIBODY IgG</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(specimen) || String(test?.sample_type || "").trim() || "Serum / Plasma")}</td><td colspan="2">Serum or plasma, as validated by the performing laboratory</td></tr>${rows.map(([label, parameter, note], index) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${index === 0 ? `<span class="${getQualitativeResultStatus(value(parameter))?.className || ""}">${escapeHtml(value(parameter) || "-")}</span>` : escapeHtml(value(parameter) || "-").replace(/\r?\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim())}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes hcv-antibody-igg-notes"><div class="report-note-heading">Interpretation note :</div><ul><li>A reactive HCV antibody IgG result indicates antibody detection and may reflect current infection, past resolved infection, or a biologic false-reactive result.</li><li>HCV RNA nucleic-acid testing is needed to determine whether current viraemia is present after a reactive antibody result.</li><li>A non-reactive result may occur before seroconversion after recent exposure or in some immunocompromised patients. Consider HCV RNA testing when clinically indicated.</li><li>This antibody result must not alone establish current infection, disease stage, or treatment response.</li></ul></div>`;
+}
+
+function buildHcvAntibodyIgmReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const antibody = field(["HCV Antibody IgM", "Hepatitis C Virus (HCV) Antibody IgM", "Anti-HCV IgM", "HCV IgM", "Result"]);
+  const rows = [
+    ["HCV antibody IgM", antibody, "Reactive / Non-reactive / Indeterminate"],
+    ["Assay / method", field(["Assay / Method", "Method", "Assay"]), "State the assay or platform used"],
+    ["Signal / cutoff index, if reported", field(["Signal / Cutoff Index, if reported", "Cutoff Index", "COI", "Signal / Cutoff"]), "Assay-specific; do not apply across methods"],
+    ["HCV antibody IgG / total antibody context, if available", field(["HCV Antibody IgG / Total Antibody Context, if available", "HCV Antibody IgG", "HCV Total Antibody", "Antibody Context"]), "Report only tests actually performed"],
+    ["HCV RNA / NAT, if performed", field(["HCV RNA / NAT, if performed", "HCV RNA", "HCV NAT"]), "Needed to identify current viraemia"],
+    ["Exposure or symptom timing, if provided", field(["Exposure or Symptom Timing, if provided", "Exposure Timing", "Symptom Timing"]), "Clinical information supplied with the request"],
+    ["Immunocompromised status, if relevant", field(["Immunocompromised Status, if relevant", "Immunocompromised Status"]), "May affect antibody detection"],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"]), ""],
+  ];
+  const specimen = field(["Specimen", "Specimen Type"]);
+  return `<table class="results-table hcv-antibody-igm-table" data-report-content="hcv-antibody-igm"><thead><tr><th style="width:38%">Analyte / report element</th><th style="width:22%">Result</th><th style="width:28%">Reference interval / note</th><th style="width:12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>HEPATITIS C VIRUS (HCV) ANTIBODY IgM</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(specimen) || String(test?.sample_type || "").trim() || "Serum / Plasma")}</td><td colspan="2">Serum or plasma, as validated by the performing laboratory</td></tr>${rows.map(([label, parameter, note], index) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${index === 0 ? `<span class="${getQualitativeResultStatus(value(parameter))?.className || ""}">${escapeHtml(value(parameter) || "-")}</span>` : escapeHtml(value(parameter) || "-").replace(/\r?\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim())}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes hcv-antibody-igm-notes"><div class="report-note-heading">Interpretation note :</div><ul><li>A reactive HCV antibody IgM result must not be used alone to diagnose recent or acute HCV infection; HCV IgM may persist or be present in chronic infection.</li><li>HCV RNA nucleic-acid testing is needed to determine whether current viraemia is present.</li><li>A non-reactive result may occur before seroconversion after recent exposure or in immunocompromised patients.</li><li>Interpret with total or IgG antibody, HCV RNA, exposure timing, and the clinical context.</li></ul></div>`;
+}
+
+function buildHcvTotalAntibodyReportBody(test) {
+  if (isHcvAntibodyIgmTest(test)) return buildHcvAntibodyIgmReportBody(test);
+  if (isHcvAntibodyIggTest(test)) return buildHcvAntibodyIggReportBody(test);
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const total = field(["Total Anti-HCV (IgM + IgG)", "HCV Total (IgM + IgG)", "Anti-HCV Total", "HCV Antibody", "Result"]);
+  const rows = [
+    ["Total anti-HCV (IgM + IgG)", total, "Laboratory-validated qualitative interpretation", ""],
+    ["Assay / method", field(["Assay / Method", "Method", "Assay"]), "State the assay or platform used", ""],
+    ["Individual anti-HCV IgM / IgG, if separately performed", field(["Individual Anti-HCV IgM / IgG, if separately performed", "Anti-HCV IgM / IgG", "HCV IgM / IgG"]), "Report only if separately performed", ""],
+    ["HCV RNA / NAT, if performed", field(["HCV RNA / NAT, if performed", "HCV RNA", "HCV NAT"]), "Required to establish current viraemia", ""],
+    ["Exposure or symptom timing, if provided", field(["Exposure or Symptom Timing, if provided", "Exposure Timing", "Clinical Context"]), "Clinical information supplied with the request", ""],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"]), "", ""],
+  ];
+  const specimen = field(["Specimen", "Specimen Type"]);
+  return `<table class="results-table hcv-total-antibody-table" data-report-content="hcv-total-antibody"><thead><tr><th style="width:38%">Analyte / report element</th><th style="width:22%">Result</th><th style="width:28%">Reference interval / note</th><th style="width:12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>HEPATITIS C VIRUS (HCV) TOTAL ANTIBODY (IgM + IgG)</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(specimen) || String(test?.sample_type || "").trim() || "Serum")}</td><td colspan="2">Serum or plasma, as validated by the performing laboratory</td></tr>${rows.map(([label, parameter, note, defaultUnit]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-").replace(/\r?\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim() || defaultUnit)}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes hcv-total-antibody-notes"><div class="report-note-heading">Interpretation note :</div><ul><li>A reactive total anti-HCV result indicates HCV antibody detection; it does not by itself distinguish current infection, resolved past infection, or a biologic false-positive result.</li><li>HCV RNA / nucleic-acid testing is needed to determine whether current viraemia is present after a reactive antibody result.</li><li>A non-reactive antibody result can occur before seroconversion after recent exposure or in selected immunocompromised patients. Correlate with exposure timing and request HCV RNA testing when clinically indicated.</li></ul></div>`;
+}
+
+function buildHepatitisBViralDnaQualitativeReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const qualitative = field(["HBV DNA, Qualitative", "Hepatitis B Viral DNA Qualitative", "HBV DNA", "Result"]);
+  const rows = [
+    ["HBV DNA, qualitative", qualitative, "Detected / Not detected / Invalid"],
+    ["Assay / method", field(["Assay / Method", "Method", "Assay"]), "State the nucleic-acid test or platform used"],
+    ["Assay target / genomic region, if reported", field(["Assay Target / Genomic Region, if reported", "Assay Target", "Genomic Region"]), "Report only when supplied by the performing laboratory"],
+    ["Analytical sensitivity / detection limit", field(["Analytical Sensitivity / Detection Limit", "Detection Limit", "Analytical Sensitivity"]), "Use the assay-specific limit"],
+    ["Internal control / run validity", field(["Internal Control / Run Validity", "Internal Control", "Run Validity"]), "Valid / invalid / inhibited, as reported"],
+    ["HBsAg / HBeAg / anti-HBc context, if available", field(["HBsAg / HBeAg / Anti-HBc Context, if available", "HBV Serology Context", "HBsAg", "HBeAg"]), "Interpret with the complete hepatitis-B serology"],
+    ["Collection date / time", field(["Collection Date / Time", "Collection Date", "Collection Time"]), ""],
+    ["Antiviral treatment status, if provided", field(["Antiviral Treatment Status, if provided", "Treatment Status", "Antiviral Treatment"]), ""],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"]), ""],
+  ];
+  const specimen = field(["Specimen", "Specimen Type"]);
+  const result = value(qualitative);
+  return `<table class="results-table hbv-dna-qualitative-table" data-report-content="hbv-dna-qualitative"><thead><tr><th style="width:38%">Analyte / report element</th><th style="width:22%">Result</th><th style="width:28%">Reference / note</th><th style="width:12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>HEPATITIS B VIRUS (HBV) DNA - QUALITATIVE</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(specimen) || String(test?.sample_type || "").trim() || "Serum / Plasma")}</td><td colspan="2">Use the specimen validated for the stated molecular assay</td></tr>${rows.map(([label, parameter, note], index) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${index === 0 ? `<span class="${getQualitativeResultStatus(result)?.className || ""}">${escapeHtml(value(parameter) || "-")}</span>` : escapeHtml(value(parameter) || "-").replace(/\r?\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim())}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes hbv-dna-qualitative-notes"><div class="report-note-heading">Interpretation note :</div><ul><li>A detected qualitative HBV DNA result indicates HBV DNA was found in this specimen by the stated assay; it does not provide a viral-load value.</li><li>A not-detected result is limited by specimen quality and the assay&rsquo;s detection limit. It does not by itself exclude hepatitis B infection or intermittent low-level viraemia.</li><li>An invalid, inhibited, or indeterminate result requires repeat collection or repeat testing according to the performing laboratory&rsquo;s procedure.</li><li>Interpret with hepatitis-B serology, clinical context, and treatment history. A single detectable result must not alone determine acute versus chronic infection, infectivity, or treatment decisions.</li></ul></div>`;
+}
+
 function buildHbsAgReportBody(test) {
+  if (isHepatitisBViralDnaQualitativeTest(test)) return buildHepatitisBViralDnaQualitativeReportBody(test);
+  if (isHbsAgQuantitativeTest(test)) return buildHbsAgQuantitativeReportBody(test);
   const aliases = ["HBsAg, Serum", "HBsAg", "Hepatitis B Surface Antigen", "Result"];
   return `
     ${buildInfectiousResultTable({
@@ -10385,6 +12940,23 @@ function buildHbsAgReportBody(test) {
       </ul>
     </div>
   `;
+}
+
+function buildHbsAgQuantitativeReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const hbsAg = field(["HBsAg, Quantitative", "Hepatitis B Surface Antigen (HBsAg), Quantitative", "HBsAg Quantitative", "Result"]);
+  const rows = [
+    ["HBsAg, quantitative", hbsAg, "Laboratory-validated, assay-specific reference interval", "IU/mL"],
+    ["Assay / method", field(["Assay / Method", "Method", "Assay"]), "State the assay or platform used", ""],
+    ["Qualitative HBsAg / neutralization confirmation, if performed", field(["Qualitative HBsAg / Neutralization Confirmation, if performed", "Qualitative HBsAg", "Neutralization Confirmation"]), "Report only if performed", ""],
+    ["HBV DNA, if measured", field(["HBV DNA, if measured", "HBV DNA"]), "Report only if measured", ""],
+    ["Prior quantitative HBsAg / collection date, if available", field(["Prior Quantitative HBsAg / Collection Date, if available", "Prior Quantitative HBsAg", "Prior HBsAg"]), "For serial comparison, state the prior result and collection date", ""],
+    ["Clinical context / treatment status", field(["Clinical Context / Treatment Status", "Clinical Context", "Treatment Status"]), "Clinical information supplied with the request", ""],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"]), "", ""],
+  ];
+  const specimen = field(["Specimen", "Specimen Type"]);
+  return `<table class="results-table hbsag-quantitative-table" data-report-content="hbsag-quantitative"><thead><tr><th style="width:38%">Analyte / report element</th><th style="width:22%">Result</th><th style="width:28%">Reference interval / note</th><th style="width:12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>HEPATITIS B SURFACE ANTIGEN (HBsAg), QUANTITATIVE</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(specimen) || String(test?.sample_type || "").trim() || "Serum")}</td><td colspan="2">Serum specimen, unless otherwise validated by the laboratory</td></tr>${rows.map(([label, parameter, note, defaultUnit]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-").replace(/\r?\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim() || defaultUnit)}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes hbsag-quantitative-notes"><div class="report-note-heading">Interpretation note :</div><ul><li>Interpret quantitative HBsAg using the performing laboratory&rsquo;s assay-specific units, measuring range, and reference or decision limits.</li><li>A quantitative HBsAg result alone does not establish acute versus chronic infection, infectivity, treatment eligibility, or treatment response. Interpret it with the complete hepatitis B serology and HBV DNA when clinically indicated.</li><li>For serial monitoring, compare results only when assay method, units, and collection context are documented; do not derive a trend from a single measurement.</li></ul></div>`;
 }
 
 function getAntiHbcIgmStatus(value) {
@@ -10468,6 +13040,177 @@ function buildHepatitisBProfileReportBody(test) {
   `;
 }
 
+function buildHepatitisBVirusTreatmentFollowUpReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const viralLoad = field(["HBV DNA, Quantitative", "HBV DNA Quantitative", "HBV DNA Viral Load", "HBV DNA"]);
+  const rows = [
+    ["HBV DNA, quantitative", viralLoad, "Report in the stated assay units and range"],
+    ["HBV DNA, log10", field(["HBV DNA, Log10", "HBV DNA Log10", "Log HBV DNA"]), "log10 IU/mL, if reported"],
+    ["HBV DNA detection / quantification status", field(["HBV DNA Detection / Quantification Status", "Detection / Quantification Status", "Result Interpretation"]), "Detected / not detected / quantified / below quantification limit, as reported"],
+    ["Assay / method", field(["Assay / Method", "Method", "Assay"]), "State the molecular assay or platform used"],
+    ["Lower limit of quantification / detection", field(["Lower Limit of Quantification / Detection", "Lower Limit of Quantification", "Lower Limit of Detection", "LLOQ", "LOD"]), "Use the assay-specific limit"],
+    ["HBsAg / HBeAg / anti-HBe context, if available", field(["HBsAg / HBeAg / Anti-HBe Context, if available", "HBV Serology Context", "HBsAg", "HBeAg"]), "Report only tests actually performed"],
+    ["ALT / AST, if measured", field(["ALT / AST, if measured", "ALT / AST", "ALT", "AST"]), "Report only results actually measured"],
+    ["Antiviral treatment / regimen, if provided", field(["Antiviral Treatment / Regimen, if provided", "Antiviral Treatment", "Treatment Regimen"]), "Clinical information supplied with the request"],
+    ["Prior HBV DNA / collection date, if available", field(["Prior HBV DNA / Collection Date, if available", "Prior HBV DNA", "Prior Collection Date"]), "Compare serial results only with documented assay and collection details"],
+    ["Collection date / time", field(["Collection Date / Time", "Collection Date", "Collection Time"]), ""],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"]), ""],
+  ];
+  const specimen = field(["Specimen", "Specimen Type"]);
+  return `<table class="results-table hbv-treatment-follow-up-table" data-report-content="hbv-treatment-follow-up"><thead><tr><th style="width:38%">Monitoring element</th><th style="width:22%">Result</th><th style="width:28%">Reference interval / note</th><th style="width:12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>HEPATITIS B VIRUS (HBV) TREATMENT FOLLOW-UP</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(specimen) || String(test?.sample_type || "").trim() || "As validated for the molecular assay")}</td><td colspan="2">Use the specimen validated for the stated molecular assay</td></tr>${rows.map(([label, parameter, note], index) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${index === 0 ? escapeHtml(value(parameter) || "-") : escapeHtml(value(parameter) || "-").replace(/\r?\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim())}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes hbv-treatment-follow-up-notes"><div class="report-note-heading">Monitoring note :</div><ul><li>HBV DNA results support virologic monitoring only when interpreted with the treatment regimen, adherence, serial collection dates, liver tests, and complete hepatitis-B serology.</li><li>For trend assessment, compare quantitative results using the same validated assay and units where possible; a result below the lower quantification limit is not the same as an undetected result.</li><li>A single HBV DNA result must not alone determine treatment response, treatment failure, infectivity, liver disease stage, or a treatment change.</li><li>Clinical management and any treatment decision remain the responsibility of the treating clinician using applicable guidance and the complete patient record.</li></ul></div>`;
+}
+
+function buildHepatitisProfileReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const rows = [
+    ["Anti-HAV IgM, if performed", field(["Anti-HAV IgM, if performed", "Anti-HAV IgM", "HAV IgM", "Hepatitis A IgM"]), "Report only if performed"],
+    ["HBsAg, if performed", field(["HBsAg, if performed", "HBsAg", "Hepatitis B Surface Antigen"]), "Report only if performed"],
+    ["Anti-HBc IgM, if performed", field(["Anti-HBc IgM, if performed", "Anti-HBc IgM", "Anti HBc IgM"]), "Report only if performed"],
+    ["HBeAg / anti-HBe, if performed", field(["HBeAg / Anti-HBe, if performed", "HBeAg / Anti-HBe", "HBeAg", "Anti-HBe"]), "Report only if performed"],
+    ["Anti-HCV / HCV antibody, if performed", field(["Anti-HCV / HCV Antibody, if performed", "Anti-HCV", "HCV Antibody", "HCV Total Antibody"]), "Report only if performed"],
+    ["HCV RNA / NAT, if performed", field(["HCV RNA / NAT, if performed", "HCV RNA", "HCV NAT"]), "Report only if performed"],
+    ["Anti-HEV IgM, if performed", field(["Anti-HEV IgM, if performed", "Anti-HEV IgM", "HEV IgM"]), "Report only if performed"],
+    ["HEV RNA, if performed", field(["HEV RNA, if performed", "HEV RNA"]), "Report only if performed"],
+    ["Assay / method", field(["Assay / Method", "Method", "Assay"]), "State the assay or platform used"],
+    ["Collection date / time", field(["Collection Date / Time", "Collection Date", "Collection Time"]), ""],
+    ["Clinical context / exposure timing, if provided", field(["Clinical Context / Exposure Timing, if provided", "Clinical Context", "Exposure Timing"]), "Clinical information supplied with the request"],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"]), ""],
+  ];
+  const specimen = field(["Specimen", "Specimen Type"]);
+  return `<table class="results-table hepatitis-profile-table" data-report-content="hepatitis-profile"><thead><tr><th style="width:38%">Profile component</th><th style="width:22%">Result</th><th style="width:28%">Reference interval / note</th><th style="width:12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>HEPATITIS PROFILE</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(specimen) || String(test?.sample_type || "").trim() || "Serum / Plasma")}</td><td colspan="2">Serum or plasma, as validated by the performing laboratory</td></tr>${rows.map(([label, parameter, note]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-").replace(/\r?\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim())}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes hepatitis-profile-notes"><div class="report-note-heading">Interpretation note :</div><ul><li>This profile records only the viral-hepatitis markers actually performed; a blank or not-performed component must not be interpreted as a negative result.</li><li>Antibody, antigen, and nucleic-acid results answer different clinical questions. A reactive screening or antibody result does not by itself establish current viraemia, disease stage, or the timing of infection.</li><li>Interpret each reported marker with symptoms, liver tests, exposure timing, vaccination and treatment history, and the laboratory&rsquo;s validated algorithm.</li><li>Any confirmation, molecular testing, repeat collection, or clinical follow-up should follow the treating clinician and applicable laboratory or public-health guidance.</li></ul></div>`;
+}
+
+function buildHsv2IggReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const antibody = field(["HSV-2 IgG", "Herpes Simplex Virus- 2 (HSV-2) IgG", "Herpes Simplex Virus 2 (HSV-2) IgG", "HSV 2 IgG", "HSV2 IgG", "Result"]);
+  const rows = [
+    ["HSV-2 IgG", antibody, "Laboratory-validated assay-specific interpretation"],
+    ["Assay / method", field(["Assay / Method", "Method", "Assay"]), "State the assay or platform used"],
+    ["Signal / cutoff index, if reported", field(["Signal / Cutoff Index, if reported", "Cutoff Index", "COI", "Signal / Cutoff"]), "Use the laboratory's assay-specific cutoff"],
+    ["HSV-2 qualitative interpretation", field(["HSV-2 Qualitative Interpretation", "Qualitative Interpretation", "Interpretation"]), "Reactive / non-reactive / equivocal, as validated by the assay"],
+    ["HSV-1 IgG / type-specific context, if performed", field(["HSV-1 IgG / Type-Specific Context, if performed", "HSV-1 IgG", "HSV-1 Context"]), "Report only if separately performed"],
+    ["Lesion PCR / culture, if performed", field(["Lesion PCR / Culture, if performed", "HSV PCR", "HSV Culture", "Lesion PCR"]), "Report only if performed"],
+    ["Symptoms / lesion status, if provided", field(["Symptoms / Lesion Status, if provided", "Symptoms", "Lesion Status"]), "Clinical information supplied with the request"],
+    ["Exposure timing, if provided", field(["Exposure Timing, if provided", "Exposure Timing"]), "Clinical information supplied with the request"],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Comments", "Comment"]), ""],
+  ];
+  const specimen = field(["Specimen", "Specimen Type"]);
+  return `<table class="results-table hsv2-igg-table" data-report-content="hsv2-igg"><thead><tr><th style="width:38%">Analyte / report element</th><th style="width:22%">Result</th><th style="width:28%">Reference interval / note</th><th style="width:12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>HERPES SIMPLEX VIRUS TYPE 2 (HSV-2) IgG</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(specimen) || String(test?.sample_type || "").trim() || "Serum / Plasma")}</td><td colspan="2">Serum or plasma, as validated by the performing laboratory</td></tr>${rows.map(([label, parameter, note], index) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${index === 0 ? `<span class="${getQualitativeResultStatus(value(parameter))?.className || ""}">${escapeHtml(value(parameter) || "-")}</span>` : escapeHtml(value(parameter) || "-").replace(/\r?\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim())}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes hsv2-igg-notes"><div class="report-note-heading">Interpretation note :</div><ul><li>A reactive type-specific HSV-2 IgG result indicates antibody detection; it does not establish the timing of infection, identify an active lesion, or prove the site of infection.</li><li>A non-reactive result can occur before antibodies develop after a recent exposure. Equivocal or low-positive results must be interpreted using the performing laboratory&rsquo;s validated assay and confirmation policy.</li><li>When compatible lesions are present, direct testing of the lesion by a validated molecular assay or culture may be clinically more informative than serum antibody testing.</li><li>Interpret with symptoms, examination findings, exposure history, and the treating clinician&rsquo;s assessment.</li></ul></div>`;
+}
+
+function buildHsv2IgmReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const antibody = field(["HSV-2 IgM", "Herpes Simplex Virus- 2 (HSV-2) IgM", "Herpes Simplex Virus 2 (HSV-2) IgM", "HSV 2 IgM", "HSV2 IgM", "Result"]);
+  const rows = [
+    ["HSV-2 IgM", antibody, "Laboratory-validated assay-specific interpretation"],
+    ["Assay / method", field(["Assay / Method", "Method", "Assay"]), "State the assay or platform used"],
+    ["Signal / cutoff index, if reported", field(["Signal / Cutoff Index, if reported", "Cutoff Index", "COI", "Signal / Cutoff"]), "Use the laboratory's assay-specific cutoff"],
+    ["HSV IgM qualitative interpretation", field(["HSV IgM Qualitative Interpretation", "Qualitative Interpretation", "Interpretation"]), "Reactive / non-reactive / equivocal, as validated by the assay"],
+    ["HSV-1 / HSV-2 type-specific IgG, if performed", field(["HSV-1 / HSV-2 Type-Specific IgG, if performed", "HSV-1 IgG", "HSV-2 IgG", "Type-Specific IgG"]), "Report only if separately performed"],
+    ["Lesion PCR / culture, if performed", field(["Lesion PCR / Culture, if performed", "HSV PCR", "HSV Culture", "Lesion PCR"]), "Report only if performed"],
+    ["Symptoms / lesion status, if provided", field(["Symptoms / Lesion Status, if provided", "Symptoms", "Lesion Status"]), "Clinical information supplied with the request"],
+    ["Exposure timing, if provided", field(["Exposure Timing, if provided", "Exposure Timing"]), "Clinical information supplied with the request"],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Comments", "Comment"]), ""],
+  ];
+  const specimen = field(["Specimen", "Specimen Type"]);
+  return `<table class="results-table hsv2-igm-table" data-report-content="hsv2-igm"><thead><tr><th style="width:38%">Analyte / report element</th><th style="width:22%">Result</th><th style="width:28%">Reference interval / note</th><th style="width:12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>HERPES SIMPLEX VIRUS TYPE 2 (HSV-2) IgM</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(specimen) || String(test?.sample_type || "").trim() || "Serum / Plasma")}</td><td colspan="2">Serum or plasma, as validated by the performing laboratory</td></tr>${rows.map(([label, parameter, note], index) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${index === 0 ? `<span class="${getQualitativeResultStatus(value(parameter))?.className || ""}">${escapeHtml(value(parameter) || "-")}</span>` : escapeHtml(value(parameter) || "-").replace(/\r?\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim())}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes hsv2-igm-notes"><div class="report-note-heading">Interpretation note :</div><ul><li>HSV IgM assays are not type-specific and a reactive HSV IgM result must not be used alone to diagnose a new HSV-2 infection or to date an infection.</li><li>HSV IgM can be reactive during recurrent episodes and can be nonspecific. Interpret only with the performing laboratory&rsquo;s validated assay limitations and the complete clinical context.</li><li>When compatible lesions are present, direct testing of the lesion by a validated molecular assay or culture is preferred for diagnosis.</li><li>Type-specific HSV IgG, where clinically appropriate, and lesion testing answer different questions from HSV IgM.</li></ul></div>`;
+}
+
+function buildHsv1IggReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const antibody = field(["HSV-1 IgG", "Herpes Simplex Virus-1(HSV-1) IgG", "Herpes Simplex Virus 1 (HSV-1) IgG", "HSV 1 IgG", "HSV1 IgG", "Result"]);
+  const rows = [
+    ["HSV-1 IgG", antibody, "Laboratory-validated assay-specific interpretation"],
+    ["Assay / method", field(["Assay / Method", "Method", "Assay"]), "State the assay or platform used"],
+    ["Signal / cutoff index, if reported", field(["Signal / Cutoff Index, if reported", "Cutoff Index", "COI", "Signal / Cutoff"]), "Use the laboratory's assay-specific cutoff"],
+    ["HSV-1 qualitative interpretation", field(["HSV-1 Qualitative Interpretation", "Qualitative Interpretation", "Interpretation"]), "Reactive / non-reactive / equivocal, as validated by the assay"],
+    ["HSV-2 IgG / type-specific context, if performed", field(["HSV-2 IgG / Type-Specific Context, if performed", "HSV-2 IgG", "HSV-2 Context"]), "Report only if separately performed"],
+    ["Lesion PCR / culture, if performed", field(["Lesion PCR / Culture, if performed", "HSV PCR", "HSV Culture", "Lesion PCR"]), "Report only if performed"],
+    ["Symptoms / lesion status, if provided", field(["Symptoms / Lesion Status, if provided", "Symptoms", "Lesion Status"]), "Clinical information supplied with the request"],
+    ["Exposure timing, if provided", field(["Exposure Timing, if provided", "Exposure Timing"]), "Clinical information supplied with the request"],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Comments", "Comment"]), ""],
+  ];
+  const specimen = field(["Specimen", "Specimen Type"]);
+  return `<table class="results-table hsv1-igg-table" data-report-content="hsv1-igg"><thead><tr><th style="width:38%">Analyte / report element</th><th style="width:22%">Result</th><th style="width:28%">Reference interval / note</th><th style="width:12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>HERPES SIMPLEX VIRUS TYPE 1 (HSV-1) IgG</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(specimen) || String(test?.sample_type || "").trim() || "Serum / Plasma")}</td><td colspan="2">Serum or plasma, as validated by the performing laboratory</td></tr>${rows.map(([label, parameter, note], index) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${index === 0 ? `<span class="${getQualitativeResultStatus(value(parameter))?.className || ""}">${escapeHtml(value(parameter) || "-")}</span>` : escapeHtml(value(parameter) || "-").replace(/\r?\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim())}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes hsv1-igg-notes"><div class="report-note-heading">Interpretation note :</div><ul><li>A reactive type-specific HSV-1 IgG result indicates antibody detection; it does not establish the timing of infection, identify an active lesion, or determine whether infection is oral or genital.</li><li>A non-reactive result can occur before antibodies develop after a recent exposure. Equivocal or low-positive results must be interpreted using the performing laboratory&rsquo;s validated assay and confirmation policy.</li><li>When compatible lesions are present, direct testing of the lesion by a validated molecular assay or culture may be clinically more informative than serum antibody testing.</li><li>Interpret with symptoms, examination findings, exposure history, and the treating clinician&rsquo;s assessment.</li></ul></div>`;
+}
+
+function buildHsv1IgmReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const antibody = field(["HSV-1 IgM", "Herpes Simplex Virus-1(HSV-1) IgM", "Herpes Simplex Virus 1 (HSV-1) IgM", "HSV 1 IgM", "HSV1 IgM", "Result"]);
+  const rows = [
+    ["HSV-1 IgM", antibody, "Laboratory-validated assay-specific interpretation"],
+    ["Assay / method", field(["Assay / Method", "Method", "Assay"]), "State the assay or platform used"],
+    ["Signal / cutoff index, if reported", field(["Signal / Cutoff Index, if reported", "Cutoff Index", "COI", "Signal / Cutoff"]), "Use the laboratory's assay-specific cutoff"],
+    ["HSV IgM qualitative interpretation", field(["HSV IgM Qualitative Interpretation", "Qualitative Interpretation", "Interpretation"]), "Reactive / non-reactive / equivocal, as validated by the assay"],
+    ["HSV-1 / HSV-2 type-specific IgG, if performed", field(["HSV-1 / HSV-2 Type-Specific IgG, if performed", "HSV-1 IgG", "HSV-2 IgG", "Type-Specific IgG"]), "Report only if separately performed"],
+    ["Lesion PCR / culture, if performed", field(["Lesion PCR / Culture, if performed", "HSV PCR", "HSV Culture", "Lesion PCR"]), "Report only if performed"],
+    ["Symptoms / lesion status, if provided", field(["Symptoms / Lesion Status, if provided", "Symptoms", "Lesion Status"]), "Clinical information supplied with the request"],
+    ["Exposure timing, if provided", field(["Exposure Timing, if provided", "Exposure Timing"]), "Clinical information supplied with the request"],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Comments", "Comment"]), ""],
+  ];
+  const specimen = field(["Specimen", "Specimen Type"]);
+  return `<table class="results-table hsv1-igm-table" data-report-content="hsv1-igm"><thead><tr><th style="width:38%">Analyte / report element</th><th style="width:22%">Result</th><th style="width:28%">Reference interval / note</th><th style="width:12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>HERPES SIMPLEX VIRUS TYPE 1 (HSV-1) IgM</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(specimen) || String(test?.sample_type || "").trim() || "Serum / Plasma")}</td><td colspan="2">Serum or plasma, as validated by the performing laboratory</td></tr>${rows.map(([label, parameter, note], index) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${index === 0 ? `<span class="${getQualitativeResultStatus(value(parameter))?.className || ""}">${escapeHtml(value(parameter) || "-")}</span>` : escapeHtml(value(parameter) || "-").replace(/\r?\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim())}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes hsv1-igm-notes"><div class="report-note-heading">Interpretation note :</div><ul><li>HSV IgM assays are not type-specific and a reactive HSV IgM result must not be used alone to diagnose a new HSV-1 infection or to date an infection.</li><li>HSV IgM can be reactive during recurrent episodes and can be nonspecific. Interpret only with the performing laboratory&rsquo;s validated assay limitations and the complete clinical context.</li><li>When compatible lesions are present, direct testing of the lesion by a validated molecular assay or culture is preferred for diagnosis.</li><li>Type-specific HSV IgG, where clinically appropriate, and lesion testing answer different questions from HSV IgM.</li></ul></div>`;
+}
+
+function buildHomocystineReportBody(test, specimenKind) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const urine = specimenKind === "urine";
+  const analyte = field(urine
+    ? ["Homocystine, Urine", "Homo cystine - Urine", "Homocystine", "Result"]
+    : ["Homocystine, Blood", "Homo cystine - Blood", "Homocystine", "Result"]);
+  const rows = urine
+    ? [
+      ["Homocystine, urine", analyte, "Laboratory-validated collection- and method-specific reference interval"],
+      ["Urine collection type / duration", field(["Urine Collection Type / Duration", "Collection Type", "Collection Duration"]), "Spot or timed collection, as reported"],
+      ["Total urine volume, if timed collection", field(["Total Urine Volume, if timed collection", "Total Urine Volume", "Urine Volume"]), "Required only for a timed collection"],
+      ["Urine creatinine / normalization, if reported", field(["Urine Creatinine / Normalization, if reported", "Urine Creatinine", "Normalization"]), "Report only if performed"],
+      ["Collection / processing details", field(["Collection / Processing Details", "Collection Details", "Processing Details"]), "Follow the performing laboratory's procedure"],
+      ["Method / analyzer", field(["Method / Analyzer", "Method", "Analyzer"]), "State the assay used"],
+      ["Clinical context / indication", field(["Clinical Context / Indication", "Clinical Context", "Indication"]), ""],
+      ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"]), ""],
+    ]
+    : [
+      ["Homocystine, blood", analyte, "Laboratory-validated specimen- and method-specific reference interval"],
+      ["Specimen / anticoagulant", field(["Specimen / Anticoagulant", "Specimen", "Anticoagulant"]), "Use the specimen validated by the performing laboratory"],
+      ["Collection / processing details", field(["Collection / Processing Details", "Collection Details", "Processing Details"]), "Follow the performing laboratory's procedure"],
+      ["Method / analyzer", field(["Method / Analyzer", "Method", "Analyzer"]), "State the assay used"],
+      ["Fasting status, if relevant", field(["Fasting Status, if relevant", "Fasting Status"]), ""],
+      ["Vitamin B12 / folate / renal function context, if available", field(["Vitamin B12 / Folate / Renal Function Context, if available", "Vitamin B12 / Folate Context", "Renal Function Context"]), "Report only results actually performed"],
+      ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"]), ""],
+    ];
+  const title = urine ? "HOMOCYSTINE - URINE" : "HOMOCYSTINE - BLOOD";
+  const marker = urine ? "homocystine-urine" : "homocystine-blood";
+  const specimen = String(test?.sample_type || "").trim() || (urine ? "Urine" : "Blood specimen validated by laboratory");
+  return `<table class="results-table ${marker}-table" data-report-content="${marker}"><thead><tr><th style="width:38%">Analyte / report element</th><th style="width:22%">Result</th><th style="width:28%">Reference interval / note</th><th style="width:12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>${title}</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(specimen)}</td><td colspan="2">Use the validated specimen, collection, and handling procedure</td></tr>${rows.map(([label, parameter, note], index) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-").replace(/\r?\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim() || (index === 0 ? "Laboratory-reported unit" : ""))}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes ${marker}-notes"><div class="report-note-heading">Interpretation note :</div><ul><li>This format preserves the catalogue term “Homocystine”. Confirm the exact analyte, specimen, unit, and reference interval with the performing laboratory; do not treat it as interchangeable with a different assay.</li><li>Use the laboratory-validated interval printed with the result. Specimen type, collection conditions, handling, and method can affect interpretation.</li><li>Interpret with the clinical indication and any related studies actually performed. This result alone does not establish a diagnosis or treatment decision.</li></ul></div>`;
+}
+
+function buildHypertensionProfileReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const rows = [
+    ["Serum creatinine / eGFR, if performed", field(["Serum Creatinine / eGFR, if performed", "Creatinine / eGFR", "Creatinine", "eGFR"]), "Report only results actually performed"],
+    ["Serum sodium, if performed", field(["Serum Sodium, if performed", "Serum Sodium", "Sodium"]), "Report only if performed"],
+    ["Serum potassium, if performed", field(["Serum Potassium, if performed", "Serum Potassium", "Potassium"]), "Report only if performed"],
+    ["Fasting plasma glucose / HbA1c, if performed", field(["Fasting Plasma Glucose / HbA1c, if performed", "Fasting Plasma Glucose", "HbA1c"]), "Report only if performed"],
+    ["Lipid profile summary, if performed", field(["Lipid Profile Summary, if performed", "Lipid Profile", "Lipid Summary"]), "Report only if performed"],
+    ["Serum uric acid, if performed", field(["Serum Uric Acid, if performed", "Serum Uric Acid", "Uric Acid"]), "Report only if performed"],
+    ["Urine protein / albumin-creatinine ratio, if performed", field(["Urine Protein / Albumin-Creatinine Ratio, if performed", "Urine Protein", "Albumin-Creatinine Ratio"]), "Report only if performed"],
+    ["Urinalysis summary, if performed", field(["Urinalysis Summary, if performed", "Urinalysis", "Urine Routine"]), "Report only if performed"],
+    ["Renin / aldosterone testing, if performed", field(["Renin / Aldosterone Testing, if performed", "Renin / Aldosterone", "Aldosterone"]), "Report only if performed"],
+    ["Thyroid function testing, if performed", field(["Thyroid Function Testing, if performed", "Thyroid Function", "TSH"]), "Report only if performed"],
+    ["Blood pressure / medication context, if provided", field(["Blood Pressure / Medication Context, if provided", "Blood Pressure Context", "Medication Context"]), "Clinical information supplied with the request"],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"]), ""],
+  ];
+  return `<table class="results-table hypertension-profile-table" data-report-content="hypertension-profile"><thead><tr><th style="width:38%">Profile component</th><th style="width:22%">Result</th><th style="width:28%">Reference interval / note</th><th style="width:12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>HYPERTENSION PROFILE</strong></td></tr>${rows.map(([label, parameter, note]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-").replace(/\r?\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim())}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes hypertension-profile-notes"><div class="report-note-heading">Interpretation note :</div><ul><li>This profile records only components actually performed. A blank or not-performed component must not be interpreted as a normal or negative result.</li><li>Laboratory results complement, but do not replace, repeated blood-pressure measurement, clinical assessment, medication review, and risk assessment.</li><li>Abnormal kidney, electrolyte, metabolic, urine, endocrine, or lipid findings require interpretation in their own clinical and laboratory context. This profile alone does not establish the cause of hypertension or a treatment plan.</li></ul></div>`;
+}
+
 function buildMantouxReportBody(test) {
   const dose = String(getInfectiousResult(test, ["Tuberculin Dose", "Dose"]).value || "").trim() || "0.1 mL of 1 TU PPD";
   const induration = String(getInfectiousResult(test, ["Induration (mm)", "Induration", "Induration Size"]).value || "").trim() || "-";
@@ -10498,6 +13241,7 @@ function buildMantouxReportBody(test) {
 }
 
 function buildHiv12ScreeningReportBody(test) {
+  if (isHivIAndIiTest(test)) return buildHivIAndIiReportBody(test);
   const valueFor = (aliases, fallback = "-") => String(getInfectiousResult(test, aliases).value || "").trim() || fallback;
   const finalResult = valueFor(["Final Result", "HIV Final Result"]);
   const methodOneIndex = valueFor(["Method 1 Index Value", "Index Value", "HIV 1 / 2 & P 24 Combo Index"]);
@@ -10528,6 +13272,22 @@ function buildHiv12ScreeningReportBody(test) {
       </ol>
     </div>
   `;
+}
+
+function buildHivIAndIiReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const result = field(["HIV 1 & 2 Result", "HIV I & II", "HIV 1 / 2", "Final Result", "Result"]);
+  const rows = [
+    ["HIV-1 / HIV-2 screen", result, "Laboratory-validated qualitative interpretation", ""],
+    ["Assay / method", field(["Assay / Method", "Method", "Assay"]), "State the assay or platform used", ""],
+    ["HIV-1/HIV-2 antigen/antibody screen, if performed", field(["HIV-1/HIV-2 Antigen/Antibody Screen, if performed", "HIV Ag/Ab Screen", "Antigen/Antibody Screen"]), "Report only if performed", ""],
+    ["HIV-1/HIV-2 antibody differentiation, if performed", field(["HIV-1/HIV-2 Antibody Differentiation, if performed", "HIV Antibody Differentiation"]), "Report only if performed", ""],
+    ["HIV nucleic acid test, if performed", field(["HIV Nucleic Acid Test, if performed", "HIV RNA", "HIV NAT"]), "Report only if performed", ""],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"]), "", ""],
+  ];
+  const specimen = field(["Specimen", "Specimen Type"]);
+  return `<table class="results-table hiv-i-ii-table" data-report-content="hiv-i-ii"><thead><tr><th style="width:38%">Analyte / report element</th><th style="width:22%">Result</th><th style="width:28%">Reference interval / note</th><th style="width:12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>HIV I &amp; II SCREENING</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(specimen) || String(test?.sample_type || "").trim() || "Serum")}</td><td colspan="2">Specimen type accepted by the validated assay</td></tr>${rows.map(([label, parameter, note, unit]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-").replace(/\r?\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim() || unit)}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes hiv-i-ii-notes"><div class="report-note-heading">Interpretation note :</div><ul><li>A reactive screening result is preliminary and requires testing with the laboratory&rsquo;s validated supplemental HIV diagnostic algorithm.</li><li>Where a reactive screening result has a negative or indeterminate differentiation result, nucleic-acid testing is used to resolve possible acute infection.</li><li>A non-reactive result does not exclude very recent infection; assess exposure timing and use the appropriate validated test when acute infection is suspected.</li></ul></div>`;
 }
 
 function buildReferenceRangeAnalyteReportBody(test, {
@@ -11189,6 +13949,7 @@ function buildCholesterolReportBody(test, definition) {
 }
 
 function buildLdlCholesterolReportBody(test) {
+  if (isHdlLdlRatioTest(test)) return buildHdlLdlRatioReportBody(test);
   return buildCholesterolReportBody(test, {
     tableClass: "ldl-cholesterol-table",
     investigation: "LDL Cholesterol",
@@ -11198,6 +13959,22 @@ function buildLdlCholesterolReportBody(test) {
     lipidType: "ldl",
     note: "LDL cholesterol test is a blood test that measures the level of low-density lipoprotein (LDL) cholesterol in the blood, which is commonly known as \"bad cholesterol\". LDL cholesterol is often estimated from HDL and VLDL results taken during a lipid panel test, although a direct LDL measurement may also be used.",
   });
+}
+
+function buildHdlLdlRatioReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const hdl = field(["HDL Cholesterol", "HDL-C", "High Density Lipoprotein Cholesterol"]);
+  const ldl = field(["LDL Cholesterol", "LDL-C", "Low Density Lipoprotein Cholesterol"]);
+  const ratio = field(["HDL : LDL Ratio", "HDL/LDL Ratio", "HDL LDL Ratio", "Ratio", "Result"]);
+  const suppliedRatio = value(ratio);
+  const hdlValue = getNumericValue(value(hdl));
+  const ldlValue = getNumericValue(value(ldl));
+  const calculatedRatio = Number.isFinite(hdlValue) && Number.isFinite(ldlValue) && ldlValue !== 0
+    ? (hdlValue / ldlValue).toFixed(2)
+    : "";
+  const ratioValue = suppliedRatio || calculatedRatio || "-";
+  return `<table class="results-table hdl-ldl-ratio-table" data-report-content="hdl-ldl-ratio"><thead><tr><th style="width:40%">Analyte</th><th style="width:24%">Result</th><th style="width:22%">Reference interval / note</th><th style="width:14%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>HDL : LDL RATIO</strong></td></tr><tr><td><strong>HDL cholesterol</strong></td><td>${escapeHtml(value(hdl) || "-")}</td><td>${escapeHtml(String(hdl?.normal_range || "").trim() || "Laboratory-validated interval")}</td><td>${escapeHtml(String(hdl?.unit || "").trim() || "mg/dL")}</td></tr><tr><td><strong>LDL cholesterol</strong></td><td>${escapeHtml(value(ldl) || "-")}</td><td>${escapeHtml(String(ldl?.normal_range || "").trim() || "Laboratory-validated interval")}</td><td>${escapeHtml(String(ldl?.unit || "").trim() || "mg/dL")}</td></tr><tr><td><strong>HDL : LDL ratio</strong></td><td>${escapeHtml(ratioValue)}</td><td>${escapeHtml(String(ratio?.normal_range || "").trim() || "No universal decision limit; interpret with the complete lipid profile and cardiovascular risk")}</td><td>Ratio</td></tr><tr><td><strong>Method / comments</strong></td><td colspan="3">${escapeHtml(value(field(["Method / Comments", "Method", "Comments", "Comment"])) || "-").replace(/\r?\n/g, "<br />")}</td></tr></tbody></table><div class="single-analyte-notes report-template-notes hdl-ldl-ratio-notes"><div class="report-note-heading">Interpretation note :</div><ul><li>The ratio is calculated from the HDL and LDL concentrations reported above; it is not a substitute for either measurement.</li><li>Use the laboratory&rsquo;s HDL and LDL methods and reference intervals. Interpret cardiovascular risk using the complete lipid profile and the patient&rsquo;s overall clinical risk factors.</li><li>Do not use this ratio alone to diagnose cardiovascular disease or determine lipid-lowering treatment.</li></ul></div>`;
 }
 
 function buildHdlCholesterolReportBody(test) {
@@ -11679,6 +14456,7 @@ function buildTotalAcidPhosphataseReportBody(test) {
 }
 
 function buildBunReportBody(test) {
+  if (isColorectalCancerMonitorProfileTest(test)) return buildColorectalCancerMonitorProfileReportBody(test);
   if (isComplementFixationTest(test)) return buildComplementFixationReportBody(test);
   if (isCeaTest(test)) return buildCeaReportBody(test);
   if (isCd8LymphocyteTest(test)) return buildCd8LymphocyteReportBody(test);
@@ -11705,10 +14483,16 @@ function buildBunReportBody(test) {
   if (isSputumAfbTest(test)) return buildSputumAfbReportBody(test);
   if (isBaccalSmearBrrBodyTest(test)) return buildBaccalSmearBrrBodyReportBody(test);
   if (isAutoimmuneProfileTest(test)) return buildAutoimmuneProfileReportBody(test);
+  if (isCsfFluidAfbStainTest(test)) return buildCsfFluidAfbStainReportBody(test);
+  if (isCsfFluidGramStainTest(test)) return buildCsfFluidGramStainReportBody(test);
   if (isAfbZiehlNeelsenStainTest(test)) return buildAfbZiehlNeelsenStainReportBody(test);
   if (isBloodCultureSensitivityTest(test)) return buildBloodCultureSensitivityReportBody(test);
   if (isBodyFluidCultureSensitivityTest(test)) return buildBodyFluidCultureSensitivityReportBody(test);
   if (isBodyFluidTotalProteinTest(test)) return buildBodyFluidTotalProteinReportBody(test);
+  if (isCsfFluidChlorideTest(test)) return buildCsfFluidChlorideReportBody(test);
+  if (isCsfFluidProteinTest(test)) return buildCsfFluidProteinReportBody(test);
+  if (isCsfFluidSpecificGravityTest(test)) return buildCsfFluidSpecificGravityReportBody(test);
+  if (isCsfFluidGlucoseTest(test)) return buildCsfFluidGlucoseReportBody(test);
   if (isBodyFluidChlorideTest(test)) return buildBodyFluidChlorideReportBody(test);
   if (isBodyFluidBiochemistryTest(test)) return buildBodyFluidBiochemistryReportBody(test);
   if (isBodyFluidSpecificGravityTest(test)) return buildBodyFluidSpecificGravityReportBody(test);
@@ -11781,6 +14565,12 @@ function buildBunReportBody(test) {
   if (isGgtTest(test)) return buildGgtReportBody(test);
   if (isChlorideTest(test)) return buildChlorideReportBody(test);
   if (isCreatinine24HourUrineTest(test)) return buildCreatinine24HourUrineReportBody(test);
+  if (isUrineCalcium24HourTest(test)) return buildUrineCalcium24HourReportBody(test);
+  if (isCapillaryFragilityTest(test)) return buildCapillaryFragilityReportBody(test);
+  if (isCardiacProfileTest(test)) return buildCardiacProfileReportBody(test);
+  if (isCeruloplasminTest(test)) return buildCeruloplasminReportBody(test);
+  if (isUrineCopper24HourTest(test)) return buildUrineCopper24HourReportBody(test);
+  if (isRandomUrineCopperTest(test)) return buildRandomUrineCopperReportBody(test);
   if (isSemenAnalysisTest(test)) return buildSemenAnalysisReportBody(test);
   if (isUrineCotinineTest(test)) return buildUrineCotinineReportBody(test);
   if (isUrineGlucoseTest(test)) return buildUrineGlucoseReportBody(test);
@@ -11812,6 +14602,18 @@ function buildBunReportBody(test) {
   if (isBoneMarrowAspirationCytologyTest(test)) return buildBoneMarrowAspirationCytologyReportBody(test);
   if (isBoneMarrowCytologyTest(test)) return buildBoneMarrowCytologyReportBody(test);
   if (isFnacTest(test)) return buildFnacReportBody(test);
+  if (isClostridioidesDifficileToxinTest(test)) return buildClostridioidesDifficileToxinReportBody(test);
+  if (isTotalCholesterolTest(test)) return buildTotalCholesterolReportBody(test);
+  if (is24HourUrineChlorideTest(test)) return build24HourUrineChlorideReportBody(test);
+  if (isSerumChlorideTest(test)) return buildSerumChlorideReportBody(test);
+  if (isRandomUrineChlorideTest(test)) return buildRandomUrineChlorideReportBody(test);
+  if (isChlamydiaAntigenTest(test)) return buildChlamydiaAntigenReportBody(test);
+  if (isChlamydiaAntibodyIggIgmTest(test)) return buildChlamydiaAntibodyIggIgmReportBody(test);
+  if (isChikungunyaIgmTest(test)) return buildChikungunyaIgmReportBody(test);
+  if (isChikungunyaIggTest(test)) return buildChikungunyaIggReportBody(test);
+  if (isCervicalSwabAfbStainTest(test)) return buildCervicalSwabAfbStainReportBody(test);
+  if (isCervicalSwabGramStainTest(test)) return buildCervicalSwabGramStainReportBody(test);
+  if (isCervicalPapSmearTest(test)) return buildCervicalPapSmearReportBody(test);
   if (isPapSmearTest(test)) return buildPapSmearReportBody(test);
   if (isHistopathologyReportTest(test)) return buildHistopathologyReportBody(test);
   if (isCreatinineTest(test)) return buildCreatinineReportBody(test);
@@ -12156,27 +14958,17 @@ function buildAmylaseReportBody(test) {
 }
 
 function buildGgtReportBody(test) {
-  return `
-    ${buildSingleAnalyteResultTable(test, {
-      tableClass: "single-analyte-table ggt-table",
-      investigation: "GAMMA-GLUTAMYL TRANSFERASE (GGT), SERUM",
-      aliases: ["Gamma-Glutamyl Transferase (GGT), Serum", "Gamma Glutamyl Transferase (GGT)", "GGT", "GGTP", "Result"],
-      method: "IFCC",
-      defaultRange: "12.00 - 18.00",
-      defaultUnit: "U/L",
-    })}
-    <table class="ggt-reference-table">
-      <thead><tr><th>Gender</th><th>Normal Range (U/L)</th></tr></thead>
-      <tbody>
-        <tr><td>Male</td><td>12 - 18</td></tr>
-        <tr><td>Female</td><td>6 - 29</td></tr>
-      </tbody>
-    </table>
-    <div class="single-analyte-notes ggt-notes">
-      <div class="report-note-heading">Comment :</div>
-      <p>Gamma-glutamyl transferase (GGT) is an enzyme that is found in many organs throughout the body, with the highest concentrations found in the liver. GGT is elevated in the blood in most diseases that cause damage to the liver or bile ducts. This test measures the level of GGT in a blood sample.</p>
-    </div>
-  `;
+  const field = (aliases) => findReportParameter(test, aliases) || {};
+  const value = (parameter) => String(parameter?.value ?? "").trim();
+  const ggt = field(["Gamma-Glutamyl Transferase (GGT), Serum", "Gamma Glutamyl Transferase (GGT)", "GGT (Gamma GT)", "GGT", "GGTP", "Result"]);
+  const rows = [
+    ["Gamma-glutamyl transferase (GGT)", ggt, "Laboratory-validated, age/sex- and method-specific reference interval", "U/L"],
+    ["Method / analyzer", field(["Method / Analyzer", "Method", "Analyzer"]), "State the method or platform used", ""],
+    ["Clinical details / relevant medication history", field(["Clinical Details / Relevant Medication History", "Clinical Details", "Medication History"]), "Include only when supplied with the request", ""],
+    ["Interpretation / comments", field(["Interpretation / Comments", "Interpretation", "Comments", "Comment"]), "", ""],
+  ];
+  const specimen = field(["Specimen", "Specimen Type"]);
+  return `<table class="results-table ggt-table" data-report-content="ggt"><thead><tr><th style="width: 38%">Analyte / report element</th><th style="width: 22%">Result</th><th style="width: 28%">Reference interval / note</th><th style="width: 12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>GAMMA-GLUTAMYL TRANSFERASE (GGT)</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(value(specimen) || String(test?.sample_type || "").trim() || "Serum")}</td><td colspan="2">Serum enzyme activity, unless another specimen is specifically validated and stated</td></tr>${rows.map(([label, parameter, note, defaultUnit]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-").replace(/\n/g, "<br />")}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || note)}</td><td>${escapeHtml(String(parameter?.unit || "").trim() || defaultUnit)}</td></tr>`).join("")}</tbody></table><div class="single-analyte-notes report-template-notes ggt-notes"><div class="report-note-heading">Interpretation note :</div><ul><li>Apply the laboratory&rsquo;s validated age-, sex-, and method-specific reference interval; do not substitute a generic reference range.</li><li>GGT is interpreted with the clinical history and other liver or biliary investigations. An isolated result does not establish the cause of an abnormality.</li><li>Medication exposure and recent alcohol intake can affect GGT activity and should be considered by the requesting clinician where relevant.</li></ul></div>`;
 }
 
 function buildChlorideReportBody(test) {
@@ -12441,6 +15233,10 @@ function buildAmmoniaReportBody(test) {
 }
 
 function buildDigoxinReportBody(test) {
+  if (isConjunctivalSwabCultureTest(test)) return buildConjunctivalSwabCultureReportBody(test);
+  if (isRightConjunctivalSwabCultureTest(test)) return buildRightConjunctivalSwabCultureReportBody(test);
+  if (isBilateralConjunctivalSwabTest(test)) return buildBilateralConjunctivalSwabReportBody(test);
+  if (isColorectalCancerMonitorProfileTest(test)) return buildColorectalCancerMonitorProfileReportBody(test);
   if (isAntenatalProfileTest(test)) return buildAntenatalProfileReportBody(test);
   if (isAnticardiolipinIggIgmPanelTest(test)) return buildAnticardiolipinIggIgmPanelReportBody(test);
   if (isAnticardiolipinIgaIggPanelTest(test)) return buildAnticardiolipinIgaIggPanelReportBody(test);
@@ -12827,6 +15623,222 @@ function buildCreatinine24HourUrineReportBody(test) {
   `;
 }
 
+function buildUrineCalcium24HourReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const calcium = field(["Calcium, Urine, 24 Hour", "Urine Calcium, 24 Hour", "Calcium, 24 Hour Urine", "24 Hour Urine Calcium", "Result"]);
+  const duration = field(["Collection Duration", "Collection Duration (Hours)", "Duration"]);
+  const volume = field(["Total Urine Volume", "Urine Volume", "24-Hour Urine Volume"]);
+  const concentration = field(["Urine Calcium Concentration", "Calcium, Urine", "Urine Calcium"]);
+  const collectionDetails = field(["Collection Completeness / Preservative", "Collection Completeness", "Preservative"]);
+  const method = field(["Method / Analyzer", "Method / Instrument", "Method", "Analyzer"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  const range = String(calcium.normal_range ?? "").trim() || "Laboratory-validated, age- and sex-specific reference interval";
+  const canClassify = !/laboratory-validated|age-|sex-specific|clinical decision/i.test(range);
+  const status = canClassify ? getReferenceStatus(value(calcium), range) : null;
+  const row = (label, parameter, unit = "", reference = "") => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-")}</td><td>${escapeHtml(String(parameter.normal_range ?? "").trim() || reference || "-")}</td><td>${escapeHtml(String(parameter.unit ?? "").trim() || unit)}</td></tr>`;
+  return `
+    <table class="results-table single-analyte-table urine-calcium-24h-table" data-report-content="urine-calcium-24-hour">
+      <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Information</th><th style="width:14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(test.sample_type || "24-Hour Urine")}</td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>TIMED URINE COLLECTION</strong></td></tr>
+        ${row("Collection Duration", duration, "hours", "24 hours unless otherwise stated")}
+        ${row("Total Urine Volume", volume, "mL")}
+        <tr><td><strong>Collection Completeness / Preservative</strong></td><td colspan="3">${escapeHtml(value(collectionDetails) || "-")}</td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>URINE CALCIUM EXCRETION</strong></td></tr>
+        <tr><td><strong>CALCIUM, URINE, 24 HOUR</strong><div class="single-analyte-method">${escapeHtml(value(method) || "Laboratory-validated quantitative method")}</div></td><td><span class="${status?.className || ""}">${escapeHtml(value(calcium) || "-")}</span>${status ? ` <span class="single-analyte-status ${status.className}">${status.label}</span>` : ""}</td><td>${escapeHtml(range)}</td><td>${escapeHtml(String(calcium.unit ?? "").trim() || "mg/24 h")}</td></tr>
+        ${row("Urine Calcium Concentration", concentration, "mg/dL")}
+        ${value(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes urine-calcium-24h-notes">
+      <div class="report-note-heading">Interpretation :</div>
+      <ul>
+        <li>The reference interval applies only to a complete timed collection. Record the collection duration and total volume; a missed collection, an incorrect duration, or incomplete collection can invalidate the reported excretion.</li>
+        <li>Use the performing laboratory&rsquo;s validated age- and sex-specific interval and clinical decision limits where applicable. Dietary intake, supplements, medications, renal function, and collection quality can affect urine calcium excretion.</li>
+        <li>An increased or decreased urine calcium result does not diagnose kidney stone disease or another disorder by itself. Interpret with the clinical history and other relevant serum and urine measurements.</li>
+      </ul>
+    </div>`;
+}
+
+function buildCapillaryFragilityReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const result = field(["Capillary Fragility Test Result", "Tourniquet Test Result", "Result"]);
+  const petechiae = field(["Petechiae Count", "Petechiae / Purpura Count"]);
+  const site = field(["Test Site / Cuff Pressure", "Test Site", "Cuff Pressure"]);
+  const method = field(["Method / Procedure", "Method", "Procedure"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  return `
+    <table class="results-table single-analyte-table capillary-fragility-table" data-report-content="capillary-fragility-test">
+      <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Information</th><th style="width:14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">Clinical bedside / skin examination</td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>CAPILLARY FRAGILITY ASSESSMENT</strong></td></tr>
+        <tr><td><strong>CAPILLARY FRAGILITY / TOURNIQUET TEST</strong><div class="single-analyte-method">${escapeHtml(value(method) || "Record the laboratory-approved procedure")}</div></td><td>${escapeHtml(value(result) || "-")}</td><td>${escapeHtml(String(result.normal_range ?? "").trim() || "Laboratory-approved interpretation")}</td><td></td></tr>
+        <tr><td><strong>Petechiae Count</strong></td><td>${escapeHtml(value(petechiae) || "-")}</td><td>Record method, area, and reading time</td><td>${escapeHtml(String(petechiae.unit ?? "").trim() || "count")}</td></tr>
+        <tr><td><strong>Test Site / Cuff Pressure</strong></td><td colspan="3">${escapeHtml(value(site) || "-")}</td></tr>
+        ${value(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes capillary-fragility-notes"><div class="report-note-heading">Laboratory Note :</div><p>Technique and decision criteria vary between methods. This screening observation must be interpreted with platelet count, coagulation studies, medication history, clinical examination, and the laboratory&rsquo;s validated procedure; it does not identify the cause of bleeding or bruising by itself.</p></div>`;
+}
+
+function buildCardiacProfileReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const analytes = [
+    ["Troponin I", ["Troponin I", "Cardiac Troponin I", "cTnI"], "ng/L"],
+    ["Troponin T", ["Troponin T", "Cardiac Troponin T", "cTnT"], "ng/L"],
+    ["CK-MB", ["CK-MB", "Creatine Kinase-MB"], "U/L"],
+    ["Total CK", ["Total CK", "Creatine Kinase", "CPK"], "U/L"],
+    ["BNP / NT-proBNP", ["BNP", "NT-proBNP", "BNP / NT-proBNP"], "pg/mL"],
+  ];
+  const rows = analytes.map(([label, aliases, unit]) => {
+    const parameter = field(aliases);
+    return `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-")}</td><td>${escapeHtml(String(parameter.normal_range ?? "").trim() || "Laboratory-validated assay interpretation")}</td><td>${escapeHtml(String(parameter.unit ?? "").trim() || unit)}</td></tr>`;
+  }).join("");
+  const collection = field(["Collection Date / Time", "Collection Time"]);
+  const clinical = field(["Clinical Details / Indication", "Clinical Details", "Indication"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  return `
+    <table class="results-table single-analyte-table cardiac-profile-table" data-report-content="cardiac-profile">
+      <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(test.sample_type || "Serum / Plasma")}</td></tr>
+        <tr><td><strong>Collection Date / Time</strong></td><td colspan="3">${escapeHtml(value(collection) || "-")}</td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>CARDIAC BIOMARKERS</strong></td></tr>
+        ${rows}
+        ${value(clinical) ? `<tr><td><strong>Clinical Details / Indication</strong></td><td colspan="3">${escapeHtml(value(clinical))}</td></tr>` : ""}
+        ${value(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes cardiac-profile-notes"><div class="report-note-heading">Interpretation :</div><ul><li>Interpret each marker with its assay-specific reference interval, the time from symptom onset, serial measurements where indicated, ECG findings, and clinical assessment.</li><li>Troponin may be elevated with myocardial injury from causes other than acute coronary syndrome. BNP and NT-proBNP can support heart-failure assessment but must be interpreted with the clinical context.</li><li>This profile does not independently confirm or exclude acute myocardial infarction, heart failure, or another cardiac diagnosis.</li></ul></div>`;
+}
+
+function buildColorectalCancerMonitorProfileReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const analytes = [
+    ["Carcinoembryonic Antigen (CEA)", ["Carcinoembryonic Antigen (CEA)", "Carcino Embryonic Antigen", "CEA"], "ng/mL", "Laboratory-validated reference interval"],
+    ["CA 19-9", ["CA 19-9", "CA19-9", "CA 19.9"], "U/mL", "Laboratory-validated reference interval"],
+    ["Zinc, Serum", ["Zinc, Serum", "Serum Zinc", "Zinc"], "µg/dL", "Laboratory-validated, age- and sex-specific reference interval"],
+  ];
+  const rows = analytes.map(([label, aliases, unit, range]) => {
+    const parameter = field(aliases);
+    return `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value(parameter) || "-")}</td><td>${escapeHtml(String(parameter.normal_range ?? "").trim() || range)}</td><td>${escapeHtml(String(parameter.unit ?? "").trim() || unit)}</td></tr>`;
+  }).join("");
+  const collection = field(["Collection Date / Time", "Collection Time"]);
+  const clinical = field(["Clinical Details / Monitoring Context", "Clinical Details", "Clinical Indication", "Indication"]);
+  const method = field(["Method / Analyzer", "Method", "Analyzer"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  return `
+    <table class="results-table single-analyte-table colorectal-cancer-monitor-profile-table" data-report-content="colorectal-cancer-monitor-profile">
+      <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference Interval</th><th style="width:14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(test.sample_type || "Serum")}</td></tr>
+        <tr><td><strong>Collection Date / Time</strong></td><td colspan="3">${escapeHtml(value(collection) || "-")}</td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>COLORECTAL CANCER MONITOR PROFILE</strong></td></tr>
+        ${rows}
+        <tr><td><strong>Method / Analyzer</strong></td><td colspan="3">${escapeHtml(value(method) || "Laboratory-validated method")}</td></tr>
+        ${value(clinical) ? `<tr><td><strong>Clinical Details / Monitoring Context</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(clinical)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+        ${value(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes colorectal-cancer-monitor-profile-notes"><div class="report-note-heading">Interpretation :</div><ul><li>This profile is intended for serial monitoring when requested by the treating clinician. It is not a screening or diagnostic test for colorectal cancer.</li><li>CEA and CA 19-9 should be interpreted with the laboratory&rsquo;s validated method, prior results, imaging, pathology, treatment status, and clinical assessment. A single value or trend alone does not establish or exclude recurrence.</li><li>Compare serial results using the same laboratory and assay where possible. Reference intervals and clinical decision limits can differ by method and population.</li></ul></div>`;
+}
+
+function buildCeruloplasminReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const result = field(["Ceruloplasmin, Serum", "Ceruloplasmin", "Result"]);
+  const specimen = field(["Specimen", "Sample"]);
+  const method = field(["Method / Analyzer", "Method", "Analyzer"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  const range = String(result.normal_range ?? "").trim() || "Laboratory-validated, age- and sex-specific reference interval";
+  const status = /laboratory-validated|age-|sex-specific/i.test(range) ? null : getReferenceStatus(value(result), range);
+  return `
+    <table class="results-table single-analyte-table ceruloplasmin-table" data-report-content="ceruloplasmin">
+      <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference Interval</th><th style="width:14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(value(specimen) || test.sample_type || "Serum")}</td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>COPPER METABOLISM</strong></td></tr>
+        <tr><td><strong>CERULOPLASMIN, SERUM</strong><div class="single-analyte-method">${escapeHtml(value(method) || "Laboratory-validated immunochemical method")}</div></td><td><span class="${status?.className || ""}">${escapeHtml(value(result) || "-")}</span>${status ? ` <span class="single-analyte-status ${status.className}">${status.label}</span>` : ""}</td><td>${escapeHtml(range)}</td><td>${escapeHtml(String(result.unit ?? "").trim() || "mg/dL")}</td></tr>
+        ${value(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes ceruloplasmin-notes"><div class="report-note-heading">Interpretation :</div><ul><li>Ceruloplasmin is a copper-binding protein and a positive acute-phase reactant. Inflammation, pregnancy, and estrogen exposure can increase concentrations.</li><li>A low result is not diagnostic by itself. Evaluation for a copper-metabolism disorder may require correlation with serum copper, urine copper, liver tests, clinical findings, and specialist assessment.</li><li>Use the reporting laboratory&rsquo;s age- and sex-specific reference interval because intervals vary by method and population.</li></ul></div>`;
+}
+
+function buildUrineCopper24HourReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const result = field(["Copper, 24-Hour Urine", "24-Hour Urine Copper", "Urine Copper, 24 Hour", "Copper, Urine", "Result"]);
+  const volume = field(["Total Urine Volume", "Urine Volume", "24-Hour Urine Volume"]);
+  const duration = field(["Collection Duration", "Collection Duration (Hours)", "Duration"]);
+  const start = field(["Collection Start Date / Time", "Collection Start Time"]);
+  const end = field(["Collection End Date / Time", "Collection End Time"]);
+  const method = field(["Method / Analyzer", "Method", "Analyzer"]);
+  const clinical = field(["Clinical Details / Indication", "Clinical Details", "Indication"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  const range = String(result.normal_range ?? "").trim() || "Laboratory-validated reference interval";
+  const status = /laboratory-validated/i.test(range) ? null : getReferenceStatus(value(result), range);
+  return `
+    <table class="results-table single-analyte-table urine-copper-24-hour-table" data-report-content="urine-copper-24-hour">
+      <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference Interval</th><th style="width:14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(test.sample_type || "24-hour urine collection")}</td></tr>
+        <tr><td><strong>Collection Duration</strong></td><td>${escapeHtml(value(duration) || "24")}</td><td>Complete timed collection required</td><td>${escapeHtml(String(duration.unit ?? "").trim() || "hours")}</td></tr>
+        <tr><td><strong>Total Urine Volume</strong></td><td>${escapeHtml(value(volume) || "-")}</td><td>Record full collection volume</td><td>${escapeHtml(String(volume.unit ?? "").trim() || "mL")}</td></tr>
+        <tr><td><strong>Collection Start / End</strong></td><td colspan="3">${escapeHtml(value(start) || "-")} to ${escapeHtml(value(end) || "-")}</td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>COPPER EXCRETION</strong></td></tr>
+        <tr><td><strong>COPPER, 24-HOUR URINE</strong><div class="single-analyte-method">${escapeHtml(value(method) || "Laboratory-validated trace-element method")}</div></td><td><span class="${status?.className || ""}">${escapeHtml(value(result) || "-")}</span>${status ? ` <span class="single-analyte-status ${status.className}">${status.label}</span>` : ""}</td><td>${escapeHtml(range)}</td><td>${escapeHtml(String(result.unit ?? "").trim() || "mcg/24 h")}</td></tr>
+        ${value(clinical) ? `<tr><td><strong>Clinical Details / Indication</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(clinical)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+        ${value(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes urine-copper-24-hour-notes"><div class="report-note-heading">Interpretation :</div><ul><li>The completeness and recorded duration of the urine collection are essential for interpreting a 24-hour copper excretion result.</li><li>Use the performing laboratory&rsquo;s method-specific reference interval. Increased urinary copper can occur in copper-metabolism and hepatobiliary disorders, with treatment effects and other clinical conditions also affecting results.</li><li>This measurement is not diagnostic by itself; interpret alongside clinical findings and, when appropriate, serum copper, ceruloplasmin, liver tests, and specialist assessment.</li></ul></div>`;
+}
+
+function buildRandomUrineCopperReportBody(test) {
+  if (isCryoglobulinsScreeningTest(test)) return buildCryoglobulinsScreeningReportBody(test);
+  if (isMorningEveningMidnightCortisolTest(test)) return buildMorningEveningMidnightCortisolReportBody(test);
+  if (isMorningCortisolTest(test)) return buildMorningCortisolReportBody(test);
+  if (isMorningEveningCortisolTest(test)) return buildMorningEveningCortisolReportBody(test);
+  if (isMidnightCortisolTest(test)) return buildMidnightCortisolReportBody(test);
+  if (isEveningCortisolTest(test)) return buildEveningCortisolReportBody(test);
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const copper = field(["Copper, Random Urine", "Copper, Urine", "Urine Copper", "Copper"]);
+  const creatinine = field(["Creatinine, Random Urine", "Random Urine Creatinine", "Urine Creatinine"]);
+  const ratio = field(["Copper / Creatinine Ratio", "Copper/Creatinine Ratio", "Copper Urine - Ratio to Creatinine"]);
+  const specimen = field(["Specimen / Collection Type", "Specimen", "Collection Type"]);
+  const method = field(["Method / Analyzer", "Method", "Analyzer"]);
+  const clinical = field(["Clinical Details / Indication", "Clinical Details", "Indication"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  const row = (label, parameter, fallbackUnit, fallbackRange) => {
+    const range = String(parameter.normal_range ?? "").trim() || fallbackRange;
+    const status = /laboratory-validated|age-|sex-specific/i.test(range) ? null : getReferenceStatus(value(parameter), range);
+    return `<tr><td><strong>${escapeHtml(label)}</strong></td><td><span class="${status?.className || ""}">${escapeHtml(value(parameter) || "-")}</span>${status ? ` <span class="single-analyte-status ${status.className}">${status.label}</span>` : ""}</td><td>${escapeHtml(range)}</td><td>${escapeHtml(String(parameter.unit ?? "").trim() || fallbackUnit)}</td></tr>`;
+  };
+  return `
+    <table class="results-table single-analyte-table random-urine-copper-table" data-report-content="random-urine-copper">
+      <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference Interval</th><th style="width:14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(value(specimen) || test.sample_type || "Random urine")}</td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>URINE COPPER</strong></td></tr>
+        ${row("COPPER, RANDOM URINE", copper, "mcg/dL", "Laboratory-validated reference interval")}
+        ${row("CREATININE, RANDOM URINE", creatinine, "mg/dL", "Laboratory-validated reference interval")}
+        ${row("COPPER / CREATININE RATIO", ratio, "mcg/g creatinine", "Laboratory-validated, age- and sex-specific reference interval")}
+        <tr><td><strong>Method / Analyzer</strong></td><td colspan="3">${escapeHtml(value(method) || "Laboratory-validated trace-element method")}</td></tr>
+        ${value(clinical) ? `<tr><td><strong>Clinical Details / Indication</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(clinical)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+        ${value(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes random-urine-copper-notes"><div class="report-note-heading">Interpretation :</div><ul><li>This is a spot-urine result, not a 24-hour copper excretion measurement. Where reported, the copper-to-creatinine ratio can help account for urine concentration.</li><li>Use the performing laboratory&rsquo;s validated reference intervals and collection requirements. Trace-element contamination, collection conditions, supplements, medications, and recent contrast exposure can affect interpretation.</li><li>A random urine copper result is not diagnostic by itself; interpret with clinical findings and, when appropriate, 24-hour urine copper, serum copper, ceruloplasmin, liver tests, and specialist assessment.</li></ul></div>`;
+}
+
 function buildCreatinineClearanceReportBody(test) {
   const field = aliases => findReportParameter(test, aliases) || {};
   const text = parameter => String(parameter?.value ?? "").trim();
@@ -13014,7 +16026,102 @@ function buildComplementFixationReportBody(test) {
   return `<table class="results-table single-analyte-table complement-fixation-table"><thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead><tbody><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(text(specimen) || test.sample_type || "Serum")}</td></tr><tr><td><strong>Target Antigen / Assay</strong></td><td colspan="3">${escapeHtml(text(antigen) || "-")}</td></tr><tr class="thyroid-antibodies-section"><td colspan="4"><strong>COMPLEMENT FIXATION TEST</strong></td></tr><tr><td><strong>COMPLEMENT FIXATION RESULT</strong><div class="single-analyte-method">${escapeHtml(text(method) || "Laboratory-validated complement fixation method")}</div></td><td>${escapeHtml(text(result) || "-")}</td><td>${escapeHtml(result.normal_range || "Laboratory-validated interpretation")}</td><td></td></tr><tr><td><strong>COMPLEMENT FIXATION TITRE</strong></td><td>${escapeHtml(text(titre) || "-")}</td><td>Report when performed</td><td></td></tr>${text(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(text(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}</tbody></table><div class="single-analyte-notes report-template-notes complement-fixation-notes"><div class="report-note-heading">Interpretation :</div><ul><li>Complement-fixation results must be interpreted for the stated target antigen and the laboratory&rsquo;s validated method; a CFT result alone does not identify the underlying disease.</li><li>Titre reporting, positivity thresholds, and serial-result interpretation are assay-specific. Compare serial values only when the same target antigen and method are used.</li><li>Controls and specimen suitability are essential for a valid complement-fixation assay. Correlate with clinical findings and other requested microbiology or serology tests.</li></ul></div>`;
 }
 
+function buildBilateralConjunctivalSwabReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const eyeRows = (eye) => {
+    const site = field([`${eye} Eye Specimen / Site`, `${eye} Conjunctival Swab`, `${eye} Eye Specimen`]);
+    const microscopy = field([`${eye} Eye Direct Microscopy / Gram Stain`, `${eye} Eye Gram Stain`, `${eye} Gram Stain`]);
+    const culture = field([`${eye} Eye Culture Result`, `${eye} Culture`, `${eye} Eye Result`]);
+    const organism = field([`${eye} Eye Organism(s) Isolated`, `${eye} Eye Organism`, `${eye} Organism(s) Isolated`]);
+    const susceptibility = field([`${eye} Eye Antimicrobial Susceptibility`, `${eye} Eye Sensitivity`, `${eye} Antimicrobial Susceptibility`]);
+    return `
+      <tr class="thyroid-antibodies-section"><td colspan="4"><strong>${escapeHtml(eye.toUpperCase())} EYE CONJUNCTIVAL SWAB</strong></td></tr>
+      <tr><td><strong>Specimen / Site</strong></td><td colspan="3">${escapeHtml(value(site) || `${eye} conjunctival swab`)}</td></tr>
+      <tr><td><strong>Direct Microscopy / Gram Stain</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(microscopy) || "-").replace(/\r?\n/g, "<br />")}</td></tr>
+      <tr><td><strong>Culture Result</strong></td><td>${escapeHtml(value(culture) || "-")}</td><td>${escapeHtml(String(culture.normal_range ?? "").trim() || "Laboratory-validated interpretation")}</td><td></td></tr>
+      <tr><td><strong>Organism(s) Isolated</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(organism) || "-").replace(/\r?\n/g, "<br />")}</td></tr>
+      <tr><td><strong>Antimicrobial Susceptibility</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(susceptibility) || "-").replace(/\r?\n/g, "<br />")}</td></tr>`;
+  };
+  const collection = field(["Collection Date / Time", "Collection Time"]);
+  const method = field(["Method / Laboratory", "Method", "Laboratory"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  return `
+    <table class="results-table culture-table bilateral-conjunctival-swab-table" data-report-content="bilateral-conjunctival-swab">
+      <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">Bilateral conjunctival swabs</td></tr>
+        <tr><td><strong>Collection Date / Time</strong></td><td colspan="3">${escapeHtml(value(collection) || "-")}</td></tr>
+        ${eyeRows("Right")}
+        ${eyeRows("Left")}
+        <tr><td><strong>Method / Laboratory</strong></td><td colspan="3">${escapeHtml(value(method) || "Laboratory-validated direct microscopy and culture")}</td></tr>
+        ${value(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes bilateral-conjunctival-swab-notes"><div class="report-note-heading">Interpretation :</div><ul><li>Right- and left-eye specimens are reported separately because their microscopy and culture findings may differ.</li><li>Conjunctival culture results must be assessed with specimen quality, inflammatory cells on direct microscopy, symptoms, treatment history, and ophthalmic examination. Surface colonisation or collection contamination can occur.</li><li>A negative bacterial culture does not exclude viral, chlamydial, fungal, or other non-bacterial causes of conjunctivitis. Those investigations require the appropriate validated test and specimen.</li></ul></div>`;
+}
+
+function buildRightConjunctivalSwabCultureReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const site = field(["Right Eye Specimen / Site", "Right Conjunctival Swab", "Right Eye Specimen", "Specimen / Site"]);
+  const microscopy = field(["Right Eye Direct Microscopy / Gram Stain", "Right Eye Gram Stain", "Right Eye Direct Microscopy", "Direct Microscopy / Gram Stain"]);
+  const culture = field(["Right Eye Culture Result", "Right Eye Culture", "Culture Result"]);
+  const organism = field(["Right Eye Organism(s) Isolated", "Right Eye Organism", "Organism(s) Isolated"]);
+  const susceptibility = field(["Right Eye Antimicrobial Susceptibility", "Right Eye Sensitivity", "Antimicrobial Susceptibility"]);
+  const collection = field(["Collection Date / Time", "Collection Time"]);
+  const method = field(["Method / Laboratory", "Method", "Laboratory"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  return `
+    <table class="results-table culture-table right-conjunctival-swab-culture-table" data-report-content="right-conjunctival-swab-culture">
+      <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(value(site) || test.sample_type || "Right conjunctival swab")}</td></tr>
+        <tr><td><strong>Collection Date / Time</strong></td><td colspan="3">${escapeHtml(value(collection) || "-")}</td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>RIGHT EYE CONJUNCTIVAL SWAB</strong></td></tr>
+        <tr><td><strong>Direct Microscopy / Gram Stain</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(microscopy) || "-").replace(/\r?\n/g, "<br />")}</td></tr>
+        <tr><td><strong>Culture Result</strong></td><td>${escapeHtml(value(culture) || "-")}</td><td>${escapeHtml(String(culture.normal_range ?? "").trim() || "Laboratory-validated interpretation")}</td><td></td></tr>
+        <tr><td><strong>Organism(s) Isolated</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(organism) || "-").replace(/\r?\n/g, "<br />")}</td></tr>
+        <tr><td><strong>Antimicrobial Susceptibility</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(susceptibility) || "-").replace(/\r?\n/g, "<br />")}</td></tr>
+        <tr><td><strong>Method / Laboratory</strong></td><td colspan="3">${escapeHtml(value(method) || "Laboratory-validated direct microscopy and culture")}</td></tr>
+        ${value(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes right-conjunctival-swab-culture-notes"><div class="report-note-heading">Interpretation :</div><ul><li>Interpret the result with specimen quality, inflammatory cells on direct microscopy, symptoms, treatment history, and ophthalmic examination. Surface colonisation or collection contamination can occur.</li><li>A negative bacterial culture does not exclude viral, chlamydial, fungal, or other non-bacterial causes of conjunctivitis. Those investigations require the appropriate validated test and specimen.</li><li>Antimicrobial susceptibility is reported only for clinically significant isolates using the laboratory&rsquo;s validated method and current interpretive criteria.</li></ul></div>`;
+}
+
+function buildConjunctivalSwabCultureReportBody(test) {
+  const field = aliases => findReportParameter(test, aliases) || {};
+  const value = parameter => String(parameter?.value ?? "").trim();
+  const site = field(["Specimen / Site", "Conjunctival Swab", "Specimen", "Collection Site"]);
+  const microscopy = field(["Direct Microscopy / Gram Stain", "Gram Stain", "Direct Microscopy"]);
+  const culture = field(["Culture Result", "Culture"]);
+  const organism = field(["Organism(s) Isolated", "Organism", "Isolate"]);
+  const susceptibility = field(["Antimicrobial Susceptibility", "Sensitivity", "Antibiotic Sensitivity"]);
+  const collection = field(["Collection Date / Time", "Collection Time"]);
+  const method = field(["Method / Laboratory", "Method", "Laboratory"]);
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  return `
+    <table class="results-table culture-table conjunctival-swab-culture-table" data-report-content="conjunctival-swab-culture">
+      <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead>
+      <tbody>
+        <tr class="single-analyte-sample-row"><td><strong>Specimen / Site</strong></td><td colspan="3">${escapeHtml(value(site) || test.sample_type || "Conjunctival swab")}</td></tr>
+        <tr><td><strong>Collection Date / Time</strong></td><td colspan="3">${escapeHtml(value(collection) || "-")}</td></tr>
+        <tr class="thyroid-antibodies-section"><td colspan="4"><strong>CONJUNCTIVAL SWAB CULTURE</strong></td></tr>
+        <tr><td><strong>Direct Microscopy / Gram Stain</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(microscopy) || "-").replace(/\r?\n/g, "<br />")}</td></tr>
+        <tr><td><strong>Culture Result</strong></td><td>${escapeHtml(value(culture) || "-")}</td><td>${escapeHtml(String(culture.normal_range ?? "").trim() || "Laboratory-validated interpretation")}</td><td></td></tr>
+        <tr><td><strong>Organism(s) Isolated</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(organism) || "-").replace(/\r?\n/g, "<br />")}</td></tr>
+        <tr><td><strong>Antimicrobial Susceptibility</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(susceptibility) || "-").replace(/\r?\n/g, "<br />")}</td></tr>
+        <tr><td><strong>Method / Laboratory</strong></td><td colspan="3">${escapeHtml(value(method) || "Laboratory-validated direct microscopy and culture")}</td></tr>
+        ${value(comments) ? `<tr><td><strong>Comments</strong></td><td colspan="3" style="white-space:pre-wrap">${escapeHtml(value(comments)).replace(/\r?\n/g, "<br />")}</td></tr>` : ""}
+      </tbody>
+    </table>
+    <div class="single-analyte-notes report-template-notes conjunctival-swab-culture-notes"><div class="report-note-heading">Interpretation :</div><ul><li>Document the collection site and eye where applicable; results from different eyes or sites should not be combined.</li><li>Interpret culture results with specimen quality, direct microscopy, symptoms, prior treatment, and ophthalmic examination. Surface colonisation or collection contamination can occur.</li><li>A negative bacterial culture does not exclude viral, chlamydial, fungal, or other non-bacterial causes of conjunctivitis. Those investigations require the appropriate validated test and specimen.</li></ul></div>`;
+}
+
 function buildCbcReportBody(test, variant) {
+  const contentMarker = variant === "hb-dlc-esr" ? ' data-report-content="hb-dlc-esr"'
+    : variant === "hb-tlc-dlc-esr" ? ' data-report-content="hb-tlc-dlc-esr-profile"' : "";
   let currentSection = null;
   const rows = getCbcParameters(variant).map(definition => {
     const result = findCbcResult(test, definition);
@@ -13049,7 +16156,7 @@ function buildCbcReportBody(test, variant) {
 
   const sampleType = test.sample_type || "Whole Blood";
   return `
-    <table class="results-table cbc-table">
+    <table class="results-table cbc-table"${contentMarker}>
       <thead>
         <tr>
           <th style="width: 31%">Investigation</th>
@@ -13070,6 +16177,16 @@ function buildCbcReportBody(test, variant) {
     </table>
     <div class="cbc-clinical-note"><strong>Interpretation:</strong> Results should be correlated with the patient's clinical condition.</div>
   `;
+}
+
+function isHbTlcDlcEsrComponentProfile(tests) {
+  if (!Array.isArray(tests) || tests.length !== 4) return false;
+
+  const identities = tests.map((test) => normalizeParameterName(`${test.code || ""} ${test.name || ""}`));
+  return identities.some(value => value.includes("hbx3289") || value.includes("hbhaemoglobin") || value === "haemoglobin")
+    && identities.some(value => value === "tlc" || value.includes("totalleucocytecount") || value.includes("totalleukocytecount"))
+    && identities.some(value => value.includes("dlc1003") || value === "dlc" || value.includes("differentialleucocytecount"))
+    && identities.some(value => value.includes("esr7260") || value === "esr" || value.includes("erythrocytesedimentationrate"));
 }
 
 function buildCustomReportNarratives(tests) {
@@ -13100,6 +16217,14 @@ function buildCustomReportNarratives(tests) {
     .join("");
 }
 
+// Compatibility aliases retained for the existing renderer's compact selection chain.
+const buildFastingBloodSugarTest = buildFastingBloodSugarReportBody;
+const buildVitaminETest = buildVitaminEReportBody;
+const buildElectrolyteProfileTest = buildElectrolyteProfileReportBody;
+const buildFactorIxTest = buildFactorIxReportBody;
+const buildFactorXTest = buildFactorXReportBody;
+const buildFactorXiiiTest = buildFactorXiiiReportBody;
+
 function buildReportHtml(reportData) {
   const suppliedTests = Array.isArray(reportData.tests) ? reportData.tests : [];
   const reportTests = suppliedTests.filter(test => !isBillingOnlyTest(test));
@@ -13109,6 +16234,19 @@ function buildReportHtml(reportData) {
     throw error;
   }
   reportData = { ...reportData, tests: reportTests };
+  if (isHbTlcDlcEsrComponentProfile(reportTests)) {
+    const sourceTests = reportTests;
+    return buildReportHtml({
+      ...reportData,
+      tests: [{
+        name: "Hb + TLC/TC/WBC + DLC + ESR Profile",
+        code: "HBTLCDLCESR",
+        sample_type: sourceTests.find(test => test.sample_type)?.sample_type || "Whole Blood",
+        parameters: sourceTests.flatMap(test => Array.isArray(test.parameters) ? test.parameters : []),
+      }],
+      _singleTestPage: true,
+    });
+  }
   if (reportTests.length > 1 && !reportData._singleTestPage) {
     return buildMultiTestReportHtml(reportData, reportTests);
   }
@@ -13187,13 +16325,25 @@ function buildReportHtml(reportData) {
     || isPapSmearTest(singleTest)
   ) ? singleTest : null;
   const toxoplasmaAntibodiesPanelTest = singleTest && isToxoplasmaAntibodiesPanelTest(singleTest) ? singleTest : null;
-  const torchProfileTest = singleTest && (isTorchProfileTest(singleTest) || isCmvIgmIggTest(singleTest)) ? singleTest : null;
-  const cmvIgmIggTest = singleTest && isCmvIgmIggTest(singleTest) ? singleTest : null;
+  const torchProfileTest = singleTest && (isTorchProfileTest(singleTest) || isCmvIgmIggTest(singleTest) || isCmvIggTest(singleTest)) ? singleTest : null;
+  const cmvIgmIggTest = singleTest && (isCmvIgmIggTest(singleTest) || isCmvIggTest(singleTest)) ? singleTest : null;
   const tnfAlphaTest = singleTest && isTnfAlphaTest(singleTest) ? singleTest : null;
   const rheumatoidFactorTest = singleTest && isRheumatoidFactorTest(singleTest) ? singleTest : null;
   const asoTiterTest = singleTest && isAsoTiterTest(singleTest) ? singleTest : null;
   const hsCrpTest = singleTest && isHsCrpTest(singleTest) ? singleTest : null;
   const fnacTest = singleTest && isFnacTest(singleTest) ? singleTest : null;
+  const cDiffToxinTest = singleTest && isClostridioidesDifficileToxinTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const totalCholesterolTest = singleTest && isTotalCholesterolTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const urineChloride24HourTest = singleTest && is24HourUrineChlorideTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const serumChlorideTest = singleTest && isSerumChlorideTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const randomUrineChlorideTest = singleTest && isRandomUrineChlorideTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const chlamydiaAntigenTest = singleTest && isChlamydiaAntigenTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const chlamydiaAntibodyIggIgmTest = singleTest && isChlamydiaAntibodyIggIgmTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const chikungunyaIgmTest = singleTest && isChikungunyaIgmTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const chikungunyaIggTest = singleTest && isChikungunyaIggTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const cervicalSwabAfbStainTest = singleTest && isCervicalSwabAfbStainTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const cervicalSwabGramStainTest = singleTest && isCervicalSwabGramStainTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const cervicalPapSmearTest = singleTest && isCervicalPapSmearTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
   const papSmearTest = singleTest && isPapSmearTest(singleTest) ? singleTest : null;
   const rtPcrTest = singleTest && isRtPcrTest(singleTest) ? singleTest : null;
   const tpmtTest = singleTest && isTpmtGenotypingTest(singleTest) ? singleTest : null;
@@ -13214,6 +16364,36 @@ function buildReportHtml(reportData) {
   const beta2MicroglobulinTest = singleTest && isBeta2MicroglobulinTest(singleTest) ? singleTest : null;
   const altSgptTest = singleTest && isAltSgptTest(singleTest) ? singleTest : null;
   const dnphTest = singleTest && isDnphTest(singleTest) ? singleTest : null;
+  const diabeticProfileTest = singleTest && isDiabeticProfileTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const extendedDiabeticProfileTest = singleTest && isExtendedDiabeticProfileTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const diabeticRenalProfileTest = singleTest && isDiabeticRenalProfileTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const earSwabGramStainTest = singleTest && isEarSwabGramStainTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const earSwabAfbStainTest = singleTest && isEarSwabAfbStainTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const fshPrlTest = singleTest && isFshPrlTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const fshLhPrlTest = singleTest && isFshLhPrlTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const femaleInfertilityProfileTest = singleTest && isFemaleInfertilityProfileTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const fernTest = singleTest && isFernTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const wuchereriaBancroftiAntigenTest = singleTest && isWuchereriaBancroftiAntigenTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const filariaAntigenTest = singleTest && isFilariaAntigenTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const fluidAspirationCytologyTest = singleTest && isFluidAspirationCytologyTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const hbElectrophoresisTest = singleTest && isHbElectrophoresisTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const foetalHaemoglobinByHplcTest = singleTest && (isFoetalHaemoglobinByHplcTest(singleTest) || isHbElectrophoresisTest(singleTest)) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const foetalHaemoglobinTest = singleTest && isFoetalHaemoglobinTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const freeBetaHcgTest = singleTest && isFreeBetaHcgTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const freeCholesterolTest = singleTest && isFreeCholesterolTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const freeEstradiolTest = singleTest && isFreeEstradiolTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const freePsaTest = singleTest && isFreePsaTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const freeTestosteroneTest = singleTest && isFreeTestosteroneTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const gad65AntibodyTest = singleTest && isGad65AntibodyTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const gh90MinutesAfterGlucoseTest = singleTest && isGh90MinutesAfterGlucoseTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const ghFastingGlucoseTest = singleTest && isGhFastingGlucoseTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const growthHormoneTest = singleTest && isGrowthHormoneTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const glucoseToleranceTest = singleTest && isGlucoseToleranceTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const gastrinLevelTest = singleTest && (isGastrinLevelTest(singleTest) || isRandomGlucoseTest(singleTest)) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const fungusCultureTest = singleTest && isFungusCultureTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const fungusCultureSensitivityTest = singleTest && isFungusCultureSensitivityTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const factorIiMutationTest = singleTest && isFactorIiMutationTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
+  const factorViiiImmunodepletedTest = singleTest && isFactorViiiImmunodepletedTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
   const prealbuminTest = singleTest && isPrealbuminTest(singleTest) ? singleTest : null;
   const haptoglobinTest = singleTest && isHaptoglobinTest(singleTest) ? singleTest : null;
   const gramStainBacterialVaginosisTest = singleTest && isGramStainBacterialVaginosisTest(singleTest) ? singleTest : null;
@@ -13236,10 +16416,10 @@ function buildReportHtml(reportData) {
   const vitaminETest = singleTest && isVitaminETest(singleTest) ? singleTest : null;
   const vitaminB9Test = singleTest && isVitaminB9Test(singleTest) ? singleTest : null;
   const vitaminKTest = singleTest && isVitaminKTest(singleTest) ? singleTest : null;
-  const ldlCholesterolTest = singleTest && isLdlCholesterolTest(singleTest) ? singleTest : null;
+  const ldlCholesterolTest = singleTest && (isHdlLdlRatioTest(singleTest) || isLdlCholesterolTest(singleTest)) ? singleTest : null;
   const hdlCholesterolTest = singleTest && isHdlCholesterolTest(singleTest) ? singleTest : null;
   const indirectBilirubinTest = singleTest && isIndirectBilirubinTest(singleTest) ? singleTest : null;
-  const calciumTest = singleTest && isCalciumTest(singleTest) ? singleTest : null;
+  const calciumTest = singleTest && isCalciumTest(singleTest) && !isUrineCalcium24HourTest(singleTest) ? singleTest : null;
   const ferritinTest = singleTest && isFerritinTest(singleTest) ? singleTest : null;
   const cPeptideTest = singleTest && isCPeptideTest(singleTest) ? singleTest : null;
   const vldlCholesterolTest = singleTest && isVldlCholesterolTest(singleTest) ? singleTest : null;
@@ -13253,18 +16433,20 @@ function buildReportHtml(reportData) {
   // formats before Digoxin itself, so their report bodies remain consistent.
   const bronchialPapTest = singleTest && getBronchialPapSpecimen(singleTest)
     && !String(singleTest.report_body || "").trim() ? singleTest : null;
-  const digoxinTest = singleTest && (isAnticardiolipinIggIgmPanelTest(singleTest) || isAnticardiolipinIgaIggPanelTest(singleTest) || isAnticardiolipinIgaIgmPanelTest(singleTest) || isAnticardiolipinIgaTest(singleTest) || isAntenatalProfileTest(singleTest) || isTotalAcidPhosphataseTest(singleTest) || isProstaticAcidPhosphataseTest(singleTest) || isAgRatioTest(singleTest) || isDigoxinTest(singleTest)) ? singleTest : null;
-  const bunTest = singleTest && (isBunTest(singleTest) || isCeaTest(singleTest) || isCd8LymphocyteTest(singleTest) || isCd4LymphocyteTest(singleTest) || isCd3LymphocyteTest(singleTest) || isCreatinineClearanceTest(singleTest) || isComplementC3Test(singleTest) || isComplementC4Test(singleTest) || isCancaAntiPr3Test(singleTest) || isBilirubinFractionationTest(singleTest) || isSerumBicarbonateTest(singleTest) || isAsciticFluidAnalysisTest(singleTest) || isApolipoproteinBTest(singleTest) || isAnticardiolipinIgmTest(singleTest) || isAnticardiolipinIggTest(singleTest) || isAntiTgTest(singleTest) || isAntiTpoTest(singleTest) || isAnemiaScreeningProfileTest(singleTest) || isComprehensiveAnemiaProfileTest(singleTest) || isAndrostenedioneTest(singleTest) || isGroupBStrepTest(singleTest) || isFungusKohPreparationTest(singleTest) || isSputumAfbTest(singleTest) || isBaccalSmearBrrBodyTest(singleTest) || isAutoimmuneProfileTest(singleTest) || isAfbZiehlNeelsenStainTest(singleTest) || isBloodCultureSensitivityTest(singleTest) || isBodyFluidCultureSensitivityTest(singleTest) || isBodyFluidTotalProteinTest(singleTest) || isBodyFluidChlorideTest(singleTest) || isBodyFluidBiochemistryTest(singleTest) || isBodyFluidSpecificGravityTest(singleTest) || isBronchialWashingCultureSensitivityTest(singleTest) || isAfbCultureSensitivityTest(singleTest) || isStoolCultureTest(singleTest) || isUrineCultureTest(singleTest) || isMalariaParasiteIdentificationTest(singleTest) || isMycobacteriumCombinedPanelTest(singleTest) || isOvaAndParasiteTest(singleTest) || isTripleMarkerTest(singleTest) || isDoubleMarkerTest(singleTest) || isPax8Test(singleTest) || isGalectin3Test(singleTest) || isHer2Test(singleTest) || isDcpTest(singleTest) || isAfpTumorMarkerTest(singleTest) || isCa199Test(singleTest) || isCa153Test(singleTest) || isCa125Test(singleTest) || isTroponinITest(singleTest) || isTroponinTTest(singleTest) || isDengueNs1Test(singleTest) || isDengueIggTest(singleTest) || isDengueIgmTest(singleTest) || isRastTest(singleTest) || isWidalTest(singleTest) || isCrpTest(singleTest) || isSodiumTest(singleTest) || isIronTest(singleTest) || isLacticAcidTest(singleTest) || isMagnesiumTest(singleTest) || isLipaseTest(singleTest) || isAmylaseTest(singleTest) || isGgtTest(singleTest) || isChlorideTest(singleTest) || isCreatinine24HourUrineTest(singleTest) || isSemenAnalysisTest(singleTest) || isUrineCotinineTest(singleTest) || isUrineGlucoseTest(singleTest) || isUrineCotinineTest(singleTest) || isUrineGlucoseTest(singleTest) || isPorphyrinsTest(singleTest) || isOccultBloodStoolTest(singleTest) || isCsfAnalysisTest(singleTest) || isTshTest(singleTest) || isThyroidProfileTest(singleTest) || isThyroidAntibodiesTest(singleTest) || isTriiodothyronineTotalTest(singleTest) || isTestosteroneTotalTest(singleTest) || isProgesteroneTest(singleTest) || isCortisoneTest(singleTest) || isActhTest(singleTest) || isAdaTest(singleTest) || isBetaHcgPregnancyTest(singleTest) || isProlactinTest(singleTest) || isDheaTest(singleTest) || isEstradiolTest(singleTest) || isLuteinizingHormoneTest(singleTest) || isFollicleStimulatingHormoneTest(singleTest) || isThyroxineTotalTest(singleTest) || isCalcitoninTest(singleTest) || isInhibinATest(singleTest) || isInhibinBTest(singleTest) || isPappATest(singleTest) || isDheasTest(singleTest) || isBoneMarrowAspirationCytologyTest(singleTest) || isBoneMarrowCytologyTest(singleTest) || isHistopathologyReportTest(singleTest) || isCreatinineTest(singleTest) || isIonizedCalciumTest(singleTest) || isFlecainideTest(singleTest) || isPhenobarbitalTest(singleTest) || isKetoneBodyTest(singleTest) || isUricAcidTest(singleTest) || isTibcTest(singleTest) || isSerumOsmolalityTest(singleTest) || isArterialBloodGasTest(singleTest) || isManganeseBloodTest(singleTest) || isSeleniumSerumTest(singleTest))
+  const digoxinTest = singleTest && (isConjunctivalSwabCultureTest(singleTest) || isRightConjunctivalSwabCultureTest(singleTest) || isBilateralConjunctivalSwabTest(singleTest) || isColorectalCancerMonitorProfileTest(singleTest) || isAnticardiolipinIggIgmPanelTest(singleTest) || isAnticardiolipinIgaIggPanelTest(singleTest) || isAnticardiolipinIgaIgmPanelTest(singleTest) || isAnticardiolipinIgaTest(singleTest) || isAntenatalProfileTest(singleTest) || isTotalAcidPhosphataseTest(singleTest) || isProstaticAcidPhosphataseTest(singleTest) || isAgRatioTest(singleTest) || isDigoxinTest(singleTest)) ? singleTest : null;
+  const bunTest = singleTest && (isBunTest(singleTest) || isUrineCopper24HourTest(singleTest) || isUrineCalcium24HourTest(singleTest) || isCapillaryFragilityTest(singleTest) || isCardiacProfileTest(singleTest) || isCeruloplasminTest(singleTest) || isCeaTest(singleTest) || isCd8LymphocyteTest(singleTest) || isCd4LymphocyteTest(singleTest) || isCd3LymphocyteTest(singleTest) || isCreatinineClearanceTest(singleTest) || isComplementC3Test(singleTest) || isComplementC4Test(singleTest) || isCancaAntiPr3Test(singleTest) || isBilirubinFractionationTest(singleTest) || isSerumBicarbonateTest(singleTest) || isAsciticFluidAnalysisTest(singleTest) || isApolipoproteinBTest(singleTest) || isAnticardiolipinIgmTest(singleTest) || isAnticardiolipinIggTest(singleTest) || isAntiTgTest(singleTest) || isAntiTpoTest(singleTest) || isAnemiaScreeningProfileTest(singleTest) || isComprehensiveAnemiaProfileTest(singleTest) || isAndrostenedioneTest(singleTest) || isGroupBStrepTest(singleTest) || isFungusKohPreparationTest(singleTest) || isSputumAfbTest(singleTest) || isBaccalSmearBrrBodyTest(singleTest) || isAutoimmuneProfileTest(singleTest) || isCsfFluidAfbStainTest(singleTest) || isCsfFluidGramStainTest(singleTest) || isAfbZiehlNeelsenStainTest(singleTest) || isBloodCultureSensitivityTest(singleTest) || isBodyFluidCultureSensitivityTest(singleTest) || isBodyFluidTotalProteinTest(singleTest) || isCsfFluidChlorideTest(singleTest) || isCsfFluidProteinTest(singleTest) || isCsfFluidSpecificGravityTest(singleTest) || isCsfFluidGlucoseTest(singleTest) || isBodyFluidChlorideTest(singleTest) || isBodyFluidBiochemistryTest(singleTest) || isBodyFluidSpecificGravityTest(singleTest) || isBronchialWashingCultureSensitivityTest(singleTest) || isAfbCultureSensitivityTest(singleTest) || isStoolCultureTest(singleTest) || isUrineCultureTest(singleTest) || isMalariaParasiteIdentificationTest(singleTest) || isMycobacteriumCombinedPanelTest(singleTest) || isOvaAndParasiteTest(singleTest) || isTripleMarkerTest(singleTest) || isDoubleMarkerTest(singleTest) || isPax8Test(singleTest) || isGalectin3Test(singleTest) || isHer2Test(singleTest) || isDcpTest(singleTest) || isAfpTumorMarkerTest(singleTest) || isCa199Test(singleTest) || isCa153Test(singleTest) || isCa125Test(singleTest) || isTroponinITest(singleTest) || isTroponinTTest(singleTest) || isDengueNs1Test(singleTest) || isDengueIggTest(singleTest) || isDengueIgmTest(singleTest) || isRastTest(singleTest) || isWidalTest(singleTest) || isCrpTest(singleTest) || isSodiumTest(singleTest) || isIronTest(singleTest) || isLacticAcidTest(singleTest) || isMagnesiumTest(singleTest) || isLipaseTest(singleTest) || isAmylaseTest(singleTest) || isGgtTest(singleTest) || isChlorideTest(singleTest) || isCreatinine24HourUrineTest(singleTest) || isSemenAnalysisTest(singleTest) || isUrineCotinineTest(singleTest) || isUrineGlucoseTest(singleTest) || isUrineCotinineTest(singleTest) || isUrineGlucoseTest(singleTest) || isPorphyrinsTest(singleTest) || isOccultBloodStoolTest(singleTest) || isCsfAnalysisTest(singleTest) || isTshTest(singleTest) || isThyroidProfileTest(singleTest) || isThyroidAntibodiesTest(singleTest) || isTriiodothyronineTotalTest(singleTest) || isTestosteroneTotalTest(singleTest) || isProgesteroneTest(singleTest) || isCortisoneTest(singleTest) || isActhTest(singleTest) || isAdaTest(singleTest) || isBetaHcgPregnancyTest(singleTest) || isProlactinTest(singleTest) || isDheaTest(singleTest) || isEstradiolTest(singleTest) || isLuteinizingHormoneTest(singleTest) || isFollicleStimulatingHormoneTest(singleTest) || isThyroxineTotalTest(singleTest) || isCalcitoninTest(singleTest) || isInhibinATest(singleTest) || isInhibinBTest(singleTest) || isPappATest(singleTest) || isDheasTest(singleTest) || isBoneMarrowAspirationCytologyTest(singleTest) || isBoneMarrowCytologyTest(singleTest) || isHistopathologyReportTest(singleTest) || isCreatinineTest(singleTest) || isIonizedCalciumTest(singleTest) || isFlecainideTest(singleTest) || isPhenobarbitalTest(singleTest) || isKetoneBodyTest(singleTest) || isUricAcidTest(singleTest) || isTibcTest(singleTest) || isSerumOsmolalityTest(singleTest) || isArterialBloodGasTest(singleTest) || isManganeseBloodTest(singleTest) || isSeleniumSerumTest(singleTest))
     ? singleTest
     : null;
-  const typhidotTest = singleTest && (isTyphidotTest(singleTest) || isHbsAgTest(singleTest) || isAntiHbcIgmTest(singleTest) || isHepatitisBProfileTest(singleTest) || isMantouxTest(singleTest) || isHiv12ScreeningTest(singleTest) || isAntiBTitreTest(singleTest) || isAntiATitreTest(singleTest) || isDustAllergyTest(singleTest) || isDengueFeverPanelTest(singleTest) || isG6PdTest(singleTest) || isAntiHbsTest(singleTest) || isGangliosideGm1IggTest(singleTest) || isGangliosideGm1IgmTest(singleTest) || isGangliosideGd1aIggTest(singleTest) || isGangliosideGd1aIgmTest(singleTest) || isGangliosideGd1bIggTest(singleTest) || isGangliosideGq1bIggTest(singleTest) || isAntiHistoneAntibodiesTest(singleTest) || isRibosomePAntibodiesTest(singleTest) || isAntiCcpTest(singleTest) || isImmunoglobulinIggTest(singleTest) || isImmunoglobulinIgeTest(singleTest) || isImmunoglobulinIgmTest(singleTest) || isImmunoglobulinIgaTest(singleTest))
+  const randomUrineCopperTest = singleTest && (isRandomUrineCopperTest(singleTest) || isEveningCortisolTest(singleTest) || isMidnightCortisolTest(singleTest) || isMorningEveningCortisolTest(singleTest) || isMorningCortisolTest(singleTest) || isMorningEveningMidnightCortisolTest(singleTest) || isCryoglobulinsScreeningTest(singleTest)) ? singleTest : null;
+  const gndCultureTest = singleTest && (isGndCultureTest(singleTest) || isGonorrheaTest(singleTest) || isUrethralDischargeGramStainTest(singleTest) || isGeneralGramStainTest(singleTest) || isGeneralHealthCheckUpTest(singleTest) || isHbdhTest(singleTest) || isCysticFibrosisGeneMutationTest(singleTest)) ? singleTest : null;
+  const typhidotTest = singleTest && (isTyphidotTest(singleTest) || isHbsAgTest(singleTest) || isAntiHbcIgmTest(singleTest) || isHepatitisBVirusTreatmentFollowUpTest(singleTest) || isHepatitisProfileTest(singleTest) || isHomocystineBloodTest(singleTest) || isHomocystineUrineTest(singleTest) || isHypertensionProfileTest(singleTest) || isHsv1IgmTest(singleTest) || isHsv1IggTest(singleTest) || isHsv2IgmTest(singleTest) || isHsv2IggTest(singleTest) || isHepatitisBProfileTest(singleTest) || isMantouxTest(singleTest) || isHiv12ScreeningTest(singleTest) || isAntiBTitreTest(singleTest) || isAntiATitreTest(singleTest) || isDustAllergyTest(singleTest) || isDengueFeverPanelTest(singleTest) || isG6PdTest(singleTest) || isAntiHbsTest(singleTest) || isGangliosideGm1IggTest(singleTest) || isGangliosideGm1IgmTest(singleTest) || isGangliosideGd1aIggTest(singleTest) || isGangliosideGd1aIgmTest(singleTest) || isGangliosideGd1bIggTest(singleTest) || isGangliosideGq1bIggTest(singleTest) || isAntiHistoneAntibodiesTest(singleTest) || isRibosomePAntibodiesTest(singleTest) || isAntiCcpTest(singleTest) || isImmunoglobulinIggTest(singleTest) || isImmunoglobulinIgeTest(singleTest) || isImmunoglobulinIgmTest(singleTest) || isImmunoglobulinIgaTest(singleTest))
     ? singleTest
     : null;
   const vdrlTest = singleTest && isVdrlTest(singleTest) ? singleTest : null;
-  const havIggTest = singleTest && isHavIggTest(singleTest) ? singleTest : null;
+  const havIggTest = singleTest && (isHavTotalTest(singleTest) || isHavIggTest(singleTest)) ? singleTest : null;
   const havIgmTest = singleTest && isHavIgmTest(singleTest) ? singleTest : null;
   const hcvRapidScreeningTest = singleTest && isHcvRapidScreeningTest(singleTest) ? singleTest : null;
-  const hbsAgTest = singleTest && isHbsAgTest(singleTest) ? singleTest : null;
+  const hbsAgTest = singleTest && (isHbsAgQuantitativeTest(singleTest) || isHbsAgTest(singleTest)) ? singleTest : null;
   const antiHbcIgmTest = singleTest && isAntiHbcIgmTest(singleTest) ? singleTest : null;
   const hepatitisBProfileTest = singleTest && isHepatitisBProfileTest(singleTest) ? singleTest : null;
   const mantouxTest = singleTest && isMantouxTest(singleTest) ? singleTest : null;
@@ -13379,6 +16561,7 @@ function buildReportHtml(reportData) {
         if (reportData.tests.length === 1 && isToxoplasmaAntibodiesPanelTest(t)) return "TOXOPLASMA ANTIBODIES PANEL";
         if (reportData.tests.length === 1 && isTorchProfileTest(t)) return "TORCH PROFILE";
         if (reportData.tests.length === 1 && isCmvIgmIggTest(t)) return "CYTOMEGALOVIRUS (CMV) ANTIBODIES, IgM & IgG";
+        if (reportData.tests.length === 1 && isCmvIggTest(t)) return "CYTOMEGALOVIRUS (CMV) IgG ANTIBODY";
         if (reportData.tests.length === 1 && isTnfAlphaTest(t)) return "TUMOUR NECROSIS FACTOR (TNF), ALPHA";
         if (reportData.tests.length === 1 && isRheumatoidFactorTest(t)) return "RHEUMATOID FACTOR, RA";
         if (reportData.tests.length === 1 && isAsoTiterTest(t)) return "ANTISTREPTOLYSIN O, ASO TITER";
@@ -13386,6 +16569,7 @@ function buildReportHtml(reportData) {
         if (reportData.tests.length === 1 && isRtPcrTest(t)) return "RT-PCR";
         if (reportData.tests.length === 1 && isTpmtGenotypingTest(t)) return "THIOPURINE METHYL TRANSFERASE (TPMT), GENOTYPING";
         if (reportData.tests.length === 1 && isCysticFibrosisNewbornScreenTest(t)) return "CYSTIC FIBROSIS (CF), NEWBORN, SCREEN";
+        if (reportData.tests.length === 1 && isCysticFibrosisGeneMutationTest(t)) return "CYSTIC FIBROSIS (CF) GENE MUTATION";
         if (reportData.tests.length === 1 && isKftTest(t)) return "KIDNEY FUNCTION TEST (KFT)";
         if (reportData.tests.length === 1 && isFactorIiFunctionalTest(t)) return "FACTOR II";
         if (reportData.tests.length === 1 && isKaryotypeTest(t)) return "KARYOTYPE";
@@ -13402,6 +16586,37 @@ function buildReportHtml(reportData) {
         if (reportData.tests.length === 1 && isBeta2MicroglobulinTest(t)) return "BETA 2 MICROGLOBULIN";
         if (reportData.tests.length === 1 && isAltSgptTest(t)) return "ALANINE AMINOTRANSFERASE (ALT) - SGPT";
         if (reportData.tests.length === 1 && isDnphTest(t)) return "DNPH";
+        if (reportData.tests.length === 1 && isDiabeticProfileTest(t)) return "DIABETIC PROFILE";
+        if (reportData.tests.length === 1 && isExtendedDiabeticProfileTest(t)) return "DIABETIC PROFILE - EXTENDED";
+        if (reportData.tests.length === 1 && isDiabeticRenalProfileTest(t)) return "DIABETIC RENAL PROFILE";
+        if (reportData.tests.length === 1 && isEarSwabGramStainTest(t)) return "EAR SWAB - GRAM STAIN";
+        if (reportData.tests.length === 1 && isEarSwabAfbStainTest(t)) return "EAR SWAB - AFB STAIN";
+        if (reportData.tests.length === 1 && isFshPrlTest(t)) return "FSH & PROLACTIN (PRL)";
+        if (reportData.tests.length === 1 && isFshLhPrlTest(t)) return "FSH, LH & PROLACTIN (PRL)";
+        if (reportData.tests.length === 1 && isFemaleInfertilityProfileTest(t)) return "FEMALE INFERTILITY PROFILE";
+        if (reportData.tests.length === 1 && isFernTest(t)) return "FERN TEST";
+        if (reportData.tests.length === 1 && isWuchereriaBancroftiAntigenTest(t)) return "WUCHERERIA BANCROFTI ANTIGEN";
+        if (reportData.tests.length === 1 && isFilariaAntigenTest(t)) return "FILARIA ANTIGEN";
+        if (reportData.tests.length === 1 && isFluidAspirationCytologyTest(t)) return "FLUID ASPIRATION &amp; CYTOLOGY";
+        if (reportData.tests.length === 1 && isHbElectrophoresisTest(t)) return "HEMOGLOBIN ELECTROPHORESIS";
+        if (reportData.tests.length === 1 && isFoetalHaemoglobinByHplcTest(t)) return "FOETAL HAEMOGLOBIN (HbF) BY HPLC";
+        if (reportData.tests.length === 1 && isFoetalHaemoglobinTest(t)) return "FOETAL HAEMOGLOBIN (HbF)";
+        if (reportData.tests.length === 1 && isFreeBetaHcgTest(t)) return "FREE BETA hCG";
+        if (reportData.tests.length === 1 && isFreeCholesterolTest(t)) return "FREE CHOLESTEROL (NON-ESTERIFIED)";
+        if (reportData.tests.length === 1 && isFreeEstradiolTest(t)) return "FREE ESTRADIOL";
+        if (reportData.tests.length === 1 && isFreePsaTest(t)) return "FREE PROSTATE-SPECIFIC ANTIGEN (FREE PSA)";
+        if (reportData.tests.length === 1 && isFreeTestosteroneTest(t)) return "FREE TESTOSTERONE";
+        if (reportData.tests.length === 1 && isGad65AntibodyTest(t)) return "GAD65 ANTIBODY";
+        if (reportData.tests.length === 1 && isGh90MinutesAfterGlucoseTest(t)) return "GROWTH HORMONE (GH) - 90 MINUTES AFTER GLUCOSE";
+        if (reportData.tests.length === 1 && isGhFastingGlucoseTest(t)) return "GROWTH HORMONE (GH) WITH FASTING GLUCOSE";
+        if (reportData.tests.length === 1 && isGrowthHormoneTest(t)) return "GROWTH HORMONE (GH)";
+        if (reportData.tests.length === 1 && isGlucoseToleranceTest(t)) return "GLUCOSE TOLERANCE TEST (GTT)";
+        if (reportData.tests.length === 1 && isGastrinLevelTest(t)) return "GASTRIN, SERUM";
+        if (reportData.tests.length === 1 && isRandomGlucoseTest(t)) return "RANDOM PLASMA GLUCOSE";
+        if (reportData.tests.length === 1 && isFungusCultureTest(t)) return "FUNGUS CULTURE";
+        if (reportData.tests.length === 1 && isFungusCultureSensitivityTest(t)) return "FUNGUS CULTURE &amp; SENSITIVITY";
+        if (reportData.tests.length === 1 && isFactorIiMutationTest(t)) return "FACTOR II (PROTHROMBIN) MUTATION";
+        if (reportData.tests.length === 1 && isFactorViiiImmunodepletedTest(t)) return "FACTOR VIII IMMUNODEPLETED";
         if (reportData.tests.length === 1 && isPrealbuminTest(t)) return "PREALBUMIN";
         if (reportData.tests.length === 1 && isHaptoglobinTest(t)) return "HAPTOGLOBIN";
         if (reportData.tests.length === 1 && isGramStainBacterialVaginosisTest(t)) return "GRAM STAIN FOR BACTERIAL VAGINOSIS (BV)";
@@ -13419,10 +16634,16 @@ function buildReportHtml(reportData) {
         if (reportData.tests.length === 1 && isAlbertStainKlbTest(t)) return "ALBERT STAIN OF SMEARS FOR KLB";
         if (reportData.tests.length === 1 && isBaccalSmearBrrBodyTest(t)) return "BUCCAL SMEAR FOR BARR BODY (SEX CHROMATIN)";
         if (reportData.tests.length === 1 && isAutoimmuneProfileTest(t)) return "AUTOIMMUNE PROFILE";
+        if (reportData.tests.length === 1 && isCsfFluidAfbStainTest(t)) return "AFB STAIN, CEREBROSPINAL FLUID";
+        if (reportData.tests.length === 1 && isCsfFluidGramStainTest(t)) return "GRAM STAIN, CEREBROSPINAL FLUID";
+        if (reportData.tests.length === 1 && isCsfFluidProteinTest(t)) return "TOTAL PROTEIN, CEREBROSPINAL FLUID";
+        if (reportData.tests.length === 1 && isCsfFluidSpecificGravityTest(t)) return "SPECIFIC GRAVITY, CEREBROSPINAL FLUID";
+        if (reportData.tests.length === 1 && isCsfFluidGlucoseTest(t)) return "GLUCOSE, CEREBROSPINAL FLUID";
         if (reportData.tests.length === 1 && isAfbZiehlNeelsenStainTest(t)) return "AFB (ZIEHL-NEELSEN STAIN)";
         if (reportData.tests.length === 1 && isBloodCultureSensitivityTest(t)) return "BLOOD CULTURE & SENSITIVITY";
         if (reportData.tests.length === 1 && isBodyFluidCultureSensitivityTest(t)) return "BODY FLUID CULTURE & SENSITIVITY";
         if (reportData.tests.length === 1 && isBodyFluidTotalProteinTest(t)) return "TOTAL PROTEIN, BODY FLUID";
+        if (reportData.tests.length === 1 && isCsfFluidChlorideTest(t)) return "CHLORIDE, CEREBROSPINAL FLUID";
         if (reportData.tests.length === 1 && isBodyFluidChlorideTest(t)) return "CHLORIDE, BODY FLUID";
         if (reportData.tests.length === 1 && isBodyFluidBiochemistryTest(t)) return "BODY FLUID BIOCHEMISTRY";
         if (reportData.tests.length === 1 && isBodyFluidSpecificGravityTest(t)) return "SPECIFIC GRAVITY, BODY FLUID";
@@ -13434,6 +16655,16 @@ function buildReportHtml(reportData) {
         if (reportData.tests.length === 1 && isCd4LymphocyteTest(t)) return "CD4+ T LYMPHOCYTES";
         if (reportData.tests.length === 1 && isCd8LymphocyteTest(t)) return "CD8+ T LYMPHOCYTES";
         if (reportData.tests.length === 1 && isCeaTest(t)) return "CARCINOEMBRYONIC ANTIGEN (CEA)";
+        if (reportData.tests.length === 1 && isComplementFixationTest(t)) return "COMPLEMENT FIXATION TEST (CFT)";
+        if (reportData.tests.length === 1 && isConjunctivalSwabCultureTest(t)) return "CONJUNCTIVAL SWAB CULTURE";
+        if (reportData.tests.length === 1 && isUrethralDischargeGramStainTest(t)) return "GRAM STAIN OF URETHRAL DISCHARGE";
+        if (reportData.tests.length === 1 && isGeneralGramStainTest(t)) return "GRAM STAIN OF SMEARS";
+        if (reportData.tests.length === 1 && isGeneralHealthCheckUpTest(t)) return "GENERAL HEALTH CHECK UP";
+        if (reportData.tests.length === 1 && isHbdhTest(t)) return "ALPHA-HYDROXYBUTYRATE DEHYDROGENASE (HBDH / LDH-1)";
+        if (reportData.tests.length === 1 && isGonorrheaTest(t)) return "GONORRHEA - NEISSERIA GONORRHOEAE";
+        if (reportData.tests.length === 1 && isGndCultureTest(t)) return "CULTURE FOR GRAM-NEGATIVE DIPLOCOCCI";
+        if (reportData.tests.length === 1 && isRightConjunctivalSwabCultureTest(t)) return "CONJUNCTIVAL SWAB CULTURE & SENSITIVITY - RIGHT EYE";
+        if (reportData.tests.length === 1 && isBilateralConjunctivalSwabTest(t)) return "CONJUNCTIVAL SWAB - BOTH EYES";
         if (reportData.tests.length === 1 && isBronchialWashingCultureSensitivityTest(t)) return "BRONCHIAL WASHING CULTURE & SENSITIVITY";
         if (reportData.tests.length === 1 && isAfbCultureSensitivityTest(t)) return "AFB CULTURE & SENSITIVITY";
         if (reportData.tests.length === 1 && isStoolCultureTest(t)) return "STOOL CULTURE";
@@ -13458,15 +16689,38 @@ function buildReportHtml(reportData) {
         if (reportData.tests.length === 1 && isDengueIgmTest(t)) return "DENGUE FEVER ANTIBODY, IgM";
         if (reportData.tests.length === 1 && isAldehydeTest(t)) return "ALDEHYDE TEST (AT)";
         if (reportData.tests.length === 1 && isAnfQualitativeTest(t)) return "ANTINUCLEAR FACTOR (ANF), QUALITATIVE";
+        if (reportData.tests.length === 1 && isHdvAntibodyTest(t)) return "HEPATITIS D VIRUS (HDV) ANTIBODY";
+        if (reportData.tests.length === 1 && isHevAntibodyIgmTest(t)) return "HEPATITIS E VIRUS (HEV) ANTIBODY IgM";
+        if (reportData.tests.length === 1 && isHevAntibodyIggTest(t)) return "HEPATITIS E VIRUS (HEV) ANTIBODY IgG";
+        if (reportData.tests.length === 1 && isHevTotalAntibodyTest(t)) return "HEPATITIS E VIRUS (HEV) TOTAL ANTIBODY (IgG + IgM)";
+        if (reportData.tests.length === 1 && isHlaB27Test(t)) return "HLA-B27";
+        if (reportData.tests.length === 1 && isHangingDropPreparationTest(t)) return "HANGING DROP PREPARATION";
         if (reportData.tests.length === 1 && isTyphidotTest(t)) return "TYPHIDOT";
         if (reportData.tests.length === 1 && isVdrlTest(t)) return "VDRL (RPR)";
+        if (reportData.tests.length === 1 && isHavTotalTest(t)) return "HEPATITIS A TOTAL ANTIBODY (ANTI-HAV, IgG + IgM)";
         if (reportData.tests.length === 1 && isHavIggTest(t)) return "HEPATITIS A ANTIBODY (Anti- HAV), IgG, SERUM";
         if (reportData.tests.length === 1 && isHavIgmTest(t)) return "HEPATITIS A ANTIBODY (Anti HAV), IgM, SERUM";
+        if (reportData.tests.length === 1 && isHcvAntibodyIgmTest(t)) return "HEPATITIS C VIRUS (HCV) ANTIBODY IgM";
+        if (reportData.tests.length === 1 && isHcvAntibodyIggTest(t)) return "HEPATITIS C VIRUS (HCV) ANTIBODY IgG";
+        if (reportData.tests.length === 1 && isHcvTotalAntibodyTest(t)) return "HEPATITIS C VIRUS (HCV) TOTAL ANTIBODY (IgM + IgG)";
+        if (reportData.tests.length === 1 && isHepatitisCRnaPcrQuantitativeTest(t)) return "HEPATITIS C VIRUS (HCV) RNA PCR - QUANTITATIVE";
         if (reportData.tests.length === 1 && isHcvRapidScreeningTest(t)) return "HEPATITIS C VIRUS (HCV) RAPID SCREENING TEST";
+        if (reportData.tests.length === 1 && isHepatitisBViralDnaQualitativeTest(t)) return "HEPATITIS B VIRUS (HBV) DNA - QUALITATIVE";
+        if (reportData.tests.length === 1 && isHbsAgQuantitativeTest(t)) return "HEPATITIS B SURFACE ANTIGEN (HBsAg), QUANTITATIVE";
         if (reportData.tests.length === 1 && isHbsAgTest(t)) return "HEPATITIS B SURFACE ANTIGEN (HBsAg)";
         if (reportData.tests.length === 1 && isAntiHbcIgmTest(t)) return "HEPATITIS B CORE ANTIBODY (Anti- HBc), IgM";
+        if (reportData.tests.length === 1 && isHepatitisBVirusTreatmentFollowUpTest(t)) return "HEPATITIS B VIRUS (HBV) TREATMENT FOLLOW-UP";
+        if (reportData.tests.length === 1 && isHepatitisProfileTest(t)) return "HEPATITIS PROFILE";
+        if (reportData.tests.length === 1 && isHomocystineBloodTest(t)) return "HOMOCYSTINE - BLOOD";
+        if (reportData.tests.length === 1 && isHomocystineUrineTest(t)) return "HOMOCYSTINE - URINE";
+        if (reportData.tests.length === 1 && isHypertensionProfileTest(t)) return "HYPERTENSION PROFILE";
+        if (reportData.tests.length === 1 && isHsv1IgmTest(t)) return "HERPES SIMPLEX VIRUS TYPE 1 (HSV-1) IgM";
+        if (reportData.tests.length === 1 && isHsv1IggTest(t)) return "HERPES SIMPLEX VIRUS TYPE 1 (HSV-1) IgG";
+        if (reportData.tests.length === 1 && isHsv2IgmTest(t)) return "HERPES SIMPLEX VIRUS TYPE 2 (HSV-2) IgM";
+        if (reportData.tests.length === 1 && isHsv2IggTest(t)) return "HERPES SIMPLEX VIRUS TYPE 2 (HSV-2) IgG";
         if (reportData.tests.length === 1 && isHepatitisBProfileTest(t)) return "HEPATITIS B PROFILE";
         if (reportData.tests.length === 1 && isMantouxTest(t)) return "MANTOUX TEST (TUBERCULIN SKIN TEST)<br>(Intradermal Skin Test)";
+        if (reportData.tests.length === 1 && isHivIAndIiTest(t)) return "HIV I &amp; II SCREENING";
         if (reportData.tests.length === 1 && isHiv12ScreeningTest(t)) return "HIV 1 &amp; 2 ANTIBODIES SCREENING TEST, SERUM";
         if (reportData.tests.length === 1 && isAntiBTitreTest(t)) return "Anti B TITRE, IgG";
         if (reportData.tests.length === 1 && isAntiATitreTest(t)) return "ANTI A TITRE, IGM";
@@ -13495,6 +16749,7 @@ function buildReportHtml(reportData) {
         if (reportData.tests.length === 1 && isVitaminETest(t)) return "VITAMIN E (TOCOPHEROL)";
         if (reportData.tests.length === 1 && isVitaminB9Test(t)) return "VITAMIN B9 (FOLIC ACID / FOLATE)";
         if (reportData.tests.length === 1 && isVitaminKTest(t)) return "VITAMIN K";
+        if (reportData.tests.length === 1 && isHdlLdlRatioTest(t)) return "HDL : LDL RATIO";
         if (reportData.tests.length === 1 && isLdlCholesterolTest(t)) return "LDL Cholesterol";
         if (reportData.tests.length === 1 && isHdlCholesterolTest(t)) return "HDL Cholesterol";
         if (reportData.tests.length === 1 && isBilirubinFractionationTest(t)) return "BILIRUBIN TOTAL, DIRECT & INDIRECT";
@@ -13527,6 +16782,13 @@ function buildReportHtml(reportData) {
         if (reportData.tests.length === 1 && isGgtTest(t)) return "GAMMA GLUTAMYL TRANSFERASE (GGT)";
         if (reportData.tests.length === 1 && isChlorideTest(t)) return "CHLORIDE";
         if (reportData.tests.length === 1 && isCreatinine24HourUrineTest(t)) return "CREATININE, 24-HOUR URINE";
+        if (reportData.tests.length === 1 && isUrineCalcium24HourTest(t)) return "CALCIUM, 24-HOUR URINE";
+        if (reportData.tests.length === 1 && isCapillaryFragilityTest(t)) return "CAPILLARY FRAGILITY TEST";
+        if (reportData.tests.length === 1 && isCardiacProfileTest(t)) return "CARDIAC PROFILE";
+        if (reportData.tests.length === 1 && isColorectalCancerMonitorProfileTest(t)) return "COLORECTAL CANCER MONITOR PROFILE";
+        if (reportData.tests.length === 1 && isRandomUrineCopperTest(t)) return "COPPER, RANDOM URINE";
+        if (reportData.tests.length === 1 && isUrineCopper24HourTest(t)) return "COPPER, 24-HOUR URINE";
+        if (reportData.tests.length === 1 && isCeruloplasminTest(t)) return "CERULOPLASMIN, SERUM";
         if (reportData.tests.length === 1 && isSemenAnalysisTest(t)) return "SEMEN ANALYSIS - SEMINOGRAM";
         if (reportData.tests.length === 1 && isUrineAlcoholTest(t)) return "ETHANOL (ALCOHOL), URINE";
         if (reportData.tests.length === 1 && isUrineCotinineTest(t)) return "URINE COTININE";
@@ -13572,6 +16834,12 @@ function buildReportHtml(reportData) {
         if (reportData.tests.length === 1 && isAndrogenPanelTest(t)) return "ANDROGEN PROFILE (TESTOSTERONE & DHEA-S)";
         if (reportData.tests.length === 1 && isTestosteroneTotalTest(t)) return "TESTOSTERONE, TOTAL";
         if (reportData.tests.length === 1 && isProgesteroneTest(t)) return "PROGESTERONE";
+        if (reportData.tests.length === 1 && isCryoglobulinsScreeningTest(t)) return "CRYOGLOBULINS SCREENING TEST";
+        if (reportData.tests.length === 1 && isMorningEveningMidnightCortisolTest(t)) return "CORTISOL, MORNING, EVENING & MIDNIGHT";
+        if (reportData.tests.length === 1 && isMorningCortisolTest(t)) return "CORTISOL, MORNING";
+        if (reportData.tests.length === 1 && isMorningEveningCortisolTest(t)) return "CORTISOL, MORNING & EVENING";
+        if (reportData.tests.length === 1 && isMidnightCortisolTest(t)) return "CORTISOL, MIDNIGHT";
+        if (reportData.tests.length === 1 && isEveningCortisolTest(t)) return "CORTISOL, EVENING";
         if (reportData.tests.length === 1 && isCortisoneTest(t)) return "CORTISONE";
         if (reportData.tests.length === 1 && isActhTest(t)) return "ADRENOCORTICOTROPIC HORMONE (ACTH)";
         if (reportData.tests.length === 1 && isAdaTest(t)) return "ADENOSINE DEAMINASE (ADA) ACTIVITY";
@@ -13590,6 +16858,18 @@ function buildReportHtml(reportData) {
         if (reportData.tests.length === 1 && isBoneMarrowAspirationCytologyTest(t)) return "BONE MARROW ASPIRATION &amp; CYTOLOGY";
         if (reportData.tests.length === 1 && isBoneMarrowCytologyTest(t)) return "BONE MARROW ASPIRATE - CYTOLOGY";
         if (reportData.tests.length === 1 && getBronchialPapSpecimen(t) && !String(t.report_body || "").trim()) return `${escapeHtml(getBronchialPapSpecimen(t).toUpperCase())} - PAP CYTOLOGY`;
+        if (reportData.tests.length === 1 && isClostridioidesDifficileToxinTest(t) && !String(t.report_body || "").trim()) return "C. DIFFICILE TOXIN";
+        if (reportData.tests.length === 1 && isTotalCholesterolTest(t) && !String(t.report_body || "").trim()) return "CHOLESTEROL - TOTAL";
+        if (reportData.tests.length === 1 && is24HourUrineChlorideTest(t) && !String(t.report_body || "").trim()) return "CHLORIDE, 24-HOUR URINE";
+        if (reportData.tests.length === 1 && isSerumChlorideTest(t) && !String(t.report_body || "").trim()) return "CHLORIDE, SERUM";
+        if (reportData.tests.length === 1 && isRandomUrineChlorideTest(t) && !String(t.report_body || "").trim()) return "CHLORIDE, RANDOM URINE";
+        if (reportData.tests.length === 1 && isChlamydiaAntigenTest(t) && !String(t.report_body || "").trim()) return "CHLAMYDIA ANTIGEN";
+        if (reportData.tests.length === 1 && isChlamydiaAntibodyIggIgmTest(t) && !String(t.report_body || "").trim()) return "CHLAMYDIA ANTIBODY - IgG & IgM";
+        if (reportData.tests.length === 1 && isChikungunyaIgmTest(t) && !String(t.report_body || "").trim()) return "CHIKUNGUNYA VIRUS IgM";
+        if (reportData.tests.length === 1 && isChikungunyaIggTest(t) && !String(t.report_body || "").trim()) return "CHIKUNGUNYA VIRUS IgG";
+        if (reportData.tests.length === 1 && isCervicalSwabAfbStainTest(t) && !String(t.report_body || "").trim()) return "CERVICAL SWAB - AFB STAIN";
+        if (reportData.tests.length === 1 && isCervicalSwabGramStainTest(t) && !String(t.report_body || "").trim()) return "CERVICAL SWAB - GRAM STAIN";
+        if (reportData.tests.length === 1 && isCervicalPapSmearTest(t) && !String(t.report_body || "").trim()) return "CERVICAL SMEAR - PAP STAIN";
         if (reportData.tests.length === 1 && isFnacTest(t)) return "FINE NEEDLE ASPIRATION CYTOLOGY (FNAC)";
         if (reportData.tests.length === 1 && isPapSmearTest(t)) return "CYTOLOGY, PAP SMEAR EXAMINATION";
         if (reportData.tests.length === 1 && isHistopathologyReportTest(t)) return getHistopathologyTitle(t);
@@ -14679,7 +17959,7 @@ function buildReportHtml(reportData) {
         <tbody>
           <tr class="report-pagination-content-row">
             <td class="report-pagination-content-cell">
-      <div class="main-content${rtPcrTest ? " rt-pcr-report" : tpmtTest ? " tpmt-report" : cysticFibrosisNewbornTest ? " cystic-fibrosis-newborn-report" : kftTest ? " kft-report" : factorIiTest ? " factor-ii-report" : karyotypeTest ? " karyotype-report" : lipidProfileTest ? " lipid-profile-report" : lftTest ? " lft-report" : hba1cTest ? " hba1c-report" : vitaminDTest ? " vitamin-d-report" : vitaminCTest ? " vitamin-c-report" : vitaminB12Test ? " vitamin-b12-report" : randomBloodSugarTest ? " rbs-report" : fastingBloodSugarTest ? " fbs-report" : bTypeNatriureticPeptideTest ? " bnp-report" : creatineKinaseTest ? " creatine-kinase-report" : beta2MicroglobulinTest ? " beta2-microglobulin-report" : altSgptTest ? " alt-sgpt-report" : dnphTest ? " dnph-report" : prealbuminTest ? " prealbumin-report" : haptoglobinTest ? " haptoglobin-report" : gramStainBacterialVaginosisTest ? " gram-bv-report" : aldolaseTest ? " aldolase-report" : urineProteinCreatinineRatioTest ? " upcr-report" : albuminCreatinineRatioTest ? " acr-report" : postPrandialBloodSugarTest ? " ppbs-report" : tacrolimusTest ? " tacrolimus-report" : phosphorusTest ? " phosphorus-report" : alkalinePhosphataseTest ? " alkaline-phosphatase-report" : clotRetractionTest ? " clot-retraction-report" : vitaminETest ? " vitamin-e-report" : vitaminB9Test ? " vitamin-b9-report" : vitaminKTest ? " vitamin-k-report" : ldlCholesterolTest ? " ldl-cholesterol-report" : hdlCholesterolTest ? " hdl-cholesterol-report" : indirectBilirubinTest ? " indirect-bilirubin-report" : calciumTest ? " calcium-report" : ferritinTest ? " ferritin-report" : cPeptideTest ? " c-peptide-report" : vldlCholesterolTest ? " vldl-cholesterol-report" : comprehensiveMetabolicPanelTest ? " cmp-report" : electrolyteProfileTest ? " electrolytes-report" : potassiumTest ? " potassium-report" : astSgotTest ? " ast-sgot-report" : globulinTest ? " globulin-report" : albuminTest ? " albumin-report" : digoxinTest ? " digoxin-report" : bunTest ? " bun-report" : cbcTest ? " cbc-report" : bloodGroupTest ? " blood-group-report" : dDimerTest ? " d-dimer-report" : sickleCellMutationTest ? " sickle-cell-mutation-report" : rbcTest ? " rbc-report" : plateletTest ? " platelet-report" : tlcTest ? " tlc-report" : absoluteCountTest ? " absolute-count-report" : mchcTest ? " mchc-report" : mchTest ? " mch-report" : mcvTest ? " mcv-report" : mpvTest ? " mpv-report" : hctPcvTest ? " hct-pcv-report" : esrTest ? " esr-report" : pdwTest ? " pdw-report" : hemoglobinTest ? " hemoglobin-report" : ptTest ? " pt-report" : apttTest ? " aptt-report" : dlcTest ? " dlc-report" : indirectCoombsTest ? " indirect-coombs-report" : directCoombsTest ? " direct-coombs-report" : fibrinogenTest ? " fibrinogen-report" : reticulocyteTest ? " reticulocyte-report" : clottingTimeTest ? " clotting-time-report" : bleedingTimeTest ? " bleeding-time-report" : coagulationProfileTest ? " coagulation-profile-report" : factorVTest ? " factor-v-report" : factorViiTest ? " factor-vii-report" : factorIxTest ? " factor-ix-report" : factorXTest ? " factor-x-report" : factorXiTest ? " factor-xi-report" : factorViiiTest ? " factor-viii-report" : peripheralSmearTest ? " peripheral-smear-report" : factorXiiTest ? " factor-xii-report" : factorXiiiTest ? " factor-xiii-report" : ""}">
+      <div class="main-content${rtPcrTest ? " rt-pcr-report" : tpmtTest ? " tpmt-report" : cysticFibrosisNewbornTest ? " cystic-fibrosis-newborn-report" : kftTest ? " kft-report" : factorIiTest ? " factor-ii-report" : karyotypeTest ? " karyotype-report" : lipidProfileTest ? " lipid-profile-report" : lftTest ? " lft-report" : hba1cTest ? " hba1c-report" : vitaminDTest ? " vitamin-d-report" : vitaminCTest ? " vitamin-c-report" : vitaminB12Test ? " vitamin-b12-report" : randomBloodSugarTest ? " rbs-report" : fastingBloodSugarTest ? " fbs-report" : bTypeNatriureticPeptideTest ? " bnp-report" : creatineKinaseTest ? " creatine-kinase-report" : beta2MicroglobulinTest ? " beta2-microglobulin-report" : altSgptTest ? " alt-sgpt-report" : dnphTest ? " dnph-report" : diabeticProfileTest ? " diabetic-profile-report" : extendedDiabeticProfileTest ? " diabetic-profile-extended-report" : diabeticRenalProfileTest ? " diabetic-renal-profile-report" : earSwabGramStainTest ? " ear-swab-gram-stain-report" : earSwabAfbStainTest ? " ear-swab-afb-stain-report" : fshPrlTest ? " fsh-prl-report" : fshLhPrlTest ? " fsh-lh-prl-report" : factorIiMutationTest ? " factor-ii-mutation-report" : factorViiiImmunodepletedTest ? " factor-viii-immunodepleted-report" : femaleInfertilityProfileTest ? " female-infertility-profile-report" : fernTest ? " fern-test-report" : wuchereriaBancroftiAntigenTest ? " wuchereria-bancrofti-antigen-report" : filariaAntigenTest ? " filaria-antigen-report" : fluidAspirationCytologyTest ? " fluid-aspiration-cytology-report" : hbElectrophoresisTest ? " hb-electrophoresis-report" : foetalHaemoglobinByHplcTest ? " foetal-haemoglobin-hplc-report" : foetalHaemoglobinTest ? " foetal-haemoglobin-report" : freeBetaHcgTest ? " free-beta-hcg-report" : freeCholesterolTest ? " free-cholesterol-report" : freeEstradiolTest ? " free-estradiol-report" : freePsaTest ? " free-psa-report" : freeTestosteroneTest ? " free-testosterone-report" : fungusCultureTest ? " fungus-culture-report" : fungusCultureSensitivityTest ? " fungus-culture-sensitivity-report" : prealbuminTest ? " prealbumin-report" : haptoglobinTest ? " haptoglobin-report" : gramStainBacterialVaginosisTest ? " gram-bv-report" : aldolaseTest ? " aldolase-report" : urineProteinCreatinineRatioTest ? " upcr-report" : albuminCreatinineRatioTest ? " acr-report" : postPrandialBloodSugarTest ? " ppbs-report" : tacrolimusTest ? " tacrolimus-report" : phosphorusTest ? " phosphorus-report" : alkalinePhosphataseTest ? " alkaline-phosphatase-report" : clotRetractionTest ? " clot-retraction-report" : vitaminETest ? " vitamin-e-report" : vitaminB9Test ? " vitamin-b9-report" : vitaminKTest ? " vitamin-k-report" : ldlCholesterolTest ? " ldl-cholesterol-report" : hdlCholesterolTest ? " hdl-cholesterol-report" : indirectBilirubinTest ? " indirect-bilirubin-report" : calciumTest ? " calcium-report" : ferritinTest ? " ferritin-report" : cPeptideTest ? " c-peptide-report" : vldlCholesterolTest ? " vldl-cholesterol-report" : comprehensiveMetabolicPanelTest ? " cmp-report" : electrolyteProfileTest ? " electrolytes-report" : potassiumTest ? " potassium-report" : astSgotTest ? " ast-sgot-report" : globulinTest ? " globulin-report" : albuminTest ? " albumin-report" : digoxinTest ? " digoxin-report" : bunTest ? " bun-report" : cbcTest ? " cbc-report" : bloodGroupTest ? " blood-group-report" : dDimerTest ? " d-dimer-report" : sickleCellMutationTest ? " sickle-cell-mutation-report" : rbcTest ? " rbc-report" : plateletTest ? " platelet-report" : tlcTest ? " tlc-report" : absoluteCountTest ? " absolute-count-report" : mchcTest ? " mchc-report" : mchTest ? " mch-report" : mcvTest ? " mcv-report" : mpvTest ? " mpv-report" : hctPcvTest ? " hct-pcv-report" : esrTest ? " esr-report" : pdwTest ? " pdw-report" : hemoglobinTest ? " hemoglobin-report" : ptTest ? " pt-report" : apttTest ? " aptt-report" : dlcTest ? " dlc-report" : indirectCoombsTest ? " indirect-coombs-report" : directCoombsTest ? " direct-coombs-report" : fibrinogenTest ? " fibrinogen-report" : reticulocyteTest ? " reticulocyte-report" : clottingTimeTest ? " clotting-time-report" : bleedingTimeTest ? " bleeding-time-report" : coagulationProfileTest ? " coagulation-profile-report" : factorVTest ? " factor-v-report" : factorViiTest ? " factor-vii-report" : factorIxTest ? " factor-ix-report" : factorXTest ? " factor-x-report" : factorXiTest ? " factor-xi-report" : factorViiiTest ? " factor-viii-report" : peripheralSmearTest ? " peripheral-smear-report" : factorXiiTest ? " factor-xii-report" : factorXiiiTest ? " factor-xiii-report" : ""}">
         <table class="header-table">
           <tr>
             <td style="width: 39%;">
@@ -14712,7 +17992,7 @@ function buildReportHtml(reportData) {
 
         <div class="test-title">${testTitle}</div>
 
-        ${bronchialPapTest ? buildBronchialPapCytologyReportBody(bronchialPapTest) : beta2GlycoproteinPanelTest ? buildBeta2GlycoproteinPanelReportBody(beta2GlycoproteinPanelTest) : toxoplasmaAntibodiesPanelTest ? buildToxoplasmaAntibodiesPanelReportBody(toxoplasmaAntibodiesPanelTest) : torchProfileTest ? buildTorchProfileReportBody(torchProfileTest) : tnfAlphaTest ? buildTnfAlphaReportBody(tnfAlphaTest) : rheumatoidFactorTest ? buildRheumatoidFactorReportBody(rheumatoidFactorTest) : asoTiterTest ? buildAsoTiterReportBody(asoTiterTest) : hsCrpTest ? buildHsCrpReportBody(hsCrpTest) : typhidotTest ? buildTyphidotReportBody(typhidotTest) : vdrlTest ? buildVdrlReportBody(vdrlTest) : havIggTest ? buildHavIggReportBody(havIggTest) : havIgmTest ? buildHavIgmReportBody(havIgmTest) : hcvRapidScreeningTest ? buildHcvRapidScreeningReportBody(hcvRapidScreeningTest) : rtPcrTest ? buildRtPcrReportBody(rtPcrTest) : tpmtTest ? buildTpmtGenotypingReportBody(tpmtTest) : cysticFibrosisNewbornTest ? buildCysticFibrosisNewbornScreenReportBody(cysticFibrosisNewbornTest) : kftTest ? buildKftReportBody(kftTest) : factorIiTest ? buildFactorIiReportBody(factorIiTest) : karyotypeTest ? buildKaryotypeReportBody(karyotypeTest) : lipidProfileTest ? buildLipidProfileReportBody(lipidProfileTest) : lftTest ? buildLftReportBody(lftTest) : hba1cTest ? buildHba1cReportBody(hba1cTest) : vitaminDTest ? buildVitaminDReportBody(vitaminDTest) : vitaminCTest ? buildVitaminCReportBody(vitaminCTest) : vitaminB12Test ? buildVitaminB12ReportBody(vitaminB12Test) : randomBloodSugarTest ? buildRandomBloodSugarReportBody(randomBloodSugarTest) : fastingBloodSugarTest ? buildFastingBloodSugarReportBody(fastingBloodSugarTest) : bTypeNatriureticPeptideTest ? buildBTypeNatriureticPeptideReportBody(bTypeNatriureticPeptideTest) : creatineKinaseTest ? buildCreatineKinaseReportBody(creatineKinaseTest) : beta2MicroglobulinTest ? buildBeta2MicroglobulinReportBody(beta2MicroglobulinTest) : altSgptTest ? buildAltSgptReportBody(altSgptTest) : dnphTest ? buildDnphReportBody(dnphTest) : prealbuminTest ? buildPrealbuminReportBody(prealbuminTest) : haptoglobinTest ? buildHaptoglobinReportBody(haptoglobinTest) : gramStainBacterialVaginosisTest ? buildGramStainBacterialVaginosisReportBody(gramStainBacterialVaginosisTest) : aldolaseTest ? buildAldolaseReportBody(aldolaseTest) : urineProteinCreatinineRatioTest ? buildUrineProteinCreatinineRatioReportBody(urineProteinCreatinineRatioTest) : albuminCreatinineRatioTest ? buildAlbuminCreatinineRatioReportBody(albuminCreatinineRatioTest) : postPrandialBloodSugarTest ? buildPostPrandialBloodSugarReportBody(postPrandialBloodSugarTest) : tacrolimusTest ? buildTacrolimusReportBody(tacrolimusTest) : phosphorusTest ? buildPhosphorusReportBody(phosphorusTest) : alkalinePhosphataseTest ? buildAlkalinePhosphataseReportBody(alkalinePhosphataseTest) : clotRetractionTest ? buildClotRetractionReportBody(clotRetractionTest) : vitaminETest ? buildVitaminEReportBody(vitaminETest) : vitaminB9Test ? buildVitaminB9ReportBody(vitaminB9Test) : vitaminKTest ? buildVitaminKReportBody(vitaminKTest) : ldlCholesterolTest ? buildLdlCholesterolReportBody(ldlCholesterolTest) : hdlCholesterolTest ? buildHdlCholesterolReportBody(hdlCholesterolTest) : indirectBilirubinTest ? buildIndirectBilirubinReportBody(indirectBilirubinTest) : calciumTest ? buildCalciumReportBody(calciumTest) : ferritinTest ? buildFerritinReportBody(ferritinTest) : cPeptideTest ? buildCPeptideReportBody(cPeptideTest) : vldlCholesterolTest ? buildVldlCholesterolReportBody(vldlCholesterolTest) : comprehensiveMetabolicPanelTest ? buildComprehensiveMetabolicPanelReportBody(comprehensiveMetabolicPanelTest) : electrolyteProfileTest ? buildElectrolyteProfileReportBody(electrolyteProfileTest) : potassiumTest ? buildPotassiumReportBody(potassiumTest) : astSgotTest ? buildAstSgotReportBody(astSgotTest) : globulinTest ? buildGlobulinReportBody(globulinTest) : albuminTest ? buildAlbuminReportBody(albuminTest) : digoxinTest ? buildDigoxinReportBody(digoxinTest) : bunTest ? buildBunReportBody(bunTest) : cbcTest ? buildCbcReportBody(cbcTest, cbcVariant) : bloodGroupTest ? buildBloodGroupReportBody(bloodGroupTest) : dDimerTest ? buildDDimerReportBody(dDimerTest) : sickleCellMutationTest ? buildSickleCellMutationAnalysisReportBody(sickleCellMutationTest) : rbcTest ? buildRbcReportBody(rbcTest) : plateletTest ? buildPlateletReportBody(plateletTest) : tlcTest ? buildTlcReportBody(tlcTest) : absoluteCountTest ? buildAbsoluteCountReportBody(absoluteCountTest, absoluteCountTemplate) : mchcTest ? buildMchcReportBody(mchcTest) : mchTest ? buildMchReportBody(mchTest) : mcvTest ? buildMcvReportBody(mcvTest) : mpvTest ? buildMpvReportBody(mpvTest) : hctPcvTest ? buildHctPcvReportBody(hctPcvTest) : esrTest ? buildEsrReportBody(esrTest) : pdwTest ? buildPdwReportBody(pdwTest) : hemoglobinTest ? buildHemoglobinReportBody(hemoglobinTest, reportData.patient.gender) : ptTest ? buildProthrombinTimeReportBody(ptTest) : apttTest ? buildApttReportBody(apttTest) : dlcTest ? buildDlcReportBody(dlcTest) : indirectCoombsTest ? buildIndirectCoombsReportBody(indirectCoombsTest) : directCoombsTest ? buildDirectCoombsReportBody(directCoombsTest) : fibrinogenTest ? buildFibrinogenReportBody(fibrinogenTest) : reticulocyteTest ? buildReticulocyteReportBody(reticulocyteTest) : clottingTimeTest ? buildClottingTimeReportBody(clottingTimeTest) : bleedingTimeTest ? buildBleedingTimeReportBody(bleedingTimeTest) : coagulationProfileTest ? buildCoagulationProfileReportBody(coagulationProfileTest) : factorVTest ? buildFactorVReportBody(factorVTest) : factorViiTest ? buildFactorViiReportBody(factorViiTest) : factorIxTest ? buildFactorIxReportBody(factorIxTest) : factorXTest ? buildFactorXReportBody(factorXTest) : factorXiTest ? buildFactorXiReportBody(factorXiTest) : factorViiiTest ? buildFactorViiiReportBody(factorViiiTest) : peripheralSmearTest ? buildPeripheralBloodSmearReportBody(peripheralSmearTest) : factorXiiTest ? buildFactorXiiReportBody(factorXiiTest) : factorXiiiTest ? buildFactorXiiiReportBody(factorXiiiTest) : `
+        ${gndCultureTest ? buildGndCultureReportBody(gndCultureTest) : cDiffToxinTest ? buildClostridioidesDifficileToxinReportBody(cDiffToxinTest) : totalCholesterolTest ? buildTotalCholesterolReportBody(totalCholesterolTest) : urineChloride24HourTest ? build24HourUrineChlorideReportBody(urineChloride24HourTest) : serumChlorideTest ? buildSerumChlorideReportBody(serumChlorideTest) : randomUrineChlorideTest ? buildRandomUrineChlorideReportBody(randomUrineChlorideTest) : chlamydiaAntigenTest ? buildChlamydiaAntigenReportBody(chlamydiaAntigenTest) : chlamydiaAntibodyIggIgmTest ? buildChlamydiaAntibodyIggIgmReportBody(chlamydiaAntibodyIggIgmTest) : chikungunyaIgmTest ? buildChikungunyaIgmReportBody(chikungunyaIgmTest) : chikungunyaIggTest ? buildChikungunyaIggReportBody(chikungunyaIggTest) : cervicalSwabAfbStainTest ? buildCervicalSwabAfbStainReportBody(cervicalSwabAfbStainTest) : cervicalSwabGramStainTest ? buildCervicalSwabGramStainReportBody(cervicalSwabGramStainTest) : cervicalPapSmearTest ? buildCervicalPapSmearReportBody(cervicalPapSmearTest) : bronchialPapTest ? buildBronchialPapCytologyReportBody(bronchialPapTest) : beta2GlycoproteinPanelTest ? buildBeta2GlycoproteinPanelReportBody(beta2GlycoproteinPanelTest) : toxoplasmaAntibodiesPanelTest ? buildToxoplasmaAntibodiesPanelReportBody(toxoplasmaAntibodiesPanelTest) : torchProfileTest ? buildTorchProfileReportBody(torchProfileTest) : tnfAlphaTest ? buildTnfAlphaReportBody(tnfAlphaTest) : rheumatoidFactorTest ? buildRheumatoidFactorReportBody(rheumatoidFactorTest) : asoTiterTest ? buildAsoTiterReportBody(asoTiterTest) : hsCrpTest ? buildHsCrpReportBody(hsCrpTest) : typhidotTest ? buildTyphidotReportBody(typhidotTest) : vdrlTest ? buildVdrlReportBody(vdrlTest) : havIggTest ? buildHavIggReportBody(havIggTest) : havIgmTest ? buildHavIgmReportBody(havIgmTest) : hcvRapidScreeningTest ? buildHcvRapidScreeningReportBody(hcvRapidScreeningTest) : rtPcrTest ? buildRtPcrReportBody(rtPcrTest) : tpmtTest ? buildTpmtGenotypingReportBody(tpmtTest) : cysticFibrosisNewbornTest ? buildCysticFibrosisNewbornScreenReportBody(cysticFibrosisNewbornTest) : kftTest ? buildKftReportBody(kftTest) : factorIiTest ? buildFactorIiReportBody(factorIiTest) : karyotypeTest ? buildKaryotypeReportBody(karyotypeTest) : lipidProfileTest ? buildLipidProfileReportBody(lipidProfileTest) : lftTest ? buildLftReportBody(lftTest) : hba1cTest ? buildHba1cReportBody(hba1cTest) : vitaminDTest ? buildVitaminDReportBody(vitaminDTest) : vitaminCTest ? buildVitaminCReportBody(vitaminCTest) : vitaminB12Test ? buildVitaminB12ReportBody(vitaminB12Test) : randomBloodSugarTest ? buildRandomBloodSugarReportBody(randomBloodSugarTest) : fastingBloodSugarTest ? buildFastingBloodSugarTest(fastingBloodSugarTest) : bTypeNatriureticPeptideTest ? buildBTypeNatriureticPeptideReportBody(bTypeNatriureticPeptideTest) : creatineKinaseTest ? buildCreatineKinaseReportBody(creatineKinaseTest) : beta2MicroglobulinTest ? buildBeta2MicroglobulinReportBody(beta2MicroglobulinTest) : altSgptTest ? buildAltSgptReportBody(altSgptTest) : dnphTest ? buildDnphReportBody(dnphTest) : diabeticProfileTest ? buildDiabeticProfileReportBody(diabeticProfileTest) : extendedDiabeticProfileTest ? buildDiabeticProfileReportBody(extendedDiabeticProfileTest, { extended: true }) : diabeticRenalProfileTest ? buildDiabeticRenalProfileReportBody(diabeticRenalProfileTest) : earSwabGramStainTest ? buildEarSwabGramStainReportBody(earSwabGramStainTest) : earSwabAfbStainTest ? buildEarSwabAfbStainReportBody(earSwabAfbStainTest) : fshPrlTest ? buildFshPrlReportBody(fshPrlTest) : fshLhPrlTest ? buildFshPrlReportBody(fshLhPrlTest, { includeLh: true }) : factorIiMutationTest ? buildFactorIiMutationReportBody(factorIiMutationTest) : factorViiiImmunodepletedTest ? buildFactorViiiImmunodepletedReportBody(factorViiiImmunodepletedTest) : femaleInfertilityProfileTest ? buildFemaleInfertilityProfileReportBody(femaleInfertilityProfileTest) : fernTest ? buildFernTestReportBody(fernTest) : wuchereriaBancroftiAntigenTest ? buildWuchereriaBancroftiAntigenReportBody(wuchereriaBancroftiAntigenTest) : filariaAntigenTest ? buildFilariaAntigenReportBody(filariaAntigenTest) : fluidAspirationCytologyTest ? buildFluidAspirationCytologyReportBody(fluidAspirationCytologyTest) : foetalHaemoglobinByHplcTest ? buildFoetalHaemoglobinByHplcReportBody(foetalHaemoglobinByHplcTest) : foetalHaemoglobinTest ? buildFoetalHaemoglobinReportBody(foetalHaemoglobinTest) : freeBetaHcgTest ? buildFreeBetaHcgReportBody(freeBetaHcgTest) : freeCholesterolTest ? buildFreeCholesterolReportBody(freeCholesterolTest) : freeEstradiolTest ? buildFreeEstradiolReportBody(freeEstradiolTest) : freePsaTest ? buildFreePsaReportBody(freePsaTest) : freeTestosteroneTest ? buildFreeTestosteroneReportBody(freeTestosteroneTest) : gad65AntibodyTest ? buildGad65AntibodyReportBody(gad65AntibodyTest) : gh90MinutesAfterGlucoseTest ? buildGh90MinutesAfterGlucoseReportBody(gh90MinutesAfterGlucoseTest) : ghFastingGlucoseTest ? buildGhFastingGlucoseReportBody(ghFastingGlucoseTest) : growthHormoneTest ? buildGrowthHormoneReportBody(growthHormoneTest) : glucoseToleranceTest ? buildGlucoseToleranceTestReportBody(glucoseToleranceTest) : gastrinLevelTest ? buildGastrinLevelReportBody(gastrinLevelTest) : fungusCultureTest ? buildFungusCultureReportBody(fungusCultureTest) : fungusCultureSensitivityTest ? buildFungusCultureSensitivityReportBody(fungusCultureSensitivityTest) : prealbuminTest ? buildPrealbuminReportBody(prealbuminTest) : haptoglobinTest ? buildHaptoglobinReportBody(haptoglobinTest) : gramStainBacterialVaginosisTest ? buildGramStainBacterialVaginosisReportBody(gramStainBacterialVaginosisTest) : aldolaseTest ? buildAldolaseReportBody(aldolaseTest) : urineProteinCreatinineRatioTest ? buildUrineProteinCreatinineRatioReportBody(urineProteinCreatinineRatioTest) : albuminCreatinineRatioTest ? buildAlbuminCreatinineRatioReportBody(albuminCreatinineRatioTest) : postPrandialBloodSugarTest ? buildPostPrandialBloodSugarReportBody(postPrandialBloodSugarTest) : tacrolimusTest ? buildTacrolimusReportBody(tacrolimusTest) : phosphorusTest ? buildPhosphorusReportBody(phosphorusTest) : alkalinePhosphataseTest ? buildAlkalinePhosphataseReportBody(alkalinePhosphataseTest) : clotRetractionTest ? buildClotRetractionReportBody(clotRetractionTest) : vitaminETest ? buildVitaminETest(vitaminETest) : vitaminB9Test ? buildVitaminB9ReportBody(vitaminB9Test) : vitaminKTest ? buildVitaminKReportBody(vitaminKTest) : ldlCholesterolTest ? buildLdlCholesterolReportBody(ldlCholesterolTest) : hdlCholesterolTest ? buildHdlCholesterolReportBody(hdlCholesterolTest) : indirectBilirubinTest ? buildIndirectBilirubinReportBody(indirectBilirubinTest) : calciumTest ? buildCalciumReportBody(calciumTest) : ferritinTest ? buildFerritinReportBody(ferritinTest) : cPeptideTest ? buildCPeptideReportBody(cPeptideTest) : vldlCholesterolTest ? buildVldlCholesterolReportBody(vldlCholesterolTest) : comprehensiveMetabolicPanelTest ? buildComprehensiveMetabolicPanelReportBody(comprehensiveMetabolicPanelTest) : electrolyteProfileTest ? buildElectrolyteProfileTest(electrolyteProfileTest) : potassiumTest ? buildPotassiumReportBody(potassiumTest) : astSgotTest ? buildAstSgotReportBody(astSgotTest) : globulinTest ? buildGlobulinReportBody(globulinTest) : albuminTest ? buildAlbuminReportBody(albuminTest) : digoxinTest ? buildDigoxinReportBody(digoxinTest) : randomUrineCopperTest ? buildRandomUrineCopperReportBody(randomUrineCopperTest) : bunTest ? buildBunReportBody(bunTest) : cbcTest ? buildCbcReportBody(cbcTest, cbcVariant) : bloodGroupTest ? buildBloodGroupReportBody(bloodGroupTest) : dDimerTest ? buildDDimerReportBody(dDimerTest) : sickleCellMutationTest ? buildSickleCellMutationAnalysisReportBody(sickleCellMutationTest) : rbcTest ? buildRbcReportBody(rbcTest) : plateletTest ? buildPlateletReportBody(plateletTest) : tlcTest ? buildTlcReportBody(tlcTest) : absoluteCountTest ? buildAbsoluteCountReportBody(absoluteCountTest, absoluteCountTemplate) : mchcTest ? buildMchcReportBody(mchcTest) : mchTest ? buildMchReportBody(mchTest) : mcvTest ? buildMcvReportBody(mcvTest) : mpvTest ? buildMpvReportBody(mpvTest) : hctPcvTest ? buildHctPcvReportBody(hctPcvTest) : esrTest ? buildEsrReportBody(esrTest) : pdwTest ? buildPdwReportBody(pdwTest) : hemoglobinTest ? buildHemoglobinReportBody(hemoglobinTest, reportData.patient.gender) : ptTest ? buildProthrombinTimeReportBody(ptTest) : apttTest ? buildApttReportBody(apttTest) : dlcTest ? buildDlcReportBody(dlcTest) : indirectCoombsTest ? buildIndirectCoombsReportBody(indirectCoombsTest) : directCoombsTest ? buildDirectCoombsReportBody(directCoombsTest) : fibrinogenTest ? buildFibrinogenReportBody(fibrinogenTest) : reticulocyteTest ? buildReticulocyteReportBody(reticulocyteTest) : clottingTimeTest ? buildClottingTimeReportBody(clottingTimeTest) : bleedingTimeTest ? buildBleedingTimeReportBody(bleedingTimeTest) : coagulationProfileTest ? buildCoagulationProfileReportBody(coagulationProfileTest) : factorVTest ? buildFactorVReportBody(factorVTest) : factorViiTest ? buildFactorViiReportBody(factorViiTest) : factorIxTest ? buildFactorIxTest(factorIxTest) : factorXTest ? buildFactorXTest(factorXTest) : factorXiTest ? buildFactorXiReportBody(factorXiTest) : factorViiiTest ? buildFactorViiiReportBody(factorViiiTest) : peripheralSmearTest ? buildPeripheralBloodSmearReportBody(peripheralSmearTest) : factorXiiTest ? buildFactorXiiReportBody(factorXiiTest) : factorXiiiTest ? buildFactorXiiiTest(factorXiiiTest) : `
         <table class="results-table">
           <thead>
             <tr>

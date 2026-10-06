@@ -3267,6 +3267,573 @@ async function ensureBodyFluidChlorideTestConfiguration() {
   });
 }
 
+async function ensureCsfFluidChlorideTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all(
+    "SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('csffluidfor chloride', 'csf fluid for chloride', 'csf fluid chloride', 'chloride, csf', 'csf chloride', 'cerebrospinal fluid chloride')"
+  );
+  const fields = getFallbackReportParameters({ name: "CSF Fluid for Chloride" });
+
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (String(test.sample_type || "").trim() && !/^(csf|cerebrospinal|spinal fluid)/i.test(test.sample_type)) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all(
+      `SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula
+       FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC`,
+      [test.id]
+    );
+    const placeholder = parameters.length === 1
+      && String(parameters[0].parameter_name || "").trim().toLowerCase() === "result"
+      && !String(parameters[0].unit || "").trim()
+      && !String(parameters[0].normal_range || "").trim()
+      && !String(parameters[0].calculation_formula || "").trim()
+      && (!parameters[0].entry_mode || parameters[0].entry_mode === "manual");
+    if (parameters.length && !placeholder) continue;
+
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) {
+        await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Cerebrospinal Fluid (CSF)", test.id]);
+      }
+      for (const [index, field] of fields.entries()) {
+        if (placeholder && index === 0) {
+          await db.run(
+            "UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, display_order = ? WHERE id = ?",
+            [field.parameterName, field.unit, field.normalRange, index + 1, parameters[0].id]
+          );
+        } else {
+          await db.run(
+            `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order)
+             VALUES (?, ?, ?, ?, 'manual', ?)`,
+            [test.id, field.parameterName, field.unit, field.normalRange, index + 1]
+          );
+        }
+      }
+    });
+  }
+}
+
+async function ensureCsfFluidProteinTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all(
+    "SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('csffluidforprotein', 'csf fluid for protein', 'csf fluid protein', 'protein, csf', 'csf protein', 'cerebrospinal fluid protein')"
+  );
+  const fields = getFallbackReportParameters({ name: "CSF Fluid for Protein" });
+
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (String(test.sample_type || "").trim() && !/^(csf|cerebrospinal|spinal fluid)/i.test(test.sample_type)) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all(
+      `SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula
+       FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC`,
+      [test.id]
+    );
+    const placeholder = parameters.length === 1
+      && String(parameters[0].parameter_name || "").trim().toLowerCase() === "result"
+      && !String(parameters[0].unit || "").trim()
+      && !String(parameters[0].normal_range || "").trim()
+      && !String(parameters[0].calculation_formula || "").trim()
+      && (!parameters[0].entry_mode || parameters[0].entry_mode === "manual");
+    if (parameters.length && !placeholder) continue;
+
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) {
+        await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Cerebrospinal Fluid (CSF)", test.id]);
+      }
+      for (const [index, field] of fields.entries()) {
+        if (placeholder && index === 0) {
+          await db.run(
+            "UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, display_order = ? WHERE id = ?",
+            [field.parameterName, field.unit, field.normalRange, index + 1, parameters[0].id]
+          );
+        } else {
+          await db.run(
+            `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order)
+             VALUES (?, ?, ?, ?, 'manual', ?)`,
+            [test.id, field.parameterName, field.unit, field.normalRange, index + 1]
+          );
+        }
+      }
+    });
+  }
+}
+
+async function ensureCsfFluidSpecificGravityTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all(
+    "SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('csffluidforspecificgravity', 'csf fluid for specific gravity', 'csf fluid specific gravity', 'specific gravity, csf', 'csf specific gravity', 'cerebrospinal fluid specific gravity')"
+  );
+  const fields = getFallbackReportParameters({ name: "CSF Fluid for Specific Gravity" });
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (String(test.sample_type || "").trim() && !/^(csf|cerebrospinal|spinal fluid)/i.test(test.sample_type)) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all(
+      `SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula
+       FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC`, [test.id]
+    );
+    const placeholder = parameters.length === 1
+      && String(parameters[0].parameter_name || "").trim().toLowerCase() === "result"
+      && !String(parameters[0].unit || "").trim() && !String(parameters[0].normal_range || "").trim()
+      && !String(parameters[0].calculation_formula || "").trim()
+      && (!parameters[0].entry_mode || parameters[0].entry_mode === "manual");
+    if (parameters.length && !placeholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Cerebrospinal Fluid (CSF)", test.id]);
+      for (const [index, field] of fields.entries()) {
+        if (placeholder && index === 0) {
+          await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, display_order = ? WHERE id = ?", [field.parameterName, field.unit, field.normalRange, index + 1, parameters[0].id]);
+        } else {
+          await db.run(`INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order)
+            VALUES (?, ?, ?, ?, 'manual', ?)`, [test.id, field.parameterName, field.unit, field.normalRange, index + 1]);
+        }
+      }
+    });
+  }
+}
+
+async function ensureCsfFluidGlucoseTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all("SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('csffluidforsugar', 'csf fluid for sugar', 'csf fluid glucose', 'glucose, csf', 'csf glucose', 'cerebrospinal fluid glucose')");
+  const fields = getFallbackReportParameters({ name: "CSF Fluid for Sugar" });
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (String(test.sample_type || "").trim() && !/^(csf|cerebrospinal|spinal fluid)/i.test(test.sample_type)) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all(`SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC`, [test.id]);
+    const placeholder = parameters.length === 1 && String(parameters[0].parameter_name || "").trim().toLowerCase() === "result"
+      && !String(parameters[0].unit || "").trim() && !String(parameters[0].normal_range || "").trim()
+      && !String(parameters[0].calculation_formula || "").trim() && (!parameters[0].entry_mode || parameters[0].entry_mode === "manual");
+    if (parameters.length && !placeholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Cerebrospinal Fluid (CSF)", test.id]);
+      for (const [index, field] of fields.entries()) {
+        if (placeholder && index === 0) await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = ?, calculation_formula = ?, calculation_precision = ?, display_order = ? WHERE id = ?", [field.parameterName, field.unit, field.normalRange, field.entryMode, field.calculationFormula, field.calculationPrecision, index + 1, parameters[0].id]);
+        else await db.run(`INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, calculation_formula, calculation_precision, display_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [test.id, field.parameterName, field.unit, field.normalRange, field.entryMode, field.calculationFormula, field.calculationPrecision, index + 1]);
+      }
+    });
+  }
+}
+
+async function ensureBlankReportFormatConfiguration(db, { names, schemaName, sampleType, sampleTypePattern, placeholderNames = ["result"] }) {
+  const quotedNames = names.map(name => `'${String(name).replace(/'/g, "''")}'`).join(", ");
+  const tests = await db.all(`SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN (${quotedNames})`);
+  const fields = getFallbackReportParameters({ name: schemaName });
+  const normalize = value => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const allowedPlaceholderNames = new Set(placeholderNames.map(normalize));
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (String(test.sample_type || "").trim() && sampleTypePattern && !sampleTypePattern.test(test.sample_type)) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all(`SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC`, [test.id]);
+    const placeholder = parameters.length > 0
+      && parameters.length <= allowedPlaceholderNames.size
+      && parameters.every(parameter => allowedPlaceholderNames.has(normalize(parameter.parameter_name))
+        && !String(parameter.unit || "").trim() && !String(parameter.normal_range || "").trim()
+        && !String(parameter.calculation_formula || "").trim()
+        && (!parameter.entry_mode || parameter.entry_mode === "manual"));
+    if (parameters.length && !placeholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim() && sampleType) await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", [sampleType, test.id]);
+      for (const [index, field] of fields.entries()) {
+        const existing = parameters[index];
+        if (existing) {
+          await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = ?, calculation_formula = ?, calculation_precision = ?, display_order = ? WHERE id = ?", [field.parameterName, field.unit, field.normalRange, field.entryMode, field.calculationFormula, field.calculationPrecision, index + 1, existing.id]);
+        } else {
+          await db.run("INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, calculation_formula, calculation_precision, display_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [test.id, field.parameterName, field.unit, field.normalRange, field.entryMode, field.calculationFormula, field.calculationPrecision, index + 1]);
+        }
+      }
+    });
+  }
+}
+
+async function ensureHbElectrophoresisTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["hb electrophoresis", "hemoglobin electrophoresis", "haemoglobin electrophoresis", "hemoglobinopathy assessment", "haemoglobinopathy assessment"],
+    schemaName: "Hb Electrophoresis",
+    sampleType: "Whole Blood",
+    sampleTypePattern: /^(whole blood|blood|edta)/i,
+    placeholderNames: ["result", "findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureUrineCalcium24HourTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["calcium(24 hrs urine)", "calcium (24 hrs urine)", "calcium, 24 hour urine", "calcium, urine, 24 hour", "24 hour urine calcium", "urine calcium, 24 hour"],
+    schemaName: "Calcium(24 hrs Urine)", sampleType: "24-Hour Urine", sampleTypePattern: /^(24\s*(hour|hr)|timed)\s*urine|^urine\b/i,
+  });
+}
+
+async function ensureCapillaryFragilityTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["capillary fragility test", "capillary fragility", "tourniquet test"],
+    schemaName: "Capillary Fragility Test", sampleType: "Clinical bedside / skin examination",
+  });
+}
+
+async function ensureCardiacProfileTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["cardiac profile", "cardiac marker profile"], schemaName: "Cardiac Profile", sampleType: "Serum / Plasma", sampleTypePattern: /^(serum|plasma|whole blood)/i,
+  });
+}
+
+async function ensureColorectalCancerMonitorProfileTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["colorectal cancer monitor profile", "colorectal cancer monitor", "colon cancer monitor profile"],
+    schemaName: "Colorectal Cancer Monitor Profile",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|plasma)/i,
+  });
+}
+
+async function ensureComplementFixationTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["cft (complete fixsation test)", "cft (complete fixation test)", "complement fixation test", "complimentfixsation test", "compliment fixsation test"],
+    schemaName: "ComplimentFixsation Test",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|plasma)/i,
+  });
+}
+
+async function ensureBilateralConjunctivalSwabTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["conjswabbotheye", "conj swab both eye", "conjunctival swab both eye", "bilateral conjunctival swab"],
+    schemaName: "ConjSwabBothEye",
+    sampleType: "Bilateral Conjunctival Swabs",
+    sampleTypePattern: /^(conjunctival|eye|ocular|bilateral)/i,
+  });
+}
+
+async function ensureRightConjunctivalSwabCultureTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["conjswabcsrteye", "conj swab c/s rt eye", "conjunctival swab c/s right eye", "right conjunctival swab culture & sensitivity"],
+    schemaName: "ConjSwabC/SRtEye",
+    sampleType: "Right Conjunctival Swab",
+    sampleTypePattern: /^(conjunctival|right eye|eye|ocular)/i,
+  });
+}
+
+async function ensureConjunctivalSwabCultureTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["conjunctival swab culture", "conj swab culture", "conjunctival swab culture & sensitivity"],
+    schemaName: "Conjunctival Swab Culture",
+    sampleType: "Conjunctival Swab",
+    sampleTypePattern: /^(conjunctival|eye|ocular)/i,
+  });
+}
+
+async function ensureCeruloplasminTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["ceruloplasmin", "ceruloplasmin, serum"], schemaName: "Ceruloplasmin", sampleType: "Serum", sampleTypePattern: /^serum/i,
+  });
+}
+
+async function ensureUrineCopper24HourTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["coppe (24 hrs.urine)", "copper (24 hrs. urine)", "copper (24 hrs urine)", "copper, 24-hour urine", "copper 24 hour urine"],
+    schemaName: "Coppe (24 hrs.urine)",
+    sampleType: "24-Hour Urine",
+    sampleTypePattern: /^(24|urine)/i,
+  });
+}
+
+async function ensureRandomUrineCopperTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["copper(urine)", "copper (urine)", "copper, urine", "urine copper", "copper random urine"],
+    schemaName: "Copper(Urine)",
+    sampleType: "Random Urine",
+    sampleTypePattern: /^(random|urine)/i,
+  });
+}
+
+async function ensureEveningCortisolTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["cortisol (evening)", "evening cortisol", "pm cortisol", "cortisol pm"],
+    schemaName: "Cortisol (Evening)",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|plasma)/i,
+  });
+}
+
+async function ensureMidnightCortisolTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["cortisol (midnight)", "midnight cortisol", "late night cortisol", "late-night cortisol"],
+    schemaName: "Cortisol (Midnight)",
+    sampleType: "",
+    sampleTypePattern: /^(serum|saliva|plasma)/i,
+  });
+}
+
+async function ensureMorningEveningCortisolTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["cortisol (morning&evening)", "cortisol (morning & evening)", "morning evening cortisol", "am and pm cortisol"],
+    schemaName: "Cortisol (Morning&Evening)",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|plasma)/i,
+  });
+}
+
+async function ensureMorningCortisolTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["cortisol (morning)", "morning cortisol", "am cortisol", "cortisol am"],
+    schemaName: "Cortisol (Morning)",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|plasma)/i,
+  });
+}
+
+async function ensureMorningEveningMidnightCortisolTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["cortisol (morning,evening &midnight)", "cortisol (morning, evening & midnight)", "morning evening midnight cortisol", "am pm midnight cortisol"],
+    schemaName: "Cortisol (Morning,Evening &Midnight)",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|plasma|saliva)/i,
+  });
+}
+
+async function ensureCryoglobulinsScreeningTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["cryoglobulins screening test", "cryoglobulin screening test", "cryoglobulins screen", "cryoglobulin screen", "cryoglobulin test"],
+    schemaName: "Cryoglobulins Screening Test",
+    sampleType: "Serum",
+    sampleTypePattern: /^serum/i,
+  });
+}
+
+async function ensureGndCultureTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["cultureforg.n.d", "culture for g.n.d", "culture for gnd", "culture for gram negative diplococci", "gnd culture", "gonococcal culture"],
+    schemaName: "CultureforG.N.D",
+    sampleType: "Genital / Mucosal Swab",
+    sampleTypePattern: /^(genital|cervical|endocervical|urethral|vaginal|rectal|pharyngeal|conjunctival|mucosal)/i,
+  });
+}
+
+async function ensureGonorrheaTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["gonorrhea", "gonorrhoea", "gonorrhea test", "gonorrhoea test"],
+    schemaName: "Gonorrhea",
+    sampleType: "Swab / Urine",
+    sampleTypePattern: /^(swab|urine|urethral|endocervical|cervical|vaginal|rectal|pharyngeal|conjunctival|genital|mucosal)/i,
+  });
+}
+
+async function ensureUrethralDischargeGramStainTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["gram stain of urethral discharge", "urethral discharge gram stain", "gram stain urethral discharge"],
+    schemaName: "Gram Stain Of Urethral Discharge",
+    sampleType: "Urethral discharge",
+    sampleTypePattern: /^urethral/i,
+    placeholderNames: ["findings", "impression", "comments", "result"],
+  });
+}
+
+async function ensureGeneralGramStainTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["gram stain of smears", "gram stain of smear", "gram stain smears", "gram smear examination"],
+    schemaName: "Gram Stain of Smears",
+    sampleType: "Specify specimen / collection site",
+    placeholderNames: ["findings", "impression", "comments", "result"],
+  });
+}
+
+async function ensureGeneralHealthCheckUpTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["general health check up", "general health checkup", "general health check", "health check up"],
+    schemaName: "General Health Check Up",
+    sampleType: "Blood / Urine, as ordered",
+  });
+}
+
+async function ensureCysticFibrosisGeneMutationTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["cystic fibrosis (cf) gene mutation", "cystic fibrosis gene mutation", "cftr gene mutation", "cftr mutation analysis", "cystic fibrosis mutation analysis"],
+    schemaName: "Cystic Fibrosis (CF) Gene Mutation",
+    sampleType: "Whole Blood",
+    sampleTypePattern: /^(whole blood|blood|buccal|saliva|dna)/i,
+  });
+}
+
+async function ensureCmvIggTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["cytomegalovirus (cmv) igg", "cytomegalovirus igg", "cmv igg", "cmv antibody igg"],
+    schemaName: "Cytomegalovirus (CMV) IgG",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|plasma)/i,
+  });
+}
+
+async function ensureCervicalPapSmearTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["cervical smearforpapstain", "cervical smear for pap stain", "cervical smear pap stain", "cervical pap smear", "cervical cytology pap smear"],
+    schemaName: "Cervical SmearforPAPStain", sampleType: "Cervical Smear", sampleTypePattern: /^(cervical|cervico)/i,
+  });
+}
+
+async function ensureCervicalSwabGramStainTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["cervical swabgramstain", "cervical swab gram stain", "cervical gram stain", "endocervical swab gram stain"],
+    schemaName: "Cervical SwabGramStain", sampleType: "Cervical Swab", sampleTypePattern: /^(cervical|endocervical|cervico)/i,
+  });
+}
+
+async function ensureCervicalSwabAfbStainTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["cervical swabafbstain", "cervical swab afb stain", "cervical afb smear", "endocervical swab afb stain"],
+    schemaName: "Cervical SwabAFBStain", sampleType: "Cervical Swab", sampleTypePattern: /^(cervical|endocervical|cervico)/i,
+  });
+}
+
+async function ensureChikungunyaIggTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["chikungunya igg", "chikungunya virus igg", "anti chikungunya igg"],
+    schemaName: "Chikungunya IgG", sampleType: "Serum", sampleTypePattern: /^(serum|plasma)/i,
+  });
+}
+
+async function ensureChikungunyaIgmTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["chikungunya igm", "chikungunya virus igm", "anti chikungunya igm"],
+    schemaName: "Chikungunya IgM", sampleType: "Serum", sampleTypePattern: /^(serum|plasma)/i,
+  });
+}
+
+async function ensureChlamydiaAntibodyIggIgmTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["chlamydia antibody igg & igm", "chlamydia antibody igg and igm", "chlamydia igg & igm", "chlamydia trachomatis igg & igm"],
+    schemaName: "Chlamydia Antibody IgG & IgM", sampleType: "Serum", sampleTypePattern: /^(serum|plasma)/i,
+  });
+}
+
+async function ensureChlamydiaAntigenTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["chlamydia antigen", "chlamydia trachomatis antigen", "ct antigen"],
+    schemaName: "Chlamydia Antigen", sampleType: "Swab", sampleTypePattern: /^(swab|cervical|endocervical|vaginal|urethral|ocular|conjunctival)/i,
+  });
+}
+
+async function ensureRandomUrineChlorideTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["chloride (random)", "random urine chloride", "urine chloride random"],
+    schemaName: "Chloride (Random)", sampleType: "Random Urine", sampleTypePattern: /^(random urine|urine)/i,
+  });
+}
+
+async function ensureSerumChlorideTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["chloride (serum)", "serum chloride", "plasma chloride"],
+    schemaName: "Chloride (Serum)", sampleType: "Serum", sampleTypePattern: /^(serum|plasma)/i,
+  });
+}
+
+async function ensure24HourUrineChlorideTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["chloride (24 hrs. urine)", "chloride (24 hrs urine)", "chloride 24 hour urine", "24 hour urine chloride"],
+    schemaName: "Chloride (24 hrs. Urine)", sampleType: "24h Urine", sampleTypePattern: /^(24\s*(h|hr|hour)|timed urine)/i,
+  });
+}
+
+async function ensureTotalCholesterolTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["cholesterol -total", "cholesterol - total", "total cholesterol", "cholesterol total", "cholesterol"],
+    schemaName: "Cholesterol -Total", sampleType: "Serum", sampleTypePattern: /^(serum|plasma)/i,
+  });
+}
+
+async function ensureCsfFluidAfbStainTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all(
+    "SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('csffluidforafbstain', 'csf fluid for afb stain', 'csf fluid afb stain', 'afb stain, csf', 'csf afb stain', 'cerebrospinal fluid afb stain')"
+  );
+  const fields = getFallbackReportParameters({ name: "CSF Fluid for AFB Stain" });
+
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (String(test.sample_type || "").trim() && !/^(csf|cerebrospinal|spinal fluid)/i.test(test.sample_type)) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all(
+      `SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula
+       FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC`,
+      [test.id]
+    );
+    const placeholder = parameters.length === 1
+      && String(parameters[0].parameter_name || "").trim().toLowerCase() === "result"
+      && !String(parameters[0].unit || "").trim()
+      && !String(parameters[0].normal_range || "").trim()
+      && !String(parameters[0].calculation_formula || "").trim()
+      && (!parameters[0].entry_mode || parameters[0].entry_mode === "manual");
+    if (parameters.length && !placeholder) continue;
+
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) {
+        await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Cerebrospinal Fluid (CSF)", test.id]);
+      }
+      for (const [index, field] of fields.entries()) {
+        if (placeholder && index === 0) {
+          await db.run(
+            "UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, display_order = ? WHERE id = ?",
+            [field.parameterName, field.unit, field.normalRange, index + 1, parameters[0].id]
+          );
+        } else {
+          await db.run(
+            `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order)
+             VALUES (?, ?, ?, ?, 'manual', ?)`,
+            [test.id, field.parameterName, field.unit, field.normalRange, index + 1]
+          );
+        }
+      }
+    });
+  }
+}
+
+async function ensureCsfFluidGramStainTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all(
+    "SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('csffluidforgramstain', 'csf fluid for gram stain', 'csf fluid gram stain', 'gram stain, csf', 'csf gram stain', 'cerebrospinal fluid gram stain')"
+  );
+  const fields = getFallbackReportParameters({ name: "CSF Fluid for Gram Stain" });
+
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (String(test.sample_type || "").trim() && !/^(csf|cerebrospinal|spinal fluid)/i.test(test.sample_type)) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all(
+      `SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula
+       FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC`,
+      [test.id]
+    );
+    const placeholder = parameters.length === 1
+      && String(parameters[0].parameter_name || "").trim().toLowerCase() === "result"
+      && !String(parameters[0].unit || "").trim()
+      && !String(parameters[0].normal_range || "").trim()
+      && !String(parameters[0].calculation_formula || "").trim()
+      && (!parameters[0].entry_mode || parameters[0].entry_mode === "manual");
+    if (parameters.length && !placeholder) continue;
+
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) {
+        await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Cerebrospinal Fluid (CSF)", test.id]);
+      }
+      for (const [index, field] of fields.entries()) {
+        if (placeholder && index === 0) {
+          await db.run(
+            "UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, display_order = ? WHERE id = ?",
+            [field.parameterName, field.unit, field.normalRange, index + 1, parameters[0].id]
+          );
+        } else {
+          await db.run(
+            `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order)
+             VALUES (?, ?, ?, ?, 'manual', ?)`,
+            [test.id, field.parameterName, field.unit, field.normalRange, index + 1]
+          );
+        }
+      }
+    });
+  }
+}
+
 async function ensureBodyFluidBiochemistryTestConfiguration(db = { all, get, run, transaction }) {
   const tests = await db.all(
     "SELECT id, name, sample_type, report_body FROM tests WHERE LOWER(name) IN ('body fluids biochemistry', 'body fluid biochemistry')"
@@ -4885,6 +5452,774 @@ async function ensureDnphTestConfiguration() {
   });
 }
 
+/**
+ * Replaces only an unused, blank imported DiabeticProfile placeholder with
+ * the entry fields needed by the dedicated report layout.  Existing reports,
+ * bundled tests, and any profile that has been configured by a laboratory are
+ * intentionally left alone.
+ */
+async function ensureDiabeticProfileTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all(
+    "SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('diabeticprofile', 'diabetic profile', 'diabetes profile', 'diabetes mellitus profile', 'diabetes checkup profile')"
+  );
+  const fields = getFallbackReportParameters({ name: "DiabeticProfile" });
+  const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const genericNames = new Set(["result", "resultfindings", "comments", "comment", "remarks"]);
+
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+
+    const parameters = await db.all(
+      `SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula
+       FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC`,
+      [test.id]
+    );
+    const isGenericPlaceholder = parameters.length <= 2 && parameters.every((parameter) => (
+      genericNames.has(normalize(parameter.parameter_name))
+      && !String(parameter.unit || "").trim()
+      && !String(parameter.normal_range || "").trim()
+      && !String(parameter.calculation_formula || "").trim()
+      && (!parameter.entry_mode || parameter.entry_mode === "manual")
+    ));
+    if (parameters.length && !isGenericPlaceholder) continue;
+
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) {
+        await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Blood / Urine", test.id]);
+      }
+      for (const [index, field] of fields.entries()) {
+        const entryMode = field.entryMode === "calculated" ? "calculated" : "manual";
+        const formula = entryMode === "calculated" ? (field.calculationFormula || null) : null;
+        const precision = Number.isInteger(field.calculationPrecision) ? field.calculationPrecision : null;
+        const existing = parameters[index];
+        if (existing) {
+          await db.run(
+            `UPDATE test_parameters
+             SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = ?, calculation_formula = ?, calculation_precision = ?, display_order = ?
+             WHERE id = ?`,
+            [field.parameterName, field.unit || "", field.normalRange || "", entryMode, formula, precision, index + 1, existing.id]
+          );
+        } else {
+          await db.run(
+            `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, calculation_formula, calculation_precision, display_order)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [test.id, field.parameterName, field.unit || "", field.normalRange || "", entryMode, formula, precision, index + 1]
+          );
+        }
+      }
+    });
+  }
+}
+
+async function ensureExtendedDiabeticProfileTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all(
+    "SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('diabeticprofile(extended)', 'diabetic profile (extended)', 'diabetes profile (extended)', 'extended diabetic profile')"
+  );
+  const fields = getFallbackReportParameters({ name: "DiabeticProfile(Extended)" });
+  const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const genericNames = new Set(["result", "resultfindings", "comments", "comment", "remarks"]);
+
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+
+    const parameters = await db.all(
+      `SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula
+       FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC`,
+      [test.id]
+    );
+    const isGenericPlaceholder = parameters.length <= 2 && parameters.every((parameter) => (
+      genericNames.has(normalize(parameter.parameter_name))
+      && !String(parameter.unit || "").trim()
+      && !String(parameter.normal_range || "").trim()
+      && !String(parameter.calculation_formula || "").trim()
+      && (!parameter.entry_mode || parameter.entry_mode === "manual")
+    ));
+    if (parameters.length && !isGenericPlaceholder) continue;
+
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) {
+        await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Blood / Urine", test.id]);
+      }
+      for (const [index, field] of fields.entries()) {
+        const entryMode = field.entryMode === "calculated" ? "calculated" : "manual";
+        const formula = entryMode === "calculated" ? (field.calculationFormula || null) : null;
+        const precision = Number.isInteger(field.calculationPrecision) ? field.calculationPrecision : null;
+        const existing = parameters[index];
+        if (existing) {
+          await db.run(
+            `UPDATE test_parameters
+             SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = ?, calculation_formula = ?, calculation_precision = ?, display_order = ?
+             WHERE id = ?`,
+            [field.parameterName, field.unit || "", field.normalRange || "", entryMode, formula, precision, index + 1, existing.id]
+          );
+        } else {
+          await db.run(
+            `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, calculation_formula, calculation_precision, display_order)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [test.id, field.parameterName, field.unit || "", field.normalRange || "", entryMode, formula, precision, index + 1]
+          );
+        }
+      }
+    });
+  }
+}
+
+async function ensureDiabeticRenalProfileTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all(
+    "SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('diabeticrenalprofile', 'diabetic renal profile', 'diabetes renal profile', 'diabetic kidney profile')"
+  );
+  const fields = getFallbackReportParameters({ name: "DiabeticRenalProfile" });
+  const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const genericNames = new Set(["result", "resultfindings", "comments", "comment", "remarks"]);
+
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+
+    const parameters = await db.all(
+      `SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula
+       FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC`,
+      [test.id]
+    );
+    const isGenericPlaceholder = parameters.length <= 2 && parameters.every((parameter) => (
+      genericNames.has(normalize(parameter.parameter_name))
+      && !String(parameter.unit || "").trim()
+      && !String(parameter.normal_range || "").trim()
+      && !String(parameter.calculation_formula || "").trim()
+      && (!parameter.entry_mode || parameter.entry_mode === "manual")
+    ));
+    if (parameters.length && !isGenericPlaceholder) continue;
+
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) {
+        await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Blood / Urine", test.id]);
+      }
+      for (const [index, field] of fields.entries()) {
+        const entryMode = field.entryMode === "calculated" ? "calculated" : "manual";
+        const formula = entryMode === "calculated" ? (field.calculationFormula || null) : null;
+        const precision = Number.isInteger(field.calculationPrecision) ? field.calculationPrecision : null;
+        const existing = parameters[index];
+        if (existing) {
+          await db.run(
+            `UPDATE test_parameters
+             SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = ?, calculation_formula = ?, calculation_precision = ?, display_order = ?
+             WHERE id = ?`,
+            [field.parameterName, field.unit || "", field.normalRange || "", entryMode, formula, precision, index + 1, existing.id]
+          );
+        } else {
+          await db.run(
+            `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, calculation_formula, calculation_precision, display_order)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [test.id, field.parameterName, field.unit || "", field.normalRange || "", entryMode, formula, precision, index + 1]
+          );
+        }
+      }
+    });
+  }
+}
+
+async function ensureEarSwabGramStainTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all("SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('earcuwahgamstain', 'earswabgramstain', 'ear swab gram stain')");
+  const fields = getFallbackReportParameters({ name: "EarCuwahGamStain" });
+  const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const genericNames = new Set(["findings", "impression", "comments", "comment", "remarks", "result", "resultfindings"]);
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all(`SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC`, [test.id]);
+    const isGenericPlaceholder = parameters.length <= 3 && parameters.every((parameter) => genericNames.has(normalize(parameter.parameter_name)) && !String(parameter.unit || "").trim() && !String(parameter.normal_range || "").trim() && !String(parameter.calculation_formula || "").trim() && (!parameter.entry_mode || parameter.entry_mode === "manual"));
+    if (parameters.length && !isGenericPlaceholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Ear Swab", test.id]);
+      for (const [index, field] of fields.entries()) {
+        const existing = parameters[index];
+        if (existing) {
+          await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = 'manual', calculation_formula = NULL, calculation_precision = NULL, display_order = ? WHERE id = ?", [field.parameterName, field.unit || "", field.normalRange || "", index + 1, existing.id]);
+        } else {
+          await db.run("INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order) VALUES (?, ?, ?, ?, 'manual', ?)", [test.id, field.parameterName, field.unit || "", field.normalRange || "", index + 1]);
+        }
+      }
+    });
+  }
+}
+
+async function ensureEarSwabAfbStainTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all("SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('earswabafbstain', 'ear swab afb stain')");
+  const fields = getFallbackReportParameters({ name: "EarSwabAFBStain" });
+  const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const genericNames = new Set(["findings", "impression", "comments", "comment", "remarks", "result", "resultfindings"]);
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all(`SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC`, [test.id]);
+    const isGenericPlaceholder = parameters.length <= 3 && parameters.every((parameter) => genericNames.has(normalize(parameter.parameter_name)) && !String(parameter.unit || "").trim() && !String(parameter.normal_range || "").trim() && !String(parameter.calculation_formula || "").trim() && (!parameter.entry_mode || parameter.entry_mode === "manual"));
+    if (parameters.length && !isGenericPlaceholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Ear Swab", test.id]);
+      for (const [index, field] of fields.entries()) {
+        const existing = parameters[index];
+        if (existing) await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = 'manual', calculation_formula = NULL, calculation_precision = NULL, display_order = ? WHERE id = ?", [field.parameterName, field.unit || "", field.normalRange || "", index + 1, existing.id]);
+        else await db.run("INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order) VALUES (?, ?, ?, ?, 'manual', ?)", [test.id, field.parameterName, field.unit || "", field.normalRange || "", index + 1]);
+      }
+    });
+  }
+}
+
+async function ensureFshPrlTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all("SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('fsh&prl', 'fsh and prl', 'fsh prolactin')");
+  const fields = getFallbackReportParameters({ name: "FSH&PRL" });
+  const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all("SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC", [test.id]);
+    const placeholder = parameters.length <= 2 && parameters.every((parameter) => ["result", "resultfindings", "comments", "comment", "remarks"].includes(normalize(parameter.parameter_name)) && !String(parameter.unit || "").trim() && !String(parameter.normal_range || "").trim() && !String(parameter.calculation_formula || "").trim() && (!parameter.entry_mode || parameter.entry_mode === "manual"));
+    if (parameters.length && !placeholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Serum", test.id]);
+      for (const [index, field] of fields.entries()) {
+        const existing = parameters[index];
+        if (existing) await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = 'manual', calculation_formula = NULL, calculation_precision = NULL, display_order = ? WHERE id = ?", [field.parameterName, field.unit || "", field.normalRange || "", index + 1, existing.id]);
+        else await db.run("INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order) VALUES (?, ?, ?, ?, 'manual', ?)", [test.id, field.parameterName, field.unit || "", field.normalRange || "", index + 1]);
+      }
+    });
+  }
+}
+
+async function ensureFshLhPrlTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all("SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('fsh,lh&prl', 'fsh, lh & prl', 'fsh lh prl')");
+  const fields = getFallbackReportParameters({ name: "FSH,LH&PRL" });
+  const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all("SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC", [test.id]);
+    const placeholder = parameters.length <= 2 && parameters.every((parameter) => ["result", "resultfindings", "comments", "comment", "remarks"].includes(normalize(parameter.parameter_name)) && !String(parameter.unit || "").trim() && !String(parameter.normal_range || "").trim() && !String(parameter.calculation_formula || "").trim() && (!parameter.entry_mode || parameter.entry_mode === "manual"));
+    if (parameters.length && !placeholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Serum", test.id]);
+      for (const [index, field] of fields.entries()) {
+        const existing = parameters[index];
+        if (existing) await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = 'manual', calculation_formula = NULL, calculation_precision = NULL, display_order = ? WHERE id = ?", [field.parameterName, field.unit || "", field.normalRange || "", index + 1, existing.id]);
+        else await db.run("INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order) VALUES (?, ?, ?, ?, 'manual', ?)", [test.id, field.parameterName, field.unit || "", field.normalRange || "", index + 1]);
+      }
+    });
+  }
+}
+
+async function ensureFactorIiMutationTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all("SELECT id, sample_type, report_body FROM tests WHERE UPPER(COALESCE(code, '')) = 'PF011' OR LOWER(name) IN ('factor ii mutation', 'prothrombin mutation', 'f2 mutation')");
+  const fields = getFallbackReportParameters({ name: "Factor II Mutation" });
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all("SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC", [test.id]);
+    const placeholder = parameters.length === 1 && String(parameters[0].parameter_name || "").trim().toLowerCase() === "result" && !String(parameters[0].unit || "").trim() && !String(parameters[0].normal_range || "").trim() && !String(parameters[0].calculation_formula || "").trim() && (!parameters[0].entry_mode || parameters[0].entry_mode === "manual");
+    if (parameters.length && !placeholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Whole Blood", test.id]);
+      for (const [index, field] of fields.entries()) {
+        const existing = parameters[index];
+        if (existing) await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = 'manual', calculation_formula = NULL, calculation_precision = NULL, display_order = ? WHERE id = ?", [field.parameterName, field.unit || "", field.normalRange || "", index + 1, existing.id]);
+        else await db.run("INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order) VALUES (?, ?, ?, ?, 'manual', ?)", [test.id, field.parameterName, field.unit || "", field.normalRange || "", index + 1]);
+      }
+    });
+  }
+}
+
+async function ensureFactorViiiImmunodepletedTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all("SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('factor vill immunodepleted', 'factor viii immunodepleted')");
+  const fields = getFallbackReportParameters({ name: "Factor VIII Immunodepleted" });
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all("SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC", [test.id]);
+    const placeholder = parameters.length === 1 && String(parameters[0].parameter_name || "").trim().toLowerCase() === "result" && !String(parameters[0].unit || "").trim() && !String(parameters[0].normal_range || "").trim() && !String(parameters[0].calculation_formula || "").trim() && (!parameters[0].entry_mode || parameters[0].entry_mode === "manual");
+    if (parameters.length && !placeholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Citrated Plasma", test.id]);
+      for (const [index, field] of fields.entries()) {
+        const existing = parameters[index];
+        if (existing) await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = 'manual', calculation_formula = NULL, calculation_precision = NULL, display_order = ? WHERE id = ?", [field.parameterName, field.unit || "", field.normalRange || "", index + 1, existing.id]);
+        else await db.run("INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order) VALUES (?, ?, ?, ?, 'manual', ?)", [test.id, field.parameterName, field.unit || "", field.normalRange || "", index + 1]);
+      }
+    });
+  }
+}
+
+async function ensureFemaleInfertilityProfileTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all("SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('femaleinfertilityprofile', 'female infertility profile', 'female infertility panel')");
+  const fields = getFallbackReportParameters({ name: "FemaleInfertilityProfile" });
+  const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all("SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC", [test.id]);
+    const placeholder = parameters.length <= 2 && parameters.every((parameter) => ["result", "resultfindings", "comments", "comment", "remarks"].includes(normalize(parameter.parameter_name)) && !String(parameter.unit || "").trim() && !String(parameter.normal_range || "").trim() && !String(parameter.calculation_formula || "").trim() && (!parameter.entry_mode || parameter.entry_mode === "manual"));
+    if (parameters.length && !placeholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Serum", test.id]);
+      for (const [index, field] of fields.entries()) {
+        const existing = parameters[index];
+        if (existing) await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = 'manual', calculation_formula = NULL, calculation_precision = NULL, display_order = ? WHERE id = ?", [field.parameterName, field.unit || "", field.normalRange || "", index + 1, existing.id]);
+        else await db.run("INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order) VALUES (?, ?, ?, ?, 'manual', ?)", [test.id, field.parameterName, field.unit || "", field.normalRange || "", index + 1]);
+      }
+    });
+  }
+}
+
+async function ensureFernTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all("SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('ferntest (coll.charges 10o/extra)', 'fern test', 'cervical mucus fern test')");
+  const fields = getFallbackReportParameters({ name: "FernTest (Coll.Charges 10o/extra)" });
+  const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all("SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC", [test.id]);
+    const placeholder = parameters.length <= 2 && parameters.every((parameter) => ["result", "resultfindings", "comments", "comment", "remarks"].includes(normalize(parameter.parameter_name)) && !String(parameter.unit || "").trim() && !String(parameter.normal_range || "").trim() && !String(parameter.calculation_formula || "").trim() && (!parameter.entry_mode || parameter.entry_mode === "manual"));
+    if (parameters.length && !placeholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Cervical Mucus", test.id]);
+      for (const [index, field] of fields.entries()) {
+        const existing = parameters[index];
+        if (existing) await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = 'manual', calculation_formula = NULL, calculation_precision = NULL, display_order = ? WHERE id = ?", [field.parameterName, field.unit || "", field.normalRange || "", index + 1, existing.id]);
+        else await db.run("INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order) VALUES (?, ?, ?, ?, 'manual', ?)", [test.id, field.parameterName, field.unit || "", field.normalRange || "", index + 1]);
+      }
+    });
+  }
+}
+
+async function ensureWuchereriaBancroftiAntigenTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all("SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) = 'filaria (wuchereria bancrofti) antigenedta blo..immuno../'");
+  const fields = getFallbackReportParameters({ name: "Filaria (Wuchereria Bancrofti) AntigenEDTA Blo..Immuno../" });
+  const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all("SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC", [test.id]);
+    const placeholder = parameters.length <= 2 && parameters.every((parameter) => ["result", "resultfindings", "comments", "comment", "remarks"].includes(normalize(parameter.parameter_name)) && !String(parameter.unit || "").trim() && !String(parameter.normal_range || "").trim() && !String(parameter.calculation_formula || "").trim() && (!parameter.entry_mode || parameter.entry_mode === "manual"));
+    if (parameters.length && !placeholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["EDTA Whole Blood", test.id]);
+      for (const [index, field] of fields.entries()) {
+        const existing = parameters[index];
+        if (existing) await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = 'manual', calculation_formula = NULL, calculation_precision = NULL, display_order = ? WHERE id = ?", [field.parameterName, field.unit || "", field.normalRange || "", index + 1, existing.id]);
+        else await db.run("INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order) VALUES (?, ?, ?, ?, 'manual', ?)", [test.id, field.parameterName, field.unit || "", field.normalRange || "", index + 1]);
+      }
+    });
+  }
+}
+
+async function ensureFilariaAntigenTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all("SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) = 'filaria antigen'");
+  const fields = getFallbackReportParameters({ name: "Filaria Antigen" });
+  const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all("SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC", [test.id]);
+    const placeholder = parameters.length <= 2 && parameters.every((parameter) => ["result", "resultfindings", "comments", "comment", "remarks"].includes(normalize(parameter.parameter_name)) && !String(parameter.unit || "").trim() && !String(parameter.normal_range || "").trim() && !String(parameter.calculation_formula || "").trim() && (!parameter.entry_mode || parameter.entry_mode === "manual"));
+    if (parameters.length && !placeholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Serum", test.id]);
+      for (const [index, field] of fields.entries()) {
+        const existing = parameters[index];
+        if (existing) await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = 'manual', calculation_formula = NULL, calculation_precision = NULL, display_order = ? WHERE id = ?", [field.parameterName, field.unit || "", field.normalRange || "", index + 1, existing.id]);
+        else await db.run("INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order) VALUES (?, ?, ?, ?, 'manual', ?)", [test.id, field.parameterName, field.unit || "", field.normalRange || "", index + 1]);
+      }
+    });
+  }
+}
+
+async function ensureFluidAspirationCytologyTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all("SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('fluid aspiration&cytology', 'fluid aspiration & cytology', 'fluid aspiration cytology')");
+  const fields = getFallbackReportParameters({ name: "Fluid Aspiration&Cytology" });
+  const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all("SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC", [test.id]);
+    const placeholder = parameters.length <= 2 && parameters.every((parameter) => ["result", "resultfindings", "comments", "comment", "remarks"].includes(normalize(parameter.parameter_name)) && !String(parameter.unit || "").trim() && !String(parameter.normal_range || "").trim() && !String(parameter.calculation_formula || "").trim() && (!parameter.entry_mode || parameter.entry_mode === "manual"));
+    if (parameters.length && !placeholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Body Fluid", test.id]);
+      for (const [index, field] of fields.entries()) {
+        const existing = parameters[index];
+        if (existing) await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = 'manual', calculation_formula = NULL, calculation_precision = NULL, display_order = ? WHERE id = ?", [field.parameterName, field.unit || "", field.normalRange || "", index + 1, existing.id]);
+        else await db.run("INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order) VALUES (?, ?, ?, ?, 'manual', ?)", [test.id, field.parameterName, field.unit || "", field.normalRange || "", index + 1]);
+      }
+    });
+  }
+}
+
+async function ensureFoetalHaemoglobinTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all("SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('foetal haemoglobin', 'fetal haemoglobin', 'fetal hemoglobin')");
+  const fields = getFallbackReportParameters({ name: "Foetal Haemoglobin" });
+  const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all("SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC", [test.id]);
+    const placeholder = parameters.length <= 2 && parameters.every((parameter) => ["result", "resultfindings", "comments", "comment", "remarks"].includes(normalize(parameter.parameter_name)) && !String(parameter.unit || "").trim() && !String(parameter.normal_range || "").trim() && !String(parameter.calculation_formula || "").trim() && (!parameter.entry_mode || parameter.entry_mode === "manual"));
+    if (parameters.length && !placeholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Whole Blood", test.id]);
+      for (const [index, field] of fields.entries()) {
+        const existing = parameters[index];
+        if (existing) await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = 'manual', calculation_formula = NULL, calculation_precision = NULL, display_order = ? WHERE id = ?", [field.parameterName, field.unit || "", field.normalRange || "", index + 1, existing.id]);
+        else await db.run("INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order) VALUES (?, ?, ?, ?, 'manual', ?)", [test.id, field.parameterName, field.unit || "", field.normalRange || "", index + 1]);
+      }
+    });
+  }
+}
+
+async function ensureFoetalHaemoglobinByHplcTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all("SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('foetal haemoglobin by hplc', 'fetal haemoglobin by hplc', 'fetal hemoglobin by hplc')");
+  const fields = getFallbackReportParameters({ name: "Foetal Haemoglobin by HPLC" });
+  const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all("SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC", [test.id]);
+    const placeholder = parameters.length <= 2 && parameters.every((parameter) => ["result", "resultfindings", "comments", "comment", "remarks"].includes(normalize(parameter.parameter_name)) && !String(parameter.unit || "").trim() && !String(parameter.normal_range || "").trim() && !String(parameter.calculation_formula || "").trim() && (!parameter.entry_mode || parameter.entry_mode === "manual"));
+    if (parameters.length && !placeholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Whole Blood", test.id]);
+      for (const [index, field] of fields.entries()) {
+        const existing = parameters[index];
+        if (existing) await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = 'manual', calculation_formula = NULL, calculation_precision = NULL, display_order = ? WHERE id = ?", [field.parameterName, field.unit || "", field.normalRange || "", index + 1, existing.id]);
+        else await db.run("INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order) VALUES (?, ?, ?, ?, 'manual', ?)", [test.id, field.parameterName, field.unit || "", field.normalRange || "", index + 1]);
+      }
+    });
+  }
+}
+
+async function ensureFreeBetaHcgTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all("SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('free beta hcg', 'free beta hcg quantitative', 'free β-hcg')");
+  const fields = getFallbackReportParameters({ name: "Free Beta hCG" });
+  const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all("SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC", [test.id]);
+    const placeholder = parameters.length <= 2 && parameters.every((parameter) => ["result", "resultfindings", "comments", "comment", "remarks"].includes(normalize(parameter.parameter_name)) && !String(parameter.unit || "").trim() && !String(parameter.normal_range || "").trim() && !String(parameter.calculation_formula || "").trim() && (!parameter.entry_mode || parameter.entry_mode === "manual"));
+    if (parameters.length && !placeholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Serum", test.id]);
+      for (const [index, field] of fields.entries()) {
+        const existing = parameters[index];
+        if (existing) await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = 'manual', calculation_formula = NULL, calculation_precision = NULL, display_order = ? WHERE id = ?", [field.parameterName, field.unit || "", field.normalRange || "", index + 1, existing.id]);
+        else await db.run("INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order) VALUES (?, ?, ?, ?, 'manual', ?)", [test.id, field.parameterName, field.unit || "", field.normalRange || "", index + 1]);
+      }
+    });
+  }
+}
+
+async function ensureFreeCholesterolTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all("SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('free cholesterol', 'cholesterol free', 'non-esterified cholesterol', 'unesterified cholesterol')");
+  const fields = getFallbackReportParameters({ name: "Free Cholesterol" });
+  const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all("SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC", [test.id]);
+    const placeholder = parameters.length <= 4 && parameters.every((parameter) => ["result", "resultfindings", "comments", "comment", "remarks", "clinicaldetails", "findings", "impression", "advice"].includes(normalize(parameter.parameter_name)) && !String(parameter.unit || "").trim() && !String(parameter.normal_range || "").trim() && !String(parameter.calculation_formula || "").trim() && (!parameter.entry_mode || parameter.entry_mode === "manual"));
+    if (parameters.length && !placeholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Serum", test.id]);
+      for (const [index, field] of fields.entries()) {
+        const existing = parameters[index];
+        if (existing) await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = 'manual', calculation_formula = NULL, calculation_precision = NULL, display_order = ? WHERE id = ?", [field.parameterName, field.unit || "", field.normalRange || "", index + 1, existing.id]);
+        else await db.run("INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order) VALUES (?, ?, ?, ?, 'manual', ?)", [test.id, field.parameterName, field.unit || "", field.normalRange || "", index + 1]);
+      }
+    });
+  }
+}
+
+async function ensureFreeEstradiolTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all("SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('free estradiol', 'estradiol free', 'free e2', 'estradiol free fraction')");
+  const fields = getFallbackReportParameters({ name: "Free Estradiol" });
+  const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all("SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC", [test.id]);
+    const placeholder = parameters.length <= 2 && parameters.every((parameter) => ["result", "resultfindings", "comments", "comment", "remarks"].includes(normalize(parameter.parameter_name)) && !String(parameter.unit || "").trim() && !String(parameter.normal_range || "").trim() && !String(parameter.calculation_formula || "").trim() && (!parameter.entry_mode || parameter.entry_mode === "manual"));
+    if (parameters.length && !placeholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Serum", test.id]);
+      for (const [index, field] of fields.entries()) {
+        const existing = parameters[index];
+        if (existing) await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = 'manual', calculation_formula = NULL, calculation_precision = NULL, display_order = ? WHERE id = ?", [field.parameterName, field.unit || "", field.normalRange || "", index + 1, existing.id]);
+        else await db.run("INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order) VALUES (?, ?, ?, ?, 'manual', ?)", [test.id, field.parameterName, field.unit || "", field.normalRange || "", index + 1]);
+      }
+    });
+  }
+}
+
+async function ensureFreePsaTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all("SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('free p s a', 'free psa', 'f-psa', 'free prostate-specific antigen')");
+  const fields = getFallbackReportParameters({ name: "Free P S A" });
+  const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all("SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC", [test.id]);
+    const placeholder = parameters.length <= 2 && parameters.every((parameter) => ["result", "resultfindings", "comments", "comment", "remarks"].includes(normalize(parameter.parameter_name)) && !String(parameter.unit || "").trim() && !String(parameter.normal_range || "").trim() && !String(parameter.calculation_formula || "").trim() && (!parameter.entry_mode || parameter.entry_mode === "manual"));
+    if (parameters.length && !placeholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Serum", test.id]);
+      for (const [index, field] of fields.entries()) {
+        const existing = parameters[index];
+        if (existing) await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = 'manual', calculation_formula = NULL, calculation_precision = NULL, display_order = ? WHERE id = ?", [field.parameterName, field.unit || "", field.normalRange || "", index + 1, existing.id]);
+        else await db.run("INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order) VALUES (?, ?, ?, ?, 'manual', ?)", [test.id, field.parameterName, field.unit || "", field.normalRange || "", index + 1]);
+      }
+    });
+  }
+}
+
+async function ensureFreeTestosteroneTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all("SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('free testosterone', 'testosterone free', 'free t', 'free androgen testosterone')");
+  const fields = getFallbackReportParameters({ name: "Free Testosterone" });
+  const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all("SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC", [test.id]);
+    const placeholder = parameters.length <= 2 && parameters.every((parameter) => ["result", "resultfindings", "comments", "comment", "remarks"].includes(normalize(parameter.parameter_name)) && !String(parameter.unit || "").trim() && !String(parameter.normal_range || "").trim() && !String(parameter.calculation_formula || "").trim() && (!parameter.entry_mode || parameter.entry_mode === "manual"));
+    if (parameters.length && !placeholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Serum", test.id]);
+      for (const [index, field] of fields.entries()) {
+        const existing = parameters[index];
+        if (existing) await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = 'manual', calculation_formula = NULL, calculation_precision = NULL, display_order = ? WHERE id = ?", [field.parameterName, field.unit || "", field.normalRange || "", index + 1, existing.id]);
+        else await db.run("INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order) VALUES (?, ?, ?, ?, 'manual', ?)", [test.id, field.parameterName, field.unit || "", field.normalRange || "", index + 1]);
+      }
+    });
+  }
+}
+
+async function ensureGad65AntibodyTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all("SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('gad65 antibody', 'gad 65 antibody', 'gad65 ab', 'gad65')");
+  const fields = getFallbackReportParameters({ name: "GAD65 Antibody" });
+  const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all("SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC", [test.id]);
+    const placeholder = parameters.length <= 2 && parameters.every((parameter) => ["result", "resultfindings", "comments", "comment", "remarks"].includes(normalize(parameter.parameter_name)) && !String(parameter.unit || "").trim() && !String(parameter.normal_range || "").trim() && !String(parameter.calculation_formula || "").trim() && (!parameter.entry_mode || parameter.entry_mode === "manual"));
+    if (parameters.length && !placeholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Serum", test.id]);
+      for (const [index, field] of fields.entries()) {
+        const existing = parameters[index];
+        if (existing) await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = 'manual', calculation_formula = NULL, calculation_precision = NULL, display_order = ? WHERE id = ?", [field.parameterName, field.unit || "", field.normalRange || "", index + 1, existing.id]);
+        else await db.run("INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order) VALUES (?, ?, ?, ?, 'manual', ?)", [test.id, field.parameterName, field.unit || "", field.normalRange || "", index + 1]);
+      }
+    });
+  }
+}
+
+async function ensureGh90MinutesAfterGlucoseTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all("SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('gh (90 minutes after glucose)', 'gh 90 minutes after glucose', 'growth hormone 90 minutes after glucose')");
+  const fields = getFallbackReportParameters({ name: "GH (90 Minutes after Glucose)" });
+  const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all("SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC", [test.id]);
+    const placeholder = parameters.length <= 2 && parameters.every((parameter) => ["result", "resultfindings", "comments", "comment", "remarks"].includes(normalize(parameter.parameter_name)) && !String(parameter.unit || "").trim() && !String(parameter.normal_range || "").trim() && !String(parameter.calculation_formula || "").trim() && (!parameter.entry_mode || parameter.entry_mode === "manual"));
+    if (parameters.length && !placeholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Serum", test.id]);
+      for (const [index, field] of fields.entries()) {
+        const existing = parameters[index];
+        if (existing) await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = 'manual', calculation_formula = NULL, calculation_precision = NULL, display_order = ? WHERE id = ?", [field.parameterName, field.unit || "", field.normalRange || "", index + 1, existing.id]);
+        else await db.run("INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order) VALUES (?, ?, ?, ?, 'manual', ?)", [test.id, field.parameterName, field.unit || "", field.normalRange || "", index + 1]);
+      }
+    });
+  }
+}
+
+async function ensureGhFastingGlucoseTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all("SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('gh (fasting + glucose)', 'gh fasting + glucose', 'growth hormone fasting + glucose')");
+  const fields = getFallbackReportParameters({ name: "GH (Fasting + Glucose)" });
+  const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all("SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC", [test.id]);
+    const placeholder = parameters.length <= 2 && parameters.every((parameter) => ["result", "resultfindings", "comments", "comment", "remarks"].includes(normalize(parameter.parameter_name)) && !String(parameter.unit || "").trim() && !String(parameter.normal_range || "").trim() && !String(parameter.calculation_formula || "").trim() && (!parameter.entry_mode || parameter.entry_mode === "manual"));
+    if (parameters.length && !placeholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Serum / plasma, as validated by laboratory", test.id]);
+      for (const [index, field] of fields.entries()) {
+        const existing = parameters[index];
+        if (existing) await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = 'manual', calculation_formula = NULL, calculation_precision = NULL, display_order = ? WHERE id = ?", [field.parameterName, field.unit || "", field.normalRange || "", index + 1, existing.id]);
+        else await db.run("INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order) VALUES (?, ?, ?, ?, 'manual', ?)", [test.id, field.parameterName, field.unit || "", field.normalRange || "", index + 1]);
+      }
+    });
+  }
+}
+
+async function ensureGrowthHormoneTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all("SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('gh (growth hormone)', 'growth hormone', 'human growth hormone', 'hgh', 'somatotropin')");
+  const fields = getFallbackReportParameters({ name: "GH (Growth Hormone)" });
+  const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all("SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC", [test.id]);
+    const placeholder = parameters.length <= 2 && parameters.every((parameter) => ["result", "resultfindings", "comments", "comment", "remarks"].includes(normalize(parameter.parameter_name)) && !String(parameter.unit || "").trim() && !String(parameter.normal_range || "").trim() && !String(parameter.calculation_formula || "").trim() && (!parameter.entry_mode || parameter.entry_mode === "manual"));
+    if (parameters.length && !placeholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Serum", test.id]);
+      for (const [index, field] of fields.entries()) {
+        const existing = parameters[index];
+        if (existing) await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = 'manual', calculation_formula = NULL, calculation_precision = NULL, display_order = ? WHERE id = ?", [field.parameterName, field.unit || "", field.normalRange || "", index + 1, existing.id]);
+        else await db.run("INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order) VALUES (?, ?, ?, ?, 'manual', ?)", [test.id, field.parameterName, field.unit || "", field.normalRange || "", index + 1]);
+      }
+    });
+  }
+}
+
+async function ensureGlucoseToleranceTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all("SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('gtt (glucose tolerance test)', 'glucose tolerance test', 'oral glucose tolerance test', 'ogtt')");
+  const fields = getFallbackReportParameters({ name: "GTT (Glucose Tolerance Test)" });
+  const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all("SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC", [test.id]);
+    const placeholder = parameters.length <= 2 && parameters.every((parameter) => ["result", "resultfindings", "comments", "comment", "remarks"].includes(normalize(parameter.parameter_name)) && !String(parameter.unit || "").trim() && !String(parameter.normal_range || "").trim() && !String(parameter.calculation_formula || "").trim() && (!parameter.entry_mode || parameter.entry_mode === "manual"));
+    if (parameters.length && !placeholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Plasma / serum, as validated by laboratory", test.id]);
+      for (const [index, field] of fields.entries()) {
+        const existing = parameters[index];
+        if (existing) await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = 'manual', calculation_formula = NULL, calculation_precision = NULL, display_order = ? WHERE id = ?", [field.parameterName, field.unit || "", field.normalRange || "", index + 1, existing.id]);
+        else await db.run("INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order) VALUES (?, ?, ?, ?, 'manual', ?)", [test.id, field.parameterName, field.unit || "", field.normalRange || "", index + 1]);
+      }
+    });
+  }
+}
+
+async function ensureGastrinLevelTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all("SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('gastrin level', 'gastrin', 'serum gastrin')");
+  const fields = getFallbackReportParameters({ name: "Gastrin Level" });
+  const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all("SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC", [test.id]);
+    const placeholder = parameters.length <= 2 && parameters.every((parameter) => ["result", "resultfindings", "comments", "comment", "remarks"].includes(normalize(parameter.parameter_name)) && !String(parameter.unit || "").trim() && !String(parameter.normal_range || "").trim() && !String(parameter.calculation_formula || "").trim() && (!parameter.entry_mode || parameter.entry_mode === "manual"));
+    if (parameters.length && !placeholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Serum", test.id]);
+      for (const [index, field] of fields.entries()) {
+        const existing = parameters[index];
+        if (existing) await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = 'manual', calculation_formula = NULL, calculation_precision = NULL, display_order = ? WHERE id = ?", [field.parameterName, field.unit || "", field.normalRange || "", index + 1, existing.id]);
+        else await db.run("INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order) VALUES (?, ?, ?, ?, 'manual', ?)", [test.id, field.parameterName, field.unit || "", field.normalRange || "", index + 1]);
+      }
+    });
+  }
+}
+
+async function ensureRandomGlucoseTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all("SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('glucose random', 'random glucose', 'random blood glucose')");
+  const fields = getFallbackReportParameters({ name: "Glucose Random" });
+  const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all("SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC", [test.id]);
+    const placeholder = parameters.length <= 2 && parameters.every((parameter) => ["result", "resultfindings", "comments", "comment", "remarks"].includes(normalize(parameter.parameter_name)) && !String(parameter.unit || "").trim() && !String(parameter.normal_range || "").trim() && !String(parameter.calculation_formula || "").trim() && (!parameter.entry_mode || parameter.entry_mode === "manual"));
+    if (parameters.length && !placeholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Plasma / serum, as validated by laboratory", test.id]);
+      for (const [index, field] of fields.entries()) {
+        const existing = parameters[index];
+        if (existing) await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = 'manual', calculation_formula = NULL, calculation_precision = NULL, display_order = ? WHERE id = ?", [field.parameterName, field.unit || "", field.normalRange || "", index + 1, existing.id]);
+        else await db.run("INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order) VALUES (?, ?, ?, ?, 'manual', ?)", [test.id, field.parameterName, field.unit || "", field.normalRange || "", index + 1]);
+      }
+    });
+  }
+}
+
+async function ensureFungusCultureTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all("SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('fungus culture', 'fungal culture', 'mycological culture')");
+  const fields = getFallbackReportParameters({ name: "Fungus Culture" });
+  const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all("SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC", [test.id]);
+    const placeholder = parameters.length <= 4 && parameters.every((parameter) => ["cultureresult", "organismisolated", "antibioticsensitivity", "antifungalsusceptibility", "comments", "comment", "remarks"].includes(normalize(parameter.parameter_name)) && !String(parameter.unit || "").trim() && !String(parameter.normal_range || "").trim() && !String(parameter.calculation_formula || "").trim() && (!parameter.entry_mode || parameter.entry_mode === "manual"));
+    if (parameters.length && !placeholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Specify specimen / collection site", test.id]);
+      for (const [index, field] of fields.entries()) {
+        const existing = parameters[index];
+        if (existing) await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = 'manual', calculation_formula = NULL, calculation_precision = NULL, display_order = ? WHERE id = ?", [field.parameterName, field.unit || "", field.normalRange || "", index + 1, existing.id]);
+        else await db.run("INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order) VALUES (?, ?, ?, ?, 'manual', ?)", [test.id, field.parameterName, field.unit || "", field.normalRange || "", index + 1]);
+      }
+    });
+  }
+}
+
+async function ensureFungusCultureSensitivityTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all("SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('fungus culture & sensitivity', 'fungal culture & sensitivity', 'fungus culture and sensitivity', 'fungal culture and sensitivity')");
+  const fields = getFallbackReportParameters({ name: "Fungus Culture & Sensitivity" });
+  const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all("SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC", [test.id]);
+    const placeholder = parameters.length <= 4 && parameters.every((parameter) => ["afbcultureresult", "cultureresult", "organismisolated", "drugsensitivity", "antibioticsensitivity", "antifungalsusceptibility", "comments", "comment", "remarks"].includes(normalize(parameter.parameter_name)) && !String(parameter.unit || "").trim() && !String(parameter.normal_range || "").trim() && !String(parameter.calculation_formula || "").trim() && (!parameter.entry_mode || parameter.entry_mode === "manual"));
+    if (parameters.length && !placeholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Specify specimen / collection site", test.id]);
+      for (const [index, field] of fields.entries()) {
+        const existing = parameters[index];
+        if (existing) await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = 'manual', calculation_formula = NULL, calculation_precision = NULL, display_order = ? WHERE id = ?", [field.parameterName, field.unit || "", field.normalRange || "", index + 1, existing.id]);
+        else await db.run("INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order) VALUES (?, ?, ?, ?, 'manual', ?)", [test.id, field.parameterName, field.unit || "", field.normalRange || "", index + 1]);
+      }
+    });
+  }
+}
+
 async function ensurePrealbuminTestConfiguration() {
   await ensureSingleParameterTestConfiguration({
     names: ["Prealbumin", "Prealbumin (Transthyretin)", "Transthyretin"],
@@ -5774,6 +7109,105 @@ async function ensureHavIgmTestConfiguration() {
   });
 }
 
+async function ensureHavTotalTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["hav total (igg + igm)", "hav total", "hepatitis a total antibody", "hepatitis a total antibodies", "total anti hav"],
+    schemaName: "HAV Total (IgG + IgM)",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|plasma)/i,
+  });
+}
+
+async function ensureHbdhTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["hbdh (ldh - 1)", "hbdh", "alpha-hydroxybutyrate dehydrogenase", "hydroxybutyrate dehydrogenase", "ldh-1"],
+    schemaName: "HBDH (LDH - 1)",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|plasma)/i,
+  });
+}
+
+async function ensureHcvTotalAntibodyTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["hcv total (igm + igg)", "hcv total antibody", "hepatitis c total antibody", "total anti hcv", "anti hcv total igm igg"],
+    schemaName: "HCV Total (IgM + IgG)",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|plasma)/i,
+  });
+}
+
+async function ensureHbDlcEsrTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["hd,dc&esr", "hb,dc&esr", "hb,dlc&esr", "hemoglobin differential count esr"],
+    schemaName: "HD,DC&ESR",
+    sampleType: "Whole Blood",
+    sampleTypePattern: /^(whole\s*blood|blood|edta\s*whole\s*blood)/i,
+  });
+}
+
+async function ensureHdvAntibodyTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["hdv antibody", "anti hdv", "hepatitis d virus antibody", "anti hdv antibody"],
+    schemaName: "HDV Antibody",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|plasma)/i,
+  });
+}
+
+async function ensureHevTotalAntibodyTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["hev total (igg + igm)", "hev total", "hepatitis e virus total antibody", "total anti hev"],
+    schemaName: "HEV Total (IgG + IgM)",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|plasma)/i,
+  });
+}
+
+async function ensureHevAntibodyIggTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["hepatitis e virus (hev) antibody igg", "hev antibody igg", "hepatitis e antibody igg", "anti hev igg"],
+    schemaName: "Hepatitis E Virus (HEV) Antibody IgG",
+    sampleType: "Serum / Plasma",
+    placeholderNames: ["result", "findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureHevAntibodyIgmTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["hepatitis e virus (hev) antibody igm", "hev antibody igm", "hepatitis e antibody igm", "anti hev igm"],
+    schemaName: "Hepatitis E Virus (HEV) Antibody IgM",
+    sampleType: "Serum / Plasma",
+    placeholderNames: ["result", "findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureHivIAndIiTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["hiv i & ii", "hiv 1 & 2", "hiv 1/2"],
+    schemaName: "HIV I & II",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|plasma)/i,
+  });
+}
+
+async function ensureHlaB27TestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["hla b27", "hla-b27", "hla b27 antigen"],
+    schemaName: "HLA B27",
+    sampleType: "Whole Blood",
+    sampleTypePattern: /^(whole\s*blood|blood|edta\s*whole\s*blood)/i,
+  });
+}
+
+async function ensureHangingDropPreparationTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["hanging drop preparation", "hanging drop"],
+    schemaName: "Hanging Drop Preparation",
+    sampleType: "Stool",
+    sampleTypePattern: /^(stool|faeces|feces)/i,
+  });
+}
+
 async function ensureHcvRapidScreeningTestConfiguration() {
   await ensureSingleParameterTestConfiguration({
     names: ["HCV Rapid Card Test", "Anti HCV Antibody", "Hepatitis C Virus (HCV) Rapid Screening Test", "HCV Rapid Screening Test", "Hepatitis C Virus (HCV) Test", "HCV Test"],
@@ -5789,6 +7223,33 @@ async function ensureHcvRapidScreeningTestConfiguration() {
   });
 }
 
+async function ensureHepatitisCRnaPcrQuantitativeTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["hepatitis c rna pcr (quantitative)", "hepatitis c rna pcr quantitative", "hcv rna pcr quantitative", "hcv rna quantitative", "hcv quantitative pcr"],
+    schemaName: "Hepatitis C RNA PCR (Quantitative)",
+    sampleType: "Serum / Plasma",
+    placeholderNames: ["result", "findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureHcvAntibodyIggTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["hepatitis c virus (hcv) antibody igg", "hcv antibody igg", "hepatitis c antibody igg", "anti hcv igg"],
+    schemaName: "Hepatitis C Virus (HCV) Antibody IgG",
+    sampleType: "Serum / Plasma",
+    placeholderNames: ["result", "findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureHcvAntibodyIgmTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["hepatitis c virus (hcv) antibody igm", "hcv antibody igm", "hepatitis c antibody igm", "anti hcv igm"],
+    schemaName: "Hepatitis C Virus (HCV) Antibody IgM",
+    sampleType: "Serum / Plasma",
+    placeholderNames: ["result", "findings", "comments", "comment", "remarks"],
+  });
+}
+
 async function ensureHbsAgTestConfiguration() {
   await ensureSingleParameterTestConfiguration({
     names: ["Hepatitis B Surface Antigen (HBsAg)", "HBsAg", "HBsAg Test", "Hepatitis B Surface Antigen Test"],
@@ -5801,6 +7262,114 @@ async function ensureHbsAgTestConfiguration() {
     parameterAliases: ["HBsAg", "Hepatitis B Surface Antigen", "Result"],
     unit: "",
     normalRange: "Reactive / Non Reactive",
+  });
+}
+
+async function ensureHbsAgQuantitativeTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["hbsag quantitative", "quantitative hbsag", "hepatitis b surface antigen quantitative", "hbsag quant"],
+    schemaName: "HBsAg Quantitative",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|plasma)/i,
+  });
+}
+
+async function ensureHepatitisBViralDnaQualitativeTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["hepatitis b viral dna qualitative", "hbv dna qualitative", "hepatitis b dna qualitative", "hbv dna pcr qualitative"],
+    schemaName: "Hepatitis B Viral DNA Qualitative",
+    sampleType: "Serum / Plasma",
+    placeholderNames: ["result", "findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureHepatitisBVirusTreatmentFollowUpTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["hepatitis b virus treatment (follow up)", "hepatitis b virus treatment follow up", "hepatitisbvirus treatment(follow", "hepatitisbvirustreatment(follow", "hepatitis b treatment follow up", "hbv treatment follow up", "hbv follow up"],
+    schemaName: "Hepatitis B Virus Treatment (Follow Up)",
+    sampleType: "Specimen validated for HBV DNA molecular testing",
+    placeholderNames: ["result", "findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureHepatitisProfileTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["hepatitisprofile", "hepatitis profile", "viral hepatitis profile", "hepatitis viral screening profile"],
+    schemaName: "HepatitisProfile",
+    sampleType: "Serum / Plasma",
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureHsv2IggTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["herpes simplex virus- 2 (hsv-2) igg", "herpes simplex virus 2 (hsv-2) igg", "hsv-2 igg", "hsv 2 igg", "hsv2 igg"],
+    schemaName: "Herpes Simplex Virus- 2 (HSV-2) IgG",
+    sampleType: "Serum / Plasma",
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureHsv2IgmTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["herpes simplex virus- 2 (hsv-2) igm", "herpes simplex virus 2 (hsv-2) igm", "hsv-2 igm", "hsv 2 igm", "hsv2 igm"],
+    schemaName: "Herpes Simplex Virus- 2 (HSV-2) IgM",
+    sampleType: "Serum / Plasma",
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureHsv1IggTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["herpes simplex virus-1(hsv-1) igg", "herpes simplex virus 1 (hsv-1) igg", "hsv-1 igg", "hsv 1 igg", "hsv1 igg"],
+    schemaName: "Herpes Simplex Virus-1(HSV-1) IgG",
+    sampleType: "Serum / Plasma",
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureHsv1IgmTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["herpes simplex virus-1(hsv-1) igm", "herpes simplex virus 1 (hsv-1) igm", "hsv-1 igm", "hsv 1 igm", "hsv1 igm"],
+    schemaName: "Herpes Simplex Virus-1(HSV-1) IgM",
+    sampleType: "Serum / Plasma",
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureHistologyBiopsyPerSectionTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["histology biopsy per section", "histologybiopsypersection"],
+    schemaName: "Histology Biopsy Per Section",
+    sampleType: "Tissue",
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureHomocystineBloodTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["homo cystine - blood", "homocystine - blood", "homocysteine - blood"],
+    schemaName: "Homo cystine - Blood",
+    sampleType: "Blood specimen validated by laboratory",
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureHomocystineUrineTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["homo cystine - urine", "homocystine - urine", "homocysteine - urine"],
+    schemaName: "Homo cystine - Urine",
+    sampleType: "Urine",
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureHypertensionProfileTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["hypertension profile", "hypertensionprofile", "hypertension workup profile", "hypertensive profile"],
+    schemaName: "Hypertension Profile",
+    sampleType: "Serum / Plasma",
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
   });
 }
 
@@ -6286,6 +7855,15 @@ async function ensureHdlCholesterolTestConfiguration() {
   });
 }
 
+async function ensureHdlLdlRatioTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["hdl : ldl", "hdl:ldl", "hdl ldl ratio", "hdl/ldl ratio", "ldl/hdl ratio"],
+    schemaName: "HDL : LDL",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|plasma)/i,
+  });
+}
+
 async function ensureIndirectBilirubinTestConfiguration() {
   await ensureSingleParameterTestConfiguration({
     names: ["Indirect Bilirubin", "Bilirubin, Indirect", "Bilirubin Indirect"],
@@ -6688,6 +8266,28 @@ async function ensureGgtTestConfiguration() {
   });
 }
 
+async function ensureGgtGammaGtTestConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all("SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('ggt (gamma gt)', 'ggt gamma gt', 'gamma gt')");
+  const fields = getFallbackReportParameters({ name: "GGT (Gamma GT)" });
+  const normalize = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await db.all("SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC", [test.id]);
+    const placeholder = parameters.length <= 2 && parameters.every((parameter) => ["result", "resultfindings", "comments", "comment", "remarks"].includes(normalize(parameter.parameter_name)) && !String(parameter.unit || "").trim() && !String(parameter.normal_range || "").trim() && !String(parameter.calculation_formula || "").trim() && (!parameter.entry_mode || parameter.entry_mode === "manual"));
+    if (parameters.length && !placeholder) continue;
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Serum", test.id]);
+      for (const [index, field] of fields.entries()) {
+        const existing = parameters[index];
+        if (existing) await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = 'manual', calculation_formula = NULL, calculation_precision = NULL, display_order = ? WHERE id = ?", [field.parameterName, field.unit || "", field.normalRange || "", index + 1, existing.id]);
+        else await db.run("INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order) VALUES (?, ?, ?, ?, 'manual', ?)", [test.id, field.parameterName, field.unit || "", field.normalRange || "", index + 1]);
+      }
+    });
+  }
+}
+
 async function ensureChlorideTestConfiguration() {
   await ensureSingleParameterTestConfiguration({
     names: ["Chloride (Serum)", "Chloride, Serum", "Serum Chloride", "Chloride"],
@@ -7034,6 +8634,109 @@ async function normalizeBlankTestCodes() {
   await run("UPDATE tests SET code = NULL WHERE TRIM(COALESCE(code, '')) = ''");
 }
 
+function normalizeCatalogueDisplayName(value) {
+  return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+// The original catalogue was imported from a manually transcribed list.  Its
+// display labels occasionally lost spaces or had an obvious transcription
+// error (for example, "Coppe" instead of "Copper").  This is deliberately a
+// title-only migration: test IDs, prices, codes, parameters, report bodies,
+// bundle links, and historic visit data are never touched.
+const CATALOGUE_DISPLAY_NAME_OVERRIDES = new Map([
+  ["afbcultureandsensitivity", "AFB Culture & Sensitivity"],
+  ["antenatalprofile", "Antenatal Profile"],
+  ["coppe24hrsurine", "Copper (24 hrs. urine)"],
+  ["bodyfluidesforproein", "Body Fluids for Protein"],
+  ["anemiacomprehenssiveprofilefd", "Anemia Comprehensive Profile"],
+  ["anfantinuclearfactorqualitative", "ANF (Anti Nuclear Factor) Qualitative"],
+  ["anfantinuclearfactorquantitative", "ANF (Anti Nuclear Factor) Quantitative"],
+  ["anfantinudearfactorqualitative", "ANF (Anti Nuclear Factor) Qualitative"],
+  ["anfantinudearfactorquantitative", "ANF (Anti Nuclear Factor) Quantitative"],
+  ["cftcompletefixsationtest", "Complete Fixation Test"],
+  ["cmvcytomegalovirusigmigg", "CMV (Cytomegalovirus) IgM & IgG"],
+  ["complimentfixsationtest", "Complement Fixation Test"],
+  ["calsitonin", "Calcitonin"],
+  ["cysticircosisantibodytaeniasolium", "Cysticercosis Antibody / Taenia solium"],
+  ["peritonialfluidchloride", "Peritoneal Fluid Chloride"],
+  ["peritonialfluidgramstain", "Peritoneal Fluid Gram Stain"],
+  ["peritonialfluidldh", "Peritoneal Fluid LDH"],
+  ["peritonialfluidprotein", "Peritoneal Fluid Protein"],
+  ["peritonialfluidsugar", "Peritoneal Fluid Sugar"],
+  ["peritonialfluidforspecificgravity", "Peritoneal Fluid for Specific Gravity"],
+  ["unineacetone", "Urine Acetone"],
+  ["unnepregnancytest", "Urine Pregnancy Test"],
+  ["unneproteinalbumin", "Urine Protein / Albumin"],
+  ["unnesugar", "Urine Sugar"],
+  ["fnacsubcutaneusswelling", "FNAC Subcutaneous Swelling"],
+  ["fnacsupradavicularlymph", "FNAC Supraclavicular Lymph"],
+  ["hepatitisbprofile", "Hepatitis B Profile"],
+  ["hevtotalggigm", "HEV Total (IgG + IgM)"],
+  ["jsgguidedbiopsy", "USG Guided Biopsy"],
+  ["lipoprotein", "Lipoprotein"],
+  ["lupusanticoagulent", "Lupus Anticoagulant"],
+  ["mensturualbloodfortbpcr", "Menstrual Blood for TB PCR"],
+  ["premarmiageprofile", "Pre-Marriage Profile"],
+  ["swabculturesensitivityforanysiteswab", "Swab Culture & Sensitivity for Any Site Swab"],
+  ["throatswabculturei", "Throat Swab Culture"],
+  ["urineredusingsubstence", "Urine Reducing Substance"],
+  ["urnineredusingsubstance", "Urine Reducing Substance"],
+]);
+
+async function getCanonicalImportedCatalogueNames() {
+  const batchFiles = (await fs.readdir(__dirname))
+    .filter((file) => /^import_batch_\d+\.js$/i.test(file))
+    .sort((left, right) => left.localeCompare(right, undefined, { numeric: true }));
+  const names = [];
+
+  for (const batchFile of batchFiles) {
+    const source = await fs.readFile(path.join(__dirname, batchFile), "utf8");
+    for (const match of source.matchAll(/name:\s*"([^"]+)"/g)) {
+      names.push(match[1]);
+    }
+  }
+
+  return names;
+}
+
+async function normalizeImportedCatalogueDisplayNames() {
+  const canonicalNames = await getCanonicalImportedCatalogueNames();
+  const canonicalByNormalizedName = new Map();
+
+  for (const name of canonicalNames) {
+    const normalized = normalizeCatalogueDisplayName(name);
+    if (normalized && !canonicalByNormalizedName.has(normalized)) {
+      canonicalByNormalizedName.set(normalized, name);
+    }
+  }
+
+  const importedTests = await all(
+    `SELECT id, name
+     FROM tests
+     WHERE LOWER(TRIM(COALESCE(category, ''))) = 'imported legacy catalogue'
+     ORDER BY id ASC`
+  );
+
+  for (const test of importedTests) {
+    const normalized = normalizeCatalogueDisplayName(test.name);
+    const replacement = CATALOGUE_DISPLAY_NAME_OVERRIDES.get(normalized)
+      || canonicalByNormalizedName.get(normalized);
+
+    if (!replacement || replacement === test.name) continue;
+
+    // Never create a second catalogue row with the same visible name.  A
+    // duplicate needs a deliberate merge, which this display-only repair does
+    // not attempt.
+    const conflictingTest = await get(
+      "SELECT id FROM tests WHERE LOWER(TRIM(name)) = LOWER(TRIM(?)) AND id <> ? LIMIT 1",
+      [replacement, test.id]
+    );
+    if (conflictingTest) continue;
+
+    await run("UPDATE tests SET name = ? WHERE id = ?", [replacement, test.id]);
+  }
+}
+
 async function grantLegacyDueCollectionPermission() {
   // Before due collection was a separate permission, only receptionists and
   // administrators with billing access could collect an outstanding balance.
@@ -7159,6 +8862,10 @@ async function retireDuplicateCatalogueTests() {
     { duplicateName: "Des-gamma-carboxy Prothrombin (DCP)", duplicateCode: "PF033", canonicalName: "Des-Gamma Carboxy Prothrombin (DCP)" },
     { duplicateName: "25-OHVitaminD(TOTAL)", canonicalName: "Vitamin D, 25 - Hydroxy", legacyOnly: true },
     { duplicateName: "AFBCulture&Sensitivity", canonicalName: "AFB Culture & Sensitivity", legacyOnly: true },
+    { duplicateName: "AntenatalProfile", canonicalName: "Antenatal Profile", legacyOnly: true },
+    { duplicateName: "ANF (AntiNuclearFactor) Qualitative", canonicalName: "ANF (Anti Nuclear Factor) Qualitative", legacyOnly: true },
+    { duplicateName: "ANF(AntiNuclearFactor)Quantitative", canonicalName: "ANF (Anti Nuclear Factor) Quantitative", legacyOnly: true, activateCanonical: true },
+    { duplicateName: "CMV(Cytomegalovirus)IgM&IgG", canonicalName: "CMV (Cytomegalovirus) IgM & IgG", legacyOnly: true },
     { duplicateName: "ANF(AntiNudearFactor)Qualitative", canonicalName: "ANF (AntiNuclearFactor) Qualitative", legacyOnly: true },
     { duplicateName: "ANF(AntiNudearFactor)Quantitative", canonicalName: "ANF(AntiNuclearFactor)Quantitative", legacyOnly: true },
     { duplicateName: "CT(Clotting Time)", canonicalName: "Clotting Time", legacyOnly: true },
@@ -7179,6 +8886,8 @@ async function retireDuplicateCatalogueTests() {
     { duplicateName: "TIBC (Total Iron Binding Capacity)", canonicalName: "Total Iron Binding Capacity (TIBC)", legacyOnly: true },
     { duplicateName: "Testosterone", canonicalName: "Testosterone, Total", legacyOnly: true },
     { duplicateName: "Typhi DotIgG&IgM", canonicalName: "Typhidot", legacyOnly: true },
+    { duplicateName: "UrineRedusing Substence", canonicalName: "Urine Reducing Substance", legacyOnly: true },
+    { duplicateName: "JSGGuidedBiopsy", canonicalName: "USG Guided Biopsy", legacyOnly: true },
     { duplicateName: "VitaminDTotal-25OH", canonicalName: "Vitamin D, 25 - Hydroxy", legacyOnly: true },
   ];
 
@@ -7212,6 +8921,7 @@ async function retireDuplicateCatalogueTests() {
     );
 
     if (usage.has_visit_use || usage.has_bundle_use) continue;
+    if (duplicate.activateCanonical) await run("UPDATE tests SET active = 1 WHERE id = ?", [canonicalTest.id]);
     await run("UPDATE tests SET active = 0 WHERE id = ?", [duplicateTest.id]);
   }
 }
@@ -8830,6 +10540,17 @@ async function initializeDatabase() {
     await ensureBactecAerobicCultureTestConfiguration();
     await ensureBactecAnaerobicCultureTestConfiguration();
     await ensureBronchialPapCytologyTestConfigurations();
+    await ensureCervicalPapSmearTestConfiguration();
+    await ensureCervicalSwabGramStainTestConfiguration();
+    await ensureCervicalSwabAfbStainTestConfiguration();
+    await ensureChikungunyaIggTestConfiguration();
+    await ensureChikungunyaIgmTestConfiguration();
+    await ensureChlamydiaAntibodyIggIgmTestConfiguration();
+    await ensureChlamydiaAntigenTestConfiguration();
+    await ensureRandomUrineChlorideTestConfiguration();
+    await ensureSerumChlorideTestConfiguration();
+    await ensure24HourUrineChlorideTestConfiguration();
+    await ensureTotalCholesterolTestConfiguration();
     await ensureAnticardiolipinIgaTestConfiguration();
     await ensureAnticardiolipinIgaIggPanelTestConfiguration();
     await ensureAnticardiolipinIgaIgmPanelTestConfiguration();
@@ -8846,6 +10567,36 @@ async function initializeDatabase() {
     await ensureBodyFluidCultureSensitivityTestConfiguration();
     await ensureBodyFluidTotalProteinTestConfiguration();
     await ensureBodyFluidChlorideTestConfiguration();
+    await ensureCsfFluidChlorideTestConfiguration();
+    await ensureCsfFluidProteinTestConfiguration();
+    await ensureCsfFluidSpecificGravityTestConfiguration();
+    await ensureCsfFluidGlucoseTestConfiguration();
+    await ensureUrineCalcium24HourTestConfiguration();
+    await ensureCapillaryFragilityTestConfiguration();
+    await ensureCardiacProfileTestConfiguration();
+    await ensureColorectalCancerMonitorProfileTestConfiguration();
+    await ensureComplementFixationTestConfiguration();
+    await ensureBilateralConjunctivalSwabTestConfiguration();
+    await ensureRightConjunctivalSwabCultureTestConfiguration();
+    await ensureConjunctivalSwabCultureTestConfiguration();
+    await ensureCeruloplasminTestConfiguration();
+    await ensureUrineCopper24HourTestConfiguration();
+    await ensureRandomUrineCopperTestConfiguration();
+    await ensureEveningCortisolTestConfiguration();
+    await ensureMidnightCortisolTestConfiguration();
+    await ensureMorningEveningCortisolTestConfiguration();
+    await ensureMorningCortisolTestConfiguration();
+    await ensureMorningEveningMidnightCortisolTestConfiguration();
+    await ensureCryoglobulinsScreeningTestConfiguration();
+    await ensureGndCultureTestConfiguration();
+    await ensureGonorrheaTestConfiguration();
+    await ensureUrethralDischargeGramStainTestConfiguration();
+    await ensureGeneralGramStainTestConfiguration();
+    await ensureGeneralHealthCheckUpTestConfiguration();
+    await ensureCysticFibrosisGeneMutationTestConfiguration();
+    await ensureCmvIggTestConfiguration();
+    await ensureCsfFluidAfbStainTestConfiguration();
+    await ensureCsfFluidGramStainTestConfiguration();
     await ensureBodyFluidBiochemistryTestConfiguration();
     await ensureBodyFluidSpecificGravityTestConfiguration();
     await ensureCpkWithCkMbTestConfiguration();
@@ -8871,6 +10622,37 @@ async function initializeDatabase() {
     await ensureBeta2MicroglobulinTestConfiguration();
     await ensureAltSgptTestConfiguration();
     await ensureDnphTestConfiguration();
+    await ensureDiabeticProfileTestConfiguration();
+    await ensureExtendedDiabeticProfileTestConfiguration();
+    await ensureDiabeticRenalProfileTestConfiguration();
+    await ensureEarSwabGramStainTestConfiguration();
+    await ensureEarSwabAfbStainTestConfiguration();
+    await ensureFshPrlTestConfiguration();
+    await ensureFshLhPrlTestConfiguration();
+    await ensureFactorIiMutationTestConfiguration();
+    await ensureFactorViiiImmunodepletedTestConfiguration();
+    await ensureFemaleInfertilityProfileTestConfiguration();
+    await ensureFernTestConfiguration();
+    await ensureWuchereriaBancroftiAntigenTestConfiguration();
+    await ensureFilariaAntigenTestConfiguration();
+    await ensureFluidAspirationCytologyTestConfiguration();
+    await ensureHbElectrophoresisTestConfiguration();
+    await ensureFoetalHaemoglobinTestConfiguration();
+    await ensureFoetalHaemoglobinByHplcTestConfiguration();
+    await ensureFreeBetaHcgTestConfiguration();
+    await ensureFreeCholesterolTestConfiguration();
+    await ensureFreeEstradiolTestConfiguration();
+    await ensureFreePsaTestConfiguration();
+    await ensureFreeTestosteroneTestConfiguration();
+    await ensureGad65AntibodyTestConfiguration();
+    await ensureGh90MinutesAfterGlucoseTestConfiguration();
+    await ensureGhFastingGlucoseTestConfiguration();
+    await ensureGrowthHormoneTestConfiguration();
+    await ensureGlucoseToleranceTestConfiguration();
+    await ensureGastrinLevelTestConfiguration();
+    await ensureRandomGlucoseTestConfiguration();
+    await ensureFungusCultureTestConfiguration();
+    await ensureFungusCultureSensitivityTestConfiguration();
     await ensurePrealbuminTestConfiguration();
     await ensureHaptoglobinTestConfiguration();
     await ensureGramStainBacterialVaginosisTestConfiguration();
@@ -8915,8 +10697,34 @@ async function initializeDatabase() {
     await ensureVdrlTestConfiguration();
     await ensureHavIggTestConfiguration();
     await ensureHavIgmTestConfiguration();
+    await ensureHavTotalTestConfiguration();
+    await ensureHbdhTestConfiguration();
+    await ensureHcvTotalAntibodyTestConfiguration();
+    await ensureHbDlcEsrTestConfiguration();
+    await ensureHdvAntibodyTestConfiguration();
+    await ensureHevTotalAntibodyTestConfiguration();
+    await ensureHevAntibodyIggTestConfiguration();
+    await ensureHevAntibodyIgmTestConfiguration();
+    await ensureHivIAndIiTestConfiguration();
+    await ensureHlaB27TestConfiguration();
+    await ensureHangingDropPreparationTestConfiguration();
     await ensureHcvRapidScreeningTestConfiguration();
+    await ensureHepatitisCRnaPcrQuantitativeTestConfiguration();
+    await ensureHcvAntibodyIggTestConfiguration();
+    await ensureHcvAntibodyIgmTestConfiguration();
     await ensureHbsAgTestConfiguration();
+    await ensureHbsAgQuantitativeTestConfiguration();
+    await ensureHepatitisBViralDnaQualitativeTestConfiguration();
+    await ensureHepatitisBVirusTreatmentFollowUpTestConfiguration();
+    await ensureHepatitisProfileTestConfiguration();
+    await ensureHsv2IggTestConfiguration();
+    await ensureHsv2IgmTestConfiguration();
+    await ensureHsv1IggTestConfiguration();
+    await ensureHsv1IgmTestConfiguration();
+    await ensureHistologyBiopsyPerSectionTestConfiguration();
+    await ensureHomocystineBloodTestConfiguration();
+    await ensureHomocystineUrineTestConfiguration();
+    await ensureHypertensionProfileTestConfiguration();
     await ensureAntiHbcIgmTestConfiguration();
     await ensureHepatitisBProfileTestConfiguration();
     await ensureMantouxTestConfiguration();
@@ -8945,6 +10753,7 @@ async function initializeDatabase() {
     await ensureVitaminKTestConfiguration();
     await ensureLdlCholesterolTestConfiguration();
     await ensureHdlCholesterolTestConfiguration();
+    await ensureHdlLdlRatioTestConfiguration();
     await ensureIndirectBilirubinTestConfiguration();
     await ensureCalciumTestConfiguration();
     await ensureFerritinTestConfiguration();
@@ -8964,6 +10773,7 @@ async function initializeDatabase() {
     await ensureLipaseTestConfiguration();
     await ensureAmylaseTestConfiguration();
     await ensureGgtTestConfiguration();
+    await ensureGgtGammaGtTestConfiguration();
     await ensureChlorideTestConfiguration();
     await ensureCreatinineTestConfiguration();
     await ensureIonizedCalciumTestConfiguration();
@@ -9004,6 +10814,8 @@ async function initializeDatabase() {
     await applyOneTimeMigration("explicit-combination-report-content-v1", () => repairKnownCombinationSchemas({ all, get, run, transaction }));
     await applyOneTimeMigration("cell-report-schemas-v1", () => repairCellReportSchemas({ all, get, run, transaction }));
     await applyOneTimeMigration("blank-test-code-normalization-v1", normalizeBlankTestCodes);
+    await applyOneTimeMigration("catalogue-display-name-normalization-v1", normalizeImportedCatalogueDisplayNames);
+    await applyOneTimeMigration("catalogue-display-name-normalization-v2", normalizeImportedCatalogueDisplayNames);
     await retireDuplicateCatalogueTests();
     await ensureUserDefaults();
   } catch (error) {
@@ -9063,6 +10875,17 @@ async function initializeDatabase() {
     await ensureBactecAerobicCultureTestConfiguration();
     await ensureBactecAnaerobicCultureTestConfiguration();
     await ensureBronchialPapCytologyTestConfigurations();
+    await ensureCervicalPapSmearTestConfiguration();
+    await ensureCervicalSwabGramStainTestConfiguration();
+    await ensureCervicalSwabAfbStainTestConfiguration();
+    await ensureChikungunyaIggTestConfiguration();
+    await ensureChikungunyaIgmTestConfiguration();
+    await ensureChlamydiaAntibodyIggIgmTestConfiguration();
+    await ensureChlamydiaAntigenTestConfiguration();
+    await ensureRandomUrineChlorideTestConfiguration();
+    await ensureSerumChlorideTestConfiguration();
+    await ensure24HourUrineChlorideTestConfiguration();
+    await ensureTotalCholesterolTestConfiguration();
     await ensureAnticardiolipinIgaTestConfiguration();
     await ensureAnticardiolipinIgaIggPanelTestConfiguration();
     await ensureAnticardiolipinIgaIgmPanelTestConfiguration();
@@ -9079,6 +10902,36 @@ async function initializeDatabase() {
     await ensureBodyFluidCultureSensitivityTestConfiguration();
     await ensureBodyFluidTotalProteinTestConfiguration();
     await ensureBodyFluidChlorideTestConfiguration();
+    await ensureCsfFluidChlorideTestConfiguration();
+    await ensureCsfFluidProteinTestConfiguration();
+    await ensureCsfFluidSpecificGravityTestConfiguration();
+    await ensureCsfFluidGlucoseTestConfiguration();
+    await ensureUrineCalcium24HourTestConfiguration();
+    await ensureCapillaryFragilityTestConfiguration();
+    await ensureCardiacProfileTestConfiguration();
+    await ensureColorectalCancerMonitorProfileTestConfiguration();
+    await ensureComplementFixationTestConfiguration();
+    await ensureBilateralConjunctivalSwabTestConfiguration();
+    await ensureRightConjunctivalSwabCultureTestConfiguration();
+    await ensureConjunctivalSwabCultureTestConfiguration();
+    await ensureCeruloplasminTestConfiguration();
+    await ensureUrineCopper24HourTestConfiguration();
+    await ensureRandomUrineCopperTestConfiguration();
+    await ensureEveningCortisolTestConfiguration();
+    await ensureMidnightCortisolTestConfiguration();
+    await ensureMorningEveningCortisolTestConfiguration();
+    await ensureMorningCortisolTestConfiguration();
+    await ensureMorningEveningMidnightCortisolTestConfiguration();
+    await ensureCryoglobulinsScreeningTestConfiguration();
+    await ensureGndCultureTestConfiguration();
+    await ensureGonorrheaTestConfiguration();
+    await ensureUrethralDischargeGramStainTestConfiguration();
+    await ensureGeneralGramStainTestConfiguration();
+    await ensureGeneralHealthCheckUpTestConfiguration();
+    await ensureCysticFibrosisGeneMutationTestConfiguration();
+    await ensureCmvIggTestConfiguration();
+    await ensureCsfFluidAfbStainTestConfiguration();
+    await ensureCsfFluidGramStainTestConfiguration();
     await ensureBodyFluidBiochemistryTestConfiguration();
     await ensureBodyFluidSpecificGravityTestConfiguration();
     await ensureCpkWithCkMbTestConfiguration();
@@ -9104,6 +10957,37 @@ async function initializeDatabase() {
     await ensureBeta2MicroglobulinTestConfiguration();
     await ensureAltSgptTestConfiguration();
     await ensureDnphTestConfiguration();
+    await ensureDiabeticProfileTestConfiguration();
+    await ensureExtendedDiabeticProfileTestConfiguration();
+    await ensureDiabeticRenalProfileTestConfiguration();
+    await ensureEarSwabGramStainTestConfiguration();
+    await ensureEarSwabAfbStainTestConfiguration();
+    await ensureFshPrlTestConfiguration();
+    await ensureFshLhPrlTestConfiguration();
+    await ensureFactorIiMutationTestConfiguration();
+    await ensureFactorViiiImmunodepletedTestConfiguration();
+    await ensureFemaleInfertilityProfileTestConfiguration();
+    await ensureFernTestConfiguration();
+    await ensureWuchereriaBancroftiAntigenTestConfiguration();
+    await ensureFilariaAntigenTestConfiguration();
+    await ensureFluidAspirationCytologyTestConfiguration();
+    await ensureHbElectrophoresisTestConfiguration();
+    await ensureFoetalHaemoglobinTestConfiguration();
+    await ensureFoetalHaemoglobinByHplcTestConfiguration();
+    await ensureFreeBetaHcgTestConfiguration();
+    await ensureFreeCholesterolTestConfiguration();
+    await ensureFreeEstradiolTestConfiguration();
+    await ensureFreePsaTestConfiguration();
+    await ensureFreeTestosteroneTestConfiguration();
+    await ensureGad65AntibodyTestConfiguration();
+    await ensureGh90MinutesAfterGlucoseTestConfiguration();
+    await ensureGhFastingGlucoseTestConfiguration();
+    await ensureGrowthHormoneTestConfiguration();
+    await ensureGlucoseToleranceTestConfiguration();
+    await ensureGastrinLevelTestConfiguration();
+    await ensureRandomGlucoseTestConfiguration();
+    await ensureFungusCultureTestConfiguration();
+    await ensureFungusCultureSensitivityTestConfiguration();
     await ensurePrealbuminTestConfiguration();
     await ensureHaptoglobinTestConfiguration();
     await ensureGramStainBacterialVaginosisTestConfiguration();
@@ -9148,8 +11032,34 @@ async function initializeDatabase() {
       await ensureVdrlTestConfiguration();
       await ensureHavIggTestConfiguration();
       await ensureHavIgmTestConfiguration();
+      await ensureHavTotalTestConfiguration();
+      await ensureHbdhTestConfiguration();
+      await ensureHcvTotalAntibodyTestConfiguration();
+      await ensureHbDlcEsrTestConfiguration();
+      await ensureHdvAntibodyTestConfiguration();
+      await ensureHevTotalAntibodyTestConfiguration();
+      await ensureHevAntibodyIggTestConfiguration();
+      await ensureHevAntibodyIgmTestConfiguration();
+      await ensureHivIAndIiTestConfiguration();
+      await ensureHlaB27TestConfiguration();
+      await ensureHangingDropPreparationTestConfiguration();
       await ensureHcvRapidScreeningTestConfiguration();
+      await ensureHepatitisCRnaPcrQuantitativeTestConfiguration();
+      await ensureHcvAntibodyIggTestConfiguration();
+      await ensureHcvAntibodyIgmTestConfiguration();
       await ensureHbsAgTestConfiguration();
+      await ensureHbsAgQuantitativeTestConfiguration();
+      await ensureHepatitisBViralDnaQualitativeTestConfiguration();
+      await ensureHepatitisBVirusTreatmentFollowUpTestConfiguration();
+      await ensureHepatitisProfileTestConfiguration();
+      await ensureHsv2IggTestConfiguration();
+      await ensureHsv2IgmTestConfiguration();
+      await ensureHsv1IggTestConfiguration();
+      await ensureHsv1IgmTestConfiguration();
+      await ensureHistologyBiopsyPerSectionTestConfiguration();
+      await ensureHomocystineBloodTestConfiguration();
+      await ensureHomocystineUrineTestConfiguration();
+      await ensureHypertensionProfileTestConfiguration();
       await ensureAntiHbcIgmTestConfiguration();
       await ensureHepatitisBProfileTestConfiguration();
       await ensureMantouxTestConfiguration();
@@ -9178,6 +11088,7 @@ async function initializeDatabase() {
     await ensureVitaminKTestConfiguration();
     await ensureLdlCholesterolTestConfiguration();
     await ensureHdlCholesterolTestConfiguration();
+    await ensureHdlLdlRatioTestConfiguration();
     await ensureIndirectBilirubinTestConfiguration();
     await ensureCalciumTestConfiguration();
     await ensureFerritinTestConfiguration();
@@ -9197,6 +11108,7 @@ async function initializeDatabase() {
     await ensureLipaseTestConfiguration();
     await ensureAmylaseTestConfiguration();
     await ensureGgtTestConfiguration();
+    await ensureGgtGammaGtTestConfiguration();
     await ensureChlorideTestConfiguration();
     await ensureCreatinineTestConfiguration();
     await ensureIonizedCalciumTestConfiguration();
@@ -9237,6 +11149,8 @@ async function initializeDatabase() {
     await applyOneTimeMigration("explicit-combination-report-content-v1", () => repairKnownCombinationSchemas({ all, get, run, transaction }));
     await applyOneTimeMigration("cell-report-schemas-v1", () => repairCellReportSchemas({ all, get, run, transaction }));
     await applyOneTimeMigration("blank-test-code-normalization-v1", normalizeBlankTestCodes);
+    await applyOneTimeMigration("catalogue-display-name-normalization-v1", normalizeImportedCatalogueDisplayNames);
+    await applyOneTimeMigration("catalogue-display-name-normalization-v2", normalizeImportedCatalogueDisplayNames);
     await retireDuplicateCatalogueTests();
     await ensureUserDefaults();
     await applyOneTimeMigration("bill-collection-permission-v1", grantLegacyDueCollectionPermission);
@@ -9266,4 +11180,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { initializeDatabase, ensureUserDefaults, ensureAntiInsulinAntibodyTestConfiguration, ensureAntiLeptospiraAntibodyTestConfiguration, ensureAntiMicrosomalAntibodyTestConfiguration, ensureAntiDsDnaAntibodyTestConfiguration, ensureAntiSsDnaAntibodyTestConfiguration, ensureAntiHistoneAntibodyTestConfiguration, ensureAntiRibosomalPAntibodyTestConfiguration, ensureAntiCcpAbTestConfiguration, ensureAntiSpermAntibodyTestConfiguration, ensureApolipoproteinA1TestConfiguration, ensureUrineArsenicTestConfiguration, ensureArthritisProfileTestConfiguration, ensureAsciticFluidGramStainTestConfiguration, ensureAsciticFluidTotalProteinTestConfiguration, ensureBodyFluidBiochemistryTestConfiguration, ensureBodyFluidSpecificGravityTestConfiguration, ensureCpkWithCkMbTestConfiguration, ensureCmvIgmIggTestConfiguration, ensureComplementC3TestConfiguration, ensureComplementC4TestConfiguration, ensureCancaAntiPr3TestConfiguration, ensureCreatinineClearanceTestConfiguration, ensureCd3LymphocyteTestConfiguration, ensureCd4LymphocyteTestConfiguration, ensureBronchialWashingCultureSensitivityTestConfiguration, ensureBactecAerobicCultureTestConfiguration, ensureBactecAnaerobicCultureTestConfiguration, ensureBronchialPapCytologyTestConfigurations };
+module.exports = { initializeDatabase, ensureUserDefaults, normalizeImportedCatalogueDisplayNames, ensureDiabeticProfileTestConfiguration, ensureExtendedDiabeticProfileTestConfiguration, ensureDiabeticRenalProfileTestConfiguration, ensureEarSwabGramStainTestConfiguration, ensureEarSwabAfbStainTestConfiguration, ensureFshPrlTestConfiguration, ensureFshLhPrlTestConfiguration, ensureFactorIiMutationTestConfiguration, ensureFactorViiiImmunodepletedTestConfiguration, ensureFemaleInfertilityProfileTestConfiguration, ensureFernTestConfiguration, ensureWuchereriaBancroftiAntigenTestConfiguration, ensureFilariaAntigenTestConfiguration, ensureFluidAspirationCytologyTestConfiguration, ensureFoetalHaemoglobinTestConfiguration, ensureFoetalHaemoglobinByHplcTestConfiguration, ensureFreeBetaHcgTestConfiguration, ensureFreeCholesterolTestConfiguration, ensureFreeEstradiolTestConfiguration, ensureFreePsaTestConfiguration, ensureFreeTestosteroneTestConfiguration, ensureFungusCultureTestConfiguration, ensureFungusCultureSensitivityTestConfiguration, ensureAntiInsulinAntibodyTestConfiguration, ensureAntiLeptospiraAntibodyTestConfiguration, ensureAntiMicrosomalAntibodyTestConfiguration, ensureAntiDsDnaAntibodyTestConfiguration, ensureAntiSsDnaAntibodyTestConfiguration, ensureAntiHistoneAntibodyTestConfiguration, ensureAntiRibosomalPAntibodyTestConfiguration, ensureAntiCcpAbTestConfiguration, ensureAntiSpermAntibodyTestConfiguration, ensureApolipoproteinA1TestConfiguration, ensureUrineArsenicTestConfiguration, ensureArthritisProfileTestConfiguration, ensureAsciticFluidGramStainTestConfiguration, ensureAsciticFluidTotalProteinTestConfiguration, ensureBodyFluidBiochemistryTestConfiguration, ensureBodyFluidSpecificGravityTestConfiguration, ensureCsfFluidChlorideTestConfiguration, ensureCsfFluidProteinTestConfiguration, ensureCsfFluidSpecificGravityTestConfiguration, ensureCsfFluidGlucoseTestConfiguration, ensureUrineCalcium24HourTestConfiguration, ensureCapillaryFragilityTestConfiguration, ensureCardiacProfileTestConfiguration, ensureColorectalCancerMonitorProfileTestConfiguration, ensureComplementFixationTestConfiguration, ensureBilateralConjunctivalSwabTestConfiguration, ensureRightConjunctivalSwabCultureTestConfiguration, ensureConjunctivalSwabCultureTestConfiguration, ensureCeruloplasminTestConfiguration, ensureUrineCopper24HourTestConfiguration, ensureRandomUrineCopperTestConfiguration, ensureEveningCortisolTestConfiguration, ensureMidnightCortisolTestConfiguration, ensureMorningEveningCortisolTestConfiguration, ensureCryoglobulinsScreeningTestConfiguration, ensureGndCultureTestConfiguration, ensureCysticFibrosisGeneMutationTestConfiguration, ensureCmvIggTestConfiguration, ensureCervicalPapSmearTestConfiguration, ensureCervicalSwabGramStainTestConfiguration, ensureCervicalSwabAfbStainTestConfiguration, ensureChikungunyaIggTestConfiguration, ensureChikungunyaIgmTestConfiguration, ensureChlamydiaAntibodyIggIgmTestConfiguration, ensureRandomUrineChlorideTestConfiguration, ensureSerumChlorideTestConfiguration, ensure24HourUrineChlorideTestConfiguration, ensureCsfFluidAfbStainTestConfiguration, ensureCsfFluidGramStainTestConfiguration, ensureCpkWithCkMbTestConfiguration, ensureCmvIgmIggTestConfiguration, ensureComplementC3TestConfiguration, ensureComplementC4TestConfiguration, ensureCancaAntiPr3TestConfiguration, ensureCreatinineClearanceTestConfiguration, ensureCd3LymphocyteTestConfiguration, ensureCd4LymphocyteTestConfiguration, ensureBronchialWashingCultureSensitivityTestConfiguration, ensureBactecAerobicCultureTestConfiguration, ensureBactecAnaerobicCultureTestConfiguration, ensureBronchialPapCytologyTestConfigurations };

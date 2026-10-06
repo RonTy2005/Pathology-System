@@ -115,6 +115,15 @@ test("a resumed computer installs an overdue downloaded update immediately", asy
   assert.deepEqual(f.updater.quitAndInstallCalls, [[true, true]]);
 });
 
+test("the File menu provides an on-demand update check without changing the workspace", () => {
+  const mainSource = fs.readFileSync(path.resolve(__dirname, "../desktop/main.js"), "utf8");
+  assert.match(mainSource, /function createApplicationMenu\(\)/);
+  assert.match(mainSource, /label: "File"[\s\S]*?label: "Check for updates"/);
+  assert.match(mainSource, /checkForDesktopUpdate\(\{ interactive: true \}\)/);
+  assert.match(mainSource, /LabShield is up to date/);
+  assert.match(mainSource, /createApplicationMenu\(\);\s*\n\s*createMainWindow\(\);/);
+});
+
 test("temporary client health-check failures do not replace or reload the current workspace", () => {
   const mainSource = fs.readFileSync(path.resolve(__dirname, "../desktop/main.js"), "utf8");
   const healthCheck = mainSource.match(/function startClientHealthCheck\(serverUrl\) \{[\s\S]*?\n\}(?=\s*async function loadConnectingScreen)/)?.[0];
