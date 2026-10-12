@@ -12,9 +12,9 @@ function routeFor(method, routePath) {
   return route;
 }
 
-test('a user assigned only manage_tests lands in the catalogue and the page uses permission access', () => {
+test('a user assigned Test Catalogue access opens the catalogue in their existing workspace', () => {
   const common = fs.readFileSync(path.join(__dirname, '../frontend/scripts/common.js'), 'utf8');
-  const catalogue = fs.readFileSync(path.join(__dirname, '../frontend/scripts/testCatalog.js'), 'utf8');
+  const legacyCatalogue = fs.readFileSync(path.join(__dirname, '../frontend/test-catalog.html'), 'utf8');
   const reception = fs.readFileSync(path.join(__dirname, '../frontend/reception.html'), 'utf8');
   const receptionLogic = fs.readFileSync(path.join(__dirname, '../frontend/scripts/reception.js'), 'utf8');
   const admin = fs.readFileSync(path.join(__dirname, '../frontend/admin.html'), 'utf8');
@@ -23,16 +23,25 @@ test('a user assigned only manage_tests lands in the catalogue and the page uses
   assert.ok(definition);
   const scope = vm.createContext({});
   vm.runInContext(definition, scope);
-  assert.equal(scope.getRoleHome(ROLES.NA, { permissions: [PERMISSIONS.MANAGE_TESTS] }), 'test-catalog.html');
+  assert.equal(scope.getRoleHome(ROLES.NA, { permissions: [PERMISSIONS.MANAGE_TESTS] }), 'admin.html#window-test-catalog');
   assert.equal(scope.getRoleHome(ROLES.NA, { permissions: [] }), 'login.html');
-  assert.match(catalogue, /const currentUser = protectPage\(\);/);
-  assert.match(catalogue, /if \(!hasPermission\("manage_tests"\)\)/);
+  assert.match(legacyCatalogue, /window\.location\.replace\("admin\.html#window-test-catalog"\)/);
+  assert.match(common, /link\.href = "#test-catalog"/);
+  assert.match(common, /link\.dataset\.testCatalogLauncher = "true"/);
   assert.match(common, /link\.textContent = "Test Catalogue"/);
+  assert.match(common, /!window\.location\.pathname\.endsWith\("reception\.html"\)/);
   assert.match(reception, /id="navTestCatalog"/);
-  assert.match(receptionLogic, /navTestCatalog\.href = `test-catalog\.html\?returnTo=\$\{encodeURIComponent\(returnTo\)\}`/);
-  assert.match(receptionLogic, /if \(!href\.startsWith\("#"\)\) return;/);
+  assert.match(reception, /id="test-catalog" class="panel reception-catalogue-workspace"/);
+  assert.match(reception, /id="receptionTestCatalogueFrame"/);
+  assert.match(receptionLogic, /navTestCatalog\.href = "#test-catalog"/);
+  assert.match(receptionLogic, /"#test-catalog": document\.getElementById\("test-catalog"\)/);
+  assert.match(receptionLogic, /catalogueFrame\.src = "admin\.html\?catalogOnly=1#window-test-catalog"/);
+  assert.match(receptionLogic, /href === "#test-catalog" && hasPermission\("manage_tests"\)/);
   assert.match(admin, /href="#window-test-catalog" id="adminTestCatalogLink" hidden>Test Catalogue/);
-  assert.match(adminLogic, /testCatalogLink\.hidden = !hasPermission\("manage_tests"\)/);
+  assert.match(adminLogic, /\["manage_tests", "Test Catalogue"\]/);
+  assert.match(adminLogic, /if \(hash === "#window-test-catalog"\) return canManageTests\(\);/);
+  assert.match(adminLogic, /if \(isCatalogueWorkspaceUser\(\)\) return false;/);
+  assert.doesNotMatch(admin, /Open full test builder/);
 });
 
 test('every catalogue action and both previews require manage_tests, regardless of role', () => {

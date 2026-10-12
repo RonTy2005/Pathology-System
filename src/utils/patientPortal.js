@@ -1,5 +1,6 @@
 const crypto = require("crypto");
 const os = require("os");
+const { buildQrCodeDataUrl } = require("./qrCode");
 
 function createPatientPortalToken() {
   return crypto.randomBytes(32).toString("base64url");
@@ -73,7 +74,7 @@ function getTestReportPreviewUrl(req, testId, savedBaseUrl) {
 }
 
 function getPatientPortalQrUrl(portalUrl) {
-  return `https://api.qrserver.com/v1/create-qr-code/?size=130x130&margin=0&data=${encodeURIComponent(portalUrl)}`;
+  return buildQrCodeDataUrl(portalUrl);
 }
 
 module.exports = {

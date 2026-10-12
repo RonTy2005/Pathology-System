@@ -529,6 +529,7 @@ async function getReportBundle(visitId) {
       t.sample_type,
       t.turnaround_hours,
       t.report_body,
+      vt.additional_report_text,
       COALESCE(vt.custom_test_price, t.price) AS price,
       vt.is_outside,
       vt.external_lab_name
@@ -1303,7 +1304,11 @@ visitRouter.post(
   allowPermissions(PERMISSIONS.ENTER_RESULTS),
   async (req, res, next) => {
   try {
-    const { visitTestId, parameters = [] } = req.body;
+    const { visitTestId, parameters = [], additionalReportText } = req.body;
+    const hasAdditionalReportText = Object.prototype.hasOwnProperty.call(req.body, "additionalReportText");
+    if (hasAdditionalReportText && (typeof additionalReportText !== "string" || additionalReportText.length > 20000)) {
+      return res.status(400).json({ message: "Additional report text must be text of at most 20,000 characters" });
+    }
     const visitTest = await get(
       `SELECT vt.*, COALESCE(vt.custom_test_name, t.name) AS name, t.category, t.code, COALESCE(vt.custom_test_price, t.price) AS price, vt.external_lab_name
       FROM visit_tests vt
@@ -1342,6 +1347,7 @@ visitRouter.post(
       : [];
     const resolvedParameters = applyCalculatedParameters(catalogParameters, parameters);
 
+    await transaction(async () => {
     await run("DELETE FROM results WHERE visit_test_id = ?", [visitTestId]);
 
     for (const parameter of resolvedParameters) {
@@ -1369,10 +1375,12 @@ visitRouter.post(
       `UPDATE visit_tests
        SET status = 'completed',
            result_entered_at = CURRENT_TIMESTAMP,
-           assigned_to = COALESCE(assigned_to, ?)
+           assigned_to = COALESCE(assigned_to, ?),
+           additional_report_text = CASE WHEN ? THEN ? ELSE additional_report_text END
        WHERE id = ?`,
-      [assignmentClaimUserId, visitTestId]
+      [assignmentClaimUserId, hasAdditionalReportText ? 1 : 0, hasAdditionalReportText ? additionalReportText : "", visitTestId]
     );
+    });
 
     if (report?.finalized) {
       const reportAction = await getReportUserAction(report.id, req.user.id);

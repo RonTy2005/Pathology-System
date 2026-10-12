@@ -18,7 +18,7 @@
         <a href="#reception-summary" class="active">Overview</a>
         <a href="#new-visit" id="navNewVisit">New Patient</a>
         <a href="#patient-management">Patient Management</a>
-        <a href="test-catalog.html" id="navTestCatalog" hidden>Test Catalogue</a>
+        <a href="#test-catalog" id="navTestCatalog" hidden>Test Catalogue</a>
         <a href="#results-entry" id="navResultsEntry">Enter Results</a>
         <a href="#reports">Reports</a>
         <a href="#due-collection">Due Collection</a>
@@ -76,6 +76,15 @@
             <div class="stat-value" id="summaryTotalReported" style="font-size: 2.2rem; font-weight: 800; margin-top: 12px; color: var(--primary);">0</div>
           </div>
         </div>
+      </section>
+
+      <section id="test-catalog" class="panel reception-catalogue-workspace" hidden>
+        <iframe
+          id="receptionTestCatalogueFrame"
+          class="reception-catalogue-frame"
+          title="Test Catalogue"
+          loading="lazy"
+        ></iframe>
       </section>
 
       <section id="new-visit" class="workflow-grid" hidden>

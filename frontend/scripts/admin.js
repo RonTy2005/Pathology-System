@@ -1,4 +1,13 @@
-const currentAdminUser = protectPage(["admin", "manager"]);
+const currentAdminUser = protectPage();
+if (!currentAdminUser) {
+  throw new Error("User must be authenticated to access the test catalogue workspace.");
+}
+const isEmbeddedCatalogueMode = new URLSearchParams(window.location.search).get("catalogOnly") === "1";
+if (isEmbeddedCatalogueMode) document.body.classList.add("catalogue-embedded");
+if (!["superadmin", "admin", "manager"].includes(currentAdminUser.role) && !hasPermission("manage_tests")) {
+  window.location.replace(getRoleHome(currentAdminUser.role, currentAdminUser));
+  throw new Error("Test Catalogue permission is required to access this workspace.");
+}
 
 const overviewCards = document.getElementById("overviewCards");
 const userList = document.getElementById("userList");
@@ -152,7 +161,7 @@ const PERMISSION_LABELS = [
   ["finalize_reports", "Finalize reports"],
   ["print_reports", "Print reports"],
   ["manage_users", "Manage users"],
-  ["manage_tests", "Manage tests"],
+  ["manage_tests", "Test Catalogue"],
   ["manage_doctors", "Manage doctors"],
   ["manage_associates", "Manage associates"],
   ["manage_id_cards", "Edit ID cards"],
@@ -272,6 +281,10 @@ function isAdminRole() {
   return isAdministrativeRole(currentAdminUser?.role);
 }
 
+function isCatalogueWorkspaceUser() {
+  return !isAdminRole() && currentAdminUser?.role !== "manager";
+}
+
 function isSuperadminRole() {
   return currentAdminUser?.role === "superadmin";
 }
@@ -347,6 +360,8 @@ function getFacilityTypes() {
 }
 
 function canOpenWindow(hash) {
+  if (hash === "#window-test-catalog") return canManageTests();
+  if (isCatalogueWorkspaceUser()) return false;
   if (hash === "#window-patient-management") {
     return hasAccessControl("edit_patient_details")
       || hasPermission("manage_patients")
@@ -357,6 +372,14 @@ function canOpenWindow(hash) {
 }
 
 function configureSectionAccess() {
+  if (isCatalogueWorkspaceUser()) {
+    document.querySelectorAll(".sidebar-nav a").forEach((link) => {
+      link.hidden = link.getAttribute("href") !== "#window-test-catalog";
+    });
+    const testCatalogLink = document.getElementById("adminTestCatalogLink");
+    if (testCatalogLink) testCatalogLink.hidden = !canManageTests();
+    return;
+  }
   document.querySelectorAll(".sidebar-nav a").forEach((link) => {
     const hash = link.getAttribute("href");
     if (SUPERADMIN_ONLY_WINDOWS.has(hash)) link.hidden = !isSuperadminRole();
@@ -365,7 +388,7 @@ function configureSectionAccess() {
   const patientManagementLink = document.getElementById("adminPatientManagementLink");
   if (patientManagementLink) patientManagementLink.hidden = !canOpenWindow("#window-patient-management");
   const testCatalogLink = document.getElementById("adminTestCatalogLink");
-  if (testCatalogLink) testCatalogLink.hidden = !hasPermission("manage_tests");
+  if (testCatalogLink) testCatalogLink.hidden = !canManageTests();
 }
 
 async function loadBusinessSettings() {
@@ -1379,8 +1402,9 @@ function updateWorkspaceEmptyState() {
 }
 
 function openTaskWindow(hash) {
+  const fallbackHash = isCatalogueWorkspaceUser() ? "#window-test-catalog" : "#window-overview";
   if (!canOpenWindow(hash)) {
-    openTaskWindow("#window-overview");
+    if (hash !== fallbackHash) openTaskWindow(fallbackHash);
     return;
   }
 
@@ -1529,8 +1553,9 @@ function initializeSectionNavigation() {
 
   configureSectionAccess();
 
-  const requestedHash = window.location.hash || "#window-overview";
-  const initialHash = canOpenWindow(requestedHash) ? requestedHash : "#window-overview";
+  const defaultHash = isCatalogueWorkspaceUser() ? "#window-test-catalog" : "#window-overview";
+  const requestedHash = window.location.hash || defaultHash;
+  const initialHash = canOpenWindow(requestedHash) ? requestedHash : defaultHash;
   openTaskWindow(initialHash);
 }
 

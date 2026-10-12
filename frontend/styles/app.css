@@ -13,6 +13,113 @@
   --radius: 22px;
 }
 
+body.test-catalogue-modal-open {
+  overflow: hidden;
+}
+
+.test-catalogue-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+.test-catalogue-modal[hidden] {
+  display: none;
+}
+
+.test-catalogue-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(7, 25, 22, 0.56);
+}
+
+.test-catalogue-modal-dialog {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(1440px, 100%);
+  height: min(900px, calc(100vh - 36px));
+  overflow: hidden;
+  border: 1px solid rgba(31, 139, 126, 0.28);
+  border-radius: 18px;
+  background: #f8fcfb;
+  box-shadow: 0 24px 72px rgba(2, 44, 34, 0.34);
+}
+
+.test-catalogue-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border-bottom: 1px solid #d6e8e3;
+  background: #fff;
+}
+
+.test-catalogue-modal-header h2 {
+  margin: 2px 0 0;
+  font-size: 1.15rem;
+}
+
+.test-catalogue-modal-frame {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border: 0;
+  background: #f8fcfb;
+}
+
+.reception-catalogue-workspace {
+  padding: 0;
+  min-height: calc(100vh - 190px);
+  overflow: hidden;
+}
+
+.reception-catalogue-frame {
+  display: block;
+  width: 100%;
+  min-height: max(680px, calc(100vh - 190px));
+  border: 0;
+  background: #f8fcfb;
+}
+
+body.catalogue-embedded .sidebar,
+body.catalogue-embedded .page-header,
+body.catalogue-embedded #workspaceEmptyState {
+  display: none;
+}
+
+body.catalogue-embedded .app-shell {
+  display: block;
+  min-height: 0;
+}
+
+body.catalogue-embedded .main-content {
+  min-height: 0;
+  padding: 0;
+}
+
+body.catalogue-embedded .workspace-shell,
+body.catalogue-embedded .workspace-grid {
+  display: block;
+  margin: 0;
+}
+
+body.catalogue-embedded #window-test-catalog {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+body.catalogue-embedded .window-close {
+  display: none;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -1187,6 +1294,32 @@ body:has(.app-shell) {
   border-color: #e4eaee;
   background: rgba(255, 255, 255, 0.94);
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.045);
+}
+
+.result-additional-text {
+  margin: 12px 0;
+}
+
+.result-additional-text-toggle {
+  width: 40px;
+  min-height: 40px;
+  padding: 0;
+  font-size: 24px;
+}
+
+.result-additional-text [data-additional-text-holder] {
+  margin-top: 10px;
+}
+
+.result-additional-text label {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.result-additional-text textarea {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
 }
 
 .app-shell .panel {

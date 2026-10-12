@@ -168,6 +168,60 @@ function hasPermission(permission) {
   return user.permissions.includes(permission);
 }
 
+function initializeTestCatalogueModal() {
+  if (document.getElementById("testCatalogueModal")) return;
+
+  const launchers = Array.from(document.querySelectorAll('[data-test-catalog-launcher], a[href="#test-catalog"]'));
+  if (!launchers.length) return;
+
+  const modal = document.createElement("div");
+  modal.id = "testCatalogueModal";
+  modal.className = "test-catalogue-modal";
+  modal.hidden = true;
+  modal.innerHTML = `
+    <div class="test-catalogue-modal-backdrop" data-close-test-catalogue></div>
+    <section class="test-catalogue-modal-dialog" role="dialog" aria-modal="true" aria-label="Test Catalogue">
+      <header class="test-catalogue-modal-header">
+        <div>
+          <div class="eyebrow">Test Catalogue</div>
+          <h2>Lab tests and parameters</h2>
+        </div>
+        <button class="ghost-btn" type="button" data-close-test-catalogue>Close</button>
+      </header>
+      <iframe class="test-catalogue-modal-frame" title="Test Catalogue" data-test-catalogue-frame></iframe>
+    </section>
+  `;
+  document.body.appendChild(modal);
+
+  const frame = modal.querySelector("[data-test-catalogue-frame]");
+  const close = () => {
+    modal.hidden = true;
+    document.body.classList.remove("test-catalogue-modal-open");
+    if (frame) frame.removeAttribute("src");
+  };
+  const open = () => {
+    if (frame && !frame.getAttribute("src")) {
+      frame.src = "admin.html?catalogOnly=1#window-test-catalog";
+    }
+    modal.hidden = false;
+    document.body.classList.add("test-catalogue-modal-open");
+  };
+
+  launchers.forEach((launcher) => {
+    launcher.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      open();
+    });
+  });
+  modal.querySelectorAll("[data-close-test-catalogue]").forEach((button) => {
+    button.addEventListener("click", close);
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !modal.hidden) close();
+  });
+}
+
 function hasAccessControl(control) {
   const user = getUser();
   if (!user || !user.accessControls) return false;
@@ -245,17 +299,23 @@ function protectPage(allowedRoles) {
   }
 
   // Reception and Admin already expose the catalogue in their own navigation.
-  // Give other permitted roles a direct route back to their current workspace.
+  // Give other permitted roles an in-workspace launcher for the same catalogue.
   const pageName = window.location.pathname.split("/").pop();
   if (hasPermission("manage_tests")
     && !["admin.html", "reception.html", "test-catalog.html"].includes(pageName)) {
     const sidebarNav = document.querySelector(".sidebar-nav");
-    if (sidebarNav && !sidebarNav.querySelector('a[href^="test-catalog.html"]')) {
+    if (sidebarNav && !sidebarNav.querySelector('a[data-test-catalog-launcher]')) {
       const link = document.createElement("a");
-      link.href = `test-catalog.html?returnTo=${encodeURIComponent(`${pageName}${window.location.hash || ""}`)}`;
+      link.href = "#test-catalog";
+      link.dataset.testCatalogLauncher = "true";
       link.textContent = "Test Catalogue";
       sidebarNav.appendChild(link);
     }
+  }
+  if (!window.location.pathname.endsWith("admin.html")
+    && !window.location.pathname.endsWith("test-catalog.html")
+    && !window.location.pathname.endsWith("reception.html")) {
+    initializeTestCatalogueModal();
   }
 
   // Sidebar navigation: show/hide sections
@@ -315,7 +375,7 @@ function getRoleHome(role, user) {
       : user?.accessControls?.edit_patient_details
         ? "reception.html#patient-management"
       : Array.isArray(user?.permissions) && user.permissions.includes("manage_tests")
-        ? "test-catalog.html"
+        ? "admin.html#window-test-catalog"
         : "login.html";
     case "blood_sample_technician": return "reception.html#results-entry";
     case "ct_technician": return "ct_technician.html";
@@ -739,6 +799,39 @@ function escapeResultFieldHtml(value = "") {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+function renderResultAdditionalText(test, disabled = false) {
+  const text = String(test.additional_report_text || "");
+  const expanded = text.trim().length > 0;
+  const holderId = `additional-report-text-${test.id}`;
+  return `<div class="result-additional-text">
+    <button type="button" class="secondary-btn result-additional-text-toggle" data-additional-text-toggle aria-label="Add additional report text" aria-controls="${holderId}" aria-expanded="${expanded}" ${disabled ? "disabled" : ""}>+</button>
+    <div id="${holderId}" data-additional-text-holder ${expanded ? "" : "hidden"}>
+      <label for="${holderId}-input">Additional report text (optional)</label>
+      <textarea id="${holderId}-input" data-additional-report-text data-saved-additional-text="${escapeResultFieldHtml(text)}" rows="4" maxlength="20000" placeholder="Enter advice, instructions, or additional text for this report." ${disabled ? "disabled" : ""}>${escapeResultFieldHtml(text)}</textarea>
+    </div>
+  </div>`;
+}
+
+function attachResultAdditionalText(form) {
+  const button = form.querySelector("[data-additional-text-toggle]");
+  const holder = form.querySelector("[data-additional-text-holder]");
+  if (!button || !holder) return;
+  button.addEventListener("click", () => {
+    holder.hidden = !holder.hidden;
+    button.setAttribute("aria-expanded", String(!holder.hidden));
+    if (!holder.hidden) holder.querySelector("textarea")?.focus();
+  });
+}
+
+async function savePendingResultAdditionalText(container, saveForm) {
+  for (const form of container.querySelectorAll("[data-result-form]")) {
+    const input = form.querySelector("[data-additional-report-text]");
+    if (input && !input.disabled && input.value !== input.dataset.savedAdditionalText) {
+      await saveForm(form);
+    }
+  }
 }
 
 function renderResultParameterField(parameter, savedResults = []) {

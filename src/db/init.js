@@ -323,6 +323,7 @@ async function createTables() {
   await ensureColumn("visit_tests", "external_lab_name", "TEXT");
   await ensureColumn("visit_tests", "custom_test_name", "TEXT");
   await ensureColumn("visit_tests", "custom_test_price", "REAL");
+  await ensureColumn("visit_tests", "additional_report_text", "TEXT NOT NULL DEFAULT ''");
 
   await run(`
     CREATE TABLE IF NOT EXISTS reports (
@@ -1004,36 +1005,71 @@ async function ensureKaryotypeTestConfiguration() {
     ["PF068", "Genetics", "Blood", 168, karyotypeTest.id]
   );
 
-  const parameter = await get(
-    `SELECT id FROM test_parameters
-     WHERE test_id = ? AND LOWER(parameter_name) = LOWER(?)
-     ORDER BY display_order ASC, id ASC LIMIT 1`,
-    [karyotypeTest.id, "Karyotype Result"]
-  ) || await get(
-    `SELECT id FROM test_parameters
-     WHERE test_id = ? AND LOWER(parameter_name) = LOWER(?)
-     ORDER BY display_order ASC, id ASC LIMIT 1`,
-    [karyotypeTest.id, "Result"]
-  ) || await get(
-    "SELECT id FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC LIMIT 1",
+  const fields = [
+    ["Karyotype Result / Summary", ""],
+    ["ISCN Karyotype", "Use current ISCN nomenclature"],
+    ["Specimen / Tissue Source", "State the actual specimen analysed"],
+    ["Culture / Harvest Details", "Laboratory record"],
+    ["Banding Method / Resolution", "State the validated method and resolution"],
+    ["Cells Counted / Analysed / Karyotyped", "State cells evaluated"],
+    ["Mosaicism / Clonal Findings, if present", "Report if detected"],
+    ["Interpretation", "Laboratory geneticist / cytogeneticist interpretation"],
+    ["Limitations", "State assay-specific limitations"],
+    ["Recommendations / Correlation", "Clinical or genetic-counselling correlation, if indicated"],
+  ];
+  const parameters = await all(
+    "SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC",
     [karyotypeTest.id]
   );
+  const normalize = value => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const genericNames = new Set(["result", "karyotyperesult", "karyotyperesultsummary"]);
+  const canUpgrade = parameters.length <= 1
+    && parameters.every(parameter => genericNames.has(normalize(parameter.parameter_name))
+      && !String(parameter.unit || "").trim()
+      && !String(parameter.normal_range || "").trim()
+      && !String(parameter.calculation_formula || "").trim()
+      && (!parameter.entry_mode || parameter.entry_mode === "manual"));
+  const used = await get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [karyotypeTest.id]);
+  const linked = await get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [karyotypeTest.id, karyotypeTest.id]);
+  if (!canUpgrade || used || linked) return;
 
-  if (parameter) {
-    await run(
-      `UPDATE test_parameters
-       SET parameter_name = ?, unit = '', normal_range = '', display_order = 1
-       WHERE id = ?`,
-      ["Karyotype Result", parameter.id]
-    );
-    return;
-  }
+  await transaction(async () => {
+    for (const [index, [name, normalRange]] of fields.entries()) {
+      const parameter = parameters[index];
+      if (parameter) {
+        await run(
+          `UPDATE test_parameters
+           SET parameter_name = ?, unit = '', normal_range = ?, entry_mode = 'manual', calculation_formula = NULL, calculation_precision = 2, display_order = ?
+           WHERE id = ?`,
+          [name, normalRange, index + 1, parameter.id]
+        );
+      } else {
+        await run(
+          `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, calculation_formula, calculation_precision, display_order)
+           VALUES (?, ?, '', ?, 'manual', NULL, 2, ?)`,
+          [karyotypeTest.id, name, normalRange, index + 1]
+        );
+      }
+    }
+  });
+}
 
-  await run(
-    `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, display_order)
-     VALUES (?, ?, '', '', 1)`,
-    [karyotypeTest.id, "Karyotype Result"]
-  );
+async function ensureKaryotypingChromosomalAnalysisConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["karyotyping (chromosomal analysis)", "karyotyping chromosomal analysis", "chromosomal analysis"],
+    schemaName: "Karyotyping (Chromosomal Analysis)",
+    sampleType: "Specimen type as specified by the cytogenetics laboratory",
+    placeholderNames: ["result", "karyotype result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureKaryotypingWithCBandingConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["karyotyping with c-banding", "karyotyping with c banding", "karyotype c-banding", "c-banding karyotype", "c-banding chromosome analysis"],
+    schemaName: "Karyotyping with C-Banding",
+    sampleType: "Specimen type as specified by the cytogenetics laboratory",
+    placeholderNames: ["result", "karyotype result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
 }
 
 async function ensureLipidProfileTestConfiguration() {
@@ -1100,6 +1136,72 @@ async function ensureLipidProfileTestConfiguration() {
       );
     }
   }
+}
+
+async function ensureTotalLipidTestConfiguration() {
+  await ensureSingleParameterTestConfiguration({
+    names: ["Total Lipid", "Total Lipids", "Serum Total Lipids"],
+    createName: "Total Lipid",
+    createCode: "TOTALLIPID",
+    category: "Biochemistry",
+    sampleType: "Serum",
+    turnaroundHours: 24,
+    parameterName: "Total Lipids, Serum",
+    parameterAliases: ["Total Lipid", "Total Lipids", "Result"],
+    unit: "mg/dL",
+    normalRange: "Laboratory-validated reference interval",
+  });
+}
+
+async function ensureTotalProteinTestConfiguration() {
+  await ensureSingleParameterTestConfiguration({
+    names: ["Total Protein", "Total Protein (Serum)", "Serum Total Protein", "Protein, Total"],
+    createName: "Total Protein",
+    createCode: "TOTALPROTEIN",
+    category: "Biochemistry",
+    sampleType: "Serum",
+    turnaroundHours: 24,
+    parameterName: "Total Protein, Serum",
+    parameterAliases: ["Total Protein", "Serum Total Protein", "Protein, Total", "Result"],
+    unit: "g/dL",
+    normalRange: "Laboratory-validated reference interval",
+  });
+}
+
+async function ensureLipidComprehensiveProfileTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["lipid comprehensive profile", "comprehensive lipid profile", "advanced lipid profile"],
+    schemaName: "Lipid Comprehensive Profile",
+    sampleType: "Serum",
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureLipoproteinTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["lipoprotein", "lipoprotein test"],
+    schemaName: "Lipoprotein",
+    sampleType: "Serum",
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureLipoproteinProfileTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["lipoprotein profile", "lipoprotein panel"],
+    schemaName: "Lipoprotein Profile",
+    sampleType: "Serum",
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureLithiumTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["lithium", "lithium serum", "lithium level"],
+    schemaName: "Lithium",
+    sampleType: "Serum",
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
 }
 
 async function ensureLftTestConfiguration() {
@@ -2573,7 +2675,11 @@ async function ensureBactecAerobicCultureTestConfiguration(db = { all, get, run,
       && parameters.map(field => String(field.parameter_name || "").trim().toLowerCase()).join("|")
         === "culture result|organism isolated|antibiotic sensitivity|comments"
       && parameters.every(isBlankManual);
-    if (parameters.length && !placeholder && !legacyCulture) continue;
+    const legacyImportedCulture = parameters.length === 4
+      && parameters.map(field => String(field.parameter_name || "").trim().toLowerCase()).join("|")
+        === "afb culture result|organism isolated|drug sensitivity|comments"
+      && parameters.every(isBlankManual);
+    if (parameters.length && !placeholder && !legacyCulture && !legacyImportedCulture) continue;
 
     const fields = getFallbackReportParameters({ name: test.name });
     if (fields.length !== 11) continue;
@@ -2634,7 +2740,11 @@ async function ensureBactecAnaerobicCultureTestConfiguration(db = { all, get, ru
       && parameters.map(field => String(field.parameter_name || "").trim().toLowerCase()).join("|")
         === "culture result|organism isolated|antibiotic sensitivity|comments"
       && parameters.every(isBlankManual);
-    if (parameters.length && !placeholder && !legacyCulture) continue;
+    const legacyImportedCulture = parameters.length === 4
+      && parameters.map(field => String(field.parameter_name || "").trim().toLowerCase()).join("|")
+        === "afb culture result|organism isolated|drug sensitivity|comments"
+      && parameters.every(isBlankManual);
+    if (parameters.length && !placeholder && !legacyCulture && !legacyImportedCulture) continue;
 
     const fields = getFallbackReportParameters({ name: test.name });
     if (fields.length !== 11) continue;
@@ -3237,6 +3347,15 @@ async function ensureBodyFluidTotalProteinTestConfiguration() {
   });
 }
 
+async function ensureJointFluidProteinTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["joint fluid for protein", "joint fluid protein", "protein joint fluid", "synovial fluid protein"],
+    schemaName: "Joint Fluid for Protein",
+    sampleType: "Joint (Synovial) Fluid",
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
 async function ensureBodyFluidChlorideTestConfiguration() {
   await ensureReportTableTestConfiguration({
     names: [
@@ -3264,6 +3383,15 @@ async function ensureBodyFluidChlorideTestConfiguration() {
       { name: "Method / Analyzer", aliases: ["Method", "Analyzer"], unit: "", normalRange: "", entryMode: "manual" },
       { name: "Comments", aliases: ["Comment", "Remarks", "Clinical Interpretation"], unit: "", normalRange: "", entryMode: "manual" },
     ],
+  });
+}
+
+async function ensureJointFluidChlorideTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["joint fluid for chloride", "joint fluid chloride", "chloride joint fluid", "synovial fluid chloride"],
+    schemaName: "Joint Fluid for Chloride",
+    sampleType: "Joint (Synovial) Fluid",
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
   });
 }
 
@@ -3455,7 +3583,79 @@ async function ensureHbElectrophoresisTestConfiguration(db = { all, get, run, tr
     schemaName: "Hb Electrophoresis",
     sampleType: "Whole Blood",
     sampleTypePattern: /^(whole blood|blood|edta)/i,
-    placeholderNames: ["result", "findings", "comments", "comment", "remarks"],
+    placeholderNames: ["result", "findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureJointFluidSugarTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["joint fluid for sugar", "joint fluid glucose", "glucose joint fluid", "synovial fluid glucose"],
+    schemaName: "Joint Fluid for Sugar",
+    sampleType: "Joint (Synovial) Fluid",
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureKahnTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["kahn test", "kahn"],
+    schemaName: "Kahn Test",
+    sampleType: "Serum",
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureKalaAzarRapidTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["kalazar (rapid test)", "kala azar (rapid test)", "kalazar rapid test", "kala azar rapid test", "kalazar", "kala azar", "rk39 rapid test"],
+    schemaName: "Kalazar (Rapid Test)",
+    sampleType: "Use specimen type validated by the rapid-test kit",
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureLeishmaniaKalaAzarAntibodyIggTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["leishmania / kala-azar antibody igg", "leishmania kala-azar antibody igg", "leishmania antibody igg", "kala-azar antibody igg", "kala azar antibody igg"],
+    schemaName: "Leishmania / Kala-Azar Antibody IgG",
+    sampleType: "Serum",
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureLeishmaniaKalaAzarAntibodyIgmTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["leishmania / kala-azar antibody igm", "leishmania kala-azar antibody igm", "leishmania antibody igm", "kala-azar antibody igm", "kala azar antibody igm"],
+    schemaName: "Leishmania / Kala-Azar Antibody IgM",
+    sampleType: "Serum",
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureLeptospiraAntibodiesIggIgmTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["leptospira antibodies (igg & igm)", "leptospira antibodies igg & igm", "leptospira igg igm", "leptospira igg & igm"],
+    schemaName: "Leptospira Antibodies (IgG & IgM)",
+    sampleType: "Serum",
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureLeptospiraAntibodyIggTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["leptospira antibody igg", "leptospira igg", "anti-leptospira igg", "anti leptospira igg"],
+    schemaName: "Leptospira Antibody IgG",
+    sampleType: "Serum",
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureLeptospiraAntibodyIgmTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["leptospira antibody igm", "leptospira igm", "anti-leptospira igm", "anti leptospira igm"],
+    schemaName: "Leptospira Antibody IgM",
+    sampleType: "Serum",
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
   });
 }
 
@@ -3485,6 +3685,856 @@ async function ensureColorectalCancerMonitorProfileTestConfiguration(db = { all,
     schemaName: "Colorectal Cancer Monitor Profile",
     sampleType: "Serum",
     sampleTypePattern: /^(serum|plasma)/i,
+  });
+}
+
+async function ensureLiverBiopsyTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["liver biopsy", "histopathology liver biopsy"],
+    schemaName: "Liver Biopsy",
+    sampleType: "Tissue",
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureLiverCancerMonitorProfileTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["liver cancer monitor profile", "liver cancer monitor", "hepatocellular carcinoma monitor profile"],
+    schemaName: "Liver Cancer Monitor Profile",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|plasma)/i,
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureLupusAnticoagulantTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["lupus anticoagulant", "lupus anticoagulant profile", "la evaluation"],
+    schemaName: "Lupus Anticoagulant",
+    sampleType: "Citrated Plasma",
+    sampleTypePattern: /^(citrated plasma|plasma)/i,
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureMdmaScreenTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["mdma screen", "mdma urine screen", "ecstasy screen"],
+    schemaName: "MDMA Screen",
+    sampleType: "Urine",
+    sampleTypePattern: /^(urine|random urine)/i,
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureUrineMagnesiumTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["magnesium (urine)", "urine magnesium", "magnesium urine", "magnesium 24 hour urine"],
+    schemaName: "Magnesium (Urine)",
+    sampleType: "Urine",
+    sampleTypePattern: /^(urine|random urine|24.hour urine)/i,
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureMalariaPanPfAntigenTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["malaria (pan / pf ) antigen", "malaria pan pf antigen", "malaria pf pan antigen", "malaria antigen pan pf"],
+    schemaName: "Malaria (Pan / Pf ) Antigen",
+    sampleType: "Whole Blood",
+    sampleTypePattern: /^(whole blood|blood|edta blood)/i,
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureMalariaProfileTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["malaria profile", "malaria panel", "malaria workup profile"],
+    schemaName: "Malaria Profile",
+    sampleType: "Whole Blood",
+    sampleTypePattern: /^(whole blood|blood|edta blood)/i,
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureMaleInfertilityProfileTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["male infertility profile", "male infertility panel", "infertility profile male"],
+    schemaName: "Male Infertility Profile",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|plasma)/i,
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureManganeseTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["manganese", "manganese serum", "manganese whole blood"],
+    schemaName: "Manganese",
+    sampleType: "Whole Blood",
+    sampleTypePattern: /^(whole blood|blood|serum|plasma)/i,
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureMeaslesRubeolaIggTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["measles / rubeola antibody igg", "measles rubeola antibody igg", "measles rubeola igg", "measles igg", "rubeola igg"],
+    schemaName: "Measles / Rubeola Antibody IgG",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|plasma)/i,
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureMeaslesRubeolaIgmTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["measles / rubeola antibody igm", "measles rubeola antibody igm", "measles rubeola igm", "measles igm", "rubeola igm"],
+    schemaName: "Measles / Rubeola Antibody IgM",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|plasma)/i,
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureMenstrualBloodTbPcrTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["menstrual blood for tb pcr", "menstrual blood tb pcr", "endometrial menstrual blood tb pcr"],
+    schemaName: "Menstrual Blood for TB PCR",
+    sampleType: "Menstrual Blood",
+    sampleTypePattern: /^(menstrual blood|endometrial|blood)/i,
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureMicrofilariaTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["micro filaria", "microfilaria", "microfilariae", "microfilarial smear"],
+    schemaName: "Micro Filaria",
+    sampleType: "Peripheral Blood",
+    sampleTypePattern: /^(peripheral blood|whole blood|blood|edta blood)/i,
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureMicroalbuminUrineTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["microalbumin (urine)", "microalbumin urine", "urine microalbumin", "microalbuminuria"],
+    schemaName: "Microalbumin (Urine)",
+    sampleType: "Spot Urine",
+    sampleTypePattern: /^(spot urine|urine|random urine|first morning urine)/i,
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureNasalSwabGramStainTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["nasal swab gram stain", "nasal swabgram stain", "nasal gram stain", "gram stain nasal swab"],
+    schemaName: "Nasal Swab Gram Stain",
+    sampleType: "Nasal Swab",
+    sampleTypePattern: /^(nasal|nose|anterior nares|nasopharyngeal)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureOncologyProfileTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["oncology profile", "oncology marker profile", "tumor marker profile", "tumour marker profile"],
+    schemaName: "Oncology Profile",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|plasma)/i,
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureOptimalItAntigenTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["optimal it antigen", "optimal-it antigen", "optimal it malaria antigen", "optimal it"],
+    schemaName: "Optimal IT Antigen",
+    sampleType: "Whole Blood",
+    sampleTypePattern: /^(whole blood|blood|edta blood)/i,
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureOsmoticFragilityTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["osmotic fragility test", "osmotic fragility", "erythrocyte osmotic fragility", "rbc osmotic fragility"],
+    schemaName: "Osmotic fragility Test",
+    sampleType: "EDTA Whole Blood",
+    sampleTypePattern: /^(edta whole blood|whole blood|blood|edta blood)/i,
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureOvarianFunctionProfileTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["ovarian function profile", "ovarian function panel", "ovarian reserve profile"],
+    schemaName: "Ovarian Function Profile",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|plasma)/i,
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureAdditionalProfileReportConfigurations(db = { all, get, run, transaction }) {
+  const configurations = [
+    {
+      names: ["oxygen for each day(after 1st 3 days)", "oxygen for each day (after 1st 3 days)", "oxygen each day after first 3 days"],
+      schemaName: "Oxygen for each Day(after 1st 3 Days)",
+      sampleType: "Oxygen Therapy Service",
+      sampleTypePattern: /^(oxygen therapy service|oxygen therapy|oxygen)$/i,
+    },
+    {
+      names: ["oxygen( 3 days)", "oxygen (3 days)", "oxygen 3 days"],
+      schemaName: "Oxygen( 3 Days)",
+      sampleType: "Oxygen Therapy Service",
+      sampleTypePattern: /^(oxygen therapy service|oxygen therapy|oxygen)$/i,
+    },
+    {
+      names: ["p anca (anti - pr3)", "p-anca (anti-pr3)", "p anca anti pr3"],
+      schemaName: "P ANCA (Anti - PR3)",
+      sampleType: "Serum",
+      sampleTypePattern: /^(serum|plasma)$/i,
+    },
+    {
+      names: ["pra (plasma renin activity)", "plasma renin activity", "pra"],
+      schemaName: "PRA (Plasma Renin Activity)",
+      sampleType: "EDTA Plasma",
+      sampleTypePattern: /^(edta plasma|plasma)$/i,
+    },
+    {
+      names: ["psa (prostate specific antigen)", "prostate specific antigen", "psa"],
+      schemaName: "PSA (Prostate Specific Antigen)",
+      sampleType: "Serum",
+      sampleTypePattern: /^(serum|plasma)$/i,
+    },
+    {
+      names: ["pth (para thyroid hormone)", "parathyroid hormone", "pth"],
+      schemaName: "PTH (Para Thyroid Hormone)",
+      sampleType: "Serum",
+      sampleTypePattern: /^(serum|plasma)$/i,
+    },
+    {
+      names: ["pth - (intact molecule)", "pth (intact molecule)", "intact parathyroid hormone", "intact pth"],
+      schemaName: "PTH - (Intact Molecule)",
+      sampleType: "Serum",
+      sampleTypePattern: /^(serum|plasma)$/i,
+    },
+    {
+      names: ["puo - work up profile", "puo work up profile", "puo workup profile", "fever of unknown origin workup"],
+      schemaName: "PUO - Work Up Profile",
+      sampleType: "Multiple Specimens / As Applicable",
+      sampleTypePattern: /^(multiple specimens|as applicable|serum|blood)$/i,
+    },
+    {
+      names: ["pus afb stain", "pus acid fast bacilli stain", "afb stain pus"],
+      schemaName: "PUS AFB Stain",
+      sampleType: "Pus / Aspirate",
+      sampleTypePattern: /^(pus|aspirate|wound aspirate|abscess aspirate)/i,
+    },
+  ];
+
+  for (const configuration of configurations) {
+    await ensureBlankReportFormatConfiguration(db, {
+      ...configuration,
+      placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+    });
+  }
+}
+
+async function ensurePusAfbStainTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["pus afb stain", "pus acid fast bacilli stain", "afb stain pus"],
+    schemaName: "PUS AFB Stain",
+    sampleType: "Pus / Aspirate",
+    sampleTypePattern: /^(pus|aspirate|wound aspirate|abscess aspirate)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensurePusCultureSensitivityTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["pus culture & sensitivity", "pus culture and sensitivity", "pus c/s", "pus culture"],
+    schemaName: "PUS Culture & Sensitivity",
+    sampleType: "Pus / Aspirate",
+    sampleTypePattern: /^(pus|aspirate|wound aspirate|abscess aspirate)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks", "afb culture result", "culture result", "drug sensitivity", "antibiotic sensitivity", "organism isolated"],
+  });
+}
+
+async function ensureAnySiteSwabCultureSensitivityConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["swab culture & sensitivity for any site swab", "any site swab culture & sensitivity", "swab culture & sensitivity"],
+    schemaName: "Swab Culture & Sensitivity for Any Site Swab",
+    sampleType: "Site Swab",
+    placeholderNames: ["result", "findings", "impression", "comments", "comment", "remarks", "afb culture result", "culture result", "drug sensitivity", "antibiotic sensitivity", "antimicrobial susceptibility", "organism isolated"],
+  });
+}
+
+async function ensurePusGramStainTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["pus gram stain", "pus gram staining", "gram stain pus"],
+    schemaName: "PUS Gram Stain",
+    sampleType: "Pus / Aspirate",
+    sampleTypePattern: /^(pus|aspirate|wound aspirate|abscess aspirate)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks", "advice", "clinical details"],
+  });
+}
+
+async function ensurePeritonealFluidChlorideTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["peritoneal fluid chloride", "ascitic fluid chloride", "chloride peritoneal fluid"],
+    schemaName: "Peritoneal Fluid Chloride",
+    sampleType: "Peritoneal (Ascitic) Fluid",
+    sampleTypePattern: /^(peritoneal|ascitic|abdominal fluid)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensurePeritonealFluidGramStainTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["peritoneal fluid gram stain", "ascitic fluid gram stain", "gram stain peritoneal fluid"],
+    schemaName: "Peritoneal Fluid Gram Stain",
+    sampleType: "Peritoneal (Ascitic) Fluid",
+    sampleTypePattern: /^(peritoneal|ascitic|abdominal fluid)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensurePeritonealFluidLdhTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["peritoneal fluid ldh", "ascitic fluid ldh", "ldh peritoneal fluid"],
+    schemaName: "Peritoneal Fluid LDH",
+    sampleType: "Peritoneal (Ascitic) Fluid",
+    sampleTypePattern: /^(peritoneal|ascitic|abdominal fluid)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensurePeritonealFluidProteinTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["peritoneal fluid protein", "ascitic fluid protein", "protein peritoneal fluid"],
+    schemaName: "Peritoneal Fluid Protein",
+    sampleType: "Peritoneal (Ascitic) Fluid",
+    sampleTypePattern: /^(peritoneal|ascitic|abdominal fluid)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensurePeritonealFluidSugarTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["peritoneal fluid sugar", "peritoneal fluid glucose", "ascitic fluid sugar", "ascitic fluid glucose", "glucose peritoneal fluid"],
+    schemaName: "Peritoneal Fluid Sugar",
+    sampleType: "Peritoneal (Ascitic) Fluid",
+    sampleTypePattern: /^(peritoneal|ascitic|abdominal fluid)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensurePeritonealFluidSpecificGravityTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["peritoneal fluid for specific gravity", "peritoneal fluid specific gravity", "ascitic fluid specific gravity", "specific gravity peritoneal fluid"],
+    schemaName: "Peritoneal Fluid for Specific Gravity",
+    sampleType: "Peritoneal (Ascitic) Fluid",
+    sampleTypePattern: /^(peritoneal|ascitic|abdominal fluid)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensurePertussisTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["pertussis", "bordetella pertussis", "whooping cough"],
+    schemaName: "Pertussis",
+    sampleType: "Nasopharyngeal Swab",
+    sampleTypePattern: /^(nasopharyngeal|np swab|nasal|respiratory)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensurePhenytoinTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["phenytoin / dilantin", "phenytoin", "dilantin"],
+    schemaName: "Phenytoin / Dilantin",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|plasma)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensurePhospholipidTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["phospholipid"],
+    schemaName: "Phospholipid",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|plasma)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensurePhospholipidAntibodyIgGTestConfiguration(db = { all, get, run, transaction }) {
+  await ensureBlankReportFormatConfiguration(db, {
+    names: ["phospholipid antibody igg (apla - g)", "phospholipid antibody igg"],
+    schemaName: "Phospholipid Antibody IgG (APLA - G)",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|plasma)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+
+  // Correct the initial blank-format seed only. It has never been used for a
+  // patient, has no bundle link, and its first field identifies this exact
+  // pre-release configuration; custom catalogue work is left untouched.
+  const test = await db.get("SELECT id, report_body FROM tests WHERE LOWER(name) = ?", ["phospholipid antibody igg (apla - g)"]);
+  if (!test || String(test.report_body || "").trim()) return;
+  if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) return;
+  if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) return;
+  const parameters = await db.all("SELECT id, parameter_name FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC", [test.id]);
+  if (parameters.length !== 8 || String(parameters[0]?.parameter_name || "").trim() !== "Phospholipid (Cardiolipin) Antibody, IgG") return;
+  const fields = getFallbackReportParameters({ name: "Phospholipid Antibody IgG (APLA - G)" });
+  await db.transaction(async () => {
+    for (const [index, field] of fields.entries()) {
+      await db.run("UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = ?, calculation_formula = ?, calculation_precision = ?, display_order = ? WHERE id = ?", [field.parameterName, field.unit, field.normalRange, field.entryMode, field.calculationFormula, field.calculationPrecision, index + 1, parameters[index].id]);
+    }
+  });
+}
+
+async function ensurePhospholipidAntibodyIgMTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["phospholipid antibody igm (apla - m)", "phospholipid antibody igm"],
+    schemaName: "Phospholipid Antibody IgM (APLA - M)",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|plasma)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureUrinePhosphorus24HourTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["phosphorus (24 hrs. urine)", "phosphorus (24 hour urine)", "phosphorus 24 hour urine", "phosphate 24 hour urine"],
+    schemaName: "Phosphorus (24 hrs. urine)",
+    sampleType: "24-Hour Urine",
+    sampleTypePattern: /^(24|urine)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureOxygenContentTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["plasma 02contents (p02)", "plasma o2 contents (po2)", "oxygen content", "blood oxygen content"],
+    schemaName: "Plasma 02contents (P02)",
+    sampleType: "Heparinized Whole Blood",
+    sampleTypePattern: /^(arterial|venous|mixed venous|whole blood|heparinized)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensurePleuralFluidSpecificGravityTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["pleural fluid specific gravity", "specific gravity pleural fluid"],
+    schemaName: "Pleural Fluid Specific Gravity",
+    sampleType: "Pleural Fluid",
+    sampleTypePattern: /^(pleural|thoracic|chest fluid)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensurePleuralFluidProteinTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["pleural fluid for protein", "pleural fluid protein", "protein pleural fluid"],
+    schemaName: "Pleural Fluid for Protein",
+    sampleType: "Pleural Fluid",
+    sampleTypePattern: /^(pleural|thoracic|chest fluid)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensurePleuralFluidSugarTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["pleural fluid for sugar", "pleural fluid sugar", "pleural fluid glucose", "glucose pleural fluid"],
+    schemaName: "Pleural Fluid for Sugar",
+    sampleType: "Pleural Fluid",
+    sampleTypePattern: /^(pleural|thoracic|chest fluid)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensurePostCoitalTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["post coital test", "postcoital test", "post coital", "pct"],
+    schemaName: "Post Coital Test",
+    sampleType: "Cervical Mucus",
+    sampleTypePattern: /^(cervical|vaginal|genital tract mucus)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureUrinePotassium24HourTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["potassium(24 hour urine)", "potassium (24 hour urine)", "potassium 24 hour urine", "potassium 24 hr urine"],
+    schemaName: "Potassium(24 hour Urine)",
+    sampleType: "24-Hour Urine",
+    sampleTypePattern: /^(24|urine)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureRandomUrinePotassiumTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["potassium(randam)", "potassium(random)", "random urine potassium", "potassium random urine"],
+    schemaName: "Potassium(Randam)",
+    sampleType: "Random Urine",
+    sampleTypePattern: /^(random|spot|urine)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensurePreEmploymentCheckUpConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["pre - employment check up", "pre-employment check up", "pre employment check up", "pre-employment medical check up"],
+    schemaName: "Pre - Employment Check Up",
+    sampleType: "Multiple Specimens / Employer-Defined",
+    sampleTypePattern: /^(multiple|blood|urine|employer)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureOralPrecancerEarlyDetectionConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["precancer&earlydetectionoforal", "precancer & early detection of oral", "oral precancer and early detection", "oral early detection"],
+    schemaName: "Precancer&EarlyDetectionoforal",
+    sampleType: "Oral Cavity Examination / Specimen as Applicable",
+    sampleTypePattern: /^(oral|buccal|mucosal|mouth|multiple)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensurePregnancyElisaTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["pregnancy elisa test", "pregnancy elisa", "hcg elisa"],
+    schemaName: "Pregnancy Elisa Test",
+    sampleType: "Serum or Urine",
+    sampleTypePattern: /^(serum|plasma|urine)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureRbcWbcMorphologyConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["rbc / wbc morphology", "rbc/wbc morphology", "rbc wbc morphology", "red cell white cell morphology"],
+    schemaName: "RBC / WBC Morphology",
+    sampleType: "EDTA Whole Blood / Peripheral Blood Film",
+    sampleTypePattern: /^(edta|whole blood|peripheral blood|blood)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureRbcFragilityTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["rbc fragility test", "osmotic fragility test", "red cell fragility test", "rbc osmotic fragility"],
+    schemaName: "RBC Fragility Test",
+    sampleType: "EDTA Whole Blood",
+    sampleTypePattern: /^(edta|whole blood|blood)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureRectalSwabGramStainConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["rectal swab gram stain", "rectal gram stain", "gram stain rectal swab"],
+    schemaName: "Rectal Swab Gram Stain",
+    sampleType: "Rectal Swab",
+    sampleTypePattern: /^(rectal|anorectal|swab)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureRenalKidneyProfileConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["renal (kidney) profile", "renal kidney profile", "renal profile", "kidney profile"],
+    schemaName: "Renal (Kidney) Profile",
+    sampleType: "Serum / Plasma and Urine as Ordered",
+    sampleTypePattern: /^(serum|plasma|blood|urine|multiple)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureRespiratorySyncytialVirusConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["respiratory syncytial virus (rsv)", "respiratory syncytial virus", "rsv"],
+    schemaName: "Respiratory Syncytial Virus (RSV)",
+    sampleType: "Nasopharyngeal Swab",
+    sampleTypePattern: /^(nasopharyngeal|nasal|respiratory|throat)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureHistologySlideReviewConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["review for histology slide", "histology slide review", "review histology slide"],
+    schemaName: "Review for Histology Slide",
+    sampleType: "Histology Slides / Referred Material",
+    sampleTypePattern: /^(histology|slide|tissue|referred)/i,
+    placeholderNames: ["clinical history", "diagnosis", "gross description", "microscopic description", "note", "specimen", "result", "findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureRheumaticFeverProfileConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["rheumatic fever profile", "acute rheumatic fever profile", "arf profile"],
+    schemaName: "Rheumatic Fever Profile",
+    sampleType: "Serum / Blood and Throat Swab as Ordered",
+    sampleTypePattern: /^(serum|plasma|blood|throat|swab|multiple)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureRheumatoidProfileConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["rheumatoid profile", "rheumatoid arthritis profile", "ra profile"],
+    schemaName: "Rheumatoid Profile",
+    sampleType: "Serum / Blood as Ordered",
+    sampleTypePattern: /^(serum|plasma|blood|multiple)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureRubellaIggConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["rubella igg", "rubella virus igg", "rubella antibody igg"],
+    schemaName: "Rubella IgG",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|plasma)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureShbgConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["shbg (sex hormone binding globulin)", "shbg", "sex hormone binding globulin"],
+    schemaName: "SHBG (Sex Hormone Binding Globulin)",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|plasma)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureSemenCultureConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["semen culture", "semen culture and sensitivity", "spermoculture"],
+    schemaName: "Semen Culture",
+    sampleType: "Semen",
+    sampleTypePattern: /^(semen|seminal)/i,
+    placeholderNames: ["culture result", "organism isolated", "antibiotic sensitivity", "comments", "comment", "remarks", "result", "findings", "impression"],
+  });
+}
+
+async function ensureSeminalFluidCultureSensitivityConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["seminal fluid for culture & sensitivity", "seminal fluid for culture and sensitivity", "seminal fluid culture & sensitivity", "seminal fluid culture and sensitivity"],
+    schemaName: "Seminal Fluid for Culture & Sensitivity",
+    sampleType: "Seminal Fluid / Semen",
+    sampleTypePattern: /^(seminal|semen)/i,
+    placeholderNames: ["culture result", "organism isolated", "drug sensitivity", "antibiotic sensitivity", "antimicrobial susceptibility", "comments", "comment", "remarks", "result", "findings", "impression"],
+  });
+}
+
+async function ensureSputumCultureSensitivityConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["sputum culture & sensitivity", "sputum culture and sensitivity", "sputum culture sensitivity", "sputum c/s"],
+    schemaName: "Sputum Culture & Sensitivity",
+    sampleType: "Sputum",
+    sampleTypePattern: /^(sputum|respiratory|lower respiratory)/i,
+    placeholderNames: ["afb culture result", "culture result", "organism isolated", "drug sensitivity", "antibiotic sensitivity", "antimicrobial susceptibility", "comments", "comment", "remarks", "result", "findings", "impression"],
+  });
+}
+
+async function ensureSputumCultureNonAfbConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["sputum culture (non afb)", "sputum culture non afb", "non afb sputum culture", "sputum bacterial culture"],
+    schemaName: "Sputum Culture (Non AFB)",
+    sampleType: "Sputum",
+    sampleTypePattern: /^(sputum|respiratory|lower respiratory)/i,
+    placeholderNames: ["culture result", "organism isolated", "drug sensitivity", "antibiotic sensitivity", "antimicrobial susceptibility", "comments", "comment", "remarks", "result", "findings", "impression"],
+  });
+}
+
+async function ensureSputumGramStainConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["sputum gram stain", "gram stain sputum", "sputum gram staining"],
+    schemaName: "Sputum Gram Stain",
+    sampleType: "Sputum",
+    sampleTypePattern: /^(sputum|respiratory|lower respiratory)/i,
+    placeholderNames: ["findings", "impression", "comments", "comment", "remarks", "result"],
+  });
+}
+
+async function ensureSputumRespiratoryExaminationConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["sputum re (leishman stain + gram)", "sputum re leishman stain gram", "sputum respiratory examination"],
+    schemaName: "Sputum RE (Leishman Stain + Gram)",
+    sampleType: "Sputum",
+    sampleTypePattern: /^(sputum|respiratory|lower respiratory)/i,
+    placeholderNames: ["findings", "impression", "comments", "comment", "remarks", "result"],
+  });
+}
+
+async function ensureStoneAnalysisConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["stone analysis (urinary / gall bladder)", "stone analysis urinary gall bladder", "stone analysis", "calculus analysis"],
+    schemaName: "Stone Analysis (Urinary / Gall Bladder)",
+    sampleType: "Stone / Calculus",
+    sampleTypePattern: /^(stone|calculus|urinary|renal|kidney|gall|biliary)/i,
+    placeholderNames: ["result", "findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureStoolObtConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["stool obt", "stool occult blood test", "faecal occult blood test", "fecal occult blood test"],
+    schemaName: "Stool OBT",
+    sampleType: "Stool",
+    sampleTypePattern: /^stool/i,
+    placeholderNames: ["result", "findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureStoolObtRoutineExaminationThreeDayConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["stool obt + re (3 days)", "stool obt re 3 days", "stool occult blood routine examination 3 days"],
+    schemaName: "Stool OBT + RE (3 Days)",
+    sampleType: "Stool",
+    sampleTypePattern: /^stool/i,
+    placeholderNames: ["result", "findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureStoolOpcConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["stool opc", "stool ova parasite cyst", "stool ova cysts parasites"],
+    schemaName: "Stool OPC",
+    sampleType: "Stool",
+    sampleTypePattern: /^stool/i,
+    placeholderNames: ["result", "findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureStoolRoutineExaminationReducingSubstancesPhConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["stool re + red sub + ph", "stool re red sub ph", "stool routine examination reducing substances ph"],
+    schemaName: "Stool RE + Red Sub + pH",
+    sampleType: "Stool",
+    sampleTypePattern: /^stool/i,
+    placeholderNames: ["result", "findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureSeminalFluidGramStainConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["seminal fluid for gram stain", "seminal fluid gram stain", "semen gram stain"],
+    schemaName: "Seminal Fluid for Gram Stain",
+    sampleType: "Seminal Fluid / Semen",
+    sampleTypePattern: /^(seminal|semen)/i,
+    placeholderNames: ["findings", "impression", "comments", "comment", "remarks", "result"],
+  });
+}
+
+async function ensureSeminalGermCellStudyConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["seminal germ cell study", "semen immature germ cell study", "semen round cell study"],
+    schemaName: "Seminal Germ Cell Study",
+    sampleType: "Seminal Fluid / Semen",
+    sampleTypePattern: /^(seminal|semen)/i,
+    placeholderNames: ["result", "findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureSerologyViralMarkerConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["serology/viral marker", "serology viral marker", "viral marker", "viral markers", "viral serology marker"],
+    schemaName: "Serology/Viral Marker",
+    sampleType: "Serum / Plasma",
+    sampleTypePattern: /^(serum|plasma|blood)/i,
+    placeholderNames: ["result", "findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureSexChromatinStudyConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["sex chromatin study", "sex chromatin test", "barr body study"],
+    schemaName: "Sex Chromatin Study",
+    sampleType: "Buccal Smear / Submitted Cellular Specimen",
+    sampleTypePattern: /^(buccal|oral|smear|cellular|submitted)/i,
+    placeholderNames: ["result", "findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureSolubleLiverAntigenAntibodyConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["soluble liver antigen (sla) antibody", "soluble liver antigen antibody", "anti-sla antibody", "anti-sla"],
+    schemaName: "Soluble Liver Antigen (SLA) Antibody",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|plasma)/i,
+    placeholderNames: ["result", "findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureSpirometryConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["spirometry", "spirometery", "pulmonary function test spirometry"],
+    schemaName: "Spirometry",
+    sampleType: "Pulmonary Function Test",
+    sampleTypePattern: /^(pulmonary|respiratory|spirometr|pft)/i,
+    placeholderNames: ["result", "findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureSemenFructoseConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["semen for fructose", "semen fructose", "fructose semen"],
+    schemaName: "Semen for Fructose",
+    sampleType: "Semen / Seminal Plasma",
+    sampleTypePattern: /^(semen|seminal)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureSeminalFluidAfbStainConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["seminal fluid for afb stain", "semen afb stain", "seminal fluid afb stain"],
+    schemaName: "Seminal Fluid for AFB Stain",
+    sampleType: "Seminal Fluid / Semen",
+    sampleTypePattern: /^(seminal|semen)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensurePreOperativeProfileConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["pre - operative profile", "pre-operative profile", "pre operative profile", "pre op profile"],
+    schemaName: "Pre - Operative Profile",
+    sampleType: "Multiple Specimens / Procedure-Defined",
+    sampleTypePattern: /^(multiple|blood|urine|procedure)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensurePreCathProfileConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["pre cath profile", "pre-cath profile", "pre cath", "pre catheterization profile"],
+    schemaName: "Pre Cath Profile",
+    sampleType: "Multiple Specimens / Procedure-Defined",
+    sampleTypePattern: /^(multiple|blood|urine|procedure)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensurePreMarriageProfileConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["pre-marriage profile", "pre marriage profile", "premarital profile", "pre-marital profile"],
+    schemaName: "Pre-Marriage Profile",
+    sampleType: "Multiple Specimens / Request-Defined",
+    sampleTypePattern: /^(multiple|blood|urine|request)/i,
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
   });
 }
 
@@ -3672,6 +4722,65 @@ async function ensureCervicalPapSmearTestConfiguration(db = { all, get, run, tra
   });
 }
 
+async function ensureUlcerSmearPapTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["ulcer smear for pap", "ulcer smear pap", "ulcer smear for papanicolaou", "ulcer cytology pap stain"],
+    schemaName: "Ulcer Smear for PAP",
+    sampleType: "Ulcer smear / exfoliative cytology specimen",
+    placeholderNames: ["result", "findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureRandomUrineUricAcidTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["uric acid(urine)", "uric acid (urine)", "urine uric acid", "random urine uric acid", "uric acid (random urine)", "uric acid random urine", "uric acid, random urine"],
+    schemaName: "Uric Acid(Urine)",
+    sampleType: "Random urine",
+    sampleTypePattern: /^(urine$|random urine|spot urine)/i,
+    placeholderNames: ["result", "findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensure24HourUrineUricAcidTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["uric acid(24 hrs urine)", "uric acid (24 hrs urine)", "uric acid(24 hrs. urine)", "uric acid (24 hrs. urine)", "uric acid (24 hour urine)", "uric acid (24 hours urine)", "24 hour urine uric acid", "urine uric acid 24 hour"],
+    schemaName: "Uric Acid(24 hrs Urine)",
+    sampleType: "24-hour urine collection",
+    sampleTypePattern: /^(urine|24[ -]?(hour|hr)|timed urine)/i,
+    placeholderNames: ["result", "findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensure24HourUrineUreaTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["urea(24 hrs. urine)", "urea (24 hrs. urine)", "urea (24 hrs urine)", "urea (24 hour urine)", "urea (24 hours urine)", "24 hour urine urea", "urine urea 24 hour"],
+    schemaName: "Urea(24 hrs. Urine)",
+    sampleType: "24-hour urine collection",
+    sampleTypePattern: /^(urine|24[ -]?(hour|hr)|timed urine)/i,
+    placeholderNames: ["result", "findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureUrethralDischargeCultureSensitivityTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["urethral discharge c/s", "urethral discharge culture & sensitivity", "urethral discharge culture and sensitivity", "urethral discharge culture sensitivity"],
+    schemaName: "Urethral Discharge C/S",
+    sampleType: "Urethral discharge / swab",
+    sampleTypePattern: /^(urethral|swab)/i,
+    placeholderNames: ["result", "findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureUrineAcetoneTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["urine acetone", "unine acetone", "urineacetone", "unineacetone", "acetone (urine)", "acetone urine"],
+    schemaName: "Urine Acetone",
+    sampleType: "Urine",
+    sampleTypePattern: /^(urine|random urine|spot urine)/i,
+    placeholderNames: ["result", "findings", "comments", "comment", "remarks"],
+  });
+}
+
 async function ensureCervicalSwabGramStainTestConfiguration(db = { all, get, run, transaction }) {
   return ensureBlankReportFormatConfiguration(db, {
     names: ["cervical swabgramstain", "cervical swab gram stain", "cervical gram stain", "endocervical swab gram stain"],
@@ -3788,6 +4897,26 @@ async function ensureCsfFluidAfbStainTestConfiguration(db = { all, get, run, tra
   }
 }
 
+async function ensureUrethralSwabAfbTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["urethral swab afb stain", "urethral swab for afb", "urethral afb stain", "afb stain urethral swab"],
+    schemaName: "Urethral Swab AFB Stain",
+    sampleType: "Urethral swab",
+    sampleTypePattern: /^(urethral|swab)/i,
+    placeholderNames: ["result", "findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureThroatSwabAfbTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["throat swab for afb", "throat swab afb stain", "throat afb stain", "afb stain throat swab"],
+    schemaName: "Throat Swab for AFB",
+    sampleType: "Throat Swab",
+    sampleTypePattern: /^(throat|pharyngeal)/i,
+    placeholderNames: ["result", "findings", "comments", "comment", "remarks"],
+  });
+}
+
 async function ensureCsfFluidGramStainTestConfiguration(db = { all, get, run, transaction }) {
   const tests = await db.all(
     "SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('csffluidforgramstain', 'csf fluid for gram stain', 'csf fluid gram stain', 'gram stain, csf', 'csf gram stain', 'cerebrospinal fluid gram stain')"
@@ -3832,6 +4961,15 @@ async function ensureCsfFluidGramStainTestConfiguration(db = { all, get, run, tr
       }
     });
   }
+}
+
+async function ensureJointFluidGramStainTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["joint fluid for gram stain", "joint fluid gram stain", "gram stain joint fluid", "synovial fluid gram stain"],
+    schemaName: "Joint Fluid for Gram Stain",
+    sampleType: "Joint (Synovial) Fluid",
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
 }
 
 async function ensureBodyFluidBiochemistryTestConfiguration(db = { all, get, run, transaction }) {
@@ -3935,6 +5073,15 @@ async function ensureBodyFluidSpecificGravityTestConfiguration(db = { all, get, 
       }
     });
   }
+}
+
+async function ensureJointFluidSpecificGravityTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["joint fluid for specific gravity", "joint fluid specific gravity", "specific gravity joint fluid", "synovial fluid specific gravity"],
+    schemaName: "Joint Fluid for Specific Gravity",
+    sampleType: "Joint (Synovial) Fluid",
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
 }
 
 async function ensureCpkWithCkMbTestConfiguration(db = { all, get, run, transaction }) {
@@ -5649,6 +6796,16 @@ async function ensureEarSwabGramStainTestConfiguration(db = { all, get, run, tra
   }
 }
 
+async function ensureThroatSwabGramStainTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["throat swab for gram stain", "throat swab gram stain", "throat gram stain", "gram stain throat swab"],
+    schemaName: "Throat Swab for Gram Stain",
+    sampleType: "Throat Swab",
+    sampleTypePattern: /^(throat|pharyngeal)/i,
+    placeholderNames: ["result", "findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
 async function ensureEarSwabAfbStainTestConfiguration(db = { all, get, run, transaction }) {
   const tests = await db.all("SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN ('earswabafbstain', 'ear swab afb stain')");
   const fields = getFallbackReportParameters({ name: "EarSwabAFBStain" });
@@ -5714,6 +6871,33 @@ async function ensureFshLhPrlTestConfiguration(db = { all, get, run, transaction
       }
     });
   }
+}
+
+async function ensureLhFshTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["lh & fsh", "lh and fsh", "lh/fsh", "luteinizing hormone & follicle stimulating hormone"],
+    schemaName: "LH & FSH",
+    sampleType: "Serum",
+    placeholderNames: ["result", "result / findings", "findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureLhPrlTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["lh & prl", "lh and prl", "lh/prl", "luteinizing hormone & prolactin"],
+    schemaName: "LH & PRL",
+    sampleType: "Serum",
+    placeholderNames: ["result", "result / findings", "findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureLeadLevelTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["leadlevel-introducing", "lead level", "blood lead level", "lead (pb)"],
+    schemaName: "LeadLevel-Introducing",
+    sampleType: "Whole Blood",
+    placeholderNames: ["result", "result / findings", "findings", "comments", "comment", "remarks"],
+  });
 }
 
 async function ensureFactorIiMutationTestConfiguration(db = { all, get, run, transaction }) {
@@ -6442,6 +7626,298 @@ async function ensurePhosphorusTestConfiguration() {
   });
 }
 
+async function ensureUrineInorganicPhosphorusTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["inorganic phosphorus (urine)", "inorganic phosphorus urine", "urine inorganic phosphorus", "phosphorus urine"],
+    schemaName: "Inorganic Phosphorus (Urine)",
+    sampleType: "Urine",
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureFreeInsulinTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["insulin (free)", "free insulin", "insulin free", "insulin free and total"],
+    schemaName: "Insulin (Free)",
+    sampleType: "Serum",
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureMidnightInsulinTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["insulin (midnight)", "midnight insulin", "insulin midnight"],
+    schemaName: "Insulin (Midnight)",
+    sampleType: "Serum",
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureJointFluidAfbStainTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["joint fluid for afb stain", "joint fluid afb stain", "synovial fluid for afb stain", "synovial fluid afb stain", "afb stain joint fluid"],
+    schemaName: "Joint Fluid for AFB Stain",
+    sampleType: "Joint (Synovial) Fluid",
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureSynovialFluidCalciumConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["joint fluid for calcium", "joint fluid calcium", "calcium joint fluid", "synovial fluid for calcium", "synovial fluid calcium"],
+    schemaName: "Synovial Fluid for Calcium",
+    sampleType: "Joint (Synovial) Fluid",
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureSynovialFluidCrystalConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["joint fluid for crystals", "joint fluid crystals", "synovial fluid for crystals", "synovial fluid crystals", "crystal examination synovial fluid"],
+    schemaName: "Synovial Fluid for Crystals",
+    sampleType: "Joint (Synovial) Fluid",
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureSynovialFluidUricAcidConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["joint fluid for uric acid", "joint fluid uric acid", "uric acid joint fluid", "synovial fluid for uric acid", "synovial fluid uric acid"],
+    schemaName: "Synovial Fluid for Uric Acid",
+    sampleType: "Joint (Synovial) Fluid",
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureT3UltraSensitiveTshConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["t3 & us-tsh", "t3 &us-tsh", "t3 and us-tsh", "t3 ultra-sensitive tsh"],
+    schemaName: "T3 & US-TSH",
+    sampleType: "Serum",
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureT4UltraSensitiveTshConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["t4 & us-tsh", "t4 &us-tsh", "t4 and us-tsh", "t4 ultra-sensitive tsh"],
+    schemaName: "T4 & US-TSH",
+    sampleType: "Serum",
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureTbIgaConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["tb iga", "tuberculosis iga", "mycobacterium tuberculosis iga"],
+    schemaName: "TB IgA",
+    sampleType: "Serum",
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureTbIgmConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["tb igm", "tuberculosis igm", "mycobacterium tuberculosis igm"],
+    schemaName: "TB IgM",
+    sampleType: "Serum",
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureThyroxineBindingGlobulinConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["tbg (thyroxine binding globulin)", "thyroxine binding globulin", "tbg"],
+    schemaName: "TBG (Thyroxine Binding Globulin)",
+    sampleType: "Serum",
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureTotalDifferentialCountConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["tc & dc", "tc and dc", "total count differential count", "tlc dlc"],
+    schemaName: "TC & DC",
+    sampleType: "EDTA Whole Blood",
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureTotalDifferentialCountEsrConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["tc, dc & esr", "tc dc esr", "total count differential count esr", "tlc dlc esr"],
+    schemaName: "TC, DC & ESR",
+    sampleType: "EDTA Whole Blood",
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureTotalDifferentialCountMalariaParasiteConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["tc, dc & mp", "tc dc mp", "total count differential count mp", "tlc dlc mp", "total count differential count malaria parasite"],
+    schemaName: "TC, DC & MP",
+    sampleType: "EDTA Whole Blood / Peripheral Blood Smear",
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureTaeniaEchinococcusConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["taenia echinococcus", "taenia / echinococcus", "taenia echinococcus serology", "taenia and echinococcus"],
+    schemaName: "Taenia Echinococcus",
+    sampleType: "Serum",
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureTesticularCancerMonitorProfileConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["testicular cancer monitor profile", "testicular cancer monitoring profile", "testicular cancer markers", "testicular tumour marker monitoring"],
+    schemaName: "Testicular Cancer Monitor Profile",
+    sampleType: "Serum",
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureTesticularFunctionProfileConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["testicular function profile", "testicular function", "male gonadal function profile", "male hormone profile"],
+    schemaName: "Testicular Function Profile",
+    sampleType: "Serum",
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureThalassemiaProfileConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["thalassemia profile", "thalassaemia profile", "thalassemia screening profile", "thalassaemia screening profile"],
+    schemaName: "Thalassemia Profile",
+    sampleType: "EDTA Whole Blood",
+    placeholderNames: ["result", "findings", "result / findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureThroatSwabCultureConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all(
+    "SELECT id, name, sample_type, report_body FROM tests WHERE LOWER(name) IN ('throat swab culture', 'throat culture', 'pharyngeal swab culture')"
+  );
+
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+
+    const parameters = await db.all(
+      `SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula
+       FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC`,
+      [test.id]
+    );
+    const isBlankManual = field => !String(field.unit || "").trim()
+      && !String(field.normal_range || "").trim()
+      && !String(field.calculation_formula || "").trim()
+      && (!field.entry_mode || field.entry_mode === "manual");
+    const placeholder = parameters.length === 1
+      && String(parameters[0].parameter_name || "").trim().toLowerCase() === "result"
+      && isBlankManual(parameters[0]);
+    const legacyCulture = parameters.length === 4
+      && parameters.map(field => String(field.parameter_name || "").trim().toLowerCase()).join("|")
+        === "culture result|organism isolated|antibiotic sensitivity|comments"
+      && parameters.every(isBlankManual);
+    const legacyImportedCulture = parameters.length === 4
+      && parameters.map(field => String(field.parameter_name || "").trim().toLowerCase()).join("|")
+        === "afb culture result|organism isolated|drug sensitivity|comments"
+      && parameters.every(isBlankManual);
+    if (parameters.length && !placeholder && !legacyCulture && !legacyImportedCulture) continue;
+
+    const fields = getFallbackReportParameters({ name: test.name });
+    if (fields.length !== 12) continue;
+    const reused = legacyCulture
+      ? new Map([[2, parameters[0].id], [4, parameters[1].id], [9, parameters[2].id], [10, parameters[3].id]])
+      : placeholder ? new Map([[2, parameters[0].id]]) : new Map();
+
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) {
+        await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Throat Swab", test.id]);
+      }
+      for (const [index, field] of fields.entries()) {
+        if (reused.has(index)) {
+          await db.run(
+            "UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, display_order = ? WHERE id = ?",
+            [field.parameterName, field.unit, field.normalRange, index + 1, reused.get(index)]
+          );
+        } else {
+          await db.run(
+            `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order)
+             VALUES (?, ?, ?, ?, 'manual', ?)`,
+            [test.id, field.parameterName, field.unit, field.normalRange, index + 1]
+          );
+        }
+      }
+    });
+  }
+}
+
+async function ensureThroatSwabCultureSensitivityConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all(
+    "SELECT id, name, sample_type, report_body FROM tests WHERE LOWER(name) IN ('throat swab culture & sensitivity', 'throat swab culture and sensitivity', 'throat culture & sensitivity', 'throat culture and sensitivity')"
+  );
+
+  for (const test of tests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await db.get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await db.get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+
+    const parameters = await db.all(
+      `SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula
+       FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC`,
+      [test.id]
+    );
+    const isBlankManual = field => !String(field.unit || "").trim()
+      && !String(field.normal_range || "").trim()
+      && !String(field.calculation_formula || "").trim()
+      && (!field.entry_mode || field.entry_mode === "manual");
+    const placeholder = parameters.length === 1
+      && String(parameters[0].parameter_name || "").trim().toLowerCase() === "result"
+      && isBlankManual(parameters[0]);
+    const legacyCulture = parameters.length === 4
+      && parameters.map(field => String(field.parameter_name || "").trim().toLowerCase()).join("|")
+        === "culture result|organism isolated|antibiotic sensitivity|comments"
+      && parameters.every(isBlankManual);
+    const legacyImportedCulture = parameters.length === 4
+      && parameters.map(field => String(field.parameter_name || "").trim().toLowerCase()).join("|")
+        === "afb culture result|organism isolated|drug sensitivity|comments"
+      && parameters.every(isBlankManual);
+    // Upgrade only untouched, known legacy imported structures.
+    if (parameters.length && !placeholder && !legacyCulture && !legacyImportedCulture) continue;
+
+    const fields = getFallbackReportParameters({ name: test.name });
+    if (fields.length !== 14) continue;
+    const reused = (legacyCulture || legacyImportedCulture)
+      ? new Map([[2, parameters[0].id], [4, parameters[1].id], [9, parameters[2].id], [12, parameters[3].id]])
+      : placeholder ? new Map([[2, parameters[0].id]]) : new Map();
+
+    await db.transaction(async () => {
+      if (!String(test.sample_type || "").trim()) {
+        await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Throat Swab", test.id]);
+      }
+      for (const [index, field] of fields.entries()) {
+        if (reused.has(index)) {
+          await db.run(
+            "UPDATE test_parameters SET parameter_name = ?, unit = ?, normal_range = ?, display_order = ? WHERE id = ?",
+            [field.parameterName, field.unit, field.normalRange, index + 1, reused.get(index)]
+          );
+        } else {
+          await db.run(
+            `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, display_order)
+             VALUES (?, ?, ?, ?, 'manual', ?)`,
+            [test.id, field.parameterName, field.unit, field.normalRange, index + 1]
+          );
+        }
+      }
+    });
+  }
+}
+
 async function ensureAlkalinePhosphataseTestConfiguration() {
   await ensureSingleParameterTestConfiguration({
     names: ["ALP (Alkaline Phosphatase)", "Alkaline Phosphatase (ALP)", "Alkaline Phosphatase", "ALP"],
@@ -6518,6 +7994,8 @@ async function ensureAlbertStainKlbTestConfiguration() {
       "Albert Stain of Smears for KLB",
       "Albert Stain of Smear for KLB",
       "Albert Stain for KLB",
+      "Throat Swab for KLB",
+      "Throat Swab KLB",
     ],
     createName: "Albert Stain of Smears for KLB",
     createCode: "ALBERTKLB001",
@@ -6682,18 +8160,68 @@ async function ensureSputumAfbTestConfiguration() {
 }
 
 async function ensureStoolCultureTestConfiguration() {
-  await ensureReportTableTestConfiguration({
-    names: ["Stool Culture", "Stool Culture & Sensitivity"],
-    createName: "Stool Culture",
-    createCode: "STOOLCULTURE",
-    category: "Microbiology",
+  const names = ["Stool Culture", "Stool Culture & Sensitivity", "Enteric Stool Culture"];
+  const existing = await all(
+    "SELECT id FROM tests WHERE LOWER(name) IN (" + names.map(() => "LOWER(?)").join(", ") + ") "
+      + "UNION SELECT id FROM tests WHERE UPPER(COALESCE(code, '')) = 'STOOLCULTURE'",
+    names
+  );
+  if (!existing.length) {
+    await ensureReportTableTestConfiguration({
+      names,
+      createName: "Stool Culture",
+      createCode: "STOOLCULTURE",
+      category: "Microbiology",
+      sampleType: "Stool",
+      turnaroundHours: 120,
+      parameters: getFallbackReportParameters({ name: "Stool Culture" }).map(field => ({
+        name: field.parameterName,
+        unit: field.unit,
+        normalRange: field.normalRange,
+      })),
+    });
+    return;
+  }
+  await ensureBlankReportFormatConfiguration({ all, get, run, transaction }, {
+    names: names.map(name => name.toLowerCase()),
+    schemaName: "Stool Culture",
     sampleType: "Stool",
-    turnaroundHours: 120,
-    parameters: [
-      { name: "Culture, Stool", aliases: ["Culture Result", "Stool Culture"] , normalRange: "Absent" },
-      { name: "Comments" },
-    ],
+    sampleTypePattern: /^stool/i,
+    placeholderNames: ["culture stool", "culture result", "stool culture", "comments", "comment", "remarks", "result", "findings", "impression"],
   });
+
+  // Some legacy imports carry only "Culture, Stool" (with "Absent" as a
+  // reference) plus comments. It is still an empty template, not a result
+  // schema, so upgrade it only when it has never been used or bundled.
+  const legacyTests = await all(
+    "SELECT id, sample_type, report_body FROM tests WHERE LOWER(name) IN (" + names.map(() => "LOWER(?)").join(", ") + ")",
+    names
+  );
+  const fields = getFallbackReportParameters({ name: "Stool Culture" });
+  for (const test of legacyTests) {
+    if (String(test.report_body || "").trim()) continue;
+    if (await get("SELECT 1 AS used FROM visit_tests WHERE test_id = ? LIMIT 1", [test.id])) continue;
+    if (await get("SELECT 1 AS linked FROM test_bundle_items WHERE bundle_test_id = ? OR component_test_id = ? LIMIT 1", [test.id, test.id])) continue;
+    const parameters = await all("SELECT parameter_name, unit, normal_range, entry_mode, calculation_formula FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC", [test.id]);
+    const isLegacyTemplate = parameters.length === 2
+      && ["culturestool", "cultureresult", "stoolculture"].includes(String(parameters[0].parameter_name || "").toLowerCase().replace(/[^a-z0-9]/g, ""))
+      && ["comments", "comment", "remarks"].includes(String(parameters[1].parameter_name || "").toLowerCase().replace(/[^a-z0-9]/g, ""))
+      && parameters.every((parameter, index) => !String(parameter.unit || "").trim()
+        && !String(parameter.calculation_formula || "").trim()
+        && (!parameter.entry_mode || parameter.entry_mode === "manual")
+        && (!String(parameter.normal_range || "").trim() || (index === 0 && /^absent$/i.test(String(parameter.normal_range).trim()))));
+    if (!isLegacyTemplate) continue;
+    await transaction(async () => {
+      if (!String(test.sample_type || "").trim()) await run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Stool", test.id]);
+      await run("DELETE FROM test_parameters WHERE test_id = ?", [test.id]);
+      for (const [index, field] of fields.entries()) {
+        await run(
+          "INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, calculation_formula, calculation_precision, display_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+          [test.id, field.parameterName, field.unit, field.normalRange, field.entryMode, field.calculationFormula, field.calculationPrecision, index + 1]
+        );
+      }
+    });
+  }
 }
 
 async function ensureUrineCultureTestConfiguration() {
@@ -7337,6 +8865,16 @@ async function ensureHsv1IgmTestConfiguration(db = { all, get, run, transaction 
   });
 }
 
+async function ensureImmaturePlateletFractionTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["immature platelet fraction (ipf)", "immature platelet fraction", "ipf"],
+    schemaName: "Immature Platelet Fraction (IPF)",
+    sampleType: "Whole Blood",
+    sampleTypePattern: /^(whole\s*blood|blood|edta\s*whole\s*blood)/i,
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
 async function ensureHistologyBiopsyPerSectionTestConfiguration(db = { all, get, run, transaction }) {
   return ensureBlankReportFormatConfiguration(db, {
     names: ["histology biopsy per section", "histologybiopsypersection"],
@@ -7487,6 +9025,23 @@ async function ensureImmunoglobulinIgeTestConfiguration() {
   });
 }
 
+async function ensureTotalIgeTestConfiguration() {
+  // Total IgE is a quantitative screen. It must remain separate from the
+  // allergen-specific IgE / RAST formats.
+  await ensureSingleParameterTestConfiguration({
+    names: ["Total IgE", "Total Immunoglobulin E (IgE)", "Immunoglobulin E, Total"],
+    createName: "Total IgE",
+    createCode: "TOTALIGE",
+    category: "Immunology",
+    sampleType: "Serum",
+    turnaroundHours: 24,
+    parameterName: "Total Immunoglobulin E (IgE)",
+    parameterAliases: ["Total IgE", "Immunoglobulin IgE, Serum", "Immunoglobulin E", "IgE", "Result"],
+    unit: "kUA/L",
+    normalRange: "Laboratory-validated, age- and assay-specific reference interval",
+  });
+}
+
 async function ensureImmunoglobulinIgmTestConfiguration() {
   await ensureSingleParameterTestConfiguration({
     names: ["Immunoglobulin IgM", "Immunoglobulin M", "IgM"],
@@ -7514,6 +9069,33 @@ async function ensureImmunoglobulinIgaTestConfiguration() {
     parameterAliases: ["Immunoglobulin A", "IgA", "Result"],
     unit: "mg/dL",
     normalRange: "70.00 - 400.00",
+  });
+}
+
+async function ensureImmunoglobulinGAMPanelTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["immunoglobulin (iga) + (igg) + (igm)", "immunoglobulin iga igg igm", "immunoglobulin g a m panel"],
+    schemaName: "Immunoglobulin (IgA) + (IgG) + (IgM)",
+    sampleType: "Serum",
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureImmunoglobulinProfileTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["immunoglobulin profile", "immunoglobulinprofile", "serum immunoglobulin profile", "quantitative immunoglobulin profile"],
+    schemaName: "Immunoglobulin Profile",
+    sampleType: "Serum",
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureIndiaInkPreparationTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["india ink preperation", "india ink preparation", "india ink stain", "india ink"],
+    schemaName: "India Ink Preparation",
+    sampleType: "CSF",
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
   });
 }
 
@@ -9434,6 +11016,17 @@ async function ensureIndividualHematologyReportTestConfigurations() {
       ],
     },
     {
+      name: "Thrombin Time (TT)",
+      aliases: ["Thrombin Time", "TT", "Thrombin Clotting Time"],
+      code: "TT1099",
+      sampleType: "Citrated Plasma",
+      parameters: [
+        { name: "Thrombin Time (TT)", aliases: ["Patient Value", "TT", "Thrombin Clotting Time"], unit: "seconds", normalRange: "Laboratory-validated, method-specific reference interval" },
+        { name: "Control Time", aliases: ["Control Value", "Normal Control"], unit: "seconds", normalRange: "" },
+        { name: "Comments", aliases: ["Comment", "Interpretation"], unit: "", normalRange: "" },
+      ],
+    },
+    {
       name: "Differential Leucocyte Count (DLC)",
       aliases: ["DLC", "Differential Leucocyte Count", "Differential Leukocyte Count"],
       code: "DLC1003",
@@ -9527,6 +11120,36 @@ async function ensureIndividualHematologyReportTestConfigurations() {
       sampleType: "Blood",
       parameters: [
         { name: "Platelet Count", aliases: ["PLATELET COUNT", "Platelets"], unit: "cumm", normalRange: "150000 - 410000" },
+      ],
+    },
+    {
+      name: "TORCH Panel (IgG)",
+      aliases: ["TORCH IgG Panel", "TORCH Profile (IgG)", "TORCH Panel IgG"],
+      code: "TORCHIGG",
+      category: "Serology",
+      sampleType: "Serum",
+      parameters: [
+        { name: "Toxoplasma gondii IgG", aliases: ["Toxoplasma IgG", "Toxo IgG"], unit: "", normalRange: "Laboratory-validated assay interpretation" },
+        { name: "Rubella Virus IgG", aliases: ["Rubella IgG"], unit: "", normalRange: "Laboratory-validated assay interpretation" },
+        { name: "Cytomegalovirus (CMV) IgG", aliases: ["Cytomegalovirus IgG", "CMV IgG"], unit: "", normalRange: "Laboratory-validated assay interpretation" },
+        { name: "Herpes Simplex Virus 1 (HSV-1) IgG", aliases: ["HSV-1 IgG", "Herpes simplex virus 1 IgG"], unit: "", normalRange: "Laboratory-validated assay interpretation" },
+        { name: "Herpes Simplex Virus 2 (HSV-2) IgG", aliases: ["HSV-2 IgG", "Herpes simplex virus 2 IgG"], unit: "", normalRange: "Laboratory-validated assay interpretation" },
+        { name: "Comments", aliases: ["Comment", "Remarks"], unit: "", normalRange: "" },
+      ],
+    },
+    {
+      name: "TORCH Panel (IgM)",
+      aliases: ["TORCH IgM Panel", "TORCH Profile (IgM)", "TORCH Panel IgM"],
+      code: "TORCHIGM",
+      category: "Serology",
+      sampleType: "Serum",
+      parameters: [
+        { name: "Toxoplasma gondii IgM", aliases: ["Toxoplasma IgM", "Toxo IgM"], unit: "", normalRange: "Laboratory-validated assay interpretation" },
+        { name: "Rubella Virus IgM", aliases: ["Rubella IgM"], unit: "", normalRange: "Laboratory-validated assay interpretation" },
+        { name: "Cytomegalovirus (CMV) IgM", aliases: ["Cytomegalovirus IgM", "CMV IgM"], unit: "", normalRange: "Laboratory-validated assay interpretation" },
+        { name: "Herpes Simplex Virus 1 (HSV-1) IgM", aliases: ["HSV-1 IgM", "Herpes simplex virus 1 IgM"], unit: "", normalRange: "Laboratory-validated assay interpretation" },
+        { name: "Herpes Simplex Virus 2 (HSV-2) IgM", aliases: ["HSV-2 IgM", "Herpes simplex virus 2 IgM"], unit: "", normalRange: "Laboratory-validated assay interpretation" },
+        { name: "Comments", aliases: ["Comment", "Remarks"], unit: "", normalRange: "" },
       ],
     },
     {
@@ -10503,7 +12126,15 @@ async function initializeDatabase() {
     await ensureKftTestConfiguration();
     await ensureFactorIiTestConfiguration();
     await ensureKaryotypeTestConfiguration();
+    await ensureKaryotypingChromosomalAnalysisConfiguration();
+    await ensureKaryotypingWithCBandingConfiguration();
     await ensureLipidProfileTestConfiguration();
+    await ensureTotalLipidTestConfiguration();
+    await ensureTotalProteinTestConfiguration();
+    await ensureLipidComprehensiveProfileTestConfiguration();
+    await ensureLipoproteinTestConfiguration();
+    await ensureLipoproteinProfileTestConfiguration();
+    await ensureLithiumTestConfiguration();
     await ensureLftTestConfiguration();
     await ensureAgRatioTestConfiguration();
     await ensureAnfQualitativeTestConfiguration();
@@ -10541,6 +12172,12 @@ async function initializeDatabase() {
     await ensureBactecAnaerobicCultureTestConfiguration();
     await ensureBronchialPapCytologyTestConfigurations();
     await ensureCervicalPapSmearTestConfiguration();
+    await ensureUlcerSmearPapTestConfiguration();
+    await ensureUrineAcetoneTestConfiguration();
+    await ensure24HourUrineUreaTestConfiguration();
+    await ensure24HourUrineUricAcidTestConfiguration();
+    await ensureRandomUrineUricAcidTestConfiguration();
+    await ensureUrethralDischargeCultureSensitivityTestConfiguration();
     await ensureCervicalSwabGramStainTestConfiguration();
     await ensureCervicalSwabAfbStainTestConfiguration();
     await ensureChikungunyaIggTestConfiguration();
@@ -10566,15 +12203,103 @@ async function initializeDatabase() {
     await ensureBloodCultureSensitivityTestConfiguration();
     await ensureBodyFluidCultureSensitivityTestConfiguration();
     await ensureBodyFluidTotalProteinTestConfiguration();
+    await ensureJointFluidProteinTestConfiguration();
     await ensureBodyFluidChlorideTestConfiguration();
+    await ensureJointFluidChlorideTestConfiguration();
     await ensureCsfFluidChlorideTestConfiguration();
     await ensureCsfFluidProteinTestConfiguration();
     await ensureCsfFluidSpecificGravityTestConfiguration();
     await ensureCsfFluidGlucoseTestConfiguration();
+    await ensureJointFluidSugarTestConfiguration();
+    await ensureKahnTestConfiguration();
+    await ensureKalaAzarRapidTestConfiguration();
+    await ensureLeishmaniaKalaAzarAntibodyIggTestConfiguration();
+    await ensureLeishmaniaKalaAzarAntibodyIgmTestConfiguration();
+    await ensureLeptospiraAntibodiesIggIgmTestConfiguration();
+    await ensureLeptospiraAntibodyIggTestConfiguration();
+    await ensureLeptospiraAntibodyIgmTestConfiguration();
     await ensureUrineCalcium24HourTestConfiguration();
     await ensureCapillaryFragilityTestConfiguration();
     await ensureCardiacProfileTestConfiguration();
     await ensureColorectalCancerMonitorProfileTestConfiguration();
+    await ensureLiverBiopsyTestConfiguration();
+    await ensureLiverCancerMonitorProfileTestConfiguration();
+    await ensureLupusAnticoagulantTestConfiguration();
+    await ensureMdmaScreenTestConfiguration();
+    await ensureUrineMagnesiumTestConfiguration();
+    await ensureMalariaPanPfAntigenTestConfiguration();
+    await ensureMalariaProfileTestConfiguration();
+    await ensureMaleInfertilityProfileTestConfiguration();
+    await ensureManganeseTestConfiguration();
+    await ensureMeaslesRubeolaIggTestConfiguration();
+    await ensureMeaslesRubeolaIgmTestConfiguration();
+    await ensureMenstrualBloodTbPcrTestConfiguration();
+    await ensureMicrofilariaTestConfiguration();
+    await ensureMicroalbuminUrineTestConfiguration();
+    await ensureNasalSwabGramStainTestConfiguration();
+    await ensureOncologyProfileTestConfiguration();
+    await ensureOptimalItAntigenTestConfiguration();
+    await ensureOsmoticFragilityTestConfiguration();
+    await ensureOvarianFunctionProfileTestConfiguration();
+    await ensureAdditionalProfileReportConfigurations();
+    await ensurePusAfbStainTestConfiguration();
+    await ensurePusCultureSensitivityTestConfiguration();
+    await ensureAnySiteSwabCultureSensitivityConfiguration();
+    await ensurePusGramStainTestConfiguration();
+    await ensurePeritonealFluidChlorideTestConfiguration();
+    await ensurePeritonealFluidGramStainTestConfiguration();
+    await ensurePeritonealFluidLdhTestConfiguration();
+    await ensurePeritonealFluidProteinTestConfiguration();
+    await ensurePeritonealFluidSugarTestConfiguration();
+    await ensurePeritonealFluidSpecificGravityTestConfiguration();
+    await ensurePertussisTestConfiguration();
+    await ensurePhenytoinTestConfiguration();
+    await ensurePhospholipidTestConfiguration();
+    await ensurePhospholipidAntibodyIgGTestConfiguration();
+    await ensurePhospholipidAntibodyIgMTestConfiguration();
+    await ensureUrinePhosphorus24HourTestConfiguration();
+    await ensureOxygenContentTestConfiguration();
+    await ensurePleuralFluidSpecificGravityTestConfiguration();
+    await ensurePleuralFluidProteinTestConfiguration();
+    await ensurePleuralFluidSugarTestConfiguration();
+    await ensurePostCoitalTestConfiguration();
+    await ensureUrinePotassium24HourTestConfiguration();
+    await ensureRandomUrinePotassiumTestConfiguration();
+    await ensurePreEmploymentCheckUpConfiguration();
+    await ensureOralPrecancerEarlyDetectionConfiguration();
+    await ensurePregnancyElisaTestConfiguration();
+    await ensureRbcWbcMorphologyConfiguration();
+    await ensureRbcFragilityTestConfiguration();
+    await ensureRectalSwabGramStainConfiguration();
+    await ensureRenalKidneyProfileConfiguration();
+    await ensureRespiratorySyncytialVirusConfiguration();
+    await ensureHistologySlideReviewConfiguration();
+    await ensureRheumaticFeverProfileConfiguration();
+    await ensureRheumatoidProfileConfiguration();
+    await ensureRubellaIggConfiguration();
+    await ensureShbgConfiguration();
+    await ensureSemenCultureConfiguration();
+    await ensureSeminalFluidCultureSensitivityConfiguration();
+    await ensureSputumCultureSensitivityConfiguration();
+    await ensureSputumCultureNonAfbConfiguration();
+    await ensureSputumGramStainConfiguration();
+    await ensureSputumRespiratoryExaminationConfiguration();
+    await ensureStoneAnalysisConfiguration();
+    await ensureStoolObtConfiguration();
+    await ensureStoolObtRoutineExaminationThreeDayConfiguration();
+    await ensureStoolOpcConfiguration();
+    await ensureStoolRoutineExaminationReducingSubstancesPhConfiguration();
+    await ensureSeminalFluidGramStainConfiguration();
+    await ensureSeminalGermCellStudyConfiguration();
+    await ensureSerologyViralMarkerConfiguration();
+    await ensureSexChromatinStudyConfiguration();
+    await ensureSolubleLiverAntigenAntibodyConfiguration();
+    await ensureSpirometryConfiguration();
+    await ensureSemenFructoseConfiguration();
+    await ensureSeminalFluidAfbStainConfiguration();
+    await ensurePreOperativeProfileConfiguration();
+    await ensurePreCathProfileConfiguration();
+    await ensurePreMarriageProfileConfiguration();
     await ensureComplementFixationTestConfiguration();
     await ensureBilateralConjunctivalSwabTestConfiguration();
     await ensureRightConjunctivalSwabCultureTestConfiguration();
@@ -10596,9 +12321,13 @@ async function initializeDatabase() {
     await ensureCysticFibrosisGeneMutationTestConfiguration();
     await ensureCmvIggTestConfiguration();
     await ensureCsfFluidAfbStainTestConfiguration();
+    await ensureThroatSwabAfbTestConfiguration();
+    await ensureUrethralSwabAfbTestConfiguration();
     await ensureCsfFluidGramStainTestConfiguration();
+    await ensureJointFluidGramStainTestConfiguration();
     await ensureBodyFluidBiochemistryTestConfiguration();
     await ensureBodyFluidSpecificGravityTestConfiguration();
+    await ensureJointFluidSpecificGravityTestConfiguration();
     await ensureCpkWithCkMbTestConfiguration();
     await ensureCmvIgmIggTestConfiguration();
     await ensureComplementC3TestConfiguration();
@@ -10626,9 +12355,13 @@ async function initializeDatabase() {
     await ensureExtendedDiabeticProfileTestConfiguration();
     await ensureDiabeticRenalProfileTestConfiguration();
     await ensureEarSwabGramStainTestConfiguration();
+    await ensureThroatSwabGramStainTestConfiguration();
     await ensureEarSwabAfbStainTestConfiguration();
     await ensureFshPrlTestConfiguration();
     await ensureFshLhPrlTestConfiguration();
+    await ensureLhFshTestConfiguration();
+    await ensureLhPrlTestConfiguration();
+    await ensureLeadLevelTestConfiguration();
     await ensureFactorIiMutationTestConfiguration();
     await ensureFactorViiiImmunodepletedTestConfiguration();
     await ensureFemaleInfertilityProfileTestConfiguration();
@@ -10662,6 +12395,27 @@ async function initializeDatabase() {
     await ensurePostPrandialBloodSugarTestConfiguration();
     await ensureTacrolimusTestConfiguration();
     await ensurePhosphorusTestConfiguration();
+    await ensureUrineInorganicPhosphorusTestConfiguration();
+    await ensureFreeInsulinTestConfiguration();
+    await ensureMidnightInsulinTestConfiguration();
+    await ensureJointFluidAfbStainTestConfiguration();
+    await ensureSynovialFluidCalciumConfiguration();
+    await ensureSynovialFluidCrystalConfiguration();
+    await ensureSynovialFluidUricAcidConfiguration();
+    await ensureT3UltraSensitiveTshConfiguration();
+    await ensureT4UltraSensitiveTshConfiguration();
+    await ensureTbIgaConfiguration();
+    await ensureTbIgmConfiguration();
+    await ensureThyroxineBindingGlobulinConfiguration();
+    await ensureTotalDifferentialCountConfiguration();
+    await ensureTotalDifferentialCountEsrConfiguration();
+    await ensureTotalDifferentialCountMalariaParasiteConfiguration();
+    await ensureTaeniaEchinococcusConfiguration();
+    await ensureTesticularCancerMonitorProfileConfiguration();
+    await ensureTesticularFunctionProfileConfiguration();
+    await ensureThalassemiaProfileConfiguration();
+    await ensureThroatSwabCultureConfiguration();
+    await ensureThroatSwabCultureSensitivityConfiguration();
     await ensureAlkalinePhosphataseTestConfiguration();
     await ensureClotRetractionTestConfiguration();
     await ensureGroupBStrepTestConfiguration();
@@ -10721,6 +12475,7 @@ async function initializeDatabase() {
     await ensureHsv2IgmTestConfiguration();
     await ensureHsv1IggTestConfiguration();
     await ensureHsv1IgmTestConfiguration();
+    await ensureImmaturePlateletFractionTestConfiguration();
     await ensureHistologyBiopsyPerSectionTestConfiguration();
     await ensureHomocystineBloodTestConfiguration();
     await ensureHomocystineUrineTestConfiguration();
@@ -10732,8 +12487,12 @@ async function initializeDatabase() {
     await ensureAntiCcpTestConfiguration();
     await ensureImmunoglobulinIggTestConfiguration();
     await ensureImmunoglobulinIgeTestConfiguration();
+    await ensureTotalIgeTestConfiguration();
     await ensureImmunoglobulinIgmTestConfiguration();
     await ensureImmunoglobulinIgaTestConfiguration();
+    await ensureImmunoglobulinGAMPanelTestConfiguration();
+    await ensureImmunoglobulinProfileTestConfiguration();
+    await ensureIndiaInkPreparationTestConfiguration();
     await ensureAntiBTitreTestConfiguration();
     await ensureAntiATitreTestConfiguration();
     await ensureDustAllergyTestConfiguration();
@@ -10838,7 +12597,15 @@ async function initializeDatabase() {
     await ensureKftTestConfiguration();
     await ensureFactorIiTestConfiguration();
     await ensureKaryotypeTestConfiguration();
+    await ensureKaryotypingChromosomalAnalysisConfiguration();
+    await ensureKaryotypingWithCBandingConfiguration();
     await ensureLipidProfileTestConfiguration();
+    await ensureTotalLipidTestConfiguration();
+    await ensureTotalProteinTestConfiguration();
+    await ensureLipidComprehensiveProfileTestConfiguration();
+    await ensureLipoproteinTestConfiguration();
+    await ensureLipoproteinProfileTestConfiguration();
+    await ensureLithiumTestConfiguration();
     await ensureLftTestConfiguration();
     await ensureAgRatioTestConfiguration();
     await ensureAnfQualitativeTestConfiguration();
@@ -10876,6 +12643,12 @@ async function initializeDatabase() {
     await ensureBactecAnaerobicCultureTestConfiguration();
     await ensureBronchialPapCytologyTestConfigurations();
     await ensureCervicalPapSmearTestConfiguration();
+    await ensureUlcerSmearPapTestConfiguration();
+    await ensureUrineAcetoneTestConfiguration();
+    await ensure24HourUrineUreaTestConfiguration();
+    await ensure24HourUrineUricAcidTestConfiguration();
+    await ensureRandomUrineUricAcidTestConfiguration();
+    await ensureUrethralDischargeCultureSensitivityTestConfiguration();
     await ensureCervicalSwabGramStainTestConfiguration();
     await ensureCervicalSwabAfbStainTestConfiguration();
     await ensureChikungunyaIggTestConfiguration();
@@ -10901,15 +12674,103 @@ async function initializeDatabase() {
     await ensureBloodCultureSensitivityTestConfiguration();
     await ensureBodyFluidCultureSensitivityTestConfiguration();
     await ensureBodyFluidTotalProteinTestConfiguration();
+    await ensureJointFluidProteinTestConfiguration();
     await ensureBodyFluidChlorideTestConfiguration();
+    await ensureJointFluidChlorideTestConfiguration();
     await ensureCsfFluidChlorideTestConfiguration();
     await ensureCsfFluidProteinTestConfiguration();
     await ensureCsfFluidSpecificGravityTestConfiguration();
     await ensureCsfFluidGlucoseTestConfiguration();
+    await ensureJointFluidSugarTestConfiguration();
+      await ensureKahnTestConfiguration();
+      await ensureKalaAzarRapidTestConfiguration();
+      await ensureLeishmaniaKalaAzarAntibodyIggTestConfiguration();
+      await ensureLeishmaniaKalaAzarAntibodyIgmTestConfiguration();
+      await ensureLeptospiraAntibodiesIggIgmTestConfiguration();
+      await ensureLeptospiraAntibodyIggTestConfiguration();
+      await ensureLeptospiraAntibodyIgmTestConfiguration();
     await ensureUrineCalcium24HourTestConfiguration();
     await ensureCapillaryFragilityTestConfiguration();
     await ensureCardiacProfileTestConfiguration();
     await ensureColorectalCancerMonitorProfileTestConfiguration();
+    await ensureLiverBiopsyTestConfiguration();
+    await ensureLiverCancerMonitorProfileTestConfiguration();
+    await ensureLupusAnticoagulantTestConfiguration();
+    await ensureMdmaScreenTestConfiguration();
+    await ensureUrineMagnesiumTestConfiguration();
+    await ensureMalariaPanPfAntigenTestConfiguration();
+    await ensureMalariaProfileTestConfiguration();
+    await ensureMaleInfertilityProfileTestConfiguration();
+    await ensureManganeseTestConfiguration();
+    await ensureMeaslesRubeolaIggTestConfiguration();
+    await ensureMeaslesRubeolaIgmTestConfiguration();
+    await ensureMenstrualBloodTbPcrTestConfiguration();
+    await ensureMicrofilariaTestConfiguration();
+    await ensureMicroalbuminUrineTestConfiguration();
+    await ensureNasalSwabGramStainTestConfiguration();
+    await ensureOncologyProfileTestConfiguration();
+    await ensureOptimalItAntigenTestConfiguration();
+    await ensureOsmoticFragilityTestConfiguration();
+    await ensureOvarianFunctionProfileTestConfiguration();
+    await ensureAdditionalProfileReportConfigurations();
+    await ensurePusAfbStainTestConfiguration();
+    await ensurePusCultureSensitivityTestConfiguration();
+    await ensureAnySiteSwabCultureSensitivityConfiguration();
+    await ensurePusGramStainTestConfiguration();
+    await ensurePeritonealFluidChlorideTestConfiguration();
+    await ensurePeritonealFluidGramStainTestConfiguration();
+    await ensurePeritonealFluidLdhTestConfiguration();
+    await ensurePeritonealFluidProteinTestConfiguration();
+    await ensurePeritonealFluidSugarTestConfiguration();
+    await ensurePeritonealFluidSpecificGravityTestConfiguration();
+    await ensurePertussisTestConfiguration();
+    await ensurePhenytoinTestConfiguration();
+    await ensurePhospholipidTestConfiguration();
+    await ensurePhospholipidAntibodyIgGTestConfiguration();
+    await ensurePhospholipidAntibodyIgMTestConfiguration();
+    await ensureUrinePhosphorus24HourTestConfiguration();
+    await ensureOxygenContentTestConfiguration();
+    await ensurePleuralFluidSpecificGravityTestConfiguration();
+    await ensurePleuralFluidProteinTestConfiguration();
+    await ensurePleuralFluidSugarTestConfiguration();
+    await ensurePostCoitalTestConfiguration();
+    await ensureUrinePotassium24HourTestConfiguration();
+    await ensureRandomUrinePotassiumTestConfiguration();
+    await ensurePreEmploymentCheckUpConfiguration();
+    await ensureOralPrecancerEarlyDetectionConfiguration();
+    await ensurePregnancyElisaTestConfiguration();
+    await ensureRbcWbcMorphologyConfiguration();
+    await ensureRbcFragilityTestConfiguration();
+    await ensureRectalSwabGramStainConfiguration();
+    await ensureRenalKidneyProfileConfiguration();
+    await ensureRespiratorySyncytialVirusConfiguration();
+    await ensureHistologySlideReviewConfiguration();
+    await ensureRheumaticFeverProfileConfiguration();
+    await ensureRheumatoidProfileConfiguration();
+    await ensureRubellaIggConfiguration();
+    await ensureShbgConfiguration();
+    await ensureSemenCultureConfiguration();
+    await ensureSeminalFluidCultureSensitivityConfiguration();
+    await ensureSputumCultureSensitivityConfiguration();
+    await ensureSputumCultureNonAfbConfiguration();
+    await ensureSputumGramStainConfiguration();
+    await ensureSputumRespiratoryExaminationConfiguration();
+    await ensureStoneAnalysisConfiguration();
+    await ensureStoolObtConfiguration();
+    await ensureStoolObtRoutineExaminationThreeDayConfiguration();
+    await ensureStoolOpcConfiguration();
+    await ensureStoolRoutineExaminationReducingSubstancesPhConfiguration();
+    await ensureSeminalFluidGramStainConfiguration();
+    await ensureSeminalGermCellStudyConfiguration();
+    await ensureSerologyViralMarkerConfiguration();
+    await ensureSexChromatinStudyConfiguration();
+    await ensureSolubleLiverAntigenAntibodyConfiguration();
+    await ensureSpirometryConfiguration();
+    await ensureSemenFructoseConfiguration();
+    await ensureSeminalFluidAfbStainConfiguration();
+    await ensurePreOperativeProfileConfiguration();
+    await ensurePreCathProfileConfiguration();
+    await ensurePreMarriageProfileConfiguration();
     await ensureComplementFixationTestConfiguration();
     await ensureBilateralConjunctivalSwabTestConfiguration();
     await ensureRightConjunctivalSwabCultureTestConfiguration();
@@ -10931,9 +12792,13 @@ async function initializeDatabase() {
     await ensureCysticFibrosisGeneMutationTestConfiguration();
     await ensureCmvIggTestConfiguration();
     await ensureCsfFluidAfbStainTestConfiguration();
+    await ensureThroatSwabAfbTestConfiguration();
+    await ensureUrethralSwabAfbTestConfiguration();
     await ensureCsfFluidGramStainTestConfiguration();
+    await ensureJointFluidGramStainTestConfiguration();
     await ensureBodyFluidBiochemistryTestConfiguration();
     await ensureBodyFluidSpecificGravityTestConfiguration();
+    await ensureJointFluidSpecificGravityTestConfiguration();
     await ensureCpkWithCkMbTestConfiguration();
     await ensureCmvIgmIggTestConfiguration();
     await ensureComplementC3TestConfiguration();
@@ -10961,9 +12826,13 @@ async function initializeDatabase() {
     await ensureExtendedDiabeticProfileTestConfiguration();
     await ensureDiabeticRenalProfileTestConfiguration();
     await ensureEarSwabGramStainTestConfiguration();
+    await ensureThroatSwabGramStainTestConfiguration();
     await ensureEarSwabAfbStainTestConfiguration();
     await ensureFshPrlTestConfiguration();
     await ensureFshLhPrlTestConfiguration();
+    await ensureLhFshTestConfiguration();
+    await ensureLhPrlTestConfiguration();
+    await ensureLeadLevelTestConfiguration();
     await ensureFactorIiMutationTestConfiguration();
     await ensureFactorViiiImmunodepletedTestConfiguration();
     await ensureFemaleInfertilityProfileTestConfiguration();
@@ -10997,6 +12866,27 @@ async function initializeDatabase() {
     await ensurePostPrandialBloodSugarTestConfiguration();
     await ensureTacrolimusTestConfiguration();
     await ensurePhosphorusTestConfiguration();
+    await ensureUrineInorganicPhosphorusTestConfiguration();
+    await ensureFreeInsulinTestConfiguration();
+    await ensureMidnightInsulinTestConfiguration();
+    await ensureJointFluidAfbStainTestConfiguration();
+    await ensureSynovialFluidCalciumConfiguration();
+    await ensureSynovialFluidCrystalConfiguration();
+    await ensureSynovialFluidUricAcidConfiguration();
+    await ensureT3UltraSensitiveTshConfiguration();
+    await ensureT4UltraSensitiveTshConfiguration();
+    await ensureTbIgaConfiguration();
+    await ensureTbIgmConfiguration();
+    await ensureThyroxineBindingGlobulinConfiguration();
+    await ensureTotalDifferentialCountConfiguration();
+    await ensureTotalDifferentialCountEsrConfiguration();
+    await ensureTotalDifferentialCountMalariaParasiteConfiguration();
+    await ensureTaeniaEchinococcusConfiguration();
+    await ensureTesticularCancerMonitorProfileConfiguration();
+    await ensureTesticularFunctionProfileConfiguration();
+    await ensureThalassemiaProfileConfiguration();
+    await ensureThroatSwabCultureConfiguration();
+    await ensureThroatSwabCultureSensitivityConfiguration();
     await ensureAlkalinePhosphataseTestConfiguration();
     await ensureClotRetractionTestConfiguration();
     await ensureGroupBStrepTestConfiguration();
@@ -11056,6 +12946,7 @@ async function initializeDatabase() {
       await ensureHsv2IgmTestConfiguration();
       await ensureHsv1IggTestConfiguration();
       await ensureHsv1IgmTestConfiguration();
+      await ensureImmaturePlateletFractionTestConfiguration();
       await ensureHistologyBiopsyPerSectionTestConfiguration();
       await ensureHomocystineBloodTestConfiguration();
       await ensureHomocystineUrineTestConfiguration();
@@ -11067,8 +12958,12 @@ async function initializeDatabase() {
       await ensureAntiCcpTestConfiguration();
       await ensureImmunoglobulinIggTestConfiguration();
       await ensureImmunoglobulinIgeTestConfiguration();
+      await ensureTotalIgeTestConfiguration();
       await ensureImmunoglobulinIgmTestConfiguration();
       await ensureImmunoglobulinIgaTestConfiguration();
+      await ensureImmunoglobulinGAMPanelTestConfiguration();
+      await ensureImmunoglobulinProfileTestConfiguration();
+      await ensureIndiaInkPreparationTestConfiguration();
       await ensureAntiBTitreTestConfiguration();
       await ensureAntiATitreTestConfiguration();
       await ensureDustAllergyTestConfiguration();

@@ -1333,6 +1333,7 @@ function initializeNavigation() {
     "#reception-summary": document.getElementById("reception-summary"),
     "#new-visit": document.getElementById("new-visit"),
     "#patient-management": document.getElementById("patient-management"),
+    "#test-catalog": document.getElementById("test-catalog"),
     "#results-entry": document.getElementById("results-entry"),
     "#reports": document.getElementById("reports"),
     "#due-collection": document.getElementById("due-collection"),
@@ -1344,6 +1345,7 @@ function initializeNavigation() {
     "#reception-summary": "Daily Overview",
     "#new-visit": "Register a new patient",
     "#patient-management": "Patient Management",
+    "#test-catalog": "Test Catalogue",
     "#results-entry": "Enter Test Results",
     "#reports": "Reports",
     "#due-collection": "Due Collection",
@@ -1352,6 +1354,7 @@ function initializeNavigation() {
   };
   const sectionPermissions = {
     "#new-visit": ["manage_patients"],
+    "#test-catalog": ["manage_tests"],
     "#results-entry": ["enter_results"],
     "#price-inquiry": ["manage_billing"],
   };
@@ -1365,7 +1368,8 @@ function initializeNavigation() {
     if (embeddedPatientManagement) return href === "#patient-management"
       && (hasPermission("manage_patients") || hasPermission("manage_billing") || canEditPatients);
     if (user?.role === "na") {
-      return (href === "#due-collection" && hasPermission("collect_due_payments"))
+      return (href === "#test-catalog" && hasPermission("manage_tests"))
+        || (href === "#due-collection" && hasPermission("collect_due_payments"))
         || (href === "#patient-management" && (hasPermission("manage_billing") || canEditPatients));
     }
     // Technicians with billing access can view bill history, not edit patient records.
@@ -1448,6 +1452,12 @@ function initializeNavigation() {
     if (targetHref === "#results-entry") {
       reloadResultsVisits();
     }
+    if (targetHref === "#test-catalog") {
+      const catalogueFrame = document.getElementById("receptionTestCatalogueFrame");
+      if (catalogueFrame && !catalogueFrame.getAttribute("src")) {
+        catalogueFrame.src = "admin.html?catalogOnly=1#window-test-catalog";
+      }
+    }
     if (targetHref === "#new-visit" || targetHref === "reception.html") {
       reloadRecentVisits();
     }
@@ -1486,8 +1496,7 @@ function initializeNavigation() {
 
   const navTestCatalog = document.getElementById("navTestCatalog");
   if (navTestCatalog && hasPermission("manage_tests")) {
-    const returnTo = `${window.location.pathname.split("/").pop() || "reception.html"}${window.location.hash || ""}`;
-    navTestCatalog.href = `test-catalog.html?returnTo=${encodeURIComponent(returnTo)}`;
+    navTestCatalog.href = "#test-catalog";
     navTestCatalog.hidden = false;
   }
 
@@ -2052,6 +2061,7 @@ async function loadResultsVisit(visitId) {
           </div>
           ${test.status === "reported" ? `<div class="inline-note">Already included in finalized report.</div>` : ""}
           <div class="stack" id="results-parameters-${test.id}"></div>
+          ${renderResultAdditionalText(test, !hasPermission("enter_results") || test.status === "reported")}
           <button class="secondary-btn" type="submit" ${test.status === "reported" ? "disabled" : ""}>
             ${test.is_outside ? "Mark as Received / Save" : "Save results"}
           </button>
@@ -2072,6 +2082,7 @@ async function loadResultsVisit(visitId) {
   }
 
   resultsVisitDetails.querySelectorAll("[data-result-form]").forEach((form) => {
+    attachResultAdditionalText(form);
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       try {
@@ -2094,6 +2105,7 @@ async function saveResultsForm(form) {
   const visitId = form.dataset.visitId || activeResultsVisitId;
   const payload = {
     visitTestId: Number(form.dataset.visitTestId),
+    additionalReportText: form.querySelector("[data-additional-report-text]")?.value || "",
     parameters: Array.from(form.querySelectorAll("[data-parameter-row]")).map((row) => {
       const input = row.querySelector("input, textarea");
       return {
@@ -2109,6 +2121,8 @@ async function saveResultsForm(form) {
     method: "POST",
     body: JSON.stringify(payload),
   });
+  const additionalTextInput = form.querySelector("[data-additional-report-text]");
+  if (additionalTextInput) additionalTextInput.dataset.savedAdditionalText = additionalTextInput.value;
 }
 
 async function reloadResultsVisits() {
@@ -2125,6 +2139,7 @@ resultsSearchDateTo.addEventListener("change", () => reloadResultsVisits());
 resultsFinalizeBtn.addEventListener("click", async () => {
   if (!activeResultsVisitId) return;
   try {
+    await savePendingResultAdditionalText(resultsVisitDetails, saveResultsForm);
     const data = await API.request(`/api/visits/${activeResultsVisitId}/finalize-report`, { method: "POST" });
     resultsPrintBtn.disabled = !hasPermission("print_reports");
     resultsViewReportBtn.disabled = !hasPermission("view_reports");
@@ -2174,7 +2189,9 @@ resultsSaveAllBtn.addEventListener("click", async () => {
       }));
 
       // Only save if there are values entered
-      if (parameters.some(p => p.value)) {
+      const additionalTextInput = form.querySelector("[data-additional-report-text]");
+      if (parameters.some(p => p.value) || additionalTextInput?.value.trim()
+        || (additionalTextInput && additionalTextInput.value !== additionalTextInput.dataset.savedAdditionalText)) {
         await saveResultsForm(form);
         saved++;
       }

@@ -128,6 +128,7 @@ async function saveResultForm(form) {
   const visitId = form.dataset.visitId || activeVisitId;
   const payload = {
     visitTestId: Number(form.dataset.visitTestId),
+    additionalReportText: form.querySelector("[data-additional-report-text]")?.value || "",
     parameters: Array.from(form.querySelectorAll("[data-parameter-row]")).map((row) => {
       const input = row.querySelector("input, textarea");
       return {
@@ -143,6 +144,8 @@ async function saveResultForm(form) {
     method: "POST",
     body: JSON.stringify(payload),
   });
+  const additionalTextInput = form.querySelector("[data-additional-report-text]");
+  if (additionalTextInput) additionalTextInput.dataset.savedAdditionalText = additionalTextInput.value;
 }
 
 async function loadVisit(visitId) {
@@ -168,6 +171,7 @@ async function loadVisit(visitId) {
           </div>
           ${test.status === "reported" ? `<div class="inline-note">Already included in finalized report.</div>` : ""}
           <div class="stack" id="parameters-${test.id}"></div>
+          ${renderResultAdditionalText(test, !hasPermission("enter_results") || (test.status === "reported" && !hasAccessControl("multiple_report_edit")))}
           <button class="secondary-btn" type="submit" ${test.status === "reported" && !hasAccessControl("multiple_report_edit") ? "disabled" : ""}>Save results</button>
         </form>
       `
@@ -186,6 +190,7 @@ async function loadVisit(visitId) {
   }
 
   visitDetails.querySelectorAll("[data-result-form]").forEach((form) => {
+    attachResultAdditionalText(form);
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       try {
@@ -238,6 +243,7 @@ async function loadPatientVisit(visitId) {
           </div>
           ${test.status === "reported" ? `<div class="inline-note">Already included in finalized report.</div>` : ""}
           <div class="stack" id="patient-parameters-${test.id}"></div>
+          ${renderResultAdditionalText(test, !hasPermission("enter_results") || (test.status === "reported" && !hasAccessControl("multiple_report_edit")))}
           <button class="secondary-btn" type="submit" ${test.status === "reported" && !hasAccessControl("multiple_report_edit") ? "disabled" : ""}>Save results</button>
         </form>
       `
@@ -256,6 +262,7 @@ async function loadPatientVisit(visitId) {
   }
 
   patientVisitDetails.querySelectorAll("[data-result-form]").forEach((form) => {
+    attachResultAdditionalText(form);
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       try {
@@ -303,6 +310,7 @@ function reloadPatientVisits() {
 finalizeBtn.addEventListener("click", async () => {
   if (!activeVisitId) return;
   try {
+    await savePendingResultAdditionalText(visitDetails, saveResultForm);
     const data = await API.request(`/api/visits/${activeVisitId}/finalize-report`, { method: "POST" });
     printBtn.disabled = !hasPermission("print_reports");
     viewReportBtn.disabled = !hasPermission("view_reports");
@@ -333,6 +341,7 @@ viewReportBtn.addEventListener("click", () => {
 patientFinalizeBtn.addEventListener("click", async () => {
   if (!activePatientVisitId) return;
   try {
+    await savePendingResultAdditionalText(patientVisitDetails, saveResultForm);
     const data = await API.request(`/api/visits/${activePatientVisitId}/finalize-report`, { method: "POST" });
     patientPrintBtn.disabled = !hasPermission("print_reports");
     patientViewReportBtn.disabled = !hasPermission("view_reports");

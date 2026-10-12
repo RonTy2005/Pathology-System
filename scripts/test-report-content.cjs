@@ -28,7 +28,8 @@ function extractMainContentMarkup(html) {
       // The barcode is header artwork, not a clinical report body. Its source
       // changed from an external URL to an embedded offline-safe SVG.
       return source.slice(opening.index, tagPattern.lastIndex)
-        .replace(/<img\b[^>]*\bclass="barcode-img"[^>]*\/>/g, '<barcode-image />');
+        .replace(/<img\b[^>]*\bclass="barcode-img"[^>]*\/>/g, '<barcode-image />')
+        .replace(/<img\b[^>]*\bclass="qr-img"[^>]*\/>/g, '<qr-image />');
     }
   }
   throw new Error('Generated report main content is not balanced.');
@@ -98,6 +99,539 @@ test('ACTH uses the endocrine report format for both current and corrected catal
     assert.match(html, /Specimen &amp; Collection Note/);
     assert.match(html, /pre-chilled EDTA tube/);
   }
+});
+
+test('Serum Osmolality uses an osmolality-specific method and cautious interpretation', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Serum Osmolality',
+    code: 'OSMOLALITY',
+    sample_type: 'Serum',
+    parameters: [{ parameter_name: 'Osmolality', value: '286', unit: 'mOsm/kg H2O', normal_range: '278 - 298' }],
+  }));
+  assert.match(html, /<div class="test-title">OSMOLALITY, SERUM<\/div>/);
+  assert.match(html, /data-report-content="serum-osmolality"/);
+  assert.match(html, /Freezing-point depression osmometry/);
+  assert.match(html, />286</);
+  assert.match(html, /278 - 298/);
+  assert.doesNotMatch(html, /Latex Agglutination/);
+});
+
+test('Sputum AFB Stain retains method-specific AFB grading and confirmation context', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Sputum AFB Stain',
+    code: 'SPUTUMAFB',
+    sample_type: 'Sputum',
+    parameters: [
+      { parameter_name: 'Type of Specimen', value: 'Early morning sputum' },
+      { parameter_name: 'Auramine Result', value: 'AFB seen' },
+      { parameter_name: 'Auramine Grade', value: '1+' },
+      { parameter_name: 'Ziehl Neelsen Result', value: 'AFB seen' },
+      { parameter_name: 'Ziehl Neelsen Grade', value: '1+' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">SPUTUM EXAMINATION, AFB<\/div>/);
+  assert.match(html, /data-report-content="sputum-afb-stain"/);
+  assert.match(html, /Auramine \/ fluorescent microscopy/);
+  assert.match(html, /Ziehl-Neelsen microscopy/);
+  assert.match(html, /A positive smear is not species-specific/);
+  assert.match(html, /A negative smear does not exclude tuberculosis/);
+});
+
+test('Stool OBT presents method-aware occult-blood screening and follow-up context', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Stool OBT',
+    sample_type: 'Stool',
+    parameters: [{ parameter_name: 'Fecal Occult Blood Result', value: 'Positive' }],
+  }));
+  assert.match(html, /data-report-content="stool-occult-blood"/);
+  assert.match(html, /STOOL OCCULT BLOOD TEST \(OBT\)/);
+  assert.match(html, /does not identify the source of bleeding/);
+  assert.match(html, /commonly colonoscopy/);
+});
+
+test('Immature Platelet Fraction (IPF) uses analyzer-aware platelet-production context', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Immature Platelet Fraction (IPF)',
+    code: 'PF007',
+    sample_type: 'Whole Blood',
+    parameters: [
+      { parameter_name: 'Immature Platelet Fraction (IPF)', value: '5.2', unit: '%', normal_range: 'Analyzer validated interval' },
+      { parameter_name: 'Platelet Count, Concurrent', value: '85,000', unit: 'cells/µL', normal_range: '150,000 - 450,000' },
+      { parameter_name: 'Analyzer / Method', value: 'Validated automated hematology analyzer' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">IMMATURE PLATELET FRACTION \(IPF\)<\/div>/);
+  assert.match(html, /data-report-content="immature-platelet-fraction"/);
+  assert.match(html, /must be interpreted with the concurrent platelet count/);
+  assert.match(html, /does not establish the cause of thrombocytopenia/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Immature Platelet Fraction (IPF)' }).slice(0, 6).map(parameter => parameter.parameterName),
+    ['Immature Platelet Fraction (IPF)', 'Absolute Immature Platelet Count, if reported', 'Platelet Count, Concurrent', 'Mean Platelet Volume (MPV), if reported', 'Analyzer / Method', 'Specimen'],
+  );
+});
+
+test('Immunoglobulin (IgA) + (IgG) + (IgM) uses a combined quantitative panel', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Immunoglobulin (IgA) + (IgG) + (IgM)',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Immunoglobulin G (IgG), Serum', value: '1,020', unit: 'mg/dL', normal_range: 'Laboratory interval' },
+      { parameter_name: 'Immunoglobulin A (IgA), Serum', value: '185', unit: 'mg/dL', normal_range: 'Laboratory interval' },
+      { parameter_name: 'Immunoglobulin M (IgM), Serum', value: '102', unit: 'mg/dL', normal_range: 'Laboratory interval' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">IMMUNOGLOBULIN \(IgA\) \+ \(IgG\) \+ \(IgM\)<\/div>/);
+  assert.match(html, /data-report-content="immunoglobulin-gam-panel"/);
+  assert.match(html, /Immunoglobulin G \(IgG\), Serum/);
+  assert.match(html, /Immunoglobulin A \(IgA\), Serum/);
+  assert.match(html, /Immunoglobulin M \(IgM\), Serum/);
+  assert.match(html, /serum protein electrophoresis and immunofixation are generally required/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Immunoglobulin (IgA) + (IgG) + (IgM)' }).slice(0, 5).map(parameter => parameter.parameterName),
+    ['Immunoglobulin G (IgG), Serum', 'Immunoglobulin A (IgA), Serum', 'Immunoglobulin M (IgM), Serum', 'Specimen', 'Method / Analyzer'],
+  );
+});
+
+test('Immunoglobulin Profile includes core quantitative immunoglobulins and optional total IgE', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Immunoglobulin Profile',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Immunoglobulin G (IgG), Serum', value: '1,020', unit: 'mg/dL', normal_range: 'Laboratory interval' },
+      { parameter_name: 'Immunoglobulin A (IgA), Serum', value: '185', unit: 'mg/dL', normal_range: 'Laboratory interval' },
+      { parameter_name: 'Immunoglobulin M (IgM), Serum', value: '102', unit: 'mg/dL', normal_range: 'Laboratory interval' },
+      { parameter_name: 'Total Immunoglobulin E (IgE), if ordered', value: '44', unit: 'kUA/L', normal_range: 'Laboratory interval' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">IMMUNOGLOBULIN PROFILE<\/div>/);
+  assert.match(html, /data-report-content="immunoglobulin-profile"/);
+  assert.match(html, /Total Immunoglobulin E \(IgE\), if ordered/);
+  assert.match(html, /Total IgE, when ordered, has its own assay-specific interval/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Immunoglobulin Profile' }).slice(0, 5).map(parameter => parameter.parameterName),
+    ['Immunoglobulin G (IgG), Serum', 'Immunoglobulin A (IgA), Serum', 'Immunoglobulin M (IgM), Serum', 'Total Immunoglobulin E (IgE), if ordered', 'Specimen'],
+  );
+});
+
+test('India Ink Preparation uses a specimen-aware direct microscopy report', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'India Ink Preperation',
+    sample_type: 'CSF',
+    parameters: [
+      { parameter_name: 'India Ink Microscopy Result', value: 'No encapsulated yeast seen', normal_range: 'No encapsulated yeast seen' },
+      { parameter_name: 'Microscopic Observation / Morphology', value: 'No encapsulated budding yeast observed' },
+      { parameter_name: 'Cryptococcal Antigen (CrAg), if performed', value: 'Pending' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">INDIA INK PREPARATION<\/div>/);
+  assert.match(html, /data-report-content="india-ink-preparation"/);
+  assert.match(html, /A negative India ink preparation does not exclude cryptococcal infection/);
+  assert.match(html, /Cryptococcal Antigen \(CrAg\), if performed/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'India Ink Preperation' }).slice(0, 5).map(parameter => parameter.parameterName),
+    ['India Ink Microscopy Result', 'Microscopic Observation / Morphology', 'Specimen', 'Concentration / Centrifugation, if performed', 'Cryptococcal Antigen (CrAg), if performed'],
+  );
+});
+
+test('Joint Fluid for AFB Stain uses a specimen-aware mycobacterial microscopy report', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Joint Fluid for AFB Stain',
+    sample_type: 'Joint (Synovial) Fluid',
+    parameters: [
+      { parameter_name: 'AFB Smear Result', value: 'No acid-fast bacilli seen', normal_range: 'No acid-fast bacilli seen' },
+      { parameter_name: 'Joint / Aspiration Site', value: 'Right knee' },
+      { parameter_name: 'Mycobacterial Culture, if performed', value: 'Pending' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">JOINT FLUID - AFB STAIN<\/div>/);
+  assert.match(html, /data-report-content="joint-fluid-afb-stain"/);
+  assert.match(html, /A negative AFB smear does not exclude mycobacterial infection/);
+  assert.match(html, /Mycobacterial Culture, if performed/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Joint Fluid for AFB Stain' }).slice(0, 5).map(parameter => parameter.parameterName),
+    ['AFB Smear Result', 'AFB Smear Grade, if positive', 'Microscopic Findings / Morphology', 'Joint / Aspiration Site', 'Specimen'],
+  );
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Synovial Fluid for AFB Stain' }).slice(0, 5).map(parameter => parameter.parameterName),
+    ['AFB Smear Result', 'AFB Smear Grade, if positive', 'Microscopic Findings / Morphology', 'Joint / Aspiration Site', 'Specimen'],
+  );
+});
+
+test('Joint Fluid for Chloride keeps synovial-fluid reporting separate from serum chloride', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Joint Fluid for Chloride',
+    sample_type: 'Joint (Synovial) Fluid',
+    parameters: [
+      { parameter_name: 'Chloride, Joint Fluid', value: '109', unit: 'mmol/L', normal_range: 'Laboratory fluid comment' },
+      { parameter_name: 'Joint / Aspiration Site', value: 'Left knee' },
+      { parameter_name: 'Paired Serum Chloride, if measured', value: '103', unit: 'mmol/L' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">CHLORIDE, JOINT FLUID<\/div>/);
+  assert.match(html, /data-report-content="joint-fluid-chloride"/);
+  assert.match(html, /serum or plasma chloride reference intervals must not be applied directly to synovial fluid/i);
+  assert.match(html, /Paired Serum Chloride, if measured/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Joint Fluid for Chloride' }).slice(0, 5).map(parameter => parameter.parameterName),
+    ['Chloride, Joint Fluid', 'Joint / Aspiration Site', 'Collection Date / Time', 'Appearance', 'Paired Serum Chloride, if measured'],
+  );
+});
+
+test('Joint Fluid for Gram Stain uses direct microscopy with culture correlation', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Joint Fluid for Gram Stain',
+    sample_type: 'Joint (Synovial) Fluid',
+    parameters: [
+      { parameter_name: 'Joint / Aspiration Site', value: 'Right knee' },
+      { parameter_name: 'Gram Stain Findings', value: 'No organisms seen' },
+      { parameter_name: 'Inflammatory Cells / PMNs', value: 'Many PMNs seen' },
+      { parameter_name: 'Culture / Molecular Test Status', value: 'Culture pending' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">GRAM STAIN, JOINT FLUID<\/div>/);
+  assert.match(html, /data-report-content="joint-fluid-gram-stain"/);
+  assert.match(html, /A negative joint-fluid Gram stain does not exclude infection/);
+  assert.match(html, /Culture \/ Molecular Test Status/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Joint Fluid for Gram Stain' }).slice(0, 5).map(parameter => parameter.parameterName),
+    ['Joint / Aspiration Site', 'Specimen', 'Smear Method / Preparation', 'Inflammatory Cells / PMNs', 'Gram Stain Findings'],
+  );
+});
+
+test('Joint Fluid for Protein keeps synovial-fluid reporting separate from serum and pleural-fluid thresholds', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Joint Fluid for Protein',
+    sample_type: 'Joint (Synovial) Fluid',
+    parameters: [
+      { parameter_name: 'Total Protein, Joint Fluid', value: '4.1', unit: 'g/dL', normal_range: 'Laboratory fluid comment' },
+      { parameter_name: 'Joint / Aspiration Site', value: 'Left knee' },
+      { parameter_name: 'Paired Serum Total Protein, if measured', value: '6.8', unit: 'g/dL' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">TOTAL PROTEIN, JOINT FLUID<\/div>/);
+  assert.match(html, /data-report-content="joint-fluid-protein"/);
+  assert.match(html, /serum and pleural-fluid protein thresholds must not be applied directly to synovial fluid/i);
+  assert.match(html, /Paired Serum Total Protein, if measured/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Joint Fluid for Protein' }).slice(0, 5).map(parameter => parameter.parameterName),
+    ['Total Protein, Joint Fluid', 'Joint / Aspiration Site', 'Collection Date / Time', 'Appearance', 'Paired Serum Total Protein, if measured'],
+  );
+});
+
+test('Joint Fluid for Specific Gravity uses a synovial-fluid physical-examination report', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Joint Fluid for Specific Gravity',
+    sample_type: 'Joint (Synovial) Fluid',
+    parameters: [
+      { parameter_name: 'Specific Gravity, Joint Fluid', value: '1.024', normal_range: 'Laboratory fluid comment' },
+      { parameter_name: 'Joint / Aspiration Site', value: 'Right knee' },
+      { parameter_name: 'Method / Instrument', value: 'Validated refractometric method' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">SPECIFIC GRAVITY, JOINT FLUID<\/div>/);
+  assert.match(html, /data-report-content="joint-fluid-specific-gravity"/);
+  assert.match(html, /No universal reference interval applies to joint fluid/);
+  assert.match(html, /Validated refractometric method/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Joint Fluid for Specific Gravity' }).slice(0, 5).map(parameter => parameter.parameterName),
+    ['Specific Gravity, Joint Fluid', 'Joint / Aspiration Site', 'Collection Date / Time', 'Appearance', 'Method / Instrument'],
+  );
+});
+
+test('Joint Fluid for Sugar keeps synovial-fluid glucose separate from serum ranges', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Joint Fluid for Sugar',
+    sample_type: 'Joint (Synovial) Fluid',
+    parameters: [
+      { parameter_name: 'Glucose, Joint Fluid', value: '62', unit: 'mg/dL', normal_range: 'Laboratory fluid comment' },
+      { parameter_name: 'Paired Serum / Plasma Glucose, if measured', value: '96', unit: 'mg/dL' },
+      { parameter_name: 'Joint / Aspiration Site', value: 'Left knee' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">GLUCOSE, JOINT FLUID<\/div>/);
+  assert.match(html, /data-report-content="joint-fluid-sugar"/);
+  assert.match(html, /serum or plasma glucose reference intervals must not be applied directly to synovial fluid/i);
+  assert.match(html, /Paired Serum \/ Plasma Glucose, if measured/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Joint Fluid for Sugar' }).slice(0, 5).map(parameter => parameter.parameterName),
+    ['Glucose, Joint Fluid', 'Paired Serum / Plasma Glucose, if measured', 'Joint / Aspiration Site', 'Collection Date / Time', 'Appearance'],
+  );
+});
+
+test('Kahn Test uses a cautious non-treponemal syphilis serology report', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Kahn Test',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Kahn Test Result', value: 'Reactive', normal_range: 'Non-reactive' },
+      { parameter_name: 'Kahn Test Titre, if reactive', value: '1:8' },
+      { parameter_name: 'Treponemal Confirmatory Test, if performed', value: 'Pending' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">KAHN TEST<\/div>/);
+  assert.match(html, /data-report-content="kahn-test"/);
+  assert.match(html, /not specific for/);
+  assert.match(html, /Treponemal Confirmatory Test, if performed/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Kahn Test' }).slice(0, 5).map(parameter => parameter.parameterName),
+    ['Kahn Test Result', 'Kahn Test Titre, if reactive', 'Specimen', 'Method / Antigen Preparation', 'Treponemal Confirmatory Test, if performed'],
+  );
+});
+
+test('Kalazar (Rapid Test) reports rK39 serology with its clinical limitations', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Kalazar (Rapid Test)',
+    parameters: [
+      { parameter_name: 'Kala-azar Rapid Test Result', value: 'Reactive', normal_range: 'Non-reactive' },
+      { parameter_name: 'Rapid Test Device / Kit', value: 'rK39 ICT' },
+      { parameter_name: 'Read Time / Test Validity', value: 'Valid at 10 minutes' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">KALA-AZAR \(RAPID TEST\)<\/div>/);
+  assert.match(html, /data-report-content="kala-azar-rapid-test"/);
+  assert.match(html, /does not by itself establish active disease/);
+  assert.match(html, /rK39 ICT/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Kalazar (Rapid Test)' }).slice(0, 5).map(parameter => parameter.parameterName),
+    ['Kala-azar Rapid Test Result', 'Specimen', 'Rapid Test Device / Kit', 'Lot Number / Expiry, if recorded', 'Read Time / Test Validity'],
+  );
+});
+
+test('Leishmania / Kala-Azar Antibody IgG reports serology without asserting active infection', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Leishmania / Kala-Azar Antibody IgG',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Leishmania / Kala-azar Antibody IgG, Serum', value: 'Reactive', normal_range: 'Negative' },
+      { parameter_name: 'Antibody Index / Titre, if applicable', value: '1.8 index' },
+      { parameter_name: 'Assay / Antigen Used', value: 'Validated antibody assay' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">LEISHMANIA \/ KALA-AZAR ANTIBODY IgG<\/div>/);
+  assert.match(html, /data-report-content="leishmania-kala-azar-antibody-igg"/);
+  assert.match(html, /does not exclude visceral leishmaniasis/);
+  assert.match(html, /must not be used as the sole criterion to diagnose active disease/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Leishmania / Kala-Azar Antibody IgG' }).slice(0, 4).map(parameter => parameter.parameterName),
+    ['Leishmania / Kala-azar Antibody IgG, Serum', 'Antibody Index / Titre, if applicable', 'Assay / Antigen Used', 'Clinical History / Endemic-area Exposure, if provided'],
+  );
+});
+
+test('Leishmania / Kala-Azar Antibody IgM reports limited-use serology without asserting active infection', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Leishmania / Kala-Azar Antibody IgM',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Leishmania / Kala-azar Antibody IgM, Serum', value: 'Reactive', normal_range: 'Negative' },
+      { parameter_name: 'Antibody Index / Titre, if applicable', value: '1.4 index' },
+      { parameter_name: 'Assay / Antigen Used', value: 'Validated antibody assay' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">LEISHMANIA \/ KALA-AZAR ANTIBODY IgM<\/div>/);
+  assert.match(html, /data-report-content="leishmania-kala-azar-antibody-igm"/);
+  assert.match(html, /limited diagnostic utility for parasitic infections/);
+  assert.match(html, /must not be used alone to diagnose active visceral leishmaniasis/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Leishmania / Kala-Azar Antibody IgM' }).slice(0, 4).map(parameter => parameter.parameterName),
+    ['Leishmania / Kala-azar Antibody IgM, Serum', 'Antibody Index / Titre, if applicable', 'Assay / Antigen Used', 'Clinical History / Endemic-area Exposure, if provided'],
+  );
+});
+
+test('Karyotype uses a structured cytogenetics report with ISCN and assay limitations', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Karyotype',
+    sample_type: 'Peripheral blood',
+    parameters: [
+      { parameter_name: 'Karyotype Result / Summary', value: 'Normal constitutional karyotype within the stated resolution' },
+      { parameter_name: 'ISCN Karyotype', value: '46,XX[20]' },
+      { parameter_name: 'Banding Method / Resolution', value: 'GTG banding; 550 bands' },
+      { parameter_name: 'Cells Counted / Analysed / Karyotyped', value: '20 / 20 / 5' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">KARYOTYPE<\/div>/);
+  assert.match(html, /data-report-content="karyotype"/);
+  assert.match(html, /46,XX\[20\]/);
+  assert.match(html, /International System for Human Cytogenomic Nomenclature/);
+  assert.match(html, /does not exclude submicroscopic copy-number changes/);
+});
+
+test('Karyotyping (Chromosomal Analysis) uses the same structured cytogenetics format', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Karyotyping (Chromosomal Analysis)',
+    parameters: [
+      { parameter_name: 'Karyotype Result / Summary', value: 'Abnormal karyotype detected' },
+      { parameter_name: 'ISCN Karyotype', value: '47,XY,+21[15]/46,XY[5]' },
+      { parameter_name: 'Mosaicism / Clonal Findings, if present', value: 'Mosaic finding reported' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">KARYOTYPE<\/div>/);
+  assert.match(html, /data-report-content="karyotype"/);
+  assert.match(html, /47,XY,\+21\[15\]\/46,XY\[5\]/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Karyotyping (Chromosomal Analysis)' }).slice(0, 4).map(parameter => parameter.parameterName),
+    ['Karyotype Result / Summary', 'ISCN Karyotype', 'Specimen / Tissue Source', 'Culture / Harvest Details'],
+  );
+});
+
+test('Karyotyping with C-Banding uses a dedicated heterochromatin-focused cytogenetics report', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Karyotyping with C-Banding',
+    parameters: [
+      { parameter_name: 'C-Banding Karyotype Result / Summary', value: 'C-banding study completed' },
+      { parameter_name: 'ISCN Karyotype', value: '46,XY,9qh+[20]' },
+      { parameter_name: 'C-Band Findings / Heterochromatin Pattern', value: 'Prominent heterochromatin on chromosome 9q' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">KARYOTYPING WITH C-BANDING<\/div>/);
+  assert.match(html, /data-report-content="karyotype-c-banding"/);
+  assert.match(html, /constitutive heterochromatin/);
+  assert.match(html, /46,XY,9qh\+\[20\]/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Karyotyping with C-Banding' }).slice(0, 5).map(parameter => parameter.parameterName),
+    ['C-Banding Karyotype Result / Summary', 'ISCN Karyotype', 'Specimen / Tissue Source', 'C-Banding Method / Protocol', 'C-Band Findings / Heterochromatin Pattern'],
+  );
+});
+
+test('LFT with GGT uses the liver-function panel with a dedicated GGT interpretation note', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'LFT with GGT',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'AST (SGOT)', value: '31', unit: 'U/L', normal_range: '15 - 40' },
+      { parameter_name: 'ALT (SGPT)', value: '28', unit: 'U/L', normal_range: '10 - 49' },
+      { parameter_name: 'GGTP', value: '42', unit: 'U/L', normal_range: '0 - 73' },
+      { parameter_name: 'Alkaline Phosphatase (ALP)', value: '90', unit: 'U/L', normal_range: '30 - 120' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">LIVER FUNCTION TEST \(LFT\) WITH GGT<\/div>/);
+  assert.match(html, /data-report-content="lft-with-ggt"/);
+  assert.match(html, /GGTP/);
+  assert.match(html, /GGT can help support a hepatic source/);
+});
+
+test('LH & FSH uses a cycle-aware two-hormone gonadotropin format', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'LH & FSH',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Luteinizing Hormone (LH), Serum', value: '7.1', unit: 'mIU/mL', normal_range: 'Laboratory follicular-phase interval' },
+      { parameter_name: 'Follicle Stimulating Hormone (FSH), Serum', value: '6.8', unit: 'mIU/mL', normal_range: 'Laboratory follicular-phase interval' },
+      { parameter_name: 'Menstrual Cycle Phase / Physiologic State', value: 'Follicular phase' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">LH & FSH<\/div>/);
+  assert.match(html, /data-report-content="lh-fsh"/);
+  assert.match(html, /midcycle surge/);
+  assert.doesNotMatch(html, /Prolactin \(PRL\), Serum/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'LH & FSH' }).slice(0, 4).map(parameter => parameter.parameterName),
+    ['Luteinizing Hormone (LH), Serum', 'Follicle Stimulating Hormone (FSH), Serum', 'Menstrual Cycle Phase / Physiologic State', 'Clinical Details / Medication History'],
+  );
+});
+
+test('LH & PRL uses a cycle-aware gonadotropin and prolactin format', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'LH & PRL',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Luteinizing Hormone (LH), Serum', value: '7.1', unit: 'mIU/mL', normal_range: 'Laboratory follicular-phase interval' },
+      { parameter_name: 'Prolactin (PRL), Serum', value: '12.4', unit: 'ng/mL', normal_range: 'Laboratory validated interval' },
+      { parameter_name: 'Menstrual Cycle Phase / Physiologic State', value: 'Follicular phase' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">LH & PRL<\/div>/);
+  assert.match(html, /data-report-content="lh-prl"/);
+  assert.match(html, /Follicular phase/);
+  assert.match(html, /pregnancy\/lactation, medicines, stress/);
+  assert.doesNotMatch(html, /Follicle Stimulating Hormone \(FSH\), Serum/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'LH & PRL' }).slice(0, 4).map(parameter => parameter.parameterName),
+    ['Luteinizing Hormone (LH), Serum', 'Prolactin (PRL), Serum', 'Menstrual Cycle Phase / Physiologic State', 'Clinical Details / Medication History'],
+  );
+});
+
+test('LeadLevel-Introducing uses a specimen-aware blood lead assessment format', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'LeadLevel-Introducing',
+    sample_type: 'Whole Blood',
+    parameters: [
+      { parameter_name: 'Lead (Pb), Whole Blood', value: '4.2', unit: 'µg/dL', normal_range: 'Laboratory reporting interval' },
+      { parameter_name: 'Specimen Type / Collection Method', value: 'Capillary whole blood' },
+      { parameter_name: 'Clinical / Occupational / Environmental Exposure History', value: 'Screening assessment' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">LEAD LEVEL<\/div>/);
+  assert.match(html, /data-report-content="lead-level"/);
+  assert.match(html, /Capillary whole blood/);
+  assert.match(html, /confirmed with a properly collected venous whole-blood sample/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'LeadLevel-Introducing' }).slice(0, 3).map(parameter => parameter.parameterName),
+    ['Lead (Pb), Whole Blood', 'Specimen Type / Collection Method', 'Clinical / Occupational / Environmental Exposure History'],
+  );
+});
+
+test('Inorganic Phosphorus (Urine) distinguishes random concentration from timed excretion', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Inorganic Phosphorus (Urine)',
+    sample_type: 'Urine',
+    parameters: [
+      { parameter_name: 'Inorganic Phosphorus, Urine Concentration', value: '48', unit: 'mg/dL' },
+      { parameter_name: 'Inorganic Phosphorus, 24-Hour Urine', value: '860', unit: 'mg/24 h', normal_range: 'Laboratory interval' },
+      { parameter_name: 'Urine Volume', value: '1,800', unit: 'mL' },
+      { parameter_name: 'Collection Duration', value: '24', unit: 'hours' },
+      { parameter_name: 'Serum Phosphorus, Concurrent, if available', value: '3.5', unit: 'mg/dL' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">INORGANIC PHOSPHORUS \(URINE\)<\/div>/);
+  assert.match(html, /data-report-content="urine-inorganic-phosphorus"/);
+  assert.match(html, /No universal interval for a random specimen/);
+  assert.match(html, /A timed 24-hour urine collection is preferred/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Inorganic Phosphorus (Urine)' }).slice(0, 5).map(parameter => parameter.parameterName),
+    ['Inorganic Phosphorus, Urine Concentration', 'Inorganic Phosphorus, 24-Hour Urine', 'Urine Volume', 'Collection Duration', 'Urine Creatinine, if measured'],
+  );
+});
+
+test('Insulin (Free) reports free insulin with treatment and antibody context', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Insulin (Free)',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Free Insulin, Serum', value: '12.4', unit: 'mcIU/mL', normal_range: 'Laboratory interval' },
+      { parameter_name: 'Total Insulin, Serum, if performed', value: '49.7', unit: 'mcIU/mL', normal_range: 'Laboratory interval' },
+      { parameter_name: 'Glucose, Concurrent, if available', value: '96', unit: 'mg/dL' },
+      { parameter_name: 'Insulin Antibody Result, if available', value: 'Pending' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">INSULIN \(FREE\)<\/div>/);
+  assert.match(html, /data-report-content="free-insulin"/);
+  assert.match(html, /Free Insulin, Serum/);
+  assert.match(html, /not bound by circulating insulin antibodies/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Insulin (Free)' }).slice(0, 5).map(parameter => parameter.parameterName),
+    ['Free Insulin, Serum', 'Total Insulin, Serum, if performed', 'Glucose, Concurrent, if available', 'C-Peptide, Concurrent, if available', 'Fasting Duration / Collection Timing'],
+  );
+});
+
+test('Insulin (Midnight) preserves collection-time and glucose context', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Insulin (Midnight)',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Insulin, Serum - Midnight', value: '8.1', unit: 'mcIU/mL', normal_range: 'Laboratory interval' },
+      { parameter_name: 'Verified Collection Date / Time', value: '06-Oct-2026 00:03' },
+      { parameter_name: 'Glucose, Concurrent, if available', value: '88', unit: 'mg/dL' },
+      { parameter_name: 'Fasting Duration / Study Protocol', value: '8-hour fast; midnight collection' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">INSULIN \(MIDNIGHT\)<\/div>/);
+  assert.match(html, /data-report-content="midnight-insulin"/);
+  assert.match(html, /Midnight insulin is timing-critical/);
+  assert.match(html, /Verified Collection Date \/ Time/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Insulin (Midnight)' }).slice(0, 5).map(parameter => parameter.parameterName),
+    ['Insulin, Serum - Midnight', 'Verified Collection Date / Time', 'Glucose, Concurrent, if available', 'Fasting Duration / Study Protocol', 'C-Peptide, Concurrent, if available'],
+  );
 });
 
 test('ADA uses a specimen-aware activity report for the imported catalogue name', () => {
@@ -293,6 +827,23 @@ test('EarSwabAFBStain uses an ear-swab AFB microscopy report without asserting T
   assert.match(html, /No acid-fast bacilli seen/);
   assert.match(html, /does not identify the species or confirm/);
   assert.match(html, /does not exclude mycobacterial infection/);
+});
+
+test('Throat swab Gram stain reports direct microscopy without implying a culture identification', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Throat Swab for Gram Stain',
+    sample_type: 'Throat Swab',
+    parameters: [
+      { parameter_name: 'Specimen / Collection Site', value: 'Posterior pharyngeal swab' },
+      { parameter_name: 'Smear Method / Preparation', value: 'Direct Gram stain' },
+      { parameter_name: 'Inflammatory Cells / PMNs', value: 'Few PMNs' },
+      { parameter_name: 'Overall Gram Stain Findings', value: 'Mixed upper-respiratory tract flora seen' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">THROAT SWAB - GRAM STAIN<\/div>/);
+  assert.match(html, /data-report-content="throat-swab-gram-stain"/);
+  assert.match(html, /Mixed upper-respiratory tract flora seen/);
+  assert.match(html, /does not provide definitive organism identification or antimicrobial susceptibility/);
 });
 
 test('FSH&PRL keeps both endocrine measurements and their laboratory-specific intervals', () => {
@@ -1201,6 +1752,25 @@ test('CSF AFB stain is a dedicated direct-microscopy report without asserting a 
   assert.doesNotMatch(html, /AFB detected/);
 });
 
+test('Throat swab for AFB uses a direct-microscopy report and does not imply tuberculosis confirmation', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Throat Swab for AFB',
+    sample_type: 'Throat Swab',
+    parameters: [
+      { parameter_name: 'AFB Smear Microscopy Result', value: 'No acid-fast bacilli seen' },
+      { parameter_name: 'AFB Smear Grade / Quantitation', value: 'Not applicable' },
+      { parameter_name: 'Stain Method', value: 'Ziehl-Neelsen stain' },
+      { parameter_name: 'Specimen Adequacy / Processing Notes', value: 'Adequate specimen received' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">AFB STAIN, THROAT SWAB<\/div>/);
+  assert.match(html, /data-report-content="throat-swab-afb-stain"/);
+  assert.match(html, /No acid-fast bacilli seen/);
+  assert.match(html, /Ziehl-Neelsen stain/);
+  assert.match(html, /do not identify the species or confirm <em>Mycobacterium tuberculosis<\/em> complex/);
+  assert.match(html, /A negative smear does not exclude mycobacterial infection/);
+});
+
 test('CSF Gram stain records microscopy separately from culture without assuming infection', () => {
   const html = buildReportHtml(sampleReport({
     name: 'CSFFluidforGramstain',
@@ -1298,6 +1868,93 @@ test('Albert stain for KLB uses a dedicated direct-smear microscopy report', () 
   assert.match(html, /Culture confirmation advised/);
   assert.match(html, /Microscopy alone does not confirm/);
   assert.match(html, /validated toxigenicity test/);
+});
+
+test('Throat swab for KLB uses the Albert-stain microscopy format', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Throat Swab for KLB',
+    sample_type: 'Throat Swab',
+    parameters: [
+      { parameter_name: 'Albert Stain Microscopy', value: 'No bacilli morphologically suggestive of KLB seen' },
+      { parameter_name: 'Metachromatic Granules', value: 'Not seen' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">THROAT SWAB FOR KLB<\/div>/);
+  assert.match(html, /ALBERT STAIN FOR KLEBS&ndash;L&Ouml;FFLER BACILLI \(KLB\)/);
+  assert.match(html, /Microscopy alone does not confirm/);
+});
+
+test('Thrombin Time uses a dedicated fibrin-clot formation report', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Thrombin Time (TT)',
+    sample_type: 'Citrated Plasma',
+    parameters: [
+      { parameter_name: 'Thrombin Time (TT)', value: '18.4', unit: 'seconds', normal_range: '14.0 - 21.0' },
+      { parameter_name: 'Control Time', value: '16.2', unit: 'seconds', normal_range: '' },
+      { parameter_name: 'Comments', value: 'Correlate with fibrinogen.', unit: '', normal_range: '' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">THROMBIN TIME \(TT\)<\/div>/);
+  assert.match(html, /thrombin-time-table/);
+  assert.match(html, />18\.4</);
+  assert.match(html, /Correlate with fibrinogen/);
+  assert.match(html, /heparin or direct thrombin-inhibitor effect/);
+  assert.match(html, /does not by itself establish a bleeding disorder/);
+});
+
+test('TORCH Panel (IgG) keeps prior-exposure serology separate from acute-infection testing', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'TORCH Panel (IgG)',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Toxoplasma gondii IgG', value: 'Positive', normal_range: 'Reactive / non-reactive per validated assay' },
+      { parameter_name: 'Rubella Virus IgG', value: 'Positive', normal_range: 'Reactive / non-reactive per validated assay' },
+      { parameter_name: 'Cytomegalovirus (CMV) IgG', value: 'Positive', normal_range: 'Reactive / non-reactive per validated assay' },
+      { parameter_name: 'Herpes Simplex Virus 1 (HSV-1) IgG', value: 'Positive', normal_range: 'Reactive / non-reactive per validated assay' },
+      { parameter_name: 'Herpes Simplex Virus 2 (HSV-2) IgG', value: 'Negative', normal_range: 'Reactive / non-reactive per validated assay' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">TORCH PANEL \(IgG\)<\/div>/);
+  assert.match(html, /data-report-content="torch-igg-panel"/);
+  assert.match(html, /Toxoplasma gondii IgG/);
+  assert.match(html, /Herpes Simplex Virus 2 \(HSV-2\) IgG/);
+  assert.match(html, /does not establish active infection or when exposure occurred/);
+  assert.match(html, /cannot diagnose congenital CMV infection/);
+});
+
+test('TORCH Panel (IgM) marks isolated IgM reactivity as non-confirmatory', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'TORCH Panel (IgM)',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Toxoplasma gondii IgM', value: 'Negative', normal_range: 'Reactive / non-reactive per validated assay' },
+      { parameter_name: 'Rubella Virus IgM', value: 'Negative', normal_range: 'Reactive / non-reactive per validated assay' },
+      { parameter_name: 'Cytomegalovirus (CMV) IgM', value: 'Reactive', normal_range: 'Reactive / non-reactive per validated assay' },
+      { parameter_name: 'Herpes Simplex Virus 1 (HSV-1) IgM', value: 'Negative', normal_range: 'Reactive / non-reactive per validated assay' },
+      { parameter_name: 'Herpes Simplex Virus 2 (HSV-2) IgM', value: 'Negative', normal_range: 'Reactive / non-reactive per validated assay' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">TORCH PANEL \(IgM\)<\/div>/);
+  assert.match(html, /data-report-content="torch-igm-panel"/);
+  assert.match(html, /Cytomegalovirus \(CMV\) IgM/);
+  assert.match(html, /must not be used alone to date infection or diagnose fetal infection/);
+  assert.match(html, /CMV IgM alone cannot diagnose primary CMV infection/);
+});
+
+test('Total IgE uses a quantitative total-IgE report distinct from allergen-specific testing', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Total IgE',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Total Immunoglobulin E (IgE)', value: '185', unit: 'kUA/L', normal_range: 'Laboratory-validated, age- and assay-specific reference interval' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">TOTAL IMMUNOGLOBULIN E \(IgE\)<\/div>/);
+  assert.match(html, /data-report-content="total-ige"/);
+  assert.match(html, />185</);
+  assert.match(html, /does not identify a specific allergen/);
+  assert.match(html, /does not exclude clinically relevant allergy/);
+  assert.doesNotMatch(html, /Level of allergen-specific antibody/);
 });
 
 test('BACCAL smear for BRR body uses a dedicated Barr-body cytology screen without inventing a result', () => {
@@ -2405,13 +3062,880 @@ test('Anti Leptospira Antibody adds timed-serology guidance without claiming IgM
   assert.match(html, /microscopic agglutination testing \(MAT\)/);
   assert.match(html, /does not specify IgM or IgG/);
   assert.equal(getFallbackReportParameters({ name: 'Anti Leptospira Antibody' })[0].normalRange, 'Negative / non-reactive (assay-specific)');
-  for (const other of ['Leptospira Antibodies (IgG & IgM)', 'Leptospira Antibody IgG', 'LeptospiraAntibodyIgM']) {
-    assert.equal(getReportContent({ name: other, sample_type: 'Serum' }), null);
-    assert.doesNotMatch(buildReportHtml(sampleReport({ name: other, sample_type: 'Serum', parameters: [] })), /data-report-content="anti-leptospira-antibody"/);
-  }
   const custom = buildReportHtml(sampleReport({ ...input, report_body: 'Lab-authored explanation' }));
   assert.doesNotMatch(custom, /data-report-content="anti-leptospira-antibody"/);
   assert.match(custom, /Lab-authored explanation/);
+});
+
+test('Leptospira Antibody IgM reports a screening result with early-disease and confirmation guidance', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Leptospira Antibody IgM',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Leptospira Antibody IgM, Serum', value: 'Reactive', normal_range: 'Negative / non-reactive (assay-specific)' },
+      { parameter_name: 'Antibody Index / Titre, if applicable', value: '1.7 index' },
+      { parameter_name: 'Symptom Onset / Days of Illness, if provided', value: 'Day 5 of illness' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">LEPTOSPIRA ANTIBODY IgM<\/div>/);
+  assert.match(html, /data-report-content="leptospira-antibody-igm"/);
+  assert.match(html, /does not alone definitively diagnose acute infection/);
+  assert.match(html, /particularly early in illness before antibodies are detectable/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Leptospira Antibody IgM' }).slice(0, 4).map(parameter => parameter.parameterName),
+    ['Leptospira Antibody IgM, Serum', 'Antibody Index / Titre, if applicable', 'Assay / Method', 'Symptom Onset / Days of Illness, if provided'],
+  );
+});
+
+test('Lipid Comprehensive Profile separates standard lipids from optional advanced measures', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Lipid Comprehensive Profile',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Total Cholesterol', value: '186', unit: 'mg/dL', normal_range: 'Laboratory interval' },
+      { parameter_name: 'Triglycerides', value: '118', unit: 'mg/dL', normal_range: 'Laboratory interval' },
+      { parameter_name: 'HDL Cholesterol', value: '48', unit: 'mg/dL', normal_range: 'Laboratory interval' },
+      { parameter_name: 'LDL Cholesterol', value: '114', unit: 'mg/dL', normal_range: 'Laboratory interval' },
+      { parameter_name: 'Non-HDL Cholesterol', value: '138', unit: 'mg/dL', normal_range: 'Calculated from total cholesterol and HDL cholesterol' },
+      { parameter_name: 'Apolipoprotein B, if ordered', value: '96', unit: 'mg/dL', normal_range: 'Laboratory interval' },
+      { parameter_name: 'Fasting Status / Collection Details', value: 'Fasting, 10 hours' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">LIPID COMPREHENSIVE PROFILE<\/div>/);
+  assert.match(html, /data-report-content="lipid-comprehensive-profile"/);
+  assert.match(html, /ADDITIONAL LIPOPROTEIN MEASURES/);
+  assert.match(html, /Fasting, 10 hours/);
+  assert.match(html, /non-HDL cholesterol is calculated as total cholesterol minus HDL cholesterol/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Lipid Comprehensive Profile' }).slice(0, 8).map(parameter => parameter.parameterName),
+    ['Total Cholesterol', 'Triglycerides', 'HDL Cholesterol', 'LDL Cholesterol', 'VLDL Cholesterol', 'Non-HDL Cholesterol', 'Total Cholesterol / HDL Ratio', 'LDL Cholesterol / HDL Ratio'],
+  );
+});
+
+test('Total Lipid uses an aggregate measurement format rather than a lipid profile', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Total Lipid',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Total Lipids, Serum', value: '610', unit: 'mg/dL', normal_range: 'Laboratory-validated reference interval' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">TOTAL LIPIDS, SERUM<\/div>/);
+  assert.match(html, /data-report-content="total-lipid"/);
+  assert.match(html, />610</);
+  assert.match(html, /not interchangeable with a standard lipid profile/);
+  assert.match(html, /does not provide separate total cholesterol, triglyceride, HDL cholesterol, or LDL cholesterol values/);
+  assert.doesNotMatch(html, /NLA - 2014/);
+});
+
+test('Total Protein uses a serum-specific aggregate-protein format', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Total Protein',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Total Protein, Serum', value: '7.2', unit: 'g/dL', normal_range: 'Laboratory-validated reference interval' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">TOTAL PROTEIN, SERUM<\/div>/);
+  assert.match(html, /data-report-content="total-protein"/);
+  assert.match(html, />7\.2</);
+  assert.match(html, /combined concentration of albumin and globulins in serum/);
+  assert.match(html, /not interchangeable with total-protein testing in cerebrospinal fluid/);
+  assert.doesNotMatch(html, /Fluid \/ Serum Protein Ratio/);
+});
+
+test('Ulcer Smear for PAP uses a site-aware exfoliative-cytology format', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Ulcer Smear for PAP',
+    sample_type: 'Ulcer smear / exfoliative cytology specimen',
+    parameters: [
+      { parameter_name: 'Specimen / Ulcer Site', value: 'Non-healing ulcer, lateral tongue' },
+      { parameter_name: 'Preparation / Stain Method', value: 'Papanicolaou stain' },
+      { parameter_name: 'Specimen Adequacy', value: 'Satisfactory for evaluation' },
+      { parameter_name: 'Background / Inflammation / Necrosis', value: 'Inflammatory background with necrotic debris' },
+      { parameter_name: 'Epithelial / Cytologic Findings', value: 'Reactive squamous cells; no overt malignant cells seen' },
+      { parameter_name: 'Cytologic Impression', value: 'Negative for malignant cells in this smear' },
+      { parameter_name: 'Recommendations / Correlation', value: 'Correlate clinically; biopsy if lesion persists' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">ULCER SMEAR FOR PAP STAIN<\/div>/);
+  assert.match(html, /data-report-content="ulcer-smear-pap"/);
+  assert.match(html, /Non-healing ulcer, lateral tongue/);
+  assert.match(html, /Satisfactory for evaluation/);
+  assert.match(html, /does not replace histopathology or tissue biopsy/);
+  assert.doesNotMatch(html, /CERVICAL SMEAR - PAP STAIN/);
+});
+
+test('Urethral Swab AFB Stain preserves direct microscopy without assuming tuberculosis', () => {
+  for (const name of ['Urethral Swab AFB Stain', 'Urethral Swab for AFB', 'AFB Stain Urethral Swab']) {
+    const html = buildReportHtml(sampleReport({ name, parameters: [
+      { parameter_name: 'AFB Smear Microscopy Result', value: 'Acid-fast bacilli seen', normal_range: 'Local microscopy reference' },
+      { parameter_name: 'Stain Method', value: 'Ziehl-Neelsen stain' },
+      { parameter_name: 'Specimen Adequacy', value: 'Limited cellular material' },
+      { parameter_name: 'AFB Smear Grade / Quantitation', value: '0' },
+      { parameter_name: 'Microscopy Remarks', value: 'Confirm microscopic finding\nCorrelate with molecular testing' },
+      { parameter_name: 'Impression', value: 'AFB observed; species undetermined' },
+    ] }));
+    assert.match(html, /<div class="test-title">URETHRAL SWAB - AFB STAIN<\/div>/);
+    assert.match(html, /data-report-content="urethral-swab-afb-stain"/);
+    assert.match(html, /Acid-fast bacilli seen/);
+    assert.match(html, /Local microscopy reference/);
+    assert.match(html, /Ziehl-Neelsen stain/);
+    assert.match(html, /Limited cellular material/);
+    assert.match(html, />0<\/td>/);
+    assert.match(html, /Confirm microscopic finding<br \/>Correlate with molecular testing/);
+    assert.match(html, /AFB observed; species undetermined/);
+    assert.match(html, /A positive AFB smear does not identify the species or confirm Mycobacterium tuberculosis/);
+    assert.doesNotMatch(html, /data-report-content="throat-swab-afb-stain"/);
+    assert.equal(getFallbackReportParameters({ name }).length, 11);
+  }
+  const blank = buildReportHtml(sampleReport({ name: 'Urethral Swab AFB Stain', parameters: [] }));
+  assert.match(blank, /<strong>AFB Smear Microscopy Result<\/strong><\/td><td>-<\/td>/);
+  assert.match(blank, /<strong>Stain Method<\/strong><\/td><td colspan="2">-<\/td>/);
+  const legacy = buildReportHtml(sampleReport({ name: 'Urethral Swab AFB Stain', parameters: [
+    { parameter_name: 'Findings', value: 'Laboratory microscopy finding' },
+    { parameter_name: 'Impression', value: 'Laboratory impression' },
+    { parameter_name: 'Comments', value: 'Laboratory comment' },
+  ] }));
+  assert.match(legacy, /Laboratory microscopy finding/);
+  assert.match(legacy, /Laboratory impression/);
+  assert.match(legacy, /Laboratory comment/);
+});
+
+test('Urethral Discharge C/S preserves culture scope and isolate-specific susceptibility', () => {
+  for (const name of ['Urethral Discharge C/S', 'Urethral Discharge Culture & Sensitivity', 'Urethral Discharge Culture and Sensitivity']) {
+    const html = buildReportHtml(sampleReport({ name, parameters: [
+      { parameter_name: 'Culture Status / Result', value: 'Growth detected', normal_range: 'Laboratory culture reference' },
+      { parameter_name: 'Report Status', value: 'Final' },
+      { parameter_name: 'Culture Method / Scope', value: 'Routine aerobic culture' },
+      { parameter_name: 'Organism(s) Isolated', value: 'Isolate 1: laboratory-confirmed organism' },
+      { parameter_name: 'Antimicrobial Susceptibility / MIC', value: 'Isolate 1: agent A - susceptible\nIsolate 1: agent B - resistant' },
+      { parameter_name: 'Susceptibility Method / Interpretive Standard', value: 'Laboratory validated standard' },
+    ] }));
+    assert.match(html, /data-report-content="urethral-discharge-culture"/);
+    assert.match(html, /<div class="test-title">URETHRAL DISCHARGE - CULTURE & SENSITIVITY<\/div>/);
+    assert.match(html, /Growth detected/);
+    assert.match(html, /Laboratory culture reference/);
+    assert.match(html, /Routine aerobic culture/);
+    assert.match(html, /Isolate 1: agent A - susceptible<br \/>Isolate 1: agent B - resistant/);
+    assert.match(html, /negative routine bacterial culture does not exclude urethritis/);
+    assert.doesNotMatch(html, /data-report-content="gnd-culture"/);
+    assert.equal(getFallbackReportParameters({ name }).length, 13);
+  }
+  const blank = buildReportHtml(sampleReport({ name: 'Urethral Discharge C/S', parameters: [] }));
+  assert.match(blank, /<strong>Culture Status \/ Result<\/strong><\/td><td>-<\/td>/);
+  assert.match(blank, /<strong>Organism\(s\) Isolated<\/strong><\/td><td colspan="2">-<\/td>/);
+});
+
+test('Uric Acid Urine reports spot concentration with collection-specific interpretation', () => {
+  for (const name of ['Uric Acid(Urine)', 'Uric Acid (Random Urine)', 'Urine Uric Acid']) {
+    const html = buildReportHtml(sampleReport({ name, parameters: [
+      { parameter_name: 'Uric Acid, Random Urine', value: '38.5', unit: 'mg/dL', normal_range: 'Laboratory random-urine interval' },
+      { parameter_name: 'Specimen / Collection Type', value: 'Spot urine' },
+      { parameter_name: 'Method / Analyzer', value: 'Uricase method' },
+      { parameter_name: 'Interpretation / Comments', value: 'Collection recorded\nCorrelate clinically' },
+    ] }));
+    assert.match(html, /<div class="test-title">URIC ACID, RANDOM URINE<\/div>/);
+    assert.match(html, /data-report-content="random-urine-uric-acid"/);
+    assert.match(html, />38\.5<\/td><td>Laboratory random-urine interval<\/td><td>mg\/dL/);
+    assert.match(html, /Spot urine/);
+    assert.match(html, /Uricase method/);
+    assert.match(html, /Collection recorded<br \/>Correlate clinically/);
+    assert.match(html, /it does not measure 24-hour uric acid excretion/);
+    assert.doesNotMatch(html, /Male 200 - 1000|Female 250 - 750|mg\/24 h/);
+    assert.equal(getFallbackReportParameters({ name })[0].unit, 'mg/dL');
+  }
+  const blank = buildReportHtml(sampleReport({ name: 'Uric Acid(Urine)', parameters: [] }));
+  assert.match(blank, /<strong>Uric Acid, Random Urine<\/strong><\/td><td>-<\/td>/);
+  const legacy = buildReportHtml(sampleReport({ name: 'Uric Acid(Urine)', parameters: [
+    { parameter_name: 'Result', value: '0', unit: 'mmol/L', normal_range: 'Local interval in mmol/L' },
+  ] }));
+  assert.match(legacy, />0<\/td><td>Local interval in mmol\/L<\/td><td>mmol\/L/);
+});
+
+test('24-hour urine uric acid preserves daily-excretion units and actual collection details', () => {
+  for (const name of ['Uric Acid(24 hrs Urine)', 'Uric Acid (24 hour urine)', '24 Hour Urine Uric Acid']) {
+    const html = buildReportHtml(sampleReport({ name, parameters: [
+      { parameter_name: 'Urine Uric Acid, 24 Hour', value: '600', unit: 'mg/24 h', normal_range: 'Local interval: 200 - 800' },
+      { parameter_name: 'Urine Uric Acid Concentration', value: '40', unit: 'mg/dL' },
+      { parameter_name: 'Total Urine Volume', value: '1500', unit: 'mL' },
+      { parameter_name: 'Collection Duration', value: '24', unit: 'hours' },
+      { parameter_name: 'Collection Start Date / Time', value: '2026-10-12 07:00' },
+      { parameter_name: 'Collection End Date / Time', value: '2026-10-13 07:00' },
+      { parameter_name: 'Collection Completeness / Comments', value: 'Complete collection\nDiet history recorded' },
+    ] }));
+    assert.match(html, /<div class="test-title">URIC ACID, 24-HOUR URINE<\/div>/);
+    assert.match(html, /data-report-content="urine-uric-acid-24-hour"/);
+    assert.match(html, />600<\/td><td>Local interval: 200 - 800<\/td><td>mg\/24 h/);
+    assert.match(html, />40<\/td>/);
+    assert.match(html, />1500<\/td>/);
+    assert.match(html, /2026-10-12 07:00/);
+    assert.match(html, /Complete collection<br \/>Diet history recorded/);
+    assert.match(html, /&divide; 100\./);
+    assert.match(html, /aged 18 years or older/);
+    assert.equal(getFallbackReportParameters({ name })[0].unit, 'mg/24 h');
+  }
+  const blank = buildReportHtml(sampleReport({ name: 'Uric Acid(24 hrs Urine)', parameters: [] }));
+  assert.match(blank, /<strong>Urine Uric Acid, 24 Hour<\/strong><\/td><td>-<\/td>/);
+  assert.match(blank, /<strong>Collection Duration<\/strong><\/td><td>-<\/td>/);
+  const partial = buildReportHtml(sampleReport({ name: 'Uric Acid(24 hrs Urine)', parameters: [
+    { parameter_name: 'Urine Uric Acid Concentration', value: '40' },
+    { parameter_name: 'Total Urine Volume', value: '1500' },
+    { parameter_name: 'Collection Duration', value: '12' },
+  ] }));
+  assert.match(partial, /<strong>Urine Uric Acid, 24 Hour<\/strong><\/td><td>-<\/td>/);
+  const serum = buildReportHtml(sampleReport({ name: 'Uric Acid', code: 'URIC_ACID', sample_type: 'Serum', parameters: [] }));
+  assert.doesNotMatch(serum, /data-report-content="urine-uric-acid-24-hour"/);
+  const random = buildReportHtml(sampleReport({ name: 'Uric Acid(Urine)', parameters: [] }));
+  assert.doesNotMatch(random, /data-report-content="urine-uric-acid-24-hour"/);
+});
+
+test('24-hour urine urea keeps daily excretion, concentration and collection details separate', () => {
+  for (const name of ['Urea(24 hrs. Urine)', 'Urea (24 hour urine)', '24 Hour Urine Urea']) {
+    const html = buildReportHtml(sampleReport({ name, parameters: [
+      { parameter_name: 'Urine Urea, 24 Hour', value: '18', unit: 'g/24 h', normal_range: 'Local adult interval: 7 - 40' },
+      { parameter_name: 'Urine Urea Concentration', value: '1200', unit: 'mg/dL' },
+      { parameter_name: 'Total Urine Volume', value: '1500', unit: 'mL' },
+      { parameter_name: 'Collection Duration', value: '24', unit: 'hours' },
+      { parameter_name: 'Collection Start Date / Time', value: '2026-10-12 07:00' },
+      { parameter_name: 'Collection End Date / Time', value: '2026-10-13 07:00' },
+      { parameter_name: 'Collection Completeness / Comments', value: 'Complete collection\nNo spillage reported' },
+    ] }));
+    assert.match(html, /<div class="test-title">UREA, 24-HOUR URINE<\/div>/);
+    assert.match(html, /data-report-content="urine-urea-24-hour"/);
+    assert.match(html, />18<\/td><td>Local adult interval: 7 - 40<\/td><td>g\/24 h/);
+    assert.match(html, />1200<\/td>/);
+    assert.match(html, />1500<\/td>/);
+    assert.match(html, /2026-10-12 07:00/);
+    assert.match(html, /Complete collection<br \/>No spillage reported/);
+    assert.match(html, /This report measures urea, not urine urea nitrogen/);
+    assert.doesNotMatch(html, /<div class="test-title">BLOOD UREA NITROGEN/);
+    assert.equal(getFallbackReportParameters({ name })[0].unit, 'g/24 h');
+  }
+  const blank = buildReportHtml(sampleReport({ name: 'Urea(24 hrs. Urine)', parameters: [] }));
+  assert.match(blank, /<strong>Urine Urea, 24 Hour<\/strong><\/td><td>-<\/td>/);
+  assert.match(blank, /<strong>Collection Duration<\/strong><\/td><td>-<\/td>/);
+  const partial = buildReportHtml(sampleReport({ name: 'Urea(24 hrs. Urine)', parameters: [
+    { parameter_name: 'Urine Urea Concentration', value: '1200' },
+    { parameter_name: 'Total Urine Volume', value: '1500' },
+    { parameter_name: 'Collection Duration', value: '12' },
+  ] }));
+  assert.match(partial, /<strong>Urine Urea, 24 Hour<\/strong><\/td><td>-<\/td>/);
+});
+
+test('Urine Acetone recognises the imported typo and preserves method-specific results', () => {
+  for (const name of ['Unine Acetone', 'Urine Acetone', 'Acetone (Urine)']) {
+    const html = buildReportHtml(sampleReport({
+      name,
+      sample_type: 'Urine',
+      parameters: [
+        { parameter_name: 'Urine Acetone / Ketone Screen', value: 'Trace', normal_range: 'Negative - local assay', unit: '' },
+        { parameter_name: 'Method / Reagent', value: 'Laboratory urine ketone strip' },
+        { parameter_name: 'Interpretation / Comments', value: 'Repeat on fresh urine\nCorrelate with glucose' },
+      ],
+    }));
+    assert.match(html, /<div class="test-title">URINE ACETONE<\/div>/);
+    assert.match(html, /data-report-content="urine-acetone"/);
+    assert.match(html, />Trace</);
+    assert.match(html, /Negative - local assay/);
+    assert.match(html, /Laboratory urine ketone strip/);
+    assert.match(html, /Repeat on fresh urine<br \/>Correlate with glucose/);
+    assert.match(html, /They do not measure beta-hydroxybutyrate/);
+    assert.match(html, /does not establish a specific acetone concentration/);
+    assert.deepEqual(getFallbackReportParameters({ name }).map(parameter => parameter.parameterName), [
+      'Urine Acetone / Ketone Screen', 'Collection Date / Time', 'Method / Reagent',
+      'Grade / Semiquantitative Category, if reported', 'Specimen Quality / Handling', 'Interpretation / Comments',
+    ]);
+  }
+  const blank = buildReportHtml(sampleReport({ name: 'Unine Acetone', parameters: [] }));
+  assert.match(blank, /<strong>Urine Acetone \/ Ketone Screen<\/strong><\/td><td>-<\/td>/);
+  const quantitative = buildReportHtml(sampleReport({ name: 'Urine Acetone', parameters: [
+    { parameter_name: 'Result', value: '0', unit: 'mg/L', normal_range: 'Laboratory-specific quantitative interval' },
+  ] }));
+  assert.match(quantitative, />0<\/td>/);
+  assert.match(quantitative, /Laboratory-specific quantitative interval/);
+  assert.match(quantitative, />mg\/L<\/td>/);
+});
+
+test('Lipoprotein remains target-neutral until the exact analyte is specified', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Lipoprotein',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Lipoprotein Analyte / Fraction', value: 'Laboratory-defined lipoprotein fraction' },
+      { parameter_name: 'Lipoprotein Result', value: '1.6' },
+      { parameter_name: 'Unit', value: 'Laboratory unit' },
+      { parameter_name: 'Laboratory Reference Interval / Decision Limit', value: 'Assay-specific interval' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">LIPOPROTEIN<\/div>/);
+  assert.match(html, /data-report-content="lipoprotein"/);
+  assert.match(html, /does not identify a specific analyte/);
+  assert.match(html, /Do not apply lipoprotein\(a\), ApoB, LDL, HDL, or lipid-profile decision limits/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Lipoprotein' }).slice(0, 4).map(parameter => parameter.parameterName),
+    ['Lipoprotein Analyte / Fraction', 'Lipoprotein Result', 'Unit', 'Laboratory Reference Interval / Decision Limit'],
+  );
+});
+
+test('Lipoprotein Profile uses a standard lipid component layout', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Lipoprotein Profile',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Total Cholesterol', value: '186', unit: 'mg/dL', normal_range: 'Laboratory interval' },
+      { parameter_name: 'Triglycerides', value: '118', unit: 'mg/dL', normal_range: 'Laboratory interval' },
+      { parameter_name: 'HDL Cholesterol', value: '48', unit: 'mg/dL', normal_range: 'Laboratory interval' },
+      { parameter_name: 'LDL Cholesterol', value: '114', unit: 'mg/dL', normal_range: 'Laboratory interval' },
+      { parameter_name: 'Fasting Status / Collection Details', value: 'Non-fasting sample' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">LIPOPROTEIN PROFILE<\/div>/);
+  assert.match(html, /data-report-content="lipoprotein-profile"/);
+  assert.match(html, /Non-fasting sample/);
+  assert.match(html, /standard lipoprotein profile includes total cholesterol/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Lipoprotein Profile' }).slice(0, 8).map(parameter => parameter.parameterName),
+    ['Total Cholesterol', 'Triglycerides', 'HDL Cholesterol', 'LDL Cholesterol', 'VLDL Cholesterol', 'Non-HDL Cholesterol', 'Total Cholesterol / HDL Ratio', 'LDL Cholesterol / HDL Ratio'],
+  );
+});
+
+test('Lithium records dose timing for therapeutic drug monitoring', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Lithium',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Lithium, Serum', value: '0.8', unit: 'mmol/L', normal_range: 'Laboratory therapeutic interval' },
+      { parameter_name: 'Date / Time of Last Dose', value: '2026-10-07 20:00' },
+      { parameter_name: 'Time Since Last Dose / Trough Status', value: '12-hour trough' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">LITHIUM<\/div>/);
+  assert.match(html, /data-report-content="lithium"/);
+  assert.match(html, /12-hour trough/);
+  assert.match(html, /commonly collected 8-12 hours after the last dose/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Lithium' }).slice(0, 4).map(parameter => parameter.parameterName),
+    ['Lithium, Serum', 'Date / Time of Last Dose', 'Date / Time of Collection', 'Time Since Last Dose / Trough Status'],
+  );
+});
+
+test('Liver Biopsy uses a structured liver histopathology report', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Liver Biopsy',
+    code: 'PF058',
+    sample_type: 'Tissue',
+    parameters: [
+      { parameter_name: 'Specimen / Site', value: 'Liver core biopsy' },
+      { parameter_name: 'Fibrosis / Stage, if assessed', value: 'Stage reported by pathologist' },
+      { parameter_name: 'Final Diagnosis', value: 'Final diagnosis text' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">HISTOPATHOLOGY LIVER BIOPSY<\/div>/);
+  assert.match(html, /data-report-content="liver-biopsy"/);
+  assert.match(html, /SURGICAL PATHOLOGY REPORT &mdash; LIVER BIOPSY/);
+  assert.match(html, /Core number, length, fragmentation/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Liver Biopsy' }).slice(0, 5).map(parameter => parameter.parameterName),
+    ['Clinical History / Indication', 'Specimen / Site', 'Procedure / Biopsy Type', 'Fixative / Specimen Received In', 'Gross Description'],
+  );
+});
+
+test('Liver Cancer Monitor Profile keeps tumor-marker monitoring context', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Liver Cancer Monitor Profile',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Alpha-Fetoprotein (AFP)', value: '12.4', unit: 'ng/mL', normal_range: 'Laboratory interval' },
+      { parameter_name: 'AFP-L3%, if performed', value: '8.0', unit: '%' },
+      { parameter_name: 'Monitoring Context / Prior Result, if provided', value: 'Serial follow-up' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">LIVER CANCER MONITOR PROFILE<\/div>/);
+  assert.match(html, /data-report-content="liver-cancer-monitor-profile"/);
+  assert.match(html, /Serial follow-up/);
+  assert.match(html, /abnormal AFP result is not diagnostic by itself/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Liver Cancer Monitor Profile' }).slice(0, 3).map(parameter => parameter.parameterName),
+    ['Alpha-Fetoprotein (AFP)', 'AFP-L3%, if performed', 'Des-gamma-carboxy Prothrombin (DCP / PIVKA-II), if performed'],
+  );
+});
+
+test('Lupus Anticoagulant uses a method-aware coagulation evaluation layout', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Lupus Anticoagulant',
+    sample_type: 'Citrated Plasma',
+    parameters: [
+      { parameter_name: 'dRVVT Screen Ratio', value: '1.10', normal_range: 'Laboratory decision limit' },
+      { parameter_name: 'Final Lupus Anticoagulant Interpretation', value: 'No laboratory evidence detected by this method' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">LUPUS ANTICOAGULANT<\/div>/);
+  assert.match(html, /data-report-content="lupus-anticoagulant"/);
+  assert.match(html, /No single coagulation assay can identify or exclude all lupus anticoagulants/);
+  assert.match(html, /No laboratory evidence detected by this method/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Lupus Anticoagulant' }).slice(0, 4).map(parameter => parameter.parameterName),
+    ['aPTT Screen', 'dRVVT Screen Ratio', 'dRVVT Mix Ratio, if performed', 'dRVVT Confirm Ratio, if performed'],
+  );
+});
+
+test('MDMA Screen distinguishes screening from confirmation', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'MDMA Screen',
+    code: 'PF064',
+    sample_type: 'Urine',
+    parameters: [
+      { parameter_name: 'MDMA Screen Result', value: 'Not Detected' },
+      { parameter_name: 'Screening Cutoff / Decision Limit', value: 'Laboratory cutoff', unit: 'ng/mL' },
+      { parameter_name: 'Screening Method', value: 'Validated screen' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">MDMA SCREEN<\/div>/);
+  assert.match(html, /data-report-content="mdma-screen"/);
+  assert.match(html, /A screening result is presumptive/);
+  assert.match(html, /MDMA is metabolized to MDA/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'MDMA Screen' }).slice(0, 4).map(parameter => parameter.parameterName),
+    ['MDMA Screen Result', 'Screening Cutoff / Decision Limit', 'Specimen Validity / Collection Details', 'Screening Method'],
+  );
+});
+
+test('Magnesium (Urine) captures timed-collection context', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Magnesium (Urine)',
+    sample_type: '24-hour urine',
+    parameters: [
+      { parameter_name: 'Magnesium, Urine', value: '86', unit: 'mg/24 hours', normal_range: 'Laboratory interval' },
+      { parameter_name: 'Collection Type / Duration', value: '24 hours' },
+      { parameter_name: 'Total Urine Volume', value: '1650', unit: 'mL' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">MAGNESIUM, URINE<\/div>/);
+  assert.match(html, /data-report-content="urine-magnesium"/);
+  assert.match(html, /Document duration and volume for timed collections/);
+  assert.match(html, /Intravenous magnesium administration/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Magnesium (Urine)' }).slice(0, 4).map(parameter => parameter.parameterName),
+    ['Magnesium, Urine', 'Collection Type / Duration', 'Total Urine Volume', 'Urine Magnesium Concentration, if reported'],
+  );
+});
+
+test('Malaria Pan / Pf Antigen distinguishes targets and microscopy confirmation', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Malaria (Pan / Pf ) Antigen',
+    sample_type: 'Whole Blood',
+    parameters: [
+      { parameter_name: 'P. falciparum (Pf) Antigen', value: 'Not Detected' },
+      { parameter_name: 'Pan-malarial Antigen', value: 'Not Detected' },
+      { parameter_name: 'Test Control / Validity', value: 'Valid' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">MALARIA ANTIGEN - PAN \/ PF<\/div>/);
+  assert.match(html, /data-report-content="malaria-pan-pf-antigen"/);
+  assert.match(html, /Rapid-test results, whether positive or negative/);
+  assert.match(html, /thick and thin blood-film microscopy/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Malaria (Pan / Pf ) Antigen' }).slice(0, 4).map(parameter => parameter.parameterName),
+    ['P. falciparum (Pf) Antigen', 'Pan-malarial Antigen', 'Test Control / Validity', 'Rapid Test Kit / Method'],
+  );
+});
+
+test('Optimal IT Antigen distinguishes Pf and pan-pLDH findings with kit-specific interpretation', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Optimal IT Antigen',
+    sample_type: 'Whole Blood',
+    parameters: [
+      { parameter_name: 'P. falciparum-specific pLDH Result', value: 'Not Detected' },
+      { parameter_name: 'Pan-Plasmodium pLDH Result', value: 'Not Detected' },
+      { parameter_name: 'Test Control / Validity', value: 'Valid' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">OPTIMAL-IT MALARIA ANTIGEN<\/div>/);
+  assert.match(html, /data-report-content="optimal-it-antigen"/);
+  assert.match(html, /pLDH-based malaria rapid diagnostic test/);
+  assert.match(html, /thick and thin blood-film microscopy/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Optimal IT Antigen' }).slice(0, 4).map(parameter => parameter.parameterName),
+    ['P. falciparum-specific pLDH Result', 'Pan-Plasmodium pLDH Result', 'Test Control / Validity', 'OptiMAL-IT Result Interpretation'],
+  );
+});
+
+test('Osmotic fragility Test records method conditions and avoids a stand-alone diagnosis', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Osmotic fragility Test',
+    sample_type: 'EDTA Whole Blood',
+    parameters: [
+      { parameter_name: 'Unincubated Osmotic Fragility / Hemolysis', value: 'Laboratory interpretation recorded' },
+      { parameter_name: 'Patient / Shipping Control Status', value: 'Satisfactory' },
+      { parameter_name: 'Method / Incubation Conditions', value: 'Validated osmotic lysis method; incubated study performed' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">OSMOTIC FRAGILITY TEST<\/div>/);
+  assert.match(html, /data-report-content="osmotic-fragility"/);
+  assert.match(html, /does not establish hereditary spherocytosis or another diagnosis/);
+  assert.match(html, /Satisfactory/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Osmotic fragility Test' }).slice(0, 4).map(parameter => parameter.parameterName),
+    ['Specimen / Anticoagulant', 'Unincubated Osmotic Fragility / Hemolysis', 'Incubated Osmotic Fragility / Hemolysis', 'Sodium Chloride Concentration(s) / Hemolysis Results'],
+  );
+});
+
+test('Ovarian Function Profile records cycle context without making a stand-alone diagnosis', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Ovarian Function Profile',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Follicle Stimulating Hormone (FSH), Serum', value: '6.8', unit: 'mIU/mL', normal_range: 'Laboratory interval' },
+      { parameter_name: 'Luteinizing Hormone (LH), Serum', value: '7.1', unit: 'mIU/mL', normal_range: 'Laboratory interval' },
+      { parameter_name: 'Anti-Mullerian Hormone (AMH), Serum, if ordered', value: '2.1', unit: 'ng/mL', normal_range: 'Laboratory interval' },
+      { parameter_name: 'Menstrual Cycle Day / Physiologic State', value: 'Cycle day 3' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">OVARIAN FUNCTION PROFILE<\/div>/);
+  assert.match(html, /data-report-content="ovarian-function-profile"/);
+  assert.match(html, /Cycle day 3/);
+  assert.match(html, /does not diagnose a specific cause of menstrual irregularity, infertility, or ovarian dysfunction by itself/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Ovarian Function Profile' }).slice(0, 5).map(parameter => parameter.parameterName),
+    ['Follicle Stimulating Hormone (FSH), Serum', 'Luteinizing Hormone (LH), Serum', 'Estradiol (E2), Serum', 'Anti-Mullerian Hormone (AMH), Serum, if ordered', 'Progesterone, Serum, if ordered'],
+  );
+});
+
+test('oxygen services, endocrine, ANCA, PSA, PTH, and PUO profiles use dedicated report formats', () => {
+  const cases = [
+    ['Oxygen for each Day(after 1st 3 Days)', 'OXYGEN THERAPY - DAILY SERVICE RECORD', 'oxygen-daily', 'Oxygen delivery interface'],
+    ['Oxygen( 3 Days)', 'OXYGEN THERAPY - THREE-DAY SERVICE RECORD', 'oxygen-three-days', 'Total duration of oxygen administration'],
+    ['P ANCA (Anti - PR3)', 'P-ANCA / ANTI-PR3 ANTIBODY', 'panca-pr3', 'PR3-ANCA antibody'],
+    ['PRA (Plasma Renin Activity)', 'PLASMA RENIN ACTIVITY (PRA)', 'plasma-renin-activity', 'Patient posture / collection conditions'],
+    ['PSA (Prostate Specific Antigen)', 'PROSTATE SPECIFIC ANTIGEN (PSA), TOTAL', 'psa', 'Prostate specific antigen (PSA), total'],
+    ['PTH (Para Thyroid Hormone)', 'PARATHYROID HORMONE (PTH)', 'pth', 'Calcium, concurrent, if available'],
+    ['PTH - (Intact Molecule)', 'PARATHYROID HORMONE (PTH) - INTACT MOLECULE', 'intact-pth', 'Parathyroid hormone (PTH), intact'],
+    ['PUO - Work Up Profile', 'PUO - WORK UP PROFILE', 'puo-workup', 'Complete blood count (CBC), if performed'],
+    ['PUS AFB Stain', 'PUS / ASPIRATE - AFB STAIN', 'pus-afb-stain', 'AFB smear microscopy result'],
+    ['PUS Culture & Sensitivity', 'PUS / ASPIRATE - CULTURE &amp; SENSITIVITY', 'pus-culture-sensitivity', 'Antimicrobial susceptibility result'],
+    ['PUS Gram Stain', 'PUS / ASPIRATE - GRAM STAIN', 'pus-gram-stain', 'Pus cells / polymorphs'],
+    ['Peritoneal Fluid Chloride', 'PERITONEAL (ASCITIC) FLUID CHLORIDE', 'peritoneal-fluid-chloride', 'Concurrent serum chloride, if available'],
+    ['Peritoneal Fluid Gram Stain', 'PERITONEAL (ASCITIC) FLUID - GRAM STAIN', 'peritoneal-fluid-gram-stain', 'Polymorphs / inflammatory cells'],
+    ['Peritoneal Fluid LDH', 'PERITONEAL (ASCITIC) FLUID LDH', 'peritoneal-fluid-ldh', 'Fluid / serum LDH ratio, if calculated'],
+    ['Peritoneal Fluid Protein', 'PERITONEAL (ASCITIC) FLUID TOTAL PROTEIN', 'peritoneal-fluid-protein', 'Fluid / serum protein ratio, if calculated'],
+    ['Peritoneal Fluid Sugar', 'PERITONEAL (ASCITIC) FLUID GLUCOSE (SUGAR)', 'peritoneal-fluid-sugar', 'Fluid / serum glucose ratio, if calculated'],
+    ['Peritoneal Fluid for Specific Gravity', 'PERITONEAL (ASCITIC) FLUID SPECIFIC GRAVITY', 'peritoneal-fluid-specific-gravity', 'Measurement conditions / temperature, if applicable'],
+    ['Pertussis', 'PERTUSSIS / BORDETELLA PERTUSSIS', 'pertussis', 'Bordetella pertussis result'],
+    ['Phenytoin / Dilantin', 'PHENYTOIN (DILANTIN) - THERAPEUTIC DRUG MONITORING', 'phenytoin', 'Collection time relative to last dose'],
+    ['Phospholipid', 'PHOSPHOLIPIDS, TOTAL', 'phospholipid', 'Total phospholipids'],
+    ['Phospholipid Antibody IgG (APLA - G)', 'PHOSPHOLIPID (CARDIOLIPIN) ANTIBODY, IgG', 'phospholipid-antibody-igg', 'Phospholipid (cardiolipin) antibody, IgG'],
+    ['Phospholipid Antibody IgM (APLA - M)', 'PHOSPHOLIPID (CARDIOLIPIN) ANTIBODY, IgM', 'phospholipid-antibody-igm', 'Phospholipid (cardiolipin) antibody, IgM'],
+    ['Phosphorus (24 hrs. urine)', 'PHOSPHORUS, 24-HOUR URINE', 'urine-phosphorus-24-hour', 'Total 24-hour urine volume'],
+    ['Plasma 02contents (P02)', 'OXYGEN CONTENT (ctO2)', 'oxygen-content', 'Specimen source / type'],
+    ['Pleural Fluid Specific Gravity', 'PLEURAL FLUID SPECIFIC GRAVITY', 'pleural-fluid-specific-gravity', 'Associated pleural / serum studies, if available'],
+    ['Pleural Fluid for Protein', 'PLEURAL FLUID TOTAL PROTEIN', 'pleural-fluid-protein', 'Pleural fluid / serum protein ratio, if calculated'],
+    ['Pleural Fluid for Sugar', 'PLEURAL FLUID GLUCOSE (SUGAR)', 'pleural-fluid-sugar', 'Pleural fluid / serum glucose ratio, if calculated'],
+    ['Post Coital Test', 'POST-COITAL TEST (PCT)', 'post-coital-test', 'Sperm seen on microscopy'],
+    ['Potassium(24 hour Urine)', 'POTASSIUM, 24-HOUR URINE', 'urine-potassium-24-hour', 'Total 24-hour urine volume'],
+    ['Potassium(Randam)', 'POTASSIUM, RANDOM URINE', 'urine-potassium-random', 'Potassium / creatinine ratio, if calculated'],
+    ['Pre - Employment Check Up', 'PRE-EMPLOYMENT LABORATORY CHECK-UP', 'pre-employment-check-up', 'Authorized medical fitness opinion, if issued separately'],
+    ['Precancer&EarlyDetectionoforal', 'ORAL POTENTIALLY MALIGNANT DISORDER / EARLY-DETECTION ASSESSMENT', 'oral-precancer-early-detection', 'Authorized clinical / pathology diagnosis, if issued separately'],
+    ['Pregnancy Elisa Test', 'PREGNANCY TEST — hCG (ELISA)', 'pregnancy-elisa-test', 'hCG qualitative result'],
+    ['RBC / WBC Morphology', 'PERIPHERAL BLOOD FILM — RBC / WBC MORPHOLOGY', 'rbc-wbc-morphology', 'White cell morphology'],
+    ['RBC Fragility Test', 'OSMOTIC FRAGILITY TEST', 'osmotic-fragility', 'Unincubated osmotic fragility / hemolysis'],
+    ['Rectal Swab Gram Stain', 'RECTAL SWAB — GRAM STAIN', 'rectal-swab-gram-stain', 'Direct Gram stain interpretation'],
+    ['Renal (Kidney) Profile', 'RENAL (KIDNEY) PROFILE', 'renal-kidney-profile', 'Urine albumin-creatinine ratio (ACR), if ordered'],
+    ['Respiratory Syncytial Virus (RSV)', 'RESPIRATORY SYNCYTIAL VIRUS (RSV)', 'respiratory-syncytial-virus', 'Internal / procedural control'],
+    ['Review for Histology Slide', 'HISTOLOGY SLIDE REVIEW', 'histology-slide-review', 'Concordance with original report'],
+    ['Rheumatic Fever Profile', 'RHEUMATIC FEVER PROFILE', 'rheumatic-fever-profile', 'Antistreptolysin O (ASO) titer, if ordered'],
+    ['Rheumatoid Profile', 'RHEUMATOID PROFILE', 'rheumatoid-profile', 'Anti-cyclic citrullinated peptide (anti-CCP) antibody'],
+    ['Rubella IgG', 'RUBELLA VIRUS ANTIBODY, IgG', 'rubella-igg', 'Rubella IgG antibody index / concentration, if reported'],
+    ['SHBG (Sex Hormone Binding Globulin)', 'SEX HORMONE BINDING GLOBULIN (SHBG)', 'shbg', 'Calculated free testosterone / free androgen index, if calculated'],
+    ['Semen Culture', 'SEMEN CULTURE', 'semen-culture', 'Mixed growth / contamination assessment'],
+    ['Seminal Fluid for Culture & Sensitivity', 'SEMINAL FLUID - CULTURE & SENSITIVITY', 'seminal-fluid-culture-sensitivity', 'Antimicrobial susceptibility'],
+    ['Sputum Culture & Sensitivity', 'SPUTUM - CULTURE & SENSITIVITY', 'sputum-culture-sensitivity', 'Mixed upper respiratory flora / contamination assessment'],
+    ['Sputum Culture (Non AFB)', 'SPUTUM CULTURE (NON-AFB)', 'sputum-culture-non-afb', 'Routine bacterial culture result'],
+    ['Sputum Gram Stain', 'SPUTUM - GRAM STAIN', 'sputum-gram-stain', 'Predominant bacterial morphotype, if present'],
+    ['Sputum RE (Leishman Stain + Gram)', 'SPUTUM RESPIRATORY EXAMINATION (LEISHMAN STAIN + GRAM STAIN)', 'sputum-re-leishman-gram', 'Leishman stain method / cellular assessment'],
+    ['Stone Analysis (Urinary / Gall Bladder)', 'STONE ANALYSIS (URINARY / GALL BLADDER)', 'stone-analysis', 'Primary stone component'],
+    ['Stool Culture', 'STOOL CULTURE', 'stool-culture', 'Routine enteric culture result'],
+    ['Stool OBT + RE (3 Days)', 'STOOL OBT + ROUTINE EXAMINATION (THREE DAYS)', 'stool-obt-re-three-days', 'Day 3 fecal occult blood result'],
+    ['Stool OPC', 'STOOL OVA, CYSTS & PARASITES (OPC)', 'stool-opc', 'Protozoa (cysts), if seen'],
+    ['Stool RE + Red Sub + pH', 'STOOL ROUTINE EXAMINATION + REDUCING SUBSTANCES + pH', 'stool-re-red-sub-ph', 'Reducing substances'],
+    ['Swab Culture & Sensitivity for Any Site Swab', 'SWAB CULTURE & SENSITIVITY (ANY SITE)', 'any-site-swab-culture-sensitivity', 'Swab collection site / anatomical source'],
+    ['Synovial Fluid for Calcium', 'SYNOVIAL FLUID CALCIUM', 'synovial-fluid-calcium', 'Calcium, synovial fluid'],
+    ['Synovial Fluid for Crystals', 'SYNOVIAL FLUID CRYSTAL EXAMINATION', 'synovial-fluid-crystals', 'Crystal morphology / birefringence, if assessed'],
+    ['Synovial Fluid for Uric Acid', 'SYNOVIAL FLUID URIC ACID', 'synovial-fluid-uric-acid', 'Uric acid, synovial fluid'],
+    ['T3 & US-TSH', 'T3 & ULTRA-SENSITIVE TSH', 't3-us-tsh', 'Ultra-sensitive TSH, serum'],
+    ['T4 & US-TSH', 'T4 & ULTRA-SENSITIVE TSH', 't4-us-tsh', 'Ultra-sensitive TSH, serum'],
+    ['TB IgA', 'TUBERCULOSIS (TB) IgA ANTIBODY', 'tb-iga', 'TB IgA antibody result'],
+    ['TB IgM', 'TUBERCULOSIS (TB) IgM ANTIBODY', 'tb-igm', 'TB IgM antibody result'],
+    ['TBG (Thyroxine Binding Globulin)', 'THYROXINE-BINDING GLOBULIN (TBG)', 'thyroxine-binding-globulin', 'Thyroxine-binding globulin (TBG), serum'],
+    ['TC & DC', 'TOTAL & DIFFERENTIAL LEUKOCYTE COUNT (TC & DC)', 'total-differential-count', 'Total leukocyte count (TLC / TC)'],
+    ['TC, DC & ESR', 'TOTAL & DIFFERENTIAL LEUKOCYTE COUNT + ESR', 'total-differential-count-esr', 'Erythrocyte sedimentation rate (ESR)'],
+    ['TC, DC & MP', 'TOTAL & DIFFERENTIAL LEUKOCYTE COUNT + MALARIA PARASITE', 'total-differential-count-malaria-parasite', 'Malaria parasite on peripheral smear'],
+    ['Taenia Echinococcus', 'TAENIA / ECHINOCOCCUS SEROLOGY', 'taenia-echinococcus-serology', 'Echinococcus antibody result'],
+    ['Testicular Cancer Monitor Profile', 'TESTICULAR CANCER MONITOR PROFILE', 'testicular-cancer-monitor-profile', 'Alpha-fetoprotein (AFP), serum'],
+    ['Testicular Function Profile', 'TESTICULAR FUNCTION PROFILE', 'testicular-function-profile', 'Total testosterone, serum'],
+    ['Thalassemia Profile', 'THALASSEMIA PROFILE', 'thalassemia-profile', 'Haemoglobin A2 (HbA2)'],
+    ['Throat Swab Culture', 'THROAT SWAB CULTURE', 'throat-swab-culture', 'Group A Streptococcus (Streptococcus pyogenes), if isolated'],
+    ['Throat Swab Culture & Sensitivity', 'THROAT SWAB CULTURE & SENSITIVITY', 'throat-swab-culture-sensitivity', 'Antimicrobial susceptibility result(s), if performed'],
+    ['Seminal Fluid for Gram Stain', 'SEMINAL FLUID - GRAM STAIN', 'seminal-fluid-gram-stain', 'Inflammatory cells / polymorphs'],
+    ['Seminal Germ Cell Study', 'SEMINAL GERM CELL STUDY', 'seminal-germ-cell-study', 'Immature germ cells identified'],
+    ['Serology/Viral Marker', 'SEROLOGY / VIRAL MARKER PROFILE', 'serology-viral-marker', 'Hepatitis B surface antigen (HBsAg), if ordered'],
+    ['Sex Chromatin Study', 'SEX CHROMATIN STUDY', 'sex-chromatin-study', 'Barr-body positive nuclei (%)'],
+    ['Soluble Liver Antigen (SLA) Antibody', 'SOLUBLE LIVER ANTIGEN (SLA) ANTIBODY', 'soluble-liver-antigen-antibody', 'Anti-soluble liver antigen (SLA) antibody result'],
+    ['Spirometry', 'SPIROMETRY', 'spirometry', 'Pre-bronchodilator FEV1'],
+    ['Semen for Fructose', 'SEMEN FRUCTOSE', 'semen-fructose', 'Seminal fructose result'],
+    ['Seminal Fluid for AFB Stain', 'SEMINAL FLUID — AFB STAIN', 'seminal-fluid-afb-stain', 'AFB smear grade / quantitation, if applicable'],
+    ['Pre - Operative Profile', 'PRE-OPERATIVE LABORATORY PROFILE', 'pre-operative-profile', 'Anaesthesia / surgical clearance, if issued separately'],
+    ['Pre Cath Profile', 'PRE-CATHETERIZATION LABORATORY PROFILE', 'pre-cath-profile', 'Cardiology / procedural clearance, if issued separately'],
+    ['Pre-Marriage Profile', 'PRE-MARITAL LABORATORY SCREENING (REQUESTED TESTS)', 'pre-marriage-profile', 'Medical / genetic counselling or certification, if issued separately'],
+  ];
+  for (const [name, title, content, expectedField] of cases) {
+    const html = buildReportHtml(sampleReport({ name, parameters: [{ parameter_name: 'Interpretation / Comments', value: 'Verified' }] }));
+    assert.match(html, new RegExp(`<div class="test-title">${title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}<\\/div>`));
+    assert.match(html, new RegExp(`data-report-content="${content}"`));
+    assert.match(html, new RegExp(expectedField.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.ok(getFallbackReportParameters({ name }).length > 0, `${name} should have fallback parameters`);
+  }
+});
+
+test('Malaria Profile joins rapid antigen and blood-film reporting', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Malaria Profile',
+    sample_type: 'Whole Blood',
+    parameters: [
+      { parameter_name: 'Malaria Rapid Antigen Result, if performed', value: 'Not Detected' },
+      { parameter_name: 'Thick Blood Film / Parasite Detection', value: 'No parasites seen' },
+      { parameter_name: 'Thin Blood Film / Species Identification', value: 'No Plasmodium species identified' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">MALARIA PROFILE<\/div>/);
+  assert.match(html, /data-report-content="malaria-profile"/);
+  assert.match(html, /Thick and thin blood films are complementary/);
+  assert.match(html, /does not independently determine species, parasite density/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Malaria Profile' }).slice(0, 4).map(parameter => parameter.parameterName),
+    ['Malaria Rapid Antigen Result, if performed', 'P. falciparum (Pf) Antigen, if performed', 'Pan-malarial Antigen, if performed', 'Thick Blood Film / Parasite Detection'],
+  );
+});
+
+test('Male Infertility Profile combines hormone and semen-analysis context', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Male Infertility Profile',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Follicle Stimulating Hormone (FSH)', value: '5.4', unit: 'mIU/mL', normal_range: 'Laboratory interval' },
+      { parameter_name: 'Luteinizing Hormone (LH)', value: '4.1', unit: 'mIU/mL', normal_range: 'Laboratory interval' },
+      { parameter_name: 'Total Testosterone', value: '420', unit: 'ng/dL', normal_range: 'Laboratory interval' },
+      { parameter_name: 'Semen Analysis Correlation, if available', value: 'Review with semen analysis' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">MALE INFERTILITY PROFILE<\/div>/);
+  assert.match(html, /data-report-content="male-infertility-profile"/);
+  assert.match(html, /Review with semen analysis/);
+  assert.match(html, /Semen analysis remains a separate, standardized laboratory assessment/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Male Infertility Profile' }).slice(0, 4).map(parameter => parameter.parameterName),
+    ['Follicle Stimulating Hormone (FSH)', 'Luteinizing Hormone (LH)', 'Total Testosterone', 'Prolactin'],
+  );
+});
+
+test('Manganese keeps matrix and exposure context with the result', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Manganese',
+    code: 'PF021',
+    sample_type: 'Whole Blood',
+    parameters: [
+      { parameter_name: 'Manganese', value: '10.2', unit: 'ng/mL', normal_range: 'Laboratory interval' },
+      { parameter_name: 'Exposure History / Clinical Context, if provided', value: 'Occupational exposure history provided' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">MANGANESE<\/div>/);
+  assert.match(html, /data-report-content="manganese"/);
+  assert.match(html, /Occupational exposure history provided/);
+  assert.match(html, /Whole blood, serum, plasma, and red-cell results are not interchangeable/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Manganese' }).slice(0, 4).map(parameter => parameter.parameterName),
+    ['Manganese', 'Specimen / Matrix', 'Collection / Trace-Element Precautions', 'Exposure History / Clinical Context, if provided'],
+  );
+});
+
+test('Measles / Rubeola Antibody IgG reports immunity evidence without diagnosing acute disease', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Measles / Rubeola Antibody IgG',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Measles (Rubeola) IgG Antibody Result', value: 'Positive' },
+      { parameter_name: 'Measles IgG Antibody Index / Titre, if reported', value: '1.4' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">MEASLES \(RUBEOLA\) ANTIBODY IgG<\/div>/);
+  assert.match(html, /data-report-content="measles-rubeola-igg"/);
+  assert.match(html, /Qualitative evidence of prior immune response/);
+  assert.match(html, /does not diagnose acute measles infection/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Measles / Rubeola Antibody IgG' }).slice(0, 4).map(parameter => parameter.parameterName),
+    ['Measles (Rubeola) IgG Antibody Result', 'Measles IgG Antibody Index / Titre, if reported', 'Specimen Collection Date / Clinical Context, if provided', 'Vaccination / Exposure History, if provided'],
+  );
+});
+
+test('Measles / Rubeola Antibody IgM records acute-phase timing and limitations', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Measles / Rubeola Antibody IgM',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Measles (Rubeola) IgM Antibody Result', value: 'Positive' },
+      { parameter_name: 'Rash / Symptom Onset Date, if provided', value: '2026-10-07' },
+      { parameter_name: 'Specimen Collection Date', value: '2026-10-10' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">MEASLES \(RUBEOLA\) ANTIBODY IgM<\/div>/);
+  assert.match(html, /data-report-content="measles-rubeola-igm"/);
+  assert.match(html, /collection timing is essential/);
+  assert.match(html, /must not be used to diagnose measles/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Measles / Rubeola Antibody IgM' }).slice(0, 4).map(parameter => parameter.parameterName),
+    ['Measles (Rubeola) IgM Antibody Result', 'Rash / Symptom Onset Date, if provided', 'Specimen Collection Date', 'Measles IgG Result, if available'],
+  );
+});
+
+test('Menstrual Blood for TB PCR records molecular validity and diagnostic limitations', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Menstrual Blood for TB PCR',
+    sample_type: 'Menstrual Blood',
+    parameters: [
+      { parameter_name: 'MTB Complex PCR Result', value: 'Not Detected' },
+      { parameter_name: 'Internal Control / Inhibition Status', value: 'Valid; no inhibition detected' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">MENSTRUAL BLOOD FOR TB PCR<\/div>/);
+  assert.match(html, /data-report-content="menstrual-blood-tb-pcr"/);
+  assert.match(html, /negative result does not exclude genital\/extrapulmonary TB/);
+  assert.match(html, /Valid; no inhibition detected/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Menstrual Blood for TB PCR' }).slice(0, 4).map(parameter => parameter.parameterName),
+    ['MTB Complex PCR Result', 'Rifampicin Resistance Result, if applicable', 'Specimen Adequacy / Processing Status', 'Internal Control / Inhibition Status'],
+  );
+});
+
+test('Micro Filaria records microscopy observations without overstating a negative smear', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Micro Filaria',
+    sample_type: 'Peripheral Blood',
+    parameters: [
+      { parameter_name: 'Microfilaria Detection Result', value: 'Not seen' },
+      { parameter_name: 'Specimen / Blood Collection Time', value: '22:30 h' },
+      { parameter_name: 'Preparation / Stain / Method', value: 'Giemsa-stained thick and thin blood films' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">MICRO FILARIA<\/div>/);
+  assert.match(html, /data-report-content="microfilaria"/);
+  assert.match(html, /Microfilariae may show species-dependent periodicity/);
+  assert.match(html, /22:30 h/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Micro Filaria' }).slice(0, 4).map(parameter => parameter.parameterName),
+    ['Microfilaria Detection Result', 'Species / Morphologic Identification, if possible', 'Microfilarial Density / Quantitation, if performed', 'Specimen / Blood Collection Time'],
+  );
+});
+
+test('Microalbumin (Urine) keeps the measured concentration distinct from UACR', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Microalbumin (Urine)',
+    sample_type: 'Spot Urine',
+    parameters: [
+      { parameter_name: 'Urine Albumin (Microalbumin)', value: '18', unit: 'mg/L' },
+      { parameter_name: 'Urine Albumin-Creatinine Ratio (UACR), if requested', value: '21', unit: 'mg/g' },
+      { parameter_name: 'Method / Analyzer', value: 'Immunoturbidimetric method' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">MICROALBUMIN \(URINE\)<\/div>/);
+  assert.match(html, /data-report-content="microalbumin-urine"/);
+  assert.match(html, /report a ratio only when it has been requested or calculated by the laboratory/);
+  assert.match(html, /Immunoturbidimetric method/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Microalbumin (Urine)' }).slice(0, 4).map(parameter => parameter.parameterName),
+    ['Urine Albumin (Microalbumin)', 'Specimen / Collection Type', 'Urine Creatinine, if measured', 'Urine Albumin-Creatinine Ratio (UACR), if requested'],
+  );
+});
+
+test('Nasal Swab Gram Stain reports direct microscopy without inventing culture results', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Nasal Swab Gram Stain',
+    sample_type: 'Nasal Swab',
+    parameters: [
+      { parameter_name: 'Inflammatory Cells / PMNs', value: 'Few' },
+      { parameter_name: 'Gram-Positive Organisms / Morphology, if seen', value: 'Few Gram-positive cocci in clusters' },
+      { parameter_name: 'Overall Gram Stain Findings', value: 'Mixed nasal flora morphology observed' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">NASAL SWAB - GRAM STAIN<\/div>/);
+  assert.match(html, /data-report-content="nasal-swab-gram-stain"/);
+  assert.match(html, /do not provide definitive species identification or antimicrobial susceptibility/);
+  assert.match(html, /Few Gram-positive cocci in clusters/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Nasal Swab Gram Stain' }).slice(0, 5).map(parameter => parameter.parameterName),
+    ['Specimen / Collection Site', 'Smear Method / Preparation', 'Inflammatory Cells / PMNs', 'Epithelial Cells / Specimen Quality', 'Gram-Positive Organisms / Morphology, if seen'],
+  );
+});
+
+test('Oncology Profile reports only ordered markers without presenting them as a cancer diagnosis', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Oncology Profile',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Carcinoembryonic Antigen (CEA), if ordered', value: '2.4', unit: 'ng/mL', normal_range: 'Laboratory interval' },
+      { parameter_name: 'CA 19-9, if ordered', value: '16', unit: 'U/mL', normal_range: 'Laboratory interval' },
+      { parameter_name: 'Clinical Details / Monitoring Context, if provided', value: 'Clinician-directed serial monitoring' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">ONCOLOGY PROFILE<\/div>/);
+  assert.match(html, /data-report-content="oncology-profile"/);
+  assert.match(html, /Carcinoembryonic Antigen \(CEA\), if ordered/);
+  assert.match(html, /does not diagnose, exclude, or screen for cancer/);
+  assert.match(html, /Clinician-directed serial monitoring/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Oncology Profile' }).slice(0, 4).map(parameter => parameter.parameterName),
+    ['Carcinoembryonic Antigen (CEA), if ordered', 'Alpha-Fetoprotein (AFP), if ordered', 'CA 19-9, if ordered', 'CA 125, if ordered'],
+  );
+});
+
+test('Leptospira Antibody IgG reports a single antibody result without asserting acute infection', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Leptospira Antibody IgG',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Leptospira Antibody IgG, Serum', value: 'Reactive', normal_range: 'Negative / non-reactive (assay-specific)' },
+      { parameter_name: 'Antibody Index / Titre, if applicable', value: '2.3 index' },
+      { parameter_name: 'Clinical / Exposure History, if provided', value: 'Compatible environmental exposure' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">LEPTOSPIRA ANTIBODY IgG<\/div>/);
+  assert.match(html, /data-report-content="leptospira-antibody-igg"/);
+  assert.match(html, /does not alone establish acute infection/);
+  assert.match(html, /Paired acute and convalescent serum testing and MAT/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Leptospira Antibody IgG' }).slice(0, 4).map(parameter => parameter.parameterName),
+    ['Leptospira Antibody IgG, Serum', 'Antibody Index / Titre, if applicable', 'Assay / Method', 'Symptom Onset / Days of Illness, if provided'],
+  );
+});
+
+test('Leptospira Antibodies (IgG & IgM) keeps both results and timing-aware serology guidance', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Leptospira Antibodies (IgG & IgM)',
+    sample_type: 'Serum',
+    parameters: [
+      { parameter_name: 'Leptospira Antibody IgG, Serum', value: 'Non-reactive', normal_range: 'Negative / non-reactive (assay-specific)' },
+      { parameter_name: 'Leptospira Antibody IgM, Serum', value: 'Reactive', normal_range: 'Negative / non-reactive (assay-specific)' },
+      { parameter_name: 'Symptom Onset / Days of Illness, if provided', value: 'Day 8 of illness' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">LEPTOSPIRA ANTIBODIES \(IgG &amp; IgM\)<\/div>/);
+  assert.match(html, /data-report-content="leptospira-antibodies-igg-igm"/);
+  assert.match(html, /Day 8 of illness/);
+  assert.match(html, /IgM-based serologic screening results are supportive rather than confirmatory/);
+  assert.match(html, /negative early serum result does not exclude leptospirosis/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'Leptospira Antibodies (IgG & IgM)' }).slice(0, 4).map(parameter => parameter.parameterName),
+    ['Leptospira Antibody IgG, Serum', 'Leptospira Antibody IgM, Serum', 'Assay / Method', 'Symptom Onset / Days of Illness, if provided'],
+  );
 });
 
 test('Anti Microsomal Antibody has a target-neutral report, not thyroid or LKM findings', () => {
@@ -3870,6 +5394,94 @@ test('local catalogue: existing report bodies stay unchanged inside the paginati
       const isFshPrl = ['fshprl', 'fshprolactin', 'folliclestimulatinghormoneprolactin'].includes(normalizedInputName);
       const isFshLhPrl = ['fshlhprl', 'fshlhprolactin', 'fshlhandprl'].includes(normalizedInputName);
       const isFemaleInfertilityProfile = ['femaleinfertilityprofile', 'femaleinfertilitypanel', 'infertilityprofilefemale'].includes(normalizedInputName);
+      const isOvarianFunctionProfile = ['ovarianfunctionprofile', 'ovarianfunctionpanel', 'ovarianreserveprofile'].includes(normalizedInputName);
+      const isPhospholipidAntibodyIgg = ['phospholipidantibodyiggaplag', 'phospholipidantibodyigg'].includes(normalizedInputName);
+      const additionalProfileFormats = {
+        oxygenforeachdayafter1st3days: ['OXYGEN THERAPY - DAILY SERVICE RECORD', 'oxygen-daily'],
+        oxygen3days: ['OXYGEN THERAPY - THREE-DAY SERVICE RECORD', 'oxygen-three-days'],
+        pancaantipr3: ['P-ANCA / ANTI-PR3 ANTIBODY', 'panca-pr3'],
+        praplasmareninactivity: ['PLASMA RENIN ACTIVITY (PRA)', 'plasma-renin-activity'],
+        psaprostatespecificantigen: ['PROSTATE SPECIFIC ANTIGEN (PSA), TOTAL', 'psa'],
+        pthparathyroidhormone: ['PARATHYROID HORMONE (PTH)', 'pth'],
+        pthintactmolecule: ['PARATHYROID HORMONE (PTH) - INTACT MOLECULE', 'intact-pth'],
+        puoworkupprofile: ['PUO - WORK UP PROFILE', 'puo-workup'],
+        pusafbstain: ['PUS / ASPIRATE - AFB STAIN', 'pus-afb-stain'],
+        pusculturesensitivity: ['PUS / ASPIRATE - CULTURE &amp; SENSITIVITY', 'pus-culture-sensitivity'],
+        pusgramstain: ['PUS / ASPIRATE - GRAM STAIN', 'pus-gram-stain'],
+        peritonealfluidchloride: ['PERITONEAL (ASCITIC) FLUID CHLORIDE', 'peritoneal-fluid-chloride'],
+        peritonealfluidgramstain: ['PERITONEAL (ASCITIC) FLUID - GRAM STAIN', 'peritoneal-fluid-gram-stain'],
+        peritonealfluidldh: ['PERITONEAL (ASCITIC) FLUID LDH', 'peritoneal-fluid-ldh'],
+        peritonealfluidprotein: ['PERITONEAL (ASCITIC) FLUID TOTAL PROTEIN', 'peritoneal-fluid-protein'],
+        peritonealfluidsugar: ['PERITONEAL (ASCITIC) FLUID GLUCOSE (SUGAR)', 'peritoneal-fluid-sugar'],
+        peritonealfluidforspecificgravity: ['PERITONEAL (ASCITIC) FLUID SPECIFIC GRAVITY', 'peritoneal-fluid-specific-gravity'],
+        pertussis: ['PERTUSSIS / BORDETELLA PERTUSSIS', 'pertussis'],
+        phenytoindilantin: ['PHENYTOIN (DILANTIN) - THERAPEUTIC DRUG MONITORING', 'phenytoin'],
+        phospholipid: ['PHOSPHOLIPIDS, TOTAL', 'phospholipid'],
+        phospholipidantibodyiggaplag: ['PHOSPHOLIPID (CARDIOLIPIN) ANTIBODY, IgG', 'phospholipid-antibody-igg'],
+        phospholipidantibodyigmaplam: ['PHOSPHOLIPID (CARDIOLIPIN) ANTIBODY, IgM', 'phospholipid-antibody-igm'],
+        phosphorus24hrsurine: ['PHOSPHORUS, 24-HOUR URINE', 'urine-phosphorus-24-hour'],
+        plasma02contentsp02: ['OXYGEN CONTENT (ctO2)', 'oxygen-content'],
+        pleuralfluidspecificgravity: ['PLEURAL FLUID SPECIFIC GRAVITY', 'pleural-fluid-specific-gravity'],
+        pleuralfluidforprotein: ['PLEURAL FLUID TOTAL PROTEIN', 'pleural-fluid-protein'],
+        pleuralfluidforsugar: ['PLEURAL FLUID GLUCOSE (SUGAR)', 'pleural-fluid-sugar'],
+        postcoitaltest: ['POST-COITAL TEST (PCT)', 'post-coital-test'],
+        potassium24hoururine: ['POTASSIUM, 24-HOUR URINE', 'urine-potassium-24-hour'],
+        potassiumrandam: ['POTASSIUM, RANDOM URINE', 'urine-potassium-random'],
+        preemploymentcheckup: ['PRE-EMPLOYMENT LABORATORY CHECK-UP', 'pre-employment-check-up'],
+        precancerearlydetectionoforal: ['ORAL POTENTIALLY MALIGNANT DISORDER / EARLY-DETECTION ASSESSMENT', 'oral-precancer-early-detection'],
+        pregnancyelisatest: ['PREGNANCY TEST — hCG (ELISA)', 'pregnancy-elisa-test'],
+        rbcwbcmorphology: ['PERIPHERAL BLOOD FILM — RBC / WBC MORPHOLOGY', 'rbc-wbc-morphology'],
+        rbcfragilitytest: ['OSMOTIC FRAGILITY TEST', 'osmotic-fragility'],
+        rectalswabgramstain: ['RECTAL SWAB — GRAM STAIN', 'rectal-swab-gram-stain'],
+        renalkidneyprofile: ['RENAL (KIDNEY) PROFILE', 'renal-kidney-profile'],
+        respiratorysyncytialvirusrsv: ['RESPIRATORY SYNCYTIAL VIRUS (RSV)', 'respiratory-syncytial-virus'],
+        reviewforhistologyslide: ['HISTOLOGY SLIDE REVIEW', 'histology-slide-review'],
+        rheumaticfeverprofile: ['RHEUMATIC FEVER PROFILE', 'rheumatic-fever-profile'],
+        rheumatoidprofile: ['RHEUMATOID PROFILE', 'rheumatoid-profile'],
+        rubellaigg: ['RUBELLA VIRUS ANTIBODY, IgG', 'rubella-igg'],
+        shbgsexhormonebindingglobulin: ['SEX HORMONE BINDING GLOBULIN (SHBG)', 'shbg'],
+        semenculture: ['SEMEN CULTURE', 'semen-culture'],
+        seminalfluidforculturesensitivity: ['SEMINAL FLUID - CULTURE & SENSITIVITY', 'seminal-fluid-culture-sensitivity'],
+        sputumculturesensitivity: ['SPUTUM - CULTURE & SENSITIVITY', 'sputum-culture-sensitivity'],
+        sputumculturenonafb: ['SPUTUM CULTURE \(NON-AFB\)', 'sputum-culture-non-afb'],
+        sputumgramstain: ['SPUTUM - GRAM STAIN', 'sputum-gram-stain'],
+        sputumreleishmanstaingram: ['SPUTUM RESPIRATORY EXAMINATION (LEISHMAN STAIN [+] GRAM STAIN)', 'sputum-re-leishman-gram'],
+        stoneanalysisurinarygallbladder: ['STONE ANALYSIS \(URINARY / GALL BLADDER\)', 'stone-analysis'],
+        stoolculture: ['STOOL CULTURE', 'stool-culture'],
+        stoolobtre3days: ['STOOL OBT [+] ROUTINE EXAMINATION \(THREE DAYS\)', 'stool-obt-re-three-days'],
+        stoolopc: ['STOOL OVA, CYSTS & PARASITES (OPC)', 'stool-opc'],
+        stoolreredsubph: ['STOOL ROUTINE EXAMINATION [+] REDUCING SUBSTANCES [+] pH', 'stool-re-red-sub-ph'],
+        swabculturesensitivityforanysiteswab: ['SWAB CULTURE [&] SENSITIVITY \(ANY SITE\)', 'any-site-swab-culture-sensitivity'],
+        synovialfluidforcalcium: ['SYNOVIAL FLUID CALCIUM', 'synovial-fluid-calcium'],
+        synovialfluidforcrystals: ['SYNOVIAL FLUID CRYSTAL EXAMINATION', 'synovial-fluid-crystals'],
+        synovialfluidforuricacid: ['SYNOVIAL FLUID URIC ACID', 'synovial-fluid-uric-acid'],
+        t3ustsh: ['T3 [&] ULTRA-SENSITIVE TSH', 't3-us-tsh'],
+        t4ustsh: ['T4 [&] ULTRA-SENSITIVE TSH', 't4-us-tsh'],
+        tbiga: ['TUBERCULOSIS \(TB\) IgA ANTIBODY', 'tb-iga'],
+        tbigm: ['TUBERCULOSIS \(TB\) IgM ANTIBODY', 'tb-igm'],
+        tbgthyroxinebindingglobulin: ['THYROXINE-BINDING GLOBULIN \(TBG\)', 'thyroxine-binding-globulin'],
+        tcdc: ['TOTAL [&] DIFFERENTIAL LEUKOCYTE COUNT \(TC [&] DC\)', 'total-differential-count'],
+        tcdcesr: ['TOTAL [&] DIFFERENTIAL LEUKOCYTE COUNT [+] ESR', 'total-differential-count-esr'],
+        tcdcmp: ['TOTAL [&] DIFFERENTIAL LEUKOCYTE COUNT [+] MALARIA PARASITE', 'total-differential-count-malaria-parasite'],
+        taeniaechinococcus: ['TAENIA / ECHINOCOCCUS SEROLOGY', 'taenia-echinococcus-serology'],
+        testicularcancermonitorprofile: ['TESTICULAR CANCER MONITOR PROFILE', 'testicular-cancer-monitor-profile'],
+        testicularfunctionprofile: ['TESTICULAR FUNCTION PROFILE', 'testicular-function-profile'],
+        thalassemiaprofile: ['THALASSEMIA PROFILE', 'thalassemia-profile'],
+        throatswabculture: ['THROAT SWAB CULTURE', 'throat-swab-culture'],
+        throatswabcultureandsensitivity: ['THROAT SWAB CULTURE [&](?:amp;)? SENSITIVITY', 'throat-swab-culture-sensitivity'],
+        seminalfluidforgramstain: ['SEMINAL FLUID - GRAM STAIN', 'seminal-fluid-gram-stain'],
+        seminalgermcellstudy: ['SEMINAL GERM CELL STUDY', 'seminal-germ-cell-study'],
+        serologyviralmarker: ['SEROLOGY / VIRAL MARKER PROFILE', 'serology-viral-marker'],
+        sexchromatinstudy: ['SEX CHROMATIN STUDY', 'sex-chromatin-study'],
+        solubleliverantigenslaantibody: ['SOLUBLE LIVER ANTIGEN (SLA) ANTIBODY', 'soluble-liver-antigen-antibody'],
+        spirometry: ['SPIROMETRY', 'spirometry'],
+        semenforfructose: ['SEMEN FRUCTOSE', 'semen-fructose'],
+        seminalfluidforafbstain: ['SEMINAL FLUID — AFB STAIN', 'seminal-fluid-afb-stain'],
+        preoperativeprofile: ['PRE-OPERATIVE LABORATORY PROFILE', 'pre-operative-profile'],
+        precathprofile: ['PRE-CATHETERIZATION LABORATORY PROFILE', 'pre-cath-profile'],
+        premarriageprofile: ['PRE-MARITAL LABORATORY SCREENING (REQUESTED TESTS)', 'pre-marriage-profile'],
+      };
+      const additionalProfileFormat = additionalProfileFormats[normalizedInputName];
       const isFernTest = ['ferntest', 'ferntestcollcharges10oextra', 'cervicalmucusferning', 'cervicalmucusferntest'].includes(normalizedInputName);
       const isWuchereriaBancroftiAntigen = ['filariawuchereriabancroftiantigenedtabloimmuno', 'filariawuchereriabancroftiantigen', 'wuchereriabancroftiantigen'].includes(normalizedInputName);
       const isFilariaAntigen = ['filariaantigen', 'filarialantigen', 'circulatingfilarialantigen'].includes(normalizedInputName);
@@ -3906,6 +5518,7 @@ test('local catalogue: existing report bodies stay unchanged inside the paginati
         || normalizedInputName === 'gramstaincsf'
         || normalizedInputName === 'csfgramstain'
         || normalizedInputName === 'cerebrospinalfluidgramstain';
+      const isJointFluidGramStain = ['jointfluidforgramstain', 'jointfluidgramstain', 'gramstainjointfluid', 'synovialfluidgramstain'].includes(normalizedInputName);
       const isCsfFluidProtein = normalizedInputName === 'csffluidforprotein'
         || normalizedInputName === 'csffluidprotein'
         || normalizedInputName === 'proteincsf'
@@ -3921,6 +5534,42 @@ test('local catalogue: existing report bodies stay unchanged inside the paginati
         || normalizedInputName === 'glucosecsf'
         || normalizedInputName === 'csfglucose'
         || normalizedInputName === 'cerebrospinalfluidglucose';
+      const isJointFluidSugar = ['jointfluidforsugar', 'jointfluidglucose', 'glucosejointfluid', 'synovialfluidglucose'].includes(normalizedInputName);
+      const isKaryotypingWithCBanding = ['karyotypingwithcbanding', 'karyotypecbanding', 'cbandingkaryotype', 'cbandingchromosomeanalysis'].includes(normalizedInputName);
+      const isLftWithGgt = normalizedInputName === 'lftwithggt';
+      const isLipidComprehensiveProfile = ['lipidcomprehensiveprofile', 'comprehensivelipidprofile', 'advancedlipidprofile'].includes(normalizedInputName);
+      const isLipoprotein = ['lipoprotein', 'lipoproteintest'].includes(normalizedInputName);
+      const isLipoproteinProfile = ['lipoproteinprofile', 'lipoproteinpanel'].includes(normalizedInputName);
+      const isLithium = ['lithium', 'lithiumserum', 'lithiumlevel'].includes(normalizedInputName);
+      const isLiverBiopsy = ['liverbiopsy', 'histopathologyliverbiopsy'].includes(normalizedInputName);
+      const isLiverCancerMonitorProfile = ['livercancermonitorprofile', 'livercancermonitor', 'hepatocellularcarcinomamonitorprofile'].includes(normalizedInputName);
+      const isLupusAnticoagulant = ['lupusanticoagulant', 'lupusanticoagulantprofile', 'laevaluation'].includes(normalizedInputName);
+      const isMdmaScreen = ['mdmascreen', 'mdmaurinescreen', 'ecstasyscreen'].includes(normalizedInputName);
+      const isUrineMagnesium = ['magnesiumurine', 'urinemagnesium', 'magnesium24hoururine'].includes(normalizedInputName);
+      const isMalariaPanPfAntigen = ['malariapanpfantigen', 'malariapfpanantigen', 'malariapanpfag', 'malariaantigenpanpf'].includes(normalizedInputName);
+      const isOptimalItAntigen = ['optimalitantigen', 'optimalitmalariaantigen', 'optimalit', 'optimalitrdt'].includes(normalizedInputName);
+      const isOsmoticFragility = ['osmoticfragilitytest', 'osmoticfragility', 'erythrocyteosmoticfragility', 'rbcosmoticfragility'].includes(normalizedInputName);
+      const isMalariaProfile = ['malariaprofile', 'malariapanel', 'malariaworkupprofile'].includes(normalizedInputName);
+      const isMaleInfertilityProfile = ['maleinfertilityprofile', 'maleinfertilitypanel', 'infertilityprofilemale'].includes(normalizedInputName);
+      const isManganese = ['manganese', 'manganeseserum', 'manganesewholeblood'].includes(normalizedInputName);
+      const isMeaslesRubeolaIgg = ['measlesrubeolaantibodyigg', 'measlesrubeolaigg', 'measlesigg', 'rubeolaigg'].includes(normalizedInputName);
+      const isMeaslesRubeolaIgm = ['measlesrubeolaantibodyigm', 'measlesrubeolaigm', 'measlesigm', 'rubeolaigm'].includes(normalizedInputName);
+      const isMenstrualBloodTbPcr = ['menstrualbloodfortbpcr', 'menstrualbloodtbpcr', 'endometrialmenstrualbloodtbpcr'].includes(normalizedInputName);
+      const isMicrofilaria = ['microfilaria', 'microfilariae', 'microfilarialsmear'].includes(normalizedInputName);
+      const isMicroalbuminUrine = ['microalbuminurine', 'urinemicroalbumin', 'microalbuminuria'].includes(normalizedInputName);
+      const isNasalSwabGramStain = ['nasalswabgramstain', 'nasalgramstain', 'gramstainnasalswab'].includes(normalizedInputName);
+      const isOncologyProfile = ['oncologyprofile', 'oncologymarkerprofile', 'tumormarkerprofile', 'tumourmarkerprofile'].includes(normalizedInputName);
+      const isLhFsh = ['lhfsh', 'lhandfsh', 'luteinizinghormonefolliclestimulatinghormone'].includes(normalizedInputName);
+      const isLhPrl = ['lhprl', 'lhandprl', 'luteinizinghormoneprolactin'].includes(normalizedInputName);
+      const isLeadLevel = ['leadlevelintroducing', 'bloodleadlevel', 'leadlevel', 'leadpb'].includes(normalizedInputName);
+      const isKaryotype = ['karyotype', 'karyotypingchromosomalanalysis', 'chromosomeanalysis'].includes(normalizedInputName);
+      const isKahnTest = ['kahntest', 'kahn'].includes(normalizedInputName);
+      const isKalaAzarRapidTest = ['kalazarrapidtest', 'kalaazarrapidtest', 'kalazar', 'kalaazar', 'rk39rapidtest', 'rk39'].includes(normalizedInputName);
+      const isLeishmaniaKalaAzarAntibodyIgg = ['leishmaniakalaazarantibodyigg', 'leishmaniaantibodyigg', 'kalaazarantibodyigg', 'antileishmaniaigg'].includes(normalizedInputName);
+      const isLeishmaniaKalaAzarAntibodyIgm = ['leishmaniakalaazarantibodyigm', 'leishmaniaantibodyigm', 'kalaazarantibodyigm', 'antileishmaniaigm'].includes(normalizedInputName);
+      const isLeptospiraAntibodiesIggIgm = ['leptospiraantibodiesiggigm', 'leptospiraiggigm', 'antileptospiraiggigm'].includes(normalizedInputName);
+      const isLeptospiraAntibodyIgg = ['leptospiraantibodyigg', 'leptospiraigg', 'antileptospiraigg'].includes(normalizedInputName);
+      const isLeptospiraAntibodyIgm = ['leptospiraantibodyigm', 'leptospiraigm', 'antileptospiraigm'].includes(normalizedInputName);
       const isUrineCalcium24Hour = normalizedInputName === 'calcium24hrsurine'
         || normalizedInputName === 'calcium24hoururine'
         || normalizedInputName === 'calcium24hurine'
@@ -3965,6 +5614,15 @@ test('local catalogue: existing report bodies stay unchanged inside the paginati
       const isHsv2Igm = ['herpessimplexvirus2hsv2igm', 'hsv2igm', 'herpessimplex2igm', 'herpessimplexvirus2igm'].includes(normalizedInputName);
       const isHsv1Igg = ['herpessimplexvirus1hsv1igg', 'hsv1igg', 'herpessimplex1igg', 'herpessimplexvirus1igg'].includes(normalizedInputName);
       const isHsv1Igm = ['herpessimplexvirus1hsv1igm', 'hsv1igm', 'herpessimplex1igm', 'herpessimplexvirus1igm'].includes(normalizedInputName);
+      const isImmaturePlateletFraction = ['immatureplateletfractionipf', 'immatureplateletfraction', 'ipf'].includes(normalizedInputName);
+      const isImmunoglobulinGAMPanel = ['immunoglobulinigaiggigm', 'immunoglobuliniggigaigm', 'immunoglobulingamprofile'].includes(normalizedInputName);
+      const isImmunoglobulinProfile = ['immunoglobulinprofile', 'serumimmunoglobulinprofile', 'quantitativeimmunoglobulinprofile'].includes(normalizedInputName);
+      const isIndiaInkPreparation = ['indiainkpreperation', 'indiainkpreparation', 'indiainkstain', 'indiaink'].includes(normalizedInputName);
+      const isJointFluidAfbStain = ['jointfluidforafbstain', 'jointfluidafbstain', 'synovialfluidforafbstain', 'synovialfluidafbstain', 'afbstainjointfluid'].includes(normalizedInputName);
+      const isJointFluidChloride = ['jointfluidforchloride', 'jointfluidchloride', 'chloridejointfluid', 'synovialfluidchloride'].includes(normalizedInputName);
+      const isUrineInorganicPhosphorus = ['inorganicphosphorusurine', 'urineinorganicphosphorus', 'urinephosphorus', 'phosphorusurine'].includes(normalizedInputName);
+      const isFreeInsulin = ['insulinfree', 'freeinsulin', 'insulinfreeandtotal'].includes(normalizedInputName);
+      const isMidnightInsulin = ['insulinmidnight', 'midnightinsulin', 'insulin0000'].includes(normalizedInputName);
       const isHcvTotalAntibody = ['hcvtotaligmigg', 'hcvtotalantibody', 'hepatitisctotalantibody', 'totalantihcv', 'antihcvtotaligmigg'].includes(normalizedInputName);
       const isHcvAntibodyIgg = ['hepatitiscvirushcvantibodyigg', 'hcvantibodyigg', 'hepatitiscantibodyigg', 'antihcvigg'].includes(normalizedInputName);
       const isHcvAntibodyIgm = ['hepatitiscvirushcvantibodyigm', 'hcvantibodyigm', 'hepatitiscantibodyigm', 'antihcvigm'].includes(normalizedInputName);
@@ -4041,9 +5699,41 @@ test('local catalogue: existing report bodies stay unchanged inside the paginati
         || normalizedInputName === 'totalcholesterol'
         || normalizedInputName === 'cholesterol'
         || normalizedInputName === 'cholesterolserum';
+      const isTorchIggPanel = normalizedInputName === 'torchpaneligg'
+        || normalizedInputName === 'torchiggpanel'
+        || normalizedInputName === 'torchprofileigg';
+      const isTorchIgmPanel = normalizedInputName === 'torchpaneligm'
+        || normalizedInputName === 'torchigmpanel'
+        || normalizedInputName === 'torchprofileigm';
+      const isTotalIge = normalizedInputName === 'totalige'
+        || normalizedInputName === 'totalimmunoglobulineige'
+        || normalizedInputName === 'immunoglobulinetotal';
+      const isTotalLipid = normalizedInputName === 'totallipid'
+        || normalizedInputName === 'totallipids'
+        || normalizedInputName === 'serumtotallipids';
+      const isTotalProtein = normalizedInputName === 'totalprotein'
+        || normalizedInputName === 'totalproteinserum'
+        || normalizedInputName === 'serumtotalprotein'
+        || normalizedInputName === 'proteintotal';
+      const isUlcerSmearPap = normalizedInputName === 'ulcersmearforpap'
+        || normalizedInputName === 'ulcersmearpap'
+        || normalizedInputName === 'ulcersmearforpapanicolaou'
+        || normalizedInputName === 'ulcercytologypapstain';
+      const isUrineAcetone = ['urineacetone', 'unineacetone', 'acetoneurine'].includes(normalizedInputName);
+      const is24HourUrineUrea = ['urea24hrsurine', 'urea24hoururine', 'urea24hoursurine', '24hoururineurea', 'urineurea24hour'].includes(normalizedInputName);
+      const is24HourUrineUricAcid = ['uricacid24hrsurine', 'uricacid24hoururine', 'uricacid24hoursurine', '24hoururineuricacid', 'urineuricacid24hour'].includes(normalizedInputName);
+      const isRandomUrineUricAcid = ['uricacidurine', 'urineuricacid', 'randomurineuricacid', 'uricacidrandomurine', 'uricacidurinerandom'].includes(normalizedInputName);
+      const isUrethralDischargeCulture = ['urethraldischargecs', 'urethraldischargecultureandsensitivity', 'urethraldischargeculturesensitivity'].includes(normalizedInputName);
+      const isUrethralSwabAfb = ['urethralswabafbstain', 'urethralswabforafb', 'urethralafbstain', 'afbstainurethralswab'].includes(normalizedInputName);
       const isAlbertStainKlb = normalizedInputName === 'albertstainofsmearsforklb'
         || normalizedInputName === 'albertstainofsmearforklb'
-        || normalizedInputName === 'albertstainforklb';
+        || normalizedInputName === 'albertstainforklb'
+        || normalizedInputName === 'throatswabforklb'
+        || normalizedInputName === 'throatswabklb';
+      const isThrombinTime = normalizedInputName === 'thrombintimett'
+        || normalizedInputName === 'thrombintime'
+        || normalizedInputName === 'tt'
+        || normalizedInputName === 'thrombinclottingtime';
       const isBaccalSmearBrrBody = normalizedInputName === 'baccalsmearforbrrbody'
         || normalizedInputName === 'buccalsmearforbarrbody'
         || normalizedInputName === 'buccalsmearforsexchromation'
@@ -4170,6 +5860,7 @@ test('local catalogue: existing report bodies stay unchanged inside the paginati
         || normalizedInputName === 'bodyfluidsforprotein'
         || normalizedInputName === 'bodyfluidforprotein'
         || normalizedInputName === 'totalproteinbodyfluid';
+      const isJointFluidProtein = ['jointfluidforprotein', 'jointfluidprotein', 'proteinjointfluid', 'synovialfluidprotein'].includes(normalizedInputName);
       const isBodyFluidChloride = normalizedInputName === 'bodyfluidsforchloride'
         || normalizedInputName === 'bodyfluidforchloride'
         || normalizedInputName === 'chloridebodyfluid'
@@ -4184,6 +5875,7 @@ test('local catalogue: existing report bodies stay unchanged inside the paginati
       const isBodyFluidSpecificGravity = normalizedInputName === 'bodyfluidsforspecificgravity'
         || normalizedInputName === 'bodyfluidforspecificgravity'
         || normalizedInputName === 'bodyfluidspecificgravity';
+      const isJointFluidSpecificGravity = ['jointfluidforspecificgravity', 'jointfluidspecificgravity', 'specificgravityjointfluid', 'synovialfluidspecificgravity'].includes(normalizedInputName);
       const isComplementC3 = normalizedInputName === 'c3complement3'
         || normalizedInputName === 'c3complement'
         || normalizedInputName === 'complement3'
@@ -4342,6 +6034,60 @@ test('local catalogue: existing report bodies stay unchanged inside the paginati
         assert.match(newHtml, /not type-specific and a reactive HSV IgM result must not be used alone to diagnose a new HSV-1 infection/);
         continue;
       }
+      if (isImmaturePlateletFraction) {
+        assert.match(newHtml, /IMMATURE PLATELET FRACTION \(IPF\)/);
+        assert.match(newHtml, /data-report-content="immature-platelet-fraction"/);
+        assert.match(newHtml, /must be interpreted with the concurrent platelet count/);
+        continue;
+      }
+      if (isImmunoglobulinGAMPanel) {
+        assert.match(newHtml, /IMMUNOGLOBULIN \(IgA\) \+ \(IgG\) \+ \(IgM\)/);
+        assert.match(newHtml, /data-report-content="immunoglobulin-gam-panel"/);
+        assert.match(newHtml, /serum protein electrophoresis and immunofixation are generally required/);
+        continue;
+      }
+      if (isImmunoglobulinProfile) {
+        assert.match(newHtml, /IMMUNOGLOBULIN PROFILE/);
+        assert.match(newHtml, /data-report-content="immunoglobulin-profile"/);
+        assert.match(newHtml, /Total Immunoglobulin E \(IgE\), if ordered/);
+        continue;
+      }
+      if (isIndiaInkPreparation) {
+        assert.match(newHtml, /INDIA INK PREPARATION/);
+        assert.match(newHtml, /data-report-content="india-ink-preparation"/);
+        assert.match(newHtml, /A negative India ink preparation does not exclude cryptococcal infection/);
+        continue;
+      }
+      if (isJointFluidAfbStain) {
+        assert.match(newHtml, /JOINT FLUID - AFB STAIN/);
+        assert.match(newHtml, /data-report-content="joint-fluid-afb-stain"/);
+        assert.match(newHtml, /A negative AFB smear does not exclude mycobacterial infection/);
+        continue;
+      }
+      if (isJointFluidChloride) {
+        assert.match(newHtml, /CHLORIDE, JOINT FLUID/);
+        assert.match(newHtml, /data-report-content="joint-fluid-chloride"/);
+        assert.match(newHtml, /serum or plasma chloride reference intervals must not be applied directly to synovial fluid/i);
+        continue;
+      }
+      if (isUrineInorganicPhosphorus) {
+        assert.match(newHtml, /INORGANIC PHOSPHORUS \(URINE\)/);
+        assert.match(newHtml, /data-report-content="urine-inorganic-phosphorus"/);
+        assert.match(newHtml, /A timed 24-hour urine collection is preferred/);
+        continue;
+      }
+      if (isFreeInsulin) {
+        assert.match(newHtml, /INSULIN \(FREE\)/);
+        assert.match(newHtml, /data-report-content="free-insulin"/);
+        assert.match(newHtml, /not bound by circulating insulin antibodies/);
+        continue;
+      }
+      if (isMidnightInsulin) {
+        assert.match(newHtml, /INSULIN \(MIDNIGHT\)/);
+        assert.match(newHtml, /data-report-content="midnight-insulin"/);
+        assert.match(newHtml, /Midnight insulin is timing-critical/);
+        continue;
+      }
       if (isHistologyBiopsyPerSection) {
         assert.match(newHtml, /HISTOLOGY BIOPSY - PER SECTION/);
         assert.match(newHtml, /histopathology-report-body/);
@@ -4429,7 +6175,318 @@ test('local catalogue: existing report bodies stay unchanged inside the paginati
         assert.match(newHtml, /Diagnostic Category/);
         continue;
       }
-if (isActh || isAda || isDnph || isDiabeticProfile || isExtendedDiabeticProfile || isDiabeticRenalProfile || isEarSwabGramStain || isEarSwabAfbStain || isFshPrl || isFshLhPrl || isFemaleInfertilityProfile || isFernTest || isWuchereriaBancroftiAntigen || isFilariaAntigen || isFluidAspirationCytology || isFoetalHaemoglobinByHplc || isFoetalHaemoglobin || isFreeBetaHcg || isFreeCholesterol || isFreeEstradiol || isFreePsa || isFreeTestosterone || isGgt || isGad65Antibody || isGh90MinutesAfterGlucose || isGhFastingGlucose || isGrowthHormone || isGlucoseToleranceTest || isGastrinLevel || isFungusCulture || isFungusCultureSensitivity || isFactorIiMutation || isFactorViiiImmunodepleted || isAfbZiehlNeelsen || isCsfFluidAfbStain || isCsfFluidGramStain || isCsfFluidProtein || isCsfFluidSpecificGravity || isCsfFluidGlucose || isUrineCalcium24Hour || isUrineCopper24Hour || isRandomUrineCopper || isEveningCortisol || isMidnightCortisol || isMorningEveningCortisol || isMorningCortisol || isMorningEveningMidnightCortisol || isCryoglobulinsScreening || isGndCulture || isCysticFibrosisGeneMutation || isCapillaryFragility || isCardiacProfile || isColorectalCancerMonitorProfile || isCeruloplasmin || isCervicalPapSmear || isCervicalSwabGramStain || isCervicalSwabAfbStain || isCDiffToxin || isTotalCholesterol || is24HourUrineChloride || isSerumChloride || isRandomUrineChloride || isChlamydiaAntigen || isChlamydiaAntibodyIggIgm || isChikungunyaIgm || isChikungunyaIgg || isAlbertStainKlb || isBaccalSmearBrrBody || isAutoimmuneProfile || isAgRatio || isAnfQualitative || isProstaticAcidPhosphatase || isTotalAcidPhosphatase || isUrineAlcohol || isAldehydeTest || isAldosterone || isBloodAllergy || isDrugAllergy || isRandomUrineAlphaAmylase || isTimedUrineAmylase || isAmmonia || isAndrogenPanel || isAndrostenedione || isComprehensiveAnemia || isAnemiaScreening || isAntenatalProfile || isAntiTpo || isAntiTg || isAntiInsulinAntibody || isAntiLeptospiraAntibody || isAntiMicrosomalAntibody || isAntiDsDnaAntibody || isAntiSsDnaAntibody || isAntiHistoneAntibody || isAntiRibosomalPAntibody || isAntiCcpAb || isAntiSpermAntibody || isApolipoproteinA1 || isUrineArsenic || isArthritisProfile || isAsciticFluidGramStain || isAnticardiolipinIggIgm || isAnticardiolipinIgaIgg || isAnticardiolipinIgaIgm || isAnticardiolipinIga || isAnticardiolipinIgg || isAnticardiolipinIgm || isApolipoproteinB || isAsciticFluidAnalysis || isSerumBicarbonate || isBilirubinFractionation || isMediumSectionBiopsy || isSmallSectionBiopsy || isBloodCultureSensitivity || isBodyFluidCultureSensitivity || isBodyFluidTotalProtein || isCsfFluidChloride || isBodyFluidChloride || isBodyFluidBiochemistry || isBodyFluidSpecificGravity || isComplementC3 || isComplementC4 || isCancaAntiPr3 || isCreatinineClearance || isCd3Lymphocyte || isCd4Lymphocyte || isCd8Lymphocyte || isCea || isCft || isBilateralConjunctivalSwab || isRightConjunctivalSwabCulture || isConjunctivalSwabCulture || isCkMb || isCpk || isCpkWithCkMb || isCmvIgmIgg || isCmvIgg || isBronchialWashingCultureSensitivity || isBoneMarrowAspirationCytology || isBoneMarrowCytology) {
+      if (isJointFluidProtein) {
+        assert.match(newHtml, /TOTAL PROTEIN, JOINT FLUID/);
+        assert.match(newHtml, /data-report-content="joint-fluid-protein"/);
+        assert.match(newHtml, /serum and pleural-fluid protein thresholds must not be applied directly to synovial fluid/i);
+        continue;
+      }
+      if (isJointFluidSpecificGravity) {
+        assert.match(newHtml, /SPECIFIC GRAVITY, JOINT FLUID/);
+        assert.match(newHtml, /data-report-content="joint-fluid-specific-gravity"/);
+        assert.match(newHtml, /No universal reference interval applies to joint fluid/);
+        continue;
+      }
+      if (isJointFluidSugar) {
+        assert.match(newHtml, /GLUCOSE, JOINT FLUID/);
+        assert.match(newHtml, /data-report-content="joint-fluid-sugar"/);
+        assert.match(newHtml, /serum or plasma glucose reference intervals must not be applied directly to synovial fluid/i);
+        continue;
+      }
+      if (isKahnTest) {
+        assert.match(newHtml, /KAHN TEST/);
+        assert.match(newHtml, /data-report-content="kahn-test"/);
+        assert.match(newHtml, /not specific for/);
+        continue;
+      }
+      if (isKalaAzarRapidTest) {
+        assert.match(newHtml, /KALA-AZAR \(RAPID TEST\)/);
+        assert.match(newHtml, /data-report-content="kala-azar-rapid-test"/);
+        assert.match(newHtml, /does not by itself establish active disease/);
+        continue;
+      }
+      if (isLeishmaniaKalaAzarAntibodyIgg) {
+        assert.match(newHtml, /LEISHMANIA \/ KALA-AZAR ANTIBODY IgG/);
+        assert.match(newHtml, /data-report-content="leishmania-kala-azar-antibody-igg"/);
+        assert.match(newHtml, /does not exclude visceral leishmaniasis/);
+        continue;
+      }
+      if (isLeishmaniaKalaAzarAntibodyIgm) {
+        assert.match(newHtml, /LEISHMANIA \/ KALA-AZAR ANTIBODY IgM/);
+        assert.match(newHtml, /data-report-content="leishmania-kala-azar-antibody-igm"/);
+        assert.match(newHtml, /limited diagnostic utility for parasitic infections/);
+        continue;
+      }
+      if (isLeptospiraAntibodiesIggIgm) {
+        assert.match(newHtml, /LEPTOSPIRA ANTIBODIES \(IgG &amp; IgM\)/);
+        assert.match(newHtml, /data-report-content="leptospira-antibodies-igg-igm"/);
+        assert.match(newHtml, /IgM-based serologic screening results are supportive rather than confirmatory/);
+        continue;
+      }
+      if (isLeptospiraAntibodyIgg) {
+        assert.match(newHtml, /LEPTOSPIRA ANTIBODY IgG/);
+        assert.match(newHtml, /data-report-content="leptospira-antibody-igg"/);
+        assert.match(newHtml, /does not alone establish acute infection/);
+        continue;
+      }
+      if (isLeptospiraAntibodyIgm) {
+        assert.match(newHtml, /LEPTOSPIRA ANTIBODY IgM/);
+        assert.match(newHtml, /data-report-content="leptospira-antibody-igm"/);
+        assert.match(newHtml, /does not alone definitively diagnose acute infection/);
+        continue;
+      }
+      if (isKaryotypingWithCBanding) {
+        assert.match(newHtml, /KARYOTYPING WITH C-BANDING/);
+        assert.match(newHtml, /data-report-content="karyotype-c-banding"/);
+        assert.match(newHtml, /constitutive heterochromatin/);
+        continue;
+      }
+      if (isLftWithGgt) {
+        assert.match(newHtml, /LIVER FUNCTION TEST \(LFT\) WITH GGT/);
+        assert.match(newHtml, /data-report-content="lft-with-ggt"/);
+        assert.match(newHtml, /GGT can help support a hepatic source/);
+        continue;
+      }
+      if (isLipidComprehensiveProfile) {
+        assert.match(newHtml, /LIPID COMPREHENSIVE PROFILE/);
+        assert.match(newHtml, /data-report-content="lipid-comprehensive-profile"/);
+        assert.match(newHtml, /non-HDL cholesterol is calculated as total cholesterol minus HDL cholesterol/);
+        continue;
+      }
+      if (isLipoprotein) {
+        assert.match(newHtml, /LIPOPROTEIN TEST/);
+        assert.match(newHtml, /data-report-content="lipoprotein"/);
+        assert.match(newHtml, /does not identify a specific analyte/);
+        continue;
+      }
+      if (isLipoproteinProfile) {
+        assert.match(newHtml, /LIPOPROTEIN PROFILE/);
+        assert.match(newHtml, /data-report-content="lipoprotein-profile"/);
+        assert.match(newHtml, /standard lipoprotein profile includes total cholesterol/);
+        continue;
+      }
+      if (isLithium) {
+        assert.match(newHtml, /LITHIUM THERAPEUTIC DRUG MONITORING/);
+        assert.match(newHtml, /data-report-content="lithium"/);
+        assert.match(newHtml, /commonly collected 8-12 hours after the last dose/);
+        continue;
+      }
+      if (isLiverBiopsy) {
+        assert.match(newHtml, /SURGICAL PATHOLOGY REPORT &mdash; LIVER BIOPSY/);
+        assert.match(newHtml, /data-report-content="liver-biopsy"/);
+        assert.match(newHtml, /Core number, length, fragmentation/);
+        continue;
+      }
+      if (isLiverCancerMonitorProfile) {
+        assert.match(newHtml, /LIVER CANCER MONITOR PROFILE/);
+        assert.match(newHtml, /data-report-content="liver-cancer-monitor-profile"/);
+        assert.match(newHtml, /abnormal AFP result is not diagnostic by itself/);
+        continue;
+      }
+      if (isLupusAnticoagulant) {
+        assert.match(newHtml, /LUPUS ANTICOAGULANT EVALUATION/);
+        assert.match(newHtml, /data-report-content="lupus-anticoagulant"/);
+        assert.match(newHtml, /No single coagulation assay can identify or exclude all lupus anticoagulants/);
+        continue;
+      }
+      if (isMdmaScreen) {
+        assert.match(newHtml, /MDMA \(ECSTASY\) SCREEN/);
+        assert.match(newHtml, /data-report-content="mdma-screen"/);
+        assert.match(newHtml, /A screening result is presumptive/);
+        continue;
+      }
+      if (isUrineMagnesium) {
+        assert.match(newHtml, /MAGNESIUM, URINE/);
+        assert.match(newHtml, /data-report-content="urine-magnesium"/);
+        assert.match(newHtml, /Document duration and volume for timed collections/);
+        continue;
+      }
+      if (isMalariaPanPfAntigen) {
+        assert.match(newHtml, /MALARIA ANTIGEN &mdash; PAN \/ PF/);
+        assert.match(newHtml, /data-report-content="malaria-pan-pf-antigen"/);
+        assert.match(newHtml, /Rapid-test results, whether positive or negative/);
+        continue;
+      }
+      if (isOptimalItAntigen) {
+        assert.match(newHtml, /OPTIMAL-IT MALARIA ANTIGEN/);
+        assert.match(newHtml, /data-report-content="optimal-it-antigen"/);
+        assert.match(newHtml, /pLDH-based malaria rapid diagnostic test/);
+        continue;
+      }
+      if (isOsmoticFragility) {
+        assert.match(newHtml, /OSMOTIC FRAGILITY TEST/);
+        assert.match(newHtml, /data-report-content="osmotic-fragility"/);
+        assert.match(newHtml, /does not establish hereditary spherocytosis or another diagnosis/);
+        continue;
+      }
+      if (isMalariaProfile) {
+        assert.match(newHtml, /MALARIA PROFILE/);
+        assert.match(newHtml, /data-report-content="malaria-profile"/);
+        assert.match(newHtml, /Thick and thin blood films are complementary/);
+        continue;
+      }
+      if (isMaleInfertilityProfile) {
+        assert.match(newHtml, /MALE INFERTILITY PROFILE/);
+        assert.match(newHtml, /data-report-content="male-infertility-profile"/);
+        assert.match(newHtml, /Semen analysis remains a separate, standardized laboratory assessment/);
+        continue;
+      }
+      if (isManganese) {
+        assert.match(newHtml, /MANGANESE/);
+        assert.match(newHtml, /data-report-content="manganese"/);
+        assert.match(newHtml, /Whole blood, serum, plasma, and red-cell results are not interchangeable/);
+        continue;
+      }
+      if (isMeaslesRubeolaIgg) {
+        assert.match(newHtml, /MEASLES \(RUBEOLA\) ANTIBODY, IgG/);
+        assert.match(newHtml, /data-report-content="measles-rubeola-igg"/);
+        assert.match(newHtml, /does not diagnose acute measles infection/);
+        continue;
+      }
+      if (isMeaslesRubeolaIgm) {
+        assert.match(newHtml, /MEASLES \(RUBEOLA\) ANTIBODY, IgM/);
+        assert.match(newHtml, /data-report-content="measles-rubeola-igm"/);
+        assert.match(newHtml, /must not be used to diagnose measles/);
+        continue;
+      }
+      if (isMenstrualBloodTbPcr) {
+        assert.match(newHtml, /MENSTRUAL BLOOD FOR TB PCR/);
+        assert.match(newHtml, /data-report-content="menstrual-blood-tb-pcr"/);
+        assert.match(newHtml, /negative result does not exclude genital\/extrapulmonary TB/);
+        continue;
+      }
+      if (isMicrofilaria) {
+        assert.match(newHtml, /MICRO FILARIA/);
+        assert.match(newHtml, /data-report-content="microfilaria"/);
+        assert.match(newHtml, /species-dependent periodicity/);
+        continue;
+      }
+      if (isMicroalbuminUrine) {
+        assert.match(newHtml, /MICROALBUMIN \(URINE\)/);
+        assert.match(newHtml, /data-report-content="microalbumin-urine"/);
+        assert.match(newHtml, /report a ratio only when it has been requested or calculated by the laboratory/);
+        continue;
+      }
+      if (isNasalSwabGramStain) {
+        assert.match(newHtml, /NASAL SWAB - GRAM STAIN/);
+        assert.match(newHtml, /data-report-content="nasal-swab-gram-stain"/);
+        assert.match(newHtml, /do not provide definitive species identification or antimicrobial susceptibility/);
+        continue;
+      }
+      if (isOncologyProfile) {
+        assert.match(newHtml, /ONCOLOGY PROFILE/);
+        assert.match(newHtml, /data-report-content="oncology-profile"/);
+        assert.match(newHtml, /does not diagnose, exclude, or screen for cancer/);
+        continue;
+      }
+      if (isLhFsh) {
+        assert.match(newHtml, /LH & FSH/);
+        assert.match(newHtml, /data-report-content="lh-fsh"/);
+        assert.match(newHtml, /midcycle surge/);
+        continue;
+      }
+      if (isLhPrl) {
+        assert.match(newHtml, /LH & PRL/);
+        assert.match(newHtml, /data-report-content="lh-prl"/);
+        assert.match(newHtml, /pregnancy\/lactation, medicines, stress/);
+        continue;
+      }
+      if (isLeadLevel) {
+        assert.match(newHtml, /LEAD LEVEL/);
+        assert.match(newHtml, /data-report-content="lead-level"/);
+        assert.match(newHtml, /confirmed with a properly collected venous whole-blood sample/);
+        continue;
+      }
+      if (isKaryotype) {
+        assert.match(newHtml, /KARYOTYPE \/ CHROMOSOME ANALYSIS/);
+        assert.match(newHtml, /data-report-content="karyotype"/);
+        assert.match(newHtml, /International System for Human Cytogenomic Nomenclature/);
+        continue;
+      }
+      if (isOvarianFunctionProfile) {
+        assert.match(newHtml, /OVARIAN FUNCTION PROFILE/);
+        assert.match(newHtml, /data-report-content="ovarian-function-profile"/);
+        assert.match(newHtml, /does not diagnose a specific cause of menstrual irregularity, infertility, or ovarian dysfunction by itself/);
+        continue;
+      }
+      if (additionalProfileFormat) {
+        assert.match(newHtml, new RegExp(additionalProfileFormat[0].replace(/[()]/g, '\\$&')));
+        assert.match(newHtml, new RegExp(`data-report-content="${additionalProfileFormat[1]}"`));
+        continue;
+      }
+      if (isTorchIgmPanel) {
+        assert.match(newHtml, /TORCH PANEL \(IgM\)/);
+        assert.match(newHtml, /data-report-content="torch-igm-panel"/);
+        assert.match(newHtml, /must not be used alone to date infection or diagnose fetal infection/);
+        continue;
+      }
+      if (isTorchIggPanel) {
+        assert.match(newHtml, /TORCH PANEL \(IgG\)/);
+        assert.match(newHtml, /data-report-content="torch-igg-panel"/);
+        assert.match(newHtml, /does not establish active infection or when exposure occurred/);
+        continue;
+      }
+      if (isTotalIge) {
+        assert.match(newHtml, /TOTAL IMMUNOGLOBULIN E \(IgE\)/);
+        assert.match(newHtml, /data-report-content="total-ige"/);
+        assert.match(newHtml, /does not identify a specific allergen/);
+        continue;
+      }
+      if (isTotalLipid) {
+        assert.match(newHtml, /TOTAL LIPIDS, SERUM/);
+        assert.match(newHtml, /data-report-content="total-lipid"/);
+        assert.match(newHtml, /not interchangeable with a standard lipid profile/);
+        continue;
+      }
+      if (isTotalProtein) {
+        assert.match(newHtml, /TOTAL PROTEIN, SERUM/);
+        assert.match(newHtml, /data-report-content="total-protein"/);
+        assert.match(newHtml, /combined concentration of albumin and globulins in serum/);
+        continue;
+      }
+      if (isUlcerSmearPap) {
+        assert.match(newHtml, /ULCER SMEAR FOR PAP STAIN/);
+        assert.match(newHtml, /data-report-content="ulcer-smear-pap"/);
+        assert.match(newHtml, /does not replace histopathology or tissue biopsy/);
+        continue;
+      }
+      if (isUrineAcetone) {
+        assert.match(newHtml, /URINE ACETONE/);
+        assert.match(newHtml, /data-report-content="urine-acetone"/);
+        assert.match(newHtml, /They do not measure beta-hydroxybutyrate/);
+        continue;
+      }
+      if (is24HourUrineUrea) {
+        assert.match(newHtml, /UREA, 24-HOUR URINE/);
+        assert.match(newHtml, /data-report-content="urine-urea-24-hour"/);
+        assert.match(newHtml, /This report measures urea, not urine urea nitrogen/);
+        continue;
+      }
+      if (is24HourUrineUricAcid) {
+        assert.match(newHtml, /URIC ACID, 24-HOUR URINE/);
+        assert.match(newHtml, /data-report-content="urine-uric-acid-24-hour"/);
+        assert.match(newHtml, /aged 18 years or older/);
+        continue;
+      }
+      if (isRandomUrineUricAcid) {
+        assert.match(newHtml, /URIC ACID, RANDOM URINE/);
+        assert.match(newHtml, /data-report-content="random-urine-uric-acid"/);
+        assert.match(newHtml, /it does not measure 24-hour uric acid excretion/);
+        continue;
+      }
+      if (isUrethralDischargeCulture) {
+        assert.match(newHtml, /URETHRAL DISCHARGE - CULTURE & SENSITIVITY/);
+        assert.match(newHtml, /data-report-content="urethral-discharge-culture"/);
+        assert.match(newHtml, /negative routine bacterial culture does not exclude urethritis/);
+        continue;
+      }
+      if (isUrethralSwabAfb) {
+        assert.match(newHtml, /URETHRAL SWAB - AFB STAIN/);
+        assert.match(newHtml, /data-report-content="urethral-swab-afb-stain"/);
+        assert.match(newHtml, /A negative smear does not exclude mycobacterial infection/);
+        continue;
+      }
+      if (isActh || isAda || isDnph || isDiabeticProfile || isExtendedDiabeticProfile || isDiabeticRenalProfile || isEarSwabGramStain || isEarSwabAfbStain || isFshPrl || isFshLhPrl || isLhPrl || isFemaleInfertilityProfile || isFernTest || isWuchereriaBancroftiAntigen || isFilariaAntigen || isFluidAspirationCytology || isFoetalHaemoglobinByHplc || isFoetalHaemoglobin || isFreeBetaHcg || isFreeCholesterol || isFreeEstradiol || isFreePsa || isFreeTestosterone || isGgt || isGad65Antibody || isGh90MinutesAfterGlucose || isGhFastingGlucose || isGrowthHormone || isGlucoseToleranceTest || isGastrinLevel || isFungusCulture || isFungusCultureSensitivity || isFactorIiMutation || isFactorViiiImmunodepleted || isAfbZiehlNeelsen || isCsfFluidAfbStain || isCsfFluidGramStain || isJointFluidGramStain || isCsfFluidProtein || isCsfFluidSpecificGravity || isCsfFluidGlucose || isUrineCalcium24Hour || isUrineCopper24Hour || isRandomUrineCopper || isEveningCortisol || isMidnightCortisol || isMorningEveningCortisol || isMorningCortisol || isMorningEveningMidnightCortisol || isCryoglobulinsScreening || isGndCulture || isCysticFibrosisGeneMutation || isCapillaryFragility || isCardiacProfile || isColorectalCancerMonitorProfile || isCeruloplasmin || isCervicalPapSmear || isCervicalSwabGramStain || isCervicalSwabAfbStain || isCDiffToxin || isTotalCholesterol || is24HourUrineChloride || isSerumChloride || isRandomUrineChloride || isChlamydiaAntigen || isChlamydiaAntibodyIggIgm || isChikungunyaIgm || isChikungunyaIgg || isAlbertStainKlb || isThrombinTime || isBaccalSmearBrrBody || isAutoimmuneProfile || isAgRatio || isAnfQualitative || isProstaticAcidPhosphatase || isTotalAcidPhosphatase || isUrineAlcohol || isAldehydeTest || isAldosterone || isBloodAllergy || isDrugAllergy || isRandomUrineAlphaAmylase || isTimedUrineAmylase || isAmmonia || isAndrogenPanel || isAndrostenedione || isComprehensiveAnemia || isAnemiaScreening || isAntenatalProfile || isAntiTpo || isAntiTg || isAntiInsulinAntibody || isAntiLeptospiraAntibody || isAntiMicrosomalAntibody || isAntiDsDnaAntibody || isAntiSsDnaAntibody || isAntiHistoneAntibody || isAntiRibosomalPAntibody || isAntiCcpAb || isAntiSpermAntibody || isApolipoproteinA1 || isUrineArsenic || isArthritisProfile || isAsciticFluidGramStain || isAnticardiolipinIggIgm || isAnticardiolipinIgaIgg || isAnticardiolipinIgaIgm || isAnticardiolipinIga || isAnticardiolipinIgg || isAnticardiolipinIgm || isApolipoproteinB || isAsciticFluidAnalysis || isSerumBicarbonate || isBilirubinFractionation || isMediumSectionBiopsy || isSmallSectionBiopsy || isBloodCultureSensitivity || isBodyFluidCultureSensitivity || isBodyFluidTotalProtein || isCsfFluidChloride || isBodyFluidChloride || isBodyFluidBiochemistry || isBodyFluidSpecificGravity || isComplementC3 || isComplementC4 || isCancaAntiPr3 || isCreatinineClearance || isCd3Lymphocyte || isCd4Lymphocyte || isCd8Lymphocyte || isCea || isCft || isBilateralConjunctivalSwab || isRightConjunctivalSwabCulture || isConjunctivalSwabCulture || isCkMb || isCpk || isCpkWithCkMb || isCmvIgmIgg || isCmvIgg || isBronchialWashingCultureSensitivity || isBoneMarrowAspirationCytology || isBoneMarrowCytology) {
         if (isDnph) {
           assert.match(newHtml, /2,4-DINITROPHENYLHYDRAZINE \(DNPH\) URINE SCREEN/);
           assert.match(newHtml, /data-report-content="dnph-urine-screen"/);
@@ -4957,6 +7014,12 @@ if (isActh || isAda || isDnph || isDiabeticProfile || isExtendedDiabeticProfile 
           assert.match(newHtml, /does not exclude infection/);
           continue;
         }
+        if (isJointFluidGramStain) {
+          assert.match(newHtml, /GRAM STAIN, JOINT FLUID/);
+          assert.match(newHtml, /data-report-content="joint-fluid-gram-stain"/);
+          assert.match(newHtml, /A negative joint-fluid Gram stain does not exclude infection/);
+          continue;
+        }
         if (isCsfFluidProtein) {
           assert.match(newHtml, /TOTAL PROTEIN, CEREBROSPINAL FLUID/);
           assert.match(newHtml, /CSF BIOCHEMISTRY/);
@@ -5077,6 +7140,12 @@ if (isActh || isAda || isDnph || isDiabeticProfile || isExtendedDiabeticProfile 
           assert.match(newHtml, /airway colonisation, or contamination/);
           continue;
         }
+        if (isJointFluidProtein) {
+          assert.match(newHtml, /TOTAL PROTEIN, JOINT FLUID/);
+          assert.match(newHtml, /data-report-content="joint-fluid-protein"/);
+          assert.match(newHtml, /serum and pleural-fluid protein thresholds must not be applied directly to synovial fluid/i);
+          continue;
+        }
         if (isBodyFluidTotalProtein) {
           assert.match(newHtml, /TOTAL PROTEIN, BODY FLUID/);
           assert.match(newHtml, /Fluid \/ Serum Protein Ratio/);
@@ -5168,6 +7237,12 @@ if (isActh || isAda || isDnph || isDiabeticProfile || isExtendedDiabeticProfile 
           assert.match(newHtml, /ANTICARDIOLIPIN ANTIBODY IgM, SERUM/);
           assert.match(newHtml, /isolated low-level IgM result has a lower association with APS/);
           assert.doesNotMatch(newHtml, /ANTICARDIOLIPIN ANTIBODY IgG, SERUM/);
+          continue;
+        }
+        if (isPhospholipidAntibodyIgg) {
+          assert.match(newHtml, /ANTICARDIOLIPIN ANTIBODY IgG, SERUM/);
+          assert.match(newHtml, /at least 12 weeks later/);
+          assert.match(newHtml, /not a stand-alone diagnostic rule/);
           continue;
         }
         if (isAnticardiolipinIgg) {
@@ -5264,6 +7339,12 @@ if (isActh || isAda || isDnph || isDiabeticProfile || isExtendedDiabeticProfile 
           assert.match(newHtml, /Microscopy alone does not confirm/);
           continue;
         }
+        if (isThrombinTime) {
+          assert.match(newHtml, /THROMBIN TIME \(TT\)/);
+          assert.match(newHtml, /thrombin-time-table/);
+          assert.match(newHtml, /heparin or direct thrombin-inhibitor effect/);
+          continue;
+        }
         if (isBaccalSmearBrrBody) {
           assert.match(newHtml, /BUCCAL SMEAR FOR BARR BODY \(SEX CHROMATIN\)/);
           assert.match(newHtml, /Barr-body Positive Nuclei \(%\)/);
@@ -5311,6 +7392,46 @@ if (isActh || isAda || isDnph || isDiabeticProfile || isExtendedDiabeticProfile 
         }
         assert.match(newHtml, /ADRENOCORTICOTROPIC HORMONE \(ACTH\), PLASMA/);
         assert.match(newHtml, /Specimen &amp; Collection Note/);
+        continue;
+      }
+      if (['serumosmolality', 'osmolalityserum', 'osmolality'].includes(normalizedInputName)) {
+        assert.match(newHtml, /OSMOLALITY, SERUM/);
+        assert.match(newHtml, /data-report-content="serum-osmolality"/);
+        assert.match(newHtml, /Freezing-point depression osmometry/);
+        assert.doesNotMatch(newHtml, /Latex Agglutination/);
+        continue;
+      }
+      if (['throatswabculturesensitivity', 'throatswabcultureandsensitivity', 'throatcultureandsensitivity', 'throatswabcs', 'throatculturesensitivity'].includes(normalizedInputName)) {
+        assert.match(newHtml, /THROAT SWAB CULTURE & SENSITIVITY/);
+        assert.match(newHtml, /data-report-content="throat-swab-culture-sensitivity"/);
+        assert.match(newHtml, /Antimicrobial susceptibility result\(s\), if performed/);
+        assert.match(newHtml, /Susceptibility findings do not replace clinical assessment/);
+        continue;
+      }
+      if (['throatswabforafb', 'throatswabafbstain', 'throatafbstain', 'afbstainthroatswab'].includes(normalizedInputName)) {
+        assert.match(newHtml, /AFB STAIN, THROAT SWAB/);
+        assert.match(newHtml, /data-report-content="throat-swab-afb-stain"/);
+        assert.match(newHtml, /A negative smear does not exclude mycobacterial infection/);
+        continue;
+      }
+      if (['throatswabforgramstain', 'throatswabgramstain', 'throatgramstain', 'gramstainthroatswab'].includes(normalizedInputName)) {
+        assert.match(newHtml, /THROAT SWAB - GRAM STAIN/);
+        assert.match(newHtml, /data-report-content="throat-swab-gram-stain"/);
+        assert.match(newHtml, /does not provide definitive organism identification or antimicrobial susceptibility/);
+        continue;
+      }
+      if (['sputumafbstain', 'sputumexaminationafb', 'sputumafbexamination'].includes(normalizedInputName)) {
+        assert.match(newHtml, /SPUTUM EXAMINATION, AFB/);
+        assert.match(newHtml, /data-report-content="sputum-afb-stain"/);
+        assert.match(newHtml, /A positive smear is not species-specific/);
+        assert.match(newHtml, /A negative smear does not exclude tuberculosis/);
+        continue;
+      }
+      if (['stoolobt', 'stooloccultbloodtest', 'faecaloccultbloodtest', 'fecaloccultbloodtest', 'occultbloodstoolexamination', 'stooloccultblood', 'stooloccultbloodexamination'].includes(normalizedInputName)) {
+        assert.match(newHtml, /STOOL OCCULT BLOOD TEST \(OBT\)/);
+        assert.match(newHtml, /data-report-content="stool-occult-blood"/);
+        assert.match(newHtml, /does not identify the source of bleeding/);
+        assert.match(newHtml, /commonly colonoscopy/);
         continue;
       }
       if (getCombinationDefinition(input) || getCellReportDefinition(input)) {
