@@ -1,4 +1,5 @@
 const { getCellReportParameters } = require('./cellReportService');
+const { WELL_WOMEN_FIELDS, isWellWomenProfileName } = require('./wellWomenProfileService');
 const { isBillingOnlyTest } = require('../../frontend/scripts/reportEligibility');
 
 function normalizeSchemaName(value) {
@@ -2780,6 +2781,386 @@ function getFallbackReportParameters(test = {}) {
       createParameter("Interpretation / Diagnosis"),
       createParameter("Ancillary Studies / Correlation"),
       createParameter("Comments / Limitations"),
+    ];
+  }
+
+  if (["woundswabgramstain", "woundswabforgramstain", "woundgramstain", "gramstainwoundswab"].includes(normalizedName)) {
+    return [
+      createParameter("Gram Stain Findings", { normalRange: "Interpret according to collection site and laboratory method" }),
+      createParameter("Specimen / Wound Site"),
+      createParameter("Collection Date / Time"),
+      createParameter("Collection Context / Surface or Deep Site"),
+      createParameter("Clinical Details / Relevant Treatment"),
+      createParameter("Smear Preparation / Stain Method"),
+      createParameter("Specimen Adequacy"),
+      createParameter("Inflammatory Cells / PMNs"),
+      createParameter("Squamous Epithelial Cells"),
+      createParameter("Gram-positive Cocci"),
+      createParameter("Gram-positive Bacilli"),
+      createParameter("Gram-negative Bacilli"),
+      createParameter("Other Bacterial Morphology / Mixed Morphotypes"),
+      createParameter("Yeast / Fungal Elements"),
+      createParameter("Impression"),
+      createParameter("Culture / Specific Test Status, if performed"),
+      createParameter("Comments / Limitations"),
+    ];
+  }
+
+  if (["woundswabafbstain", "woundswabforafbstain", "woundafbstain", "afbstainwoundswab"].includes(normalizedName)) {
+    return [
+      createParameter("AFB Smear Microscopy Result", { normalRange: "No acid-fast bacilli seen (expected finding)" }),
+      createParameter("AFB Smear Grade / Quantitation", { normalRange: "Use the laboratory-validated method and grading scheme" }),
+      createParameter("Specimen / Wound Site"),
+      createParameter("Collection Date / Time"),
+      createParameter("Collection Context / Surface or Deep Site"),
+      createParameter("Stain Method"),
+      createParameter("Smear Preparation / Processing"),
+      createParameter("Specimen Adequacy"),
+      createParameter("Microscopy Remarks"),
+      createParameter("Clinical Details / Relevant Treatment"),
+      createParameter("Impression"),
+      createParameter("Culture / Molecular Test Status, if performed"),
+      createParameter("Comments / Limitations"),
+    ];
+  }
+
+  if (isWellWomenProfileName(test.name)) {
+    return WELL_WOMEN_FIELDS.map(field => createParameter(field.parameterName, { unit: field.unit, normalRange: field.normalRange }));
+  }
+
+  if (["wellfelixtest", "weilfelixtest", "weilfelix", "wellfelix"].includes(normalizedName)) {
+    return [
+      createParameter("Overall Screening Result, if reported"),
+      createParameter("Proteus OX2 Result / Titre", { normalRange: "Laboratory-validated method and local baseline cut-off" }),
+      createParameter("Proteus OX19 Result / Titre", { normalRange: "Laboratory-validated method and local baseline cut-off" }),
+      createParameter("Proteus OXK Result / Titre", { normalRange: "Laboratory-validated method and local baseline cut-off" }),
+      createParameter("Specimen"),
+      createParameter("Collection Date / Time"),
+      createParameter("Method (Slide / Tube Agglutination)"),
+      createParameter("Kit / Reagent"),
+      createParameter("Laboratory Cut-off / Local Baseline"),
+      createParameter("Fever Onset / Illness Timing"),
+      createParameter("Clinical Details / Exposure / Relevant Treatment"),
+      createParameter("Paired Specimen / Comparison, if available"),
+      createParameter("Laboratory Interpretation"),
+      createParameter("Specific / Confirmatory Test Status, if performed"),
+      createParameter("Comments / Limitations"),
+    ];
+  }
+
+  if (["vandenburghreaction", "vandenberghreaction", "vandenberghtest", "vandenburghtest"].includes(normalizedName)) {
+    return [
+      createParameter("Van den Bergh Reaction Result", { normalRange: "Laboratory-validated qualitative reaction criteria" }),
+      createParameter("Reaction Category (Direct / Indirect / Biphasic), if assigned"),
+      createParameter("Observed Colour / Reaction"),
+      createParameter("Reaction Timing / Accelerator Details"),
+      createParameter("Specimen"),
+      createParameter("Collection Date / Time"),
+      createParameter("Method / Reagent"),
+      createParameter("Specimen Quality / Light Protection"),
+      createParameter("Clinical Details / Indication"),
+      createParameter("Total Bilirubin, if measured", { unit: "mg/dL", normalRange: "Laboratory-validated age- and method-specific interval" }),
+      createParameter("Direct Bilirubin, if measured", { unit: "mg/dL", normalRange: "Laboratory-validated age- and method-specific interval" }),
+      createParameter("Indirect Bilirubin, if reported", { unit: "mg/dL", normalRange: "Laboratory-validated age- and method-specific interval" }),
+      createParameter("Laboratory Interpretation"),
+      createParameter("Comments / Limitations"),
+    ];
+  }
+
+  if (["valporicacidsodiumvalproate", "valproicacidsodiumvalproate", "valproicacid", "valporicacid", "sodiumvalproate", "valproatelevel"].includes(normalizedName)) {
+    return [
+      createParameter("Valproic Acid (Valproate) Level", { unit: "µg/mL", normalRange: "Declare total/free basis; lab-validated therapeutic interval" }),
+      createParameter("Measurement Basis (Total / Free)"),
+      createParameter("Specimen"),
+      createParameter("Collection Date / Time"),
+      createParameter("Dose / Regimen"),
+      createParameter("Last Dose Date / Time"),
+      createParameter("Sampling Timing (Trough / Peak / Random)"),
+      createParameter("Time Since Last Dose, if supplied", { unit: "hours" }),
+      createParameter("Method / Analyzer"),
+      createParameter("Clinical Indication / Relevant Medicines"),
+      createParameter("Laboratory Interpretation"),
+      createParameter("Critical Result Communication, if applicable"),
+      createParameter("Comments / Limitations"),
+    ];
+  }
+
+  if (["vaginalswabgramstain", "vaginalswabforgramstain", "vaginalgramstain", "gramstainvaginalswab", "vaginalswabforframstain"].includes(normalizedName)) {
+    return [
+      createParameter("Gram Stain Findings", { normalRange: "Site- and method-specific microscopy interpretation" }),
+      createParameter("Specimen / Collection Site"),
+      createParameter("Collection Date / Time"),
+      createParameter("Clinical Details / Relevant Treatment"),
+      createParameter("Smear Preparation / Stain Method"),
+      createParameter("Specimen Adequacy"),
+      createParameter("Inflammatory Cells / PMNs", { normalRange: "Report quantity using the laboratory method" }),
+      createParameter("Epithelial Cells", { normalRange: "Report observed quantity / morphology" }),
+      createParameter("Clue Cells", { normalRange: "Report observed presence / quantity" }),
+      createParameter("Lactobacillus-type Morphotypes", { normalRange: "Assess relative abundance in the vaginal flora" }),
+      createParameter("Small Gram-variable / Gram-negative Rods", { normalRange: "Assess relative abundance in the vaginal flora" }),
+      createParameter("Curved Rod Morphotypes", { normalRange: "Assess relative abundance in the vaginal flora" }),
+      createParameter("Other Bacterial Morphology"),
+      createParameter("Yeast / Fungal Elements"),
+      createParameter("Nugent Score, if assessed", { normalRange: "0 - 3: Lactobacillus-predominant; 4 - 6: intermediate; 7 - 10: BV-associated" }),
+      createParameter("Nugent Interpretation, if assessed"),
+      createParameter("Impression"),
+      createParameter("Culture / Specific Test Status, if performed"),
+      createParameter("Comments / Limitations"),
+    ];
+  }
+
+  if (["vaginalswabafbstain", "vaginalswabforafbstain", "vaginalafbstain", "afbstainvaginalswab"].includes(normalizedName)) {
+    return [
+      createParameter("AFB Smear Microscopy Result", { normalRange: "No acid-fast bacilli seen (expected finding)" }),
+      createParameter("AFB Smear Grade / Quantitation", { normalRange: "Use the laboratory-validated method and grading scheme" }),
+      createParameter("Specimen / Collection Site"),
+      createParameter("Collection Date / Time"),
+      createParameter("Stain Method"),
+      createParameter("Smear Preparation / Processing"),
+      createParameter("Specimen Adequacy"),
+      createParameter("Microscopy Remarks"),
+      createParameter("Clinical Details / Relevant Treatment"),
+      createParameter("Impression"),
+      createParameter("Culture / Molecular Test Status, if performed"),
+      createParameter("Comments / Limitations"),
+    ];
+  }
+
+  if (["vaginalcervicalswab", "vaginalcervicalswabs", "cervicalvaginalswab"].includes(normalizedName)) {
+    return [
+      createParameter("Laboratory Result / Findings", { normalRange: "Site- and method-specific interpretation" }),
+      createParameter("Specimen / Exact Collection Site"),
+      createParameter("Collection Date / Time"),
+      createParameter("Clinical Details / Relevant Treatment"),
+      createParameter("Examination Requested / Performed"),
+      createParameter("Method / Preparation"),
+      createParameter("Specimen Quality / Adequacy"),
+      createParameter("Microscopy / Gram Stain Findings, if performed"),
+      createParameter("Culture Result, if performed"),
+      createParameter("Organism Identification / Growth, if isolated"),
+      createParameter("Antimicrobial Susceptibility, if performed"),
+      createParameter("Susceptibility Method / Standard, if performed"),
+      createParameter("Additional Specific Tests, if performed"),
+      createParameter("Laboratory Interpretation"),
+      createParameter("Comments / Limitations"),
+    ];
+  }
+
+  if (["uroflowmetry", "uroflowmetrytest", "urinaryflowratestudy"].includes(normalizedName)) {
+    return [
+      createParameter("Clinical Details"),
+      createParameter("Examination Date / Time"),
+      createParameter("Method / Device"),
+      createParameter("Voiding Position"),
+      createParameter("Voided Volume", { unit: "mL", normalRange: "Interpret flow with the actual voided volume" }),
+      createParameter("Maximum Flow Rate (Qmax)", { unit: "mL/s", normalRange: "Age-, sex- and voided-volume-specific assessment" }),
+      createParameter("Average Flow Rate (Qavg)", { unit: "mL/s", normalRange: "Age-, sex- and voided-volume-specific assessment" }),
+      createParameter("Flow Time", { unit: "s", normalRange: "Duration of measurable urine flow" }),
+      createParameter("Voiding Time", { unit: "s", normalRange: "Total void duration, including interruptions" }),
+      createParameter("Time to Maximum Flow", { unit: "s" }),
+      createParameter("Flow Curve / Pattern"),
+      createParameter("Representative of Usual Voiding"),
+      createParameter("Straining / Artefacts / Study Quality"),
+      createParameter("Post-Void Residual (PVR), if measured", { unit: "mL", normalRange: "Interpret with method, timing and clinical context" }),
+      createParameter("PVR Method / Timing, if measured"),
+      createParameter("Findings"),
+      createParameter("Impression"),
+      createParameter("Advice"),
+      createParameter("Comments"),
+    ];
+  }
+
+  if (["urineph", "phurine", "urinephtest", "phurinetest"].includes(normalizedName)) {
+    return [
+      createParameter("Urine pH", { normalRange: "4.6 - 8.0 (general guide; lab-specific)" }),
+      createParameter("Reaction / Description, if recorded"),
+      createParameter("Specimen / Collection Type"),
+      createParameter("Collection Date / Time"),
+      createParameter("Method / Reagent / Analyzer"),
+      createParameter("Specimen Handling / Quality, if supplied"),
+      createParameter("Clinical Details / Diet / Medication History"),
+      createParameter("Laboratory Interpretation"),
+      createParameter("Comments / Limitations"),
+    ];
+  }
+
+  if (["urineurobilinogen", "urobilinogenurine", "urobilinogenurinetest"].includes(normalizedName)) {
+    return [
+      createParameter("Urobilinogen, Urine", { normalRange: "Laboratory-validated method-specific range / category" }),
+      createParameter("Reporting Category / Grade, if supplied"),
+      createParameter("Specimen / Collection Type"),
+      createParameter("Collection Date / Time"),
+      createParameter("Method / Reagent / Analyzer"),
+      createParameter("Specimen Handling / Quality, if supplied"),
+      createParameter("Clinical Details / Indication"),
+      createParameter("Laboratory Interpretation"),
+      createParameter("Comments / Limitations"),
+    ];
+  }
+
+  if (["urinesugar", "urinesugartest", "sugarurine", "unnesugar"].includes(normalizedName)) {
+    return [
+      createParameter("Urine Sugar Result", { normalRange: "Negative (qualitative screen); quantitative: lab-specific" }),
+      createParameter("Grade / Semiquantitative Category, if reported"),
+      createParameter("Specimen / Collection Type"),
+      createParameter("Collection Date / Time"),
+      createParameter("Method / Reagent"),
+      createParameter("Reporting Basis / Measured Analyte"),
+      createParameter("Clinical Details / Indication"),
+      createParameter("Laboratory Interpretation"),
+      createParameter("Comments / Limitations"),
+    ];
+  }
+
+  if (["urinereducingsubstance", "urinereducingsubstances", "reducingsubstancesurine", "urineforreducingsubstances", "urineredusingsubstence", "urnineredusingsubstance"].includes(normalizedName)) {
+    return [
+      createParameter("Urine Reducing Substances Result", { normalRange: "Negative / not detected (method-specific)" }),
+      createParameter("Grade / Semiquantitative Category, if reported"),
+      createParameter("Specimen / Collection Type"),
+      createParameter("Collection Date / Time"),
+      createParameter("Method / Reagent"),
+      createParameter("Observed Reaction, if recorded"),
+      createParameter("Clinical Details / Indication"),
+      createParameter("Laboratory Interpretation"),
+      createParameter("Comments / Limitations"),
+    ];
+  }
+
+  if (["urinereroutineexamination", "urinere", "urineroutineexamination", "routineurineexamination", "urinalysis"].includes(normalizedName)) {
+    return [
+      createParameter("Specimen / Collection Type"),
+      createParameter("Collection Date / Time"),
+      createParameter("Method / Analyzer"),
+      createParameter("Microscopy Preparation / Method"),
+      createParameter("Volume Received", { unit: "mL" }),
+      createParameter("Colour", { normalRange: "Almost colourless to dark yellow" }),
+      createParameter("Appearance / Clarity", { normalRange: "Usually clear; correlate with sediment" }),
+      createParameter("Specific Gravity", { normalRange: "1.005 - 1.030 (guide; lab-specific)" }),
+      createParameter("pH", { normalRange: "4.6 - 8.0 (guide; lab-specific)" }),
+      ...["Protein / Albumin", "Glucose", "Ketones", "Blood / Haemoglobin", "Bilirubin / Bile Pigments", "Nitrite", "Leukocyte Esterase"].map(name => createParameter(name, { normalRange: "Negative (method-specific)" })),
+      createParameter("Urobilinogen", { normalRange: "Assay-specific reference and units" }),
+      createParameter("Bile Salts, if performed"),
+      createParameter("WBC / Pus Cells", { unit: "/HPF", normalRange: "Laboratory-validated microscopy interval" }),
+      createParameter("RBC", { unit: "/HPF", normalRange: "Laboratory-validated microscopy interval" }),
+      createParameter("Epithelial Cells", { normalRange: "Report type and quantity; method-specific" }),
+      createParameter("Casts", { normalRange: "Type- and method-specific" }),
+      createParameter("Crystals", { normalRange: "Type- and context-specific" }),
+      createParameter("Bacteria", { normalRange: "Usually not seen; assess collection quality" }),
+      createParameter("Yeast / Fungal Elements", { normalRange: "Usually not seen" }),
+      createParameter("Parasites / Trichomonas, if examined"),
+      createParameter("Mucus", { normalRange: "Interpret with other sediment findings" }),
+      createParameter("Other Microscopic Findings"),
+      createParameter("Laboratory Interpretation"),
+      createParameter("Comments / Limitations"),
+    ];
+  }
+
+  if (["urineprotein24hours", "urineprotein24hour", "24hrsurinaryprotein", "24hoururinaryprotein", "24hoururineprotein", "protein24hoururine", "totalprotein24hoururine"].includes(normalizedName)) {
+    return [
+      createParameter("Total Urine Protein, 24 Hour", { unit: "mg/24 h", normalRange: "Laboratory-validated 24-hour reference interval" }),
+      createParameter("Urine Protein Concentration", { unit: "mg/dL", normalRange: "Interpret with the complete timed collection" }),
+      createParameter("Total Urine Volume", { unit: "mL" }),
+      createParameter("Collection Duration", { unit: "hours" }),
+      createParameter("Collection Start Date / Time"),
+      createParameter("Collection End Date / Time"),
+      createParameter("Method / Analyzer"),
+      createParameter("Collection Completeness / Comments"),
+      createParameter("Laboratory Interpretation"),
+      createParameter("Clinical Details / Indication"),
+    ];
+  }
+
+  if (["urineproteinalbumin", "unneproteinalbumin", "proteinalbuminurine"].includes(normalizedName)) {
+    return [
+      createParameter("Urine Protein / Albumin Result", { normalRange: "Negative (qualitative screen); quantitative methods: lab-specific" }),
+      createParameter("Grade / Semiquantitative Category, if reported"),
+      createParameter("Specimen / Collection Type"),
+      createParameter("Collection Date / Time"),
+      createParameter("Method / Reagent"),
+      createParameter("Reporting Basis / Measured Analyte"),
+      createParameter("Laboratory Interpretation"),
+      createParameter("Comments / Limitations"),
+    ];
+  }
+
+  if (["urinepregnancytest", "pregnancytesturine", "unnepregnancytest", "urinehcgqualitative", "hcgurinequalitative"].includes(normalizedName)) {
+    return [
+      createParameter("Urine hCG, Qualitative Result", { normalRange: "Negative / hCG not detected (assay-specific)" }),
+      createParameter("Collection Date / Time"),
+      createParameter("Method / Assay"),
+      createParameter("Kit / Platform"),
+      createParameter("Assay Cut-off / Detection Limit, if supplied", { unit: "mIU/mL", normalRange: "Manufacturer / laboratory-validated limit" }),
+      createParameter("Control / Test Validity, if applicable"),
+      createParameter("Clinical Details / Testing Timing"),
+      createParameter("Laboratory Interpretation"),
+      createParameter("Comments / Limitations"),
+    ];
+  }
+
+  if (["urineporphobilinogen", "porphobilinogenurine", "porphobilinogenpbgurine", "urinepbg", "pbgurine"].includes(normalizedName)) {
+    return [
+      createParameter("Porphobilinogen (PBG), Urine", { normalRange: "Assay-specific qualitative / quantitative reference" }),
+      createParameter("Test / Reporting Basis"),
+      createParameter("Specimen / Collection Type"),
+      createParameter("Collection Date / Time"),
+      createParameter("Method / Analyzer"),
+      createParameter("PBG / Creatinine Ratio, if reported", { normalRange: "Laboratory-validated ratio interval and units" }),
+      createParameter("PBG, 24-Hour Excretion, if reported", { normalRange: "Laboratory-validated timed-excretion interval and units" }),
+      createParameter("Urine Creatinine, if measured", { unit: "mg/dL" }),
+      createParameter("Total Urine Volume, if timed collection", { unit: "mL" }),
+      createParameter("Collection Duration, if timed collection", { unit: "hours" }),
+      createParameter("Light Protection / Storage"),
+      createParameter("Clinical Details / Medication History"),
+      createParameter("Laboratory Interpretation"),
+      createParameter("Comments / Limitations"),
+    ];
+  }
+
+  if (["urineobt3consecutivedays", "urineobtthreeconsecutivedays", "urineoccultblood3consecutivedays", "urineoccultbloodtest3days"].includes(normalizedName)) {
+    return [
+      ...[1, 2, 3].flatMap(day => [
+        createParameter(`Day ${day} Collection Date / Time`),
+        createParameter(`Day ${day} Urine Blood / OBT Result`, { normalRange: "Negative / Not detected; use assay-specific reporting" }),
+        createParameter(`Day ${day} Grade, if reported`),
+      ]),
+      createParameter("Specimen / Collection Type"),
+      createParameter("Method / Reagent"),
+      createParameter("Overall Laboratory Interpretation / Summary"),
+      createParameter("Comments / Specimen Limitations"),
+    ];
+  }
+
+  if (["urinaryvma", "urinevma", "vmaurine", "vma24hoururine", "vanillylmandelicacidurine", "vanillylmandelicacid24hoururine", "vanillylmandelicacidvmaurine"].includes(normalizedName)) {
+    return [
+      createParameter("VMA, 24-Hour Urine", { unit: "mg/24 h", normalRange: "Age 18 years and older: 0.0 - 7.0; use laboratory-validated interval" }),
+      createParameter("VMA, Urine Concentration", { unit: "mg/L", normalRange: "No established concentration reference interval" }),
+      createParameter("VMA / Creatinine Ratio, if reported", { unit: "mg/g creatinine", normalRange: "Laboratory-validated age-specific interval" }),
+      createParameter("Specimen / Collection Type"),
+      createParameter("Total Urine Volume", { unit: "mL" }),
+      createParameter("Collection Duration", { unit: "hours" }),
+      createParameter("Collection Start Date / Time"),
+      createParameter("Collection End Date / Time"),
+      createParameter("Urine Creatinine Concentration, if measured", { unit: "mg/dL" }),
+      createParameter("Urine Creatinine, 24 Hour, if measured", { unit: "mg/24 h" }),
+      createParameter("Method / Analyzer"),
+      createParameter("Clinical Details / Medication History"),
+      createParameter("Collection Completeness / Interpretation / Comments"),
+    ];
+  }
+
+  if (["urinary17ketosteroid", "urinary17ketosteroids", "urine17ketosteroids", "17ketosteroidsurine", "17ketosteroids24hoururine", "17ksurine"].includes(normalizedName)) {
+    return [
+      createParameter("17-Ketosteroids, 24-Hour Urine", { unit: "mg/24 h", normalRange: "Laboratory-validated age- and sex-specific interval" }),
+      createParameter("17-Ketosteroids, Urine Concentration", { unit: "mg/L", normalRange: "No established random-urine interval" }),
+      createParameter("Total Urine Volume", { unit: "mL" }),
+      createParameter("Collection Duration", { unit: "hours" }),
+      createParameter("Collection Start Date / Time"),
+      createParameter("Collection End Date / Time"),
+      createParameter("Urine Creatinine Concentration, if measured", { unit: "mg/dL" }),
+      createParameter("Urine Creatinine, 24 Hour, if measured", { unit: "mg/24 h" }),
+      createParameter("Method / Analyzer"),
+      createParameter("Clinical Details / Medication History"),
+      createParameter("Collection Completeness / Comments"),
     ];
   }
 

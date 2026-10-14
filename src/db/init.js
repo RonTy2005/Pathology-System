@@ -4731,6 +4731,226 @@ async function ensureUlcerSmearPapTestConfiguration(db = { all, get, run, transa
   });
 }
 
+async function ensureWoundSwabGramStainTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["wound swab gram stain", "wound swab for gram stain", "wound gram stain", "gram stain wound swab"],
+    schemaName: "Wound Swab Gram Stain",
+    sampleType: "Wound Swab",
+    sampleTypePattern: /^(wound|swab)/i,
+    placeholderNames: ["result", "result / findings", "findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureWoundSwabAfbStainTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["wound swab afb stain", "wound swab for afb stain", "wound afb stain", "afb stain wound swab"],
+    schemaName: "Wound Swab AFB Stain",
+    sampleType: "Wound Swab",
+    sampleTypePattern: /^(wound|swab)/i,
+    placeholderNames: ["result", "findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureWellWomenProfileTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["well women profile", "wellwomenprofile", "well woman profile", "wellwomanprofile"],
+    schemaName: "Well Women Profile",
+    sampleType: "EDTA whole blood and serum/plasma, as required by selected tests",
+    sampleTypePattern: /^(blood|whole blood|edta|serum|plasma)/i,
+    placeholderNames: ["result", "result / findings", "findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureWeilFelixTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["well felix test", "weil felix test", "weil-felix test", "weil felix", "weil-felix", "well felix"],
+    schemaName: "Well Felix Test",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|blood)/i,
+    placeholderNames: ["result", "findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureVanDenBerghReactionTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["vanden burgh reaction", "van den burgh reaction", "vanden bergh reaction", "van den bergh reaction", "van den bergh test", "van den burgh test"],
+    schemaName: "Vanden Burgh Reaction",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|plasma|blood)/i,
+    placeholderNames: ["result", "findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureValproateLevelTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["valporic acid (sodium valproate)", "valproic acid (sodium valproate)", "valproic acid", "valporic acid", "sodium valproate", "valproate level"],
+    schemaName: "Valporic Acid (Sodium valproate)",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|plasma|blood)/i,
+    placeholderNames: ["result", "findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureVaginalSwabGramStainTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["vaginal swab gram stain", "vaginal swab for gram stain", "vaginal gram stain", "gram stain vaginal swab", "vaginal swab for fram stain"],
+    schemaName: "Vaginal Swab Gram Stain",
+    sampleType: "Vaginal Swab",
+    sampleTypePattern: /^(vaginal|high vaginal|swab)/i,
+    placeholderNames: ["result", "findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureVaginalSwabAfbStainTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["vaginal swab afb stain", "vaginal swab for afb stain", "vaginal afb stain", "afb stain vaginal swab"],
+    schemaName: "Vaginal Swab AFB Stain",
+    sampleType: "Vaginal Swab",
+    sampleTypePattern: /^(vaginal|high vaginal|swab)/i,
+    placeholderNames: ["result", "findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureVaginalCervicalSwabTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["vaginal / cervical swab", "vaginal/cervical swab", "vaginal / cervical swabs", "cervical / vaginal swab"],
+    schemaName: "Vaginal / Cervical swab",
+    sampleType: "Swab (record vaginal or cervical collection site)",
+    sampleTypePattern: /^(swab|vaginal|cervical|endocervical|high vaginal)/i,
+    placeholderNames: ["result", "findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureUroflowmetryTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["uroflowmetry", "uroflowmetry test", "urinary flow rate study"],
+    schemaName: "Uroflowmetry",
+    sampleType: "N/A (non-invasive uroflowmetry)",
+    sampleTypePattern: /^(n\/?a|not applicable|none|urine)/i,
+    placeholderNames: ["clinical details", "findings", "impression", "advice", "result", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureUrinePhTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["urine ph", "urineph", "ph (urine)", "ph, urine", "urine ph test", "ph urine test"],
+    schemaName: "Urine pH",
+    sampleType: "Urine",
+    sampleTypePattern: /^(urine|random urine|spot urine)/i,
+    placeholderNames: ["result", "findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureUrineUrobilinogenTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["urine urobilinogen", "urineurobilinogen", "urobilinogen (urine)", "urobilinogen, urine", "urobilinogen urine test"],
+    schemaName: "Urine Urobilinogen",
+    sampleType: "Urine",
+    sampleTypePattern: /^(urine|random urine|spot urine)/i,
+    placeholderNames: ["result", "findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureUrineSugarTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["urine sugar", "urinesugar", "urine sugar test", "sugar (urine)", "unnesugar"],
+    schemaName: "Urine Sugar",
+    sampleType: "Urine",
+    sampleTypePattern: /^(urine|random urine|spot urine)/i,
+    placeholderNames: ["result", "findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureUrineReducingSubstancesTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["urine reducing substance", "urine reducing substances", "reducing substances (urine)", "urine for reducing substances", "urineredusing substence", "urineredusingsubstence", "urnineredusing substance", "urnineredusingsubstance"],
+    schemaName: "Urine Reducing Substance",
+    sampleType: "Urine",
+    sampleTypePattern: /^(urine|random urine|spot urine)/i,
+    placeholderNames: ["result", "findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureUrineRoutineTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["urine re (routine examination)", "urine re", "urinere", "urine routine examination", "routine urine examination", "urinalysis"],
+    schemaName: "Urine RE (Routine Examination)",
+    sampleType: "Urine",
+    sampleTypePattern: /^(urine|random urine|spot urine|midstream urine|clean[ -]catch urine)/i,
+    placeholderNames: ["result", "findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensure24HourUrineProteinTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["urine protein 24 hours", "urine protein 24 hour", "24 hrs. urinary protein", "24 hrs urinary protein", "24-hour urinary protein", "24 hour urinary protein", "24 hour urine protein", "protein (24 hour urine)", "total protein (24 hour urine)"],
+    schemaName: "Urine Protein 24 Hours",
+    sampleType: "24-hour urine collection",
+    sampleTypePattern: /^(urine$|24[ -]?(hour|hr)|timed urine)/i,
+    placeholderNames: ["result", "findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureUrineProteinAlbuminTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["urine protein / albumin", "urine protein/albumin", "urineprotein/albumin", "unneprotein/albumin", "unneproteinalbumin", "protein / albumin (urine)"],
+    schemaName: "Urine Protein / Albumin",
+    sampleType: "Urine",
+    sampleTypePattern: /^(urine|random urine|spot urine)/i,
+    placeholderNames: ["result", "findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureUrinePregnancyTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["urine pregnancy test", "pregnancy test (urine)", "unnepregnancytest", "urine hcg qualitative", "hcg (urine), qualitative"],
+    schemaName: "Urine Pregnancy Test",
+    sampleType: "Urine",
+    sampleTypePattern: /^(urine|random urine|spot urine)/i,
+    placeholderNames: ["result", "findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureUrinePorphobilinogenTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["urine porphobilinogen", "porphobilinogen (urine)", "porphobilinogen, urine", "porphobilinogen (pbg), urine", "urine pbg", "pbg (urine)"],
+    schemaName: "Urine Porphobilinogen",
+    sampleType: "Urine (protect from light; record collection type)",
+    sampleTypePattern: /^(urine|random urine|spot urine|24[ -]?(hour|hr)|timed urine)/i,
+    placeholderNames: ["result", "findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureUrineObtThreeDayTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["urine obt (3 consecutive days)", "urine obt (three consecutive days)", "urine occult blood (3 consecutive days)", "urine occult blood test (3 days)"],
+    schemaName: "Urine OBT (3 Consecutive days)",
+    sampleType: "Urine (three separately collected samples)",
+    sampleTypePattern: /^(urine|random urine|spot urine)/i,
+    placeholderNames: ["result", "findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureUrinaryVmaTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["urinary v m a", "urinary vma", "urine vma", "vma (urine)", "vma (24 hour urine)", "vanillylmandelic acid, urine", "vanillylmandelic acid (24 hour urine)", "vanillylmandelic acid (vma), urine"],
+    schemaName: "Urinary V M A",
+    sampleType: "24-hour urine collection",
+    sampleTypePattern: /^(urine$|24[ -]?(hour|hr)|timed urine)/i,
+    placeholderNames: ["result", "findings", "comments", "comment", "remarks"],
+  });
+}
+
+async function ensureUrinary17KetosteroidTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["urinary 17 ketosteroid", "urinary 17 ketosteroids", "urinary 17-ketosteroid", "urinary 17-ketosteroids", "urine 17 ketosteroids", "17-ketosteroids, urine", "17-ketosteroids (24 hour urine)", "17-ks urine"],
+    schemaName: "Urinary 17 Ketosteroid",
+    sampleType: "24-hour urine collection",
+    sampleTypePattern: /^(urine$|24[ -]?(hour|hr)|timed urine)/i,
+    placeholderNames: ["result", "findings", "comments", "comment", "remarks"],
+  });
+}
+
 async function ensureRandomUrineUricAcidTestConfiguration(db = { all, get, run, transaction }) {
   return ensureBlankReportFormatConfiguration(db, {
     names: ["uric acid(urine)", "uric acid (urine)", "urine uric acid", "random urine uric acid", "uric acid (random urine)", "uric acid random urine", "uric acid, random urine"],
@@ -12176,6 +12396,28 @@ async function initializeDatabase() {
     await ensureUrineAcetoneTestConfiguration();
     await ensure24HourUrineUreaTestConfiguration();
     await ensure24HourUrineUricAcidTestConfiguration();
+    await ensureUrinary17KetosteroidTestConfiguration();
+    await ensureUrinaryVmaTestConfiguration();
+    await ensureUrineObtThreeDayTestConfiguration();
+    await ensureUrinePorphobilinogenTestConfiguration();
+    await ensureUrinePregnancyTestConfiguration();
+    await ensureUrineProteinAlbuminTestConfiguration();
+    await ensure24HourUrineProteinTestConfiguration();
+    await ensureUrineRoutineTestConfiguration();
+    await ensureUrineReducingSubstancesTestConfiguration();
+    await ensureUrineSugarTestConfiguration();
+    await ensureUrineUrobilinogenTestConfiguration();
+    await ensureUrinePhTestConfiguration();
+    await ensureUroflowmetryTestConfiguration();
+    await ensureVaginalCervicalSwabTestConfiguration();
+    await ensureVaginalSwabAfbStainTestConfiguration();
+    await ensureVaginalSwabGramStainTestConfiguration();
+    await ensureValproateLevelTestConfiguration();
+    await ensureVanDenBerghReactionTestConfiguration();
+    await ensureWeilFelixTestConfiguration();
+    await ensureWellWomenProfileTestConfiguration();
+    await ensureWoundSwabAfbStainTestConfiguration();
+    await ensureWoundSwabGramStainTestConfiguration();
     await ensureRandomUrineUricAcidTestConfiguration();
     await ensureUrethralDischargeCultureSensitivityTestConfiguration();
     await ensureCervicalSwabGramStainTestConfiguration();
@@ -12647,6 +12889,28 @@ async function initializeDatabase() {
     await ensureUrineAcetoneTestConfiguration();
     await ensure24HourUrineUreaTestConfiguration();
     await ensure24HourUrineUricAcidTestConfiguration();
+    await ensureUrinary17KetosteroidTestConfiguration();
+    await ensureUrinaryVmaTestConfiguration();
+    await ensureUrineObtThreeDayTestConfiguration();
+    await ensureUrinePorphobilinogenTestConfiguration();
+    await ensureUrinePregnancyTestConfiguration();
+    await ensureUrineProteinAlbuminTestConfiguration();
+    await ensure24HourUrineProteinTestConfiguration();
+    await ensureUrineRoutineTestConfiguration();
+    await ensureUrineReducingSubstancesTestConfiguration();
+    await ensureUrineSugarTestConfiguration();
+    await ensureUrineUrobilinogenTestConfiguration();
+    await ensureUrinePhTestConfiguration();
+    await ensureUroflowmetryTestConfiguration();
+    await ensureVaginalCervicalSwabTestConfiguration();
+    await ensureVaginalSwabAfbStainTestConfiguration();
+    await ensureVaginalSwabGramStainTestConfiguration();
+    await ensureValproateLevelTestConfiguration();
+    await ensureVanDenBerghReactionTestConfiguration();
+    await ensureWeilFelixTestConfiguration();
+    await ensureWellWomenProfileTestConfiguration();
+    await ensureWoundSwabAfbStainTestConfiguration();
+    await ensureWoundSwabGramStainTestConfiguration();
     await ensureRandomUrineUricAcidTestConfiguration();
     await ensureUrethralDischargeCultureSensitivityTestConfiguration();
     await ensureCervicalSwabGramStainTestConfiguration();
@@ -13076,3 +13340,25 @@ if (require.main === module) {
 }
 
 module.exports = { initializeDatabase, ensureUserDefaults, normalizeImportedCatalogueDisplayNames, ensureDiabeticProfileTestConfiguration, ensureExtendedDiabeticProfileTestConfiguration, ensureDiabeticRenalProfileTestConfiguration, ensureEarSwabGramStainTestConfiguration, ensureEarSwabAfbStainTestConfiguration, ensureFshPrlTestConfiguration, ensureFshLhPrlTestConfiguration, ensureFactorIiMutationTestConfiguration, ensureFactorViiiImmunodepletedTestConfiguration, ensureFemaleInfertilityProfileTestConfiguration, ensureFernTestConfiguration, ensureWuchereriaBancroftiAntigenTestConfiguration, ensureFilariaAntigenTestConfiguration, ensureFluidAspirationCytologyTestConfiguration, ensureFoetalHaemoglobinTestConfiguration, ensureFoetalHaemoglobinByHplcTestConfiguration, ensureFreeBetaHcgTestConfiguration, ensureFreeCholesterolTestConfiguration, ensureFreeEstradiolTestConfiguration, ensureFreePsaTestConfiguration, ensureFreeTestosteroneTestConfiguration, ensureFungusCultureTestConfiguration, ensureFungusCultureSensitivityTestConfiguration, ensureAntiInsulinAntibodyTestConfiguration, ensureAntiLeptospiraAntibodyTestConfiguration, ensureAntiMicrosomalAntibodyTestConfiguration, ensureAntiDsDnaAntibodyTestConfiguration, ensureAntiSsDnaAntibodyTestConfiguration, ensureAntiHistoneAntibodyTestConfiguration, ensureAntiRibosomalPAntibodyTestConfiguration, ensureAntiCcpAbTestConfiguration, ensureAntiSpermAntibodyTestConfiguration, ensureApolipoproteinA1TestConfiguration, ensureUrineArsenicTestConfiguration, ensureArthritisProfileTestConfiguration, ensureAsciticFluidGramStainTestConfiguration, ensureAsciticFluidTotalProteinTestConfiguration, ensureBodyFluidBiochemistryTestConfiguration, ensureBodyFluidSpecificGravityTestConfiguration, ensureCsfFluidChlorideTestConfiguration, ensureCsfFluidProteinTestConfiguration, ensureCsfFluidSpecificGravityTestConfiguration, ensureCsfFluidGlucoseTestConfiguration, ensureUrineCalcium24HourTestConfiguration, ensureCapillaryFragilityTestConfiguration, ensureCardiacProfileTestConfiguration, ensureColorectalCancerMonitorProfileTestConfiguration, ensureComplementFixationTestConfiguration, ensureBilateralConjunctivalSwabTestConfiguration, ensureRightConjunctivalSwabCultureTestConfiguration, ensureConjunctivalSwabCultureTestConfiguration, ensureCeruloplasminTestConfiguration, ensureUrineCopper24HourTestConfiguration, ensureRandomUrineCopperTestConfiguration, ensureEveningCortisolTestConfiguration, ensureMidnightCortisolTestConfiguration, ensureMorningEveningCortisolTestConfiguration, ensureCryoglobulinsScreeningTestConfiguration, ensureGndCultureTestConfiguration, ensureCysticFibrosisGeneMutationTestConfiguration, ensureCmvIggTestConfiguration, ensureCervicalPapSmearTestConfiguration, ensureCervicalSwabGramStainTestConfiguration, ensureCervicalSwabAfbStainTestConfiguration, ensureChikungunyaIggTestConfiguration, ensureChikungunyaIgmTestConfiguration, ensureChlamydiaAntibodyIggIgmTestConfiguration, ensureRandomUrineChlorideTestConfiguration, ensureSerumChlorideTestConfiguration, ensure24HourUrineChlorideTestConfiguration, ensureCsfFluidAfbStainTestConfiguration, ensureCsfFluidGramStainTestConfiguration, ensureCpkWithCkMbTestConfiguration, ensureCmvIgmIggTestConfiguration, ensureComplementC3TestConfiguration, ensureComplementC4TestConfiguration, ensureCancaAntiPr3TestConfiguration, ensureCreatinineClearanceTestConfiguration, ensureCd3LymphocyteTestConfiguration, ensureCd4LymphocyteTestConfiguration, ensureBronchialWashingCultureSensitivityTestConfiguration, ensureBactecAerobicCultureTestConfiguration, ensureBactecAnaerobicCultureTestConfiguration, ensureBronchialPapCytologyTestConfigurations };
+module.exports.ensureUrinary17KetosteroidTestConfiguration = ensureUrinary17KetosteroidTestConfiguration;
+module.exports.ensureUrinaryVmaTestConfiguration = ensureUrinaryVmaTestConfiguration;
+module.exports.ensureUrineObtThreeDayTestConfiguration = ensureUrineObtThreeDayTestConfiguration;
+module.exports.ensureUrinePorphobilinogenTestConfiguration = ensureUrinePorphobilinogenTestConfiguration;
+module.exports.ensureUrinePregnancyTestConfiguration = ensureUrinePregnancyTestConfiguration;
+module.exports.ensureUrineProteinAlbuminTestConfiguration = ensureUrineProteinAlbuminTestConfiguration;
+module.exports.ensure24HourUrineProteinTestConfiguration = ensure24HourUrineProteinTestConfiguration;
+module.exports.ensureUrineRoutineTestConfiguration = ensureUrineRoutineTestConfiguration;
+module.exports.ensureUrineReducingSubstancesTestConfiguration = ensureUrineReducingSubstancesTestConfiguration;
+module.exports.ensureUrineSugarTestConfiguration = ensureUrineSugarTestConfiguration;
+module.exports.ensureUrineUrobilinogenTestConfiguration = ensureUrineUrobilinogenTestConfiguration;
+module.exports.ensureUrinePhTestConfiguration = ensureUrinePhTestConfiguration;
+module.exports.ensureUroflowmetryTestConfiguration = ensureUroflowmetryTestConfiguration;
+module.exports.ensureVaginalCervicalSwabTestConfiguration = ensureVaginalCervicalSwabTestConfiguration;
+module.exports.ensureVaginalSwabAfbStainTestConfiguration = ensureVaginalSwabAfbStainTestConfiguration;
+module.exports.ensureVaginalSwabGramStainTestConfiguration = ensureVaginalSwabGramStainTestConfiguration;
+module.exports.ensureValproateLevelTestConfiguration = ensureValproateLevelTestConfiguration;
+module.exports.ensureVanDenBerghReactionTestConfiguration = ensureVanDenBerghReactionTestConfiguration;
+module.exports.ensureWeilFelixTestConfiguration = ensureWeilFelixTestConfiguration;
+module.exports.ensureWellWomenProfileTestConfiguration = ensureWellWomenProfileTestConfiguration;
+module.exports.ensureWoundSwabAfbStainTestConfiguration = ensureWoundSwabAfbStainTestConfiguration;
+module.exports.ensureWoundSwabGramStainTestConfiguration = ensureWoundSwabGramStainTestConfiguration;

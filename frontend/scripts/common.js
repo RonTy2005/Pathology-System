@@ -623,6 +623,102 @@ async function downloadBillPdf(visitId, billNo = "") {
   }
 }
 
+async function saveBrowserReportPdf(iframeDoc, options) {
+  if (typeof html2pdf !== "function") throw new Error("PDF tools are unavailable. Please reload and try again.");
+  if (iframeDoc.defaultView.__labReportPaginationPromise) {
+    await iframeDoc.defaultView.__labReportPaginationPromise;
+  }
+  const pages = Array.from(iframeDoc.querySelectorAll(".report-generated-page"));
+  if (!pages.length) throw new Error("Report pages are not ready for PDF download. Please try again.");
+  const reportStyles = Array.from(iframeDoc.head.querySelectorAll("style")).map(style => style.textContent).join("\n");
+
+  // Rasterize embedded SVG artwork at print resolution in its own document.
+  // This preserves QR codes, barcodes and pads through html2canvas's clone.
+  for (const image of iframeDoc.querySelectorAll(".report-generated-page img")) {
+    if (!image.src.startsWith("data:image/svg+xml")) continue;
+    await image.decode();
+    const bounds = image.getBoundingClientRect();
+    const canvas = iframeDoc.createElement("canvas");
+    canvas.width = Math.max(1, Math.ceil(bounds.width * 4));
+    canvas.height = Math.max(1, Math.ceil(bounds.height * 4));
+    canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+    image.src = canvas.toDataURL("image/png");
+    await image.decode();
+  }
+
+  let pdf;
+  for (const page of pages) {
+    const content = page.querySelector(".report-generated-content");
+    if (!content?.textContent.trim() || !content.getBoundingClientRect().height) {
+      throw new Error("Report content could not be rendered. Please try again.");
+    }
+    // Capture one measured sheet, not the entire report: oversized canvases
+    // silently turn blank in browsers when many reports/pages are combined.
+    const worker = html2pdf().from(page).set({
+      ...options,
+      pagebreak: { mode: [] },
+      html2canvas: {
+        ...options.html2canvas,
+        x: 0,
+        y: 0,
+        width: page.getBoundingClientRect().width,
+        height: page.getBoundingClientRect().height,
+        backgroundColor: null,
+        onclone: (clonedDoc) => {
+          // Keep workspace styles from changing report tables or image sizes.
+          clonedDoc.querySelectorAll('style, link[rel="stylesheet"]').forEach(node => node.remove());
+          const style = clonedDoc.createElement("style");
+          // The library clones the sheet into the main document, not the
+          // report iframe. Restore its styles and a stable A4 capture origin.
+          style.textContent = reportStyles + `
+            html, body { margin:0 !important; padding:0 !important; background:transparent !important; }
+            .html2pdf__overlay, .html2pdf__container {
+              left:0 !important; top:0 !important; right:auto !important;
+              margin:0 !important; width:210mm !important; background:transparent !important;
+            }
+            .report-generated-page { margin:0 !important; background:transparent !important; }
+          `;
+          clonedDoc.head.appendChild(style);
+          clonedDoc.querySelector(".report-generated-page > .letterhead-background")?.remove();
+        },
+      },
+    }).toCanvas();
+    const canvas = await worker.get("canvas");
+    if (!canvas.width || !canvas.height) throw new Error("Report content could not be rendered. Please try again.");
+    const pixels = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
+    let hasContent = false;
+    for (let index = 0; index < pixels.length; index += 4) {
+      if (pixels[index + 3] && Math.min(pixels[index], pixels[index + 1], pixels[index + 2]) < 240) {
+        hasContent = true;
+        break;
+      }
+    }
+    if (!hasContent) throw new Error("Report content could not be rendered. Please try again.");
+    // Composite the pad at the exact page origin. html2canvas can misplace
+    // full-page images when cloning a later sheet from an off-screen iframe.
+    const context = canvas.getContext("2d");
+    context.save();
+    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.globalCompositeOperation = "destination-over";
+    const pad = page.querySelector(":scope > .letterhead-background");
+    if (pad) context.drawImage(pad, 0, 0, canvas.width, canvas.height);
+    context.fillStyle = "#fff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.restore();
+    if (!pdf) {
+      await worker.toPdf();
+      pdf = await worker.get("pdf");
+      // Canvas height rounding can add a second page containing only the
+      // bottom edge of this already-paginated A4 sheet.
+      while (pdf.getNumberOfPages() > 1) pdf.deletePage(pdf.getNumberOfPages());
+    } else {
+      pdf.addPage();
+      pdf.addImage(canvas.toDataURL("image/jpeg", 1), "JPEG", 0, 0, 210, 297);
+    }
+  }
+  pdf.save(options.filename);
+}
+
 async function shareAndDownloadReport(visitId, includeLetterhead = null, shareViaWhatsApp = true, patientPhoneInput = "") {
   try {
     const user = getUser();
@@ -743,13 +839,7 @@ async function shareAndDownloadReport(visitId, includeLetterhead = null, shareVi
         new Promise((resolve) => setTimeout(resolve, 5000)),
       ]);
 
-      // html2pdf clones only the supplied body into the parent document. Carry
-      // the report's own styles with that body so A4, letterhead and signature
-      // sizing survive the clone in ordinary web browsers.
-      Array.from(iframeDoc.head.querySelectorAll("style")).forEach((style) => {
-        iframeDoc.body.insertBefore(style.cloneNode(true), iframeDoc.body.firstChild);
-      });
-      await html2pdf().from(iframeDoc.body).set(opt).save();
+      await saveBrowserReportPdf(iframeDoc, opt);
     } finally {
       document.body.removeChild(iframe);
     }

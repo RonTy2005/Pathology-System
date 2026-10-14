@@ -2,6 +2,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
+const vm = require("node:vm");
 
 const {
   createReportPdfHandler,
@@ -72,15 +73,92 @@ test("desktop handler waits for the report, prints it, saves it and cleans up", 
   assert.ok(calls.some(([name]) => name === "cleanup"));
 });
 
-test("browser fallback carries report head styles into the cloned PDF body", () => {
+test("browser fallback carries report head styles into the cloned PDF document", () => {
   const source = fs.readFileSync(path.join(__dirname, "../frontend/scripts/common.js"), "utf8");
   const routes = fs.readFileSync(path.join(__dirname, "../src/routes/visitRoutes.js"), "utf8");
   assert.match(source, /iframeDoc\.head\.querySelectorAll\("style"\)/);
-  assert.match(source, /iframeDoc\.body\.insertBefore\(style\.cloneNode\(true\)/);
+  assert.match(source, /clonedDoc\.head\.appendChild\(style\)/);
   assert.match(source, /format=html&pdf=1/);
   assert.match(source, /window\.labLmsDesktop\?\.saveReportPdf/);
   assert.match(routes, /pdfMode\s*\?\s*canDownloadReportPdf/);
   assert.match(routes, /readOnlyView:\s*!printMode\s*&&\s*!pdfMode/);
+});
+
+function browserPdfFixture({ pageCount = 2, blank = false } = {}) {
+  const calls = [];
+  let ready = false;
+  let pdfPages = 1;
+  const pdf = {
+    getNumberOfPages: () => pdfPages,
+    deletePage: () => { pdfPages--; },
+    addPage: () => { pdfPages++; },
+    addImage: (...args) => calls.push(["image", ...args]),
+    save: filename => calls.push(["save", filename]),
+  };
+  const pages = Array.from({ length: pageCount }, () => ({
+    getBoundingClientRect: () => ({ width: 794, height: 1123 }),
+    querySelector: selector => selector === ".report-generated-content" ? ({ textContent: "Test result 7.2", getBoundingClientRect: () => ({ height: 800 }) }) : null,
+  }));
+  const doc = {
+    defaultView: { __labReportPaginationPromise: Promise.resolve().then(() => { ready = true; }) },
+    head: { querySelectorAll: () => [{ textContent: ".report-generated-page { width:210mm; }" }] },
+    querySelectorAll: selector => {
+      assert.ok(ready, "Must wait for pagination before capturing pages");
+      return selector === ".report-generated-page" ? pages : [];
+    },
+  };
+  const html2pdf = () => {
+    const canvas = {
+      width: 1588, height: 2246,
+      getContext: () => ({ getImageData: () => ({ data: blank ? [255, 255, 255, 255] : [0, 0, 0, 255] }), fillRect: () => {}, save: () => {}, restore: () => {}, setTransform: () => {} }),
+      toDataURL: () => "data:image/jpeg;base64,QA",
+    };
+    const worker = {
+      from: source => { assert.ok(pages.includes(source)); calls.push(["capture", source]); return worker; },
+      set: options => {
+        assert.equal(options.html2canvas.x, 0);
+        assert.equal(options.html2canvas.y, 0);
+        assert.equal(options.pagebreak.mode.length, 0);
+        options.html2canvas.onclone({
+          createElement: () => ({}),
+          querySelector: () => null,
+          querySelectorAll: () => [],
+          head: { appendChild: style => { assert.match(style.textContent, /width:210mm/); assert.match(style.textContent, /html2pdf__container/); } },
+        });
+        return worker;
+      },
+      toCanvas: () => worker,
+      get: async key => key === "canvas" ? canvas : pdf,
+      toPdf: async () => { pdfPages = 2; calls.push(["create-pdf"]); },
+    };
+    return worker;
+  };
+  const source = fs.readFileSync(path.join(__dirname, "../frontend/scripts/common.js"), "utf8");
+  const helper = source.slice(source.indexOf("async function saveBrowserReportPdf("), source.indexOf("\nasync function shareAndDownloadReport("));
+  const save = vm.runInNewContext(helper + "\nsaveBrowserReportPdf", { html2pdf });
+  return { save, doc, calls, pdf };
+}
+
+test("browser exports each measured A4 page separately without extra rounding pages", async () => {
+  const { save, doc, calls, pdf } = browserPdfFixture();
+  await save(doc, { filename: "QA.pdf", html2canvas: { scale: 2 } });
+  assert.equal(calls.filter(([kind]) => kind === "capture").length, 2);
+  assert.equal(calls.filter(([kind]) => kind === "create-pdf").length, 1);
+  assert.equal(pdf.getNumberOfPages(), 2);
+  assert.deepEqual(calls.find(([kind]) => kind === "image").slice(2), ["JPEG", 0, 0, 210, 297]);
+  assert.deepEqual(calls.at(-1), ["save", "QA.pdf"]);
+});
+
+test("browser refuses a blank canvas instead of saving or sharing an empty PDF", async () => {
+  const { save, doc, calls } = browserPdfFixture({ blank: true });
+  await assert.rejects(save(doc, { filename: "QA.pdf" }), /could not be rendered/);
+  assert.ok(!calls.some(([kind]) => kind === "save" || kind === "create-pdf"));
+});
+
+test("browser refuses a report that has no generated pages", async () => {
+  const { save, doc, calls } = browserPdfFixture({ pageCount: 0 });
+  await assert.rejects(save(doc, { filename: "QA.pdf" }), /pages are not ready/);
+  assert.equal(calls.length, 0);
 });
 
 test("report barcode is embedded and identical with or without letterhead", () => {

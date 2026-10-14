@@ -60,3 +60,23 @@ test('bill QR embeds its existing patient portal link in the receipt footer', ()
   assert.doesNotMatch(html, /api\.qrserver\.com/);
   assert.doesNotMatch(buildBillHtml(sampleBill(1)), /<div class="portal-qr">/);
 });
+
+test('report QR fills the existing frame without enlarging the header or removing its quiet zone', () => {
+  const html = buildReportHtml({
+    ...sampleReport({ name: 'Complete Blood Count (CBC)', parameters: [] }),
+    digitalReportUrl: 'https://reports.example.invalid/api/patient-reports/sample/test/245/report',
+  });
+  const frame = html.match(/\.qr-frame\s*\{([^}]+)\}/)?.[1];
+  const image = html.match(/\.qr-img\s*\{([^}]+)\}/)?.[1];
+  assert.match(frame, /width:\s*81px/);
+  assert.match(frame, /height:\s*81px/);
+  assert.match(frame, /box-sizing:\s*border-box/);
+  assert.match(frame, /flex:\s*0 0 81px/);
+  assert.match(frame, /padding:\s*0;/);
+  assert.match(image, /width:\s*100%/);
+  assert.match(image, /height:\s*100%/);
+  const svg = Buffer.from(imageSource(html).split(',')[1], 'base64').toString('utf8');
+  // At scale 2 this encoder's modules are 4px wide; 16px = four modules.
+  assert.match(svg, /<path d="M16 /);
+  assert.match(svg, /fill="#FFFFFF"/);
+});

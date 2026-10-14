@@ -4,6 +4,7 @@ const { appendAdditionalReportText } = require("./reportAdditionalText");
 const { buildQrCodeDataUrl } = require("./qrCode");
 const { getCombinationDefinition } = require("../services/reportCombinationRepair");
 const { getCellReportDefinition } = require("../services/cellReportService");
+const { WELL_WOMEN_FIELDS, isWellWomenProfileName } = require("../services/wellWomenProfileService");
 const bwipjs = require("bwip-js");
 const { isBillingOnlyTest, BILLING_ONLY_MESSAGE } = require('../../frontend/scripts/reportEligibility');
 const { REPORT_PAGINATION_SCRIPT } = require("./reportPagination");
@@ -2029,6 +2030,97 @@ function isTotalProteinTest(test) {
     || name === "proteintotal";
 }
 
+function isWoundSwabGramStainTest(test) {
+  return ["woundswabgramstain", "woundswabforgramstain", "woundgramstain", "gramstainwoundswab"].includes(normalizeParameterName(test?.name));
+}
+
+function isWoundSwabAfbStainTest(test) {
+  return ["woundswabafbstain", "woundswabforafbstain", "woundafbstain", "afbstainwoundswab"].includes(normalizeParameterName(test?.name));
+}
+
+function isWeilFelixTest(test) {
+  return ["wellfelixtest", "weilfelixtest", "weilfelix", "wellfelix"].includes(normalizeParameterName(test?.name));
+}
+
+function isVanDenBerghReactionTest(test) {
+  return ["vandenburghreaction", "vandenberghreaction", "vandenberghtest", "vandenburghtest"].includes(normalizeParameterName(test?.name));
+}
+
+function isValproateLevelTest(test) {
+  return ["valporicacidsodiumvalproate", "valproicacidsodiumvalproate", "valproicacid", "valporicacid", "sodiumvalproate", "valproatelevel"].includes(normalizeParameterName(test?.name));
+}
+
+function isVaginalSwabGramStainTest(test) {
+  return ["vaginalswabgramstain", "vaginalswabforgramstain", "vaginalgramstain", "gramstainvaginalswab", "vaginalswabforframstain"].includes(normalizeParameterName(test?.name));
+}
+
+function isVaginalSwabAfbStainTest(test) {
+  return ["vaginalswabafbstain", "vaginalswabforafbstain", "vaginalafbstain", "afbstainvaginalswab"].includes(normalizeParameterName(test?.name));
+}
+
+function isVaginalCervicalSwabTest(test) {
+  return ["vaginalcervicalswab", "vaginalcervicalswabs", "cervicalvaginalswab"].includes(normalizeParameterName(test?.name));
+}
+
+function isUroflowmetryTest(test) {
+  return ["uroflowmetry", "uroflowmetrytest", "urinaryflowratestudy"].includes(normalizeParameterName(test?.name));
+}
+
+function isUrinePhTest(test) {
+  return ["urineph", "phurine", "urinephtest", "phurinetest"].includes(normalizeParameterName(test?.name));
+}
+
+function isUrineUrobilinogenTest(test) {
+  return ["urineurobilinogen", "urobilinogenurine", "urobilinogenurinetest"].includes(normalizeParameterName(test?.name));
+}
+
+function isUrineSugarTest(test) {
+  return ["urinesugar", "urinesugartest", "sugarurine", "unnesugar"].includes(normalizeParameterName(test?.name));
+}
+
+function isUrineReducingSubstancesTest(test) {
+  return ["urinereducingsubstance", "urinereducingsubstances", "reducingsubstancesurine", "urineforreducingsubstances", "urineredusingsubstence", "urnineredusingsubstance"].includes(normalizeParameterName(test?.name));
+}
+
+function isUrineRoutineTest(test) {
+  return ["urinereroutineexamination", "urinere", "urineroutineexamination", "routineurineexamination", "urinalysis"].includes(normalizeParameterName(test?.name));
+}
+
+function is24HourUrineProteinTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["urineprotein24hours", "urineprotein24hour", "24hrsurinaryprotein", "24hoururinaryprotein", "24hoururineprotein", "protein24hoururine", "totalprotein24hoururine"].includes(name);
+}
+
+function isUrineProteinAlbuminTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["urineproteinalbumin", "unneproteinalbumin", "proteinalbuminurine"].includes(name);
+}
+
+function isUrinePregnancyTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["urinepregnancytest", "pregnancytesturine", "unnepregnancytest", "urinehcgqualitative", "hcgurinequalitative"].includes(name);
+}
+
+function isUrinePorphobilinogenTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["urineporphobilinogen", "porphobilinogenurine", "porphobilinogenpbgurine", "urinepbg", "pbgurine"].includes(name);
+}
+
+function isUrineObtThreeDayTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["urineobt3consecutivedays", "urineobtthreeconsecutivedays", "urineoccultblood3consecutivedays", "urineoccultbloodtest3days"].includes(name);
+}
+
+function isUrinaryVmaTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["urinaryvma", "urinevma", "vmaurine", "vma24hoururine", "vanillylmandelicacidurine", "vanillylmandelicacid24hoururine", "vanillylmandelicacidvmaurine"].includes(name);
+}
+
+function isUrinary17KetosteroidTest(test) {
+  const name = normalizeParameterName(test?.name);
+  return ["urinary17ketosteroid", "urinary17ketosteroids", "urine17ketosteroids", "17ketosteroidsurine", "17ketosteroids24hoururine", "17ksurine"].includes(name);
+}
+
 function isRandomUrineUricAcidTest(test) {
   const name = normalizeParameterName(test?.name);
   const code = normalizeParameterName(test?.code);
@@ -2075,6 +2167,28 @@ function isBunTest(test) {
   const name = normalizeParameterName(test?.name);
   const code = normalizeParameterName(test?.code);
   return isTotalProteinTest(test)
+    || (isWoundSwabGramStainTest(test) && !String(test.report_body || "").trim())
+    || (isWoundSwabAfbStainTest(test) && !String(test.report_body || "").trim())
+    || (isWellWomenProfileName(test?.name) && !String(test.report_body || "").trim())
+    || (isWeilFelixTest(test) && !String(test.report_body || "").trim())
+    || (isVanDenBerghReactionTest(test) && !String(test.report_body || "").trim())
+    || (isValproateLevelTest(test) && !String(test.report_body || "").trim())
+    || (isVaginalSwabGramStainTest(test) && !String(test.report_body || "").trim())
+    || (isVaginalSwabAfbStainTest(test) && !String(test.report_body || "").trim())
+    || (isVaginalCervicalSwabTest(test) && !String(test.report_body || "").trim())
+    || (isUroflowmetryTest(test) && !String(test.report_body || "").trim())
+    || (isUrinePhTest(test) && !String(test.report_body || "").trim())
+    || (isUrineUrobilinogenTest(test) && !String(test.report_body || "").trim())
+    || (isUrineSugarTest(test) && !String(test.report_body || "").trim())
+    || (isUrineReducingSubstancesTest(test) && !String(test.report_body || "").trim())
+    || (isUrineRoutineTest(test) && !String(test.report_body || "").trim())
+    || (is24HourUrineProteinTest(test) && !String(test.report_body || "").trim())
+    || (isUrineProteinAlbuminTest(test) && !String(test.report_body || "").trim())
+    || (isUrinePregnancyTest(test) && !String(test.report_body || "").trim())
+    || (isUrinePorphobilinogenTest(test) && !String(test.report_body || "").trim())
+    || (isUrineObtThreeDayTest(test) && !String(test.report_body || "").trim())
+    || (isUrinaryVmaTest(test) && !String(test.report_body || "").trim())
+    || (isUrinary17KetosteroidTest(test) && !String(test.report_body || "").trim())
     || (isUrineAcetoneTest(test) && !String(test.report_body || "").trim())
     || (is24HourUrineUreaTest(test) && !String(test.report_body || "").trim())
     || (is24HourUrineUricAcidTest(test) && !String(test.report_body || "").trim())
@@ -10682,18 +10796,22 @@ function buildAfbCultureSensitivityReportBody(test) {
   `;
 }
 
-function buildCultureReportBody(test, { cultureName, aliases, defaultComment }) {
-  const result = findReportParameter(test, aliases) || {};
+function buildCultureReportBody(test, { cultureName, aliases }) {
+  const field = names => (test?.parameters || []).find(parameter =>
+    names.map(normalizeParameterName).includes(normalizeParameterName(parameter.parameter_name))) || {};
+  const result = field(aliases);
   const status = getCultureStatus(result.value);
-  const comments = findReportParameter(test, ["Comments", "Comment", "Remarks"]) || {};
-  const comment = String(comments.value || "").trim() || defaultComment;
+  const comments = field(["Comments", "Comment", "Remarks"]);
+  const narrative = value => escapeHtml(String(value ?? "").trim() || "-").replace(/\r?\n/g, "<br />");
+  const method = field(["Method / Analyzer", "Method / Reagent", "Culture Method", "Method"]);
+  const methodText = String(method.value || "").trim() || "Bacterial culture; interpretation per laboratory protocol";
 
   return `
     <table class="results-table culture-table">
       <thead><tr><th style="width: 38%">Investigation</th><th style="width: 25%">Result</th><th style="width: 25%">Reference Value</th><th style="width: 12%">Unit</th></tr></thead>
-      <tbody><tr><td><strong>${escapeHtml(cultureName)}</strong><div class="single-analyte-method">Conventional culture, Automated Identification &amp; Sensitivity</div></td><td><span class="${status?.className || ""}">${escapeHtml(status?.label || result.value || "-")}</span></td><td>Absent</td><td></td></tr></tbody>
+      <tbody><tr><td><strong>${escapeHtml(cultureName)}</strong><div class="single-analyte-method">${narrative(methodText)}</div></td><td><span class="${status?.className || ""}">${narrative(result.value)}</span></td><td>${escapeHtml(String(result.normal_range || "").trim() || "No significant growth")}</td><td>${escapeHtml(String(result.unit || "").trim())}</td></tr></tbody>
     </table>
-    <div class="single-analyte-notes culture-notes"><div class="report-note-heading">Comments:</div><p>${escapeHtml(comment)}</p></div>
+    <div class="single-analyte-notes culture-notes"><div class="report-note-heading">Comments:</div><p>${narrative(comments.value)}</p></div>
   `;
 }
 
@@ -18522,7 +18640,1414 @@ function buildRandomUrineUricAcidReportBody(test) {
   `;
 }
 
+// Collection, assay limitations and age-/sex-specific reference guidance:
+// https://ltd.aruplab.com/Tests/Pub/0080650
+function buildUrinary17KetosteroidReportBody(test) {
+  // A concentration must never be mistaken for daily excretion through
+  // partial-name matching (both contain "17-Ketosteroids").
+  const field = aliases => (test?.parameters || []).find(parameter =>
+    aliases.map(normalizeParameterName).includes(normalizeParameterName(parameter.parameter_name))) || {};
+  const text = parameter => escapeHtml(String(parameter?.value ?? "").trim() || "-").replace(/\r?\n/g, "<br />");
+  const row = (label, aliases, unit, range = "") => {
+    const parameter = field(aliases);
+    return `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${text(parameter)}</td><td>${escapeHtml(String(parameter.normal_range || "").trim() || range)}</td><td>${escapeHtml(String(parameter.unit || "").trim() || unit)}</td></tr>`;
+  };
+  const textRow = (label, aliases) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${text(field(aliases))}</td></tr>`;
+  return `
+    <div class="urinary-17-ketosteroids-report" data-report-content="urinary-17-ketosteroids">
+      <table class="results-table single-analyte-table urinary-17-ketosteroids-table">
+        <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead>
+        <tbody>
+          <tr class="single-analyte-sample-row"><td><strong>Specimen / Collection</strong></td><td colspan="3">${escapeHtml(String(test?.sample_type || "").trim() || "24-hour urine collection (verify collection details)")}</td></tr>
+          ${textRow("Collection Start Date / Time", ["Collection Start Date / Time", "Collection Start", "Start Date / Time"])}
+          ${textRow("Collection End Date / Time", ["Collection End Date / Time", "Collection End", "End Date / Time"])}
+          ${row("Collection Duration", ["Collection Duration", "Hours Collected", "Duration"], "hours")}
+          ${row("Total Urine Volume", ["Total Urine Volume", "Total Volume", "Urine Volume"], "mL")}
+          <tr class="thyroid-antibodies-section"><td colspan="4"><strong>URINARY 17-KETOSTEROIDS</strong></td></tr>
+          ${row("17-Ketosteroids, 24-Hour Urine", ["17-Ketosteroids, 24-Hour Urine", "17-Ketosteroids - per 24h", "Urinary 17 Ketosteroid", "17-Ketosteroids", "17-KS", "Result"], "mg/24 h", "Laboratory-validated age- and sex-specific interval")}
+          ${row("17-Ketosteroids, Urine Concentration", ["17-Ketosteroids, Urine Concentration", "17-Ketosteroids - per volume", "Urine 17-Ketosteroid Concentration"], "mg/L", "No established random-urine interval")}
+          ${row("Urine Creatinine Concentration, if measured", ["Urine Creatinine Concentration, if measured", "Urine Creatinine Concentration", "Creatinine, Urine - per volume"], "mg/dL")}
+          ${row("Urine Creatinine, 24 Hour, if measured", ["Urine Creatinine, 24 Hour, if measured", "Urine Creatinine, 24 Hour", "Creatinine, Urine - per 24h"], "mg/24 h")}
+          ${textRow("Method / Analyzer", ["Method / Analyzer", "Method", "Analyzer"])}
+          ${textRow("Clinical Details / Medication History", ["Clinical Details / Medication History", "Clinical Details", "Medication History"])}
+          ${textRow("Collection Completeness / Comments", ["Collection Completeness / Comments", "Collection Completeness", "Comments", "Remarks"])}
+        </tbody>
+      </table>
+      <div class="single-analyte-notes report-template-notes urinary-17-ketosteroids-notes">
+        <div class="report-note-heading">Reference guide :</div>
+        <table class="results-table"><thead><tr><th>Age</th><th>Male (mg/24 h)</th><th>Female (mg/24 h)</th></tr></thead>
+          <tbody><tr><td>17 - 50 years</td><td>5.3 - 17.6</td><td>4.4 - 14.2</td></tr>
+          <tr><td>51 years and older</td><td>4.1 - 12.1</td><td>3.2 - 10.6</td></tr></tbody>
+        </table>
+        <p>These spectrophotometric reference examples are method-specific. The performing laboratory&rsquo;s validated interval takes precedence; children need their own age-specific intervals.</p>
+        <div class="report-note-heading">Interpretation and limitations :</div>
+        <ul>
+          <li>This assay supports assessment of adrenal androgen production but is nonspecific; a result alone does not establish a diagnosis. Serum DHEA-S is a more specific alternative when clinically indicated.</li>
+          <li>Medicines and other substances can interfere with the assay. Record medication history; patients should not stop prescribed treatment without clinician advice.</li>
+          <li>Daily excretion requires a complete timed collection. A random concentration has no established reference interval and must not be compared with mg/24 h limits.</li>
+        </ul>
+        <div class="report-note-heading">Collection note :</div>
+        <p>Record collection dates, duration and total volume; refrigerate and transport according to laboratory instructions. Missed portions or incorrect timing can invalidate excretion. Record verified results; this report does not automatically calculate excretion or creatinine ratios.</p>
+      </div>
+    </div>
+  `;
+}
+
+// Daily excretion, creatinine-normalized units and collection limitations:
+// https://ltd.aruplab.com/Tests/Pub/0080421
+// https://www.mayocliniclabs.com/test-catalog/Overview/9454
+function buildUrinaryVmaReportBody(test) {
+  const field = aliases => (test?.parameters || []).find(parameter =>
+    aliases.map(normalizeParameterName).includes(normalizeParameterName(parameter.parameter_name))) || {};
+  const text = parameter => escapeHtml(String(parameter?.value ?? "").trim() || "-").replace(/\r?\n/g, "<br />");
+  const row = (label, aliases, unit, range = "") => {
+    const parameter = field(aliases);
+    return `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${text(parameter)}</td><td>${escapeHtml(String(parameter.normal_range || "").trim() || range)}</td><td>${escapeHtml(String(parameter.unit || "").trim() || unit)}</td></tr>`;
+  };
+  const textRow = (label, aliases) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${text(field(aliases))}</td></tr>`;
+  const specimen = field(["Specimen / Collection Type", "Specimen", "Collection Type"]);
+  return `
+    <div class="urinary-vma-report" data-report-content="urinary-vma">
+      <table class="results-table single-analyte-table urinary-vma-table">
+        <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead>
+        <tbody>
+          <tr class="single-analyte-sample-row"><td><strong>Specimen / Collection Type</strong></td><td colspan="3">${escapeHtml(String(specimen.value || test?.sample_type || "").trim() || "Urine (record actual collection type)")}</td></tr>
+          ${textRow("Collection Start Date / Time", ["Collection Start Date / Time", "Collection Start"])}
+          ${textRow("Collection End Date / Time", ["Collection End Date / Time", "Collection End"])}
+          ${row("Collection Duration", ["Collection Duration", "Hours Collected"], "hours")}
+          ${row("Total Urine Volume", ["Total Urine Volume", "Total Volume", "Urine Volume"], "mL")}
+          <tr class="thyroid-antibodies-section"><td colspan="4"><strong>VANILLYLMANDELIC ACID (VMA)</strong></td></tr>
+          ${row("VMA, 24-Hour Urine", ["VMA, 24-Hour Urine", "Vanillylmandelic Acid - per 24h", "Vanillylmandelic Acid, 24 Hour, Urine", "Urinary V M A", "VMA", "Result"], "mg/24 h", "Age 18 years and older: 0.0 - 7.0; use laboratory-validated interval")}
+          ${row("VMA, Urine Concentration", ["VMA, Urine Concentration", "Vanillylmandelic Acid - per volume", "VMA Concentration"], "mg/L", "No established concentration reference interval")}
+          ${row("VMA / Creatinine Ratio, if reported", ["VMA / Creatinine Ratio, if reported", "VMA / Creatinine Ratio", "Vanillylmandelic Acid - ratio to CRT"], "mg/g creatinine", "Laboratory-validated age-specific interval")}
+          ${row("Urine Creatinine Concentration, if measured", ["Urine Creatinine Concentration, if measured", "Urine Creatinine Concentration", "Creatinine, Urine - per volume"], "mg/dL")}
+          ${row("Urine Creatinine, 24 Hour, if measured", ["Urine Creatinine, 24 Hour, if measured", "Urine Creatinine, 24 Hour", "Creatinine, Urine - per 24h"], "mg/24 h")}
+          ${textRow("Method / Analyzer", ["Method / Analyzer", "Method", "Analyzer"])}
+          ${textRow("Clinical Details / Medication History", ["Clinical Details / Medication History", "Clinical Details", "Medication History"])}
+          ${textRow("Collection Completeness / Interpretation / Comments", ["Collection Completeness / Interpretation / Comments", "Collection Completeness", "Interpretation", "Comments", "Remarks"])}
+        </tbody>
+      </table>
+      <div class="single-analyte-notes report-template-notes urinary-vma-notes">
+        <div class="report-note-heading">Reference guide :</div>
+        <p>LC-MS/MS reference examples: daily excretion at age 18 years and older, 0.0 - 7.0 mg/24 h. Creatinine-normalized results use different units and age-specific limits:</p>
+        <table class="results-table"><thead><tr><th>Age</th><th>VMA / Creatinine (mg/g creatinine)</th></tr></thead>
+          <tbody><tr><td>0 - 2 years</td><td>0 - 27</td></tr><tr><td>3 - 5 years</td><td>0 - 13</td></tr>
+          <tr><td>6 - 17 years</td><td>0 - 9</td></tr><tr><td>18 years and older</td><td>0 - 6</td></tr></tbody>
+        </table>
+        <p>The performing laboratory&rsquo;s validated intervals take precedence. Do not apply daily-excretion limits to a spot concentration, a creatinine ratio, or a child&rsquo;s result.</p>
+        <div class="report-note-heading">Interpretive notes :</div>
+        <ul>
+          <li>VMA is a catecholamine metabolite. It can support investigation or monitoring of catecholamine-secreting tumours, including neuroblastoma; related tests such as HVA may be needed.</li>
+          <li>An elevated result is not diagnostic, and a normal result does not exclude a tumour. Interpret with clinical findings and appropriate further testing.</li>
+          <li>Anxiety, strenuous exercise and medicines can affect results. Record medication history and follow laboratory preparation instructions; do not stop prescribed treatment without clinician advice.</li>
+        </ul>
+        <div class="report-note-heading">Collection note :</div>
+        <p>For timed urine, record duration, dates and total volume; use the laboratory&rsquo;s approved storage and preservative procedure. Incomplete collection can invalidate daily excretion. Enter verified excretion and ratio values; this report does not calculate them automatically.</p>
+      </div>
+    </div>
+  `;
+}
+
+// Urinary blood screening is distinct from fecal occult blood testing.
+// https://www.medlineplus.gov/lab-tests/blood-in-urine/
+// https://www.auanet.org/documents/Guidelines/PDF/2025%20Guidelines/MH%20Unabridged%20FINAL.pdf
+function buildUrineObtThreeDayReportBody(test) {
+  const field = aliases => (test?.parameters || []).find(parameter =>
+    aliases.map(normalizeParameterName).includes(normalizeParameterName(parameter.parameter_name))) || {};
+  const text = parameter => escapeHtml(String(parameter?.value ?? "").trim() || "-").replace(/\r?\n/g, "<br />");
+  const specimen = field(["Specimen / Collection Type", "Specimen", "Collection Type"]);
+  const days = [1, 2, 3].map(day => {
+    const collection = field([`Day ${day} Collection Date / Time`, `Day ${day} Collection Date`, `Day ${day} Date`]);
+    const result = field([`Day ${day} Urine Blood / OBT Result`, `Day ${day} Urine OBT`, `Day ${day} OBT Result`, `Day ${day} Result`]);
+    const grade = field([`Day ${day} Grade, if reported`, `Day ${day} Grade`]);
+    return `<tr><td><strong>Day ${day}</strong></td><td>${text(collection)}</td><td>${text(result)}${result.unit ? `<div>${escapeHtml(result.unit)}</div>` : ""}</td><td>${text(grade)}</td><td>${escapeHtml(String(result.normal_range || "").trim() || "Negative / Not detected; assay-specific")}</td></tr>`;
+  }).join("");
+  const textRow = (label, aliases) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${text(field(aliases))}</td></tr>`;
+  const legacy = field(["Result", "Urine OBT", "Urine Occult Blood"]);
+  return `
+    <div class="urine-obt-three-day-report" data-report-content="urine-obt-three-days">
+      <table class="results-table single-analyte-table">
+        <tbody><tr><td><strong>Specimen / Collection Type</strong></td><td>${escapeHtml(String(specimen.value || test?.sample_type || "").trim() || "Urine (separate samples for the requested days)")}</td></tr>
+          ${textRow("Method / Reagent", ["Method / Reagent", "Method", "Reagent"])}
+        </tbody>
+      </table>
+      <table class="results-table single-analyte-table urine-obt-three-day-table">
+        <thead><tr><th style="width:10%">Day</th><th style="width:23%">Collection Date / Time</th><th style="width:23%">Urine Blood / OBT Result</th><th style="width:14%">Grade, if reported</th><th style="width:30%">Reference / Interpretation</th></tr></thead>
+        <tbody>${days}</tbody>
+      </table>
+      <table class="results-table single-analyte-table">
+        <tbody>
+          ${String(legacy.value ?? "").trim() ? `<tr><td><strong>Previously Recorded Result (day not specified)</strong></td><td>${text(legacy)}${legacy.unit ? ` ${escapeHtml(legacy.unit)}` : ""}</td></tr>` : ""}
+          ${textRow("Overall Laboratory Interpretation / Summary", ["Overall Laboratory Interpretation / Summary", "Overall Interpretation", "Summary"])}
+          ${textRow("Comments / Specimen Limitations", ["Comments / Specimen Limitations", "Comments", "Remarks"])}
+        </tbody>
+      </table>
+      <div class="single-analyte-notes report-template-notes urine-obt-three-day-notes">
+        <div class="report-note-heading">Scope and reference guidance :</div>
+        <p>This is a urine blood screen over the requested three days, not a stool occult blood test. The usual qualitative expected finding is negative; retain the performing assay&rsquo;s categories, units and reference guidance. Grades are method-specific and are not an RBC count.</p>
+        <div class="report-note-heading">Interpretive notes :</div>
+        <ul>
+          <li>Report each submitted day independently, with its actual collection date and result. A blank or unsubmitted day is not a negative result; the overall summary is entered by the laboratory, not calculated automatically.</li>
+          <li>Dipstick blood screening can react to haemoglobin or myoglobin as well as intact red cells. A positive screen alone does not establish microscopic haematuria; correlate with urine microscopy when clinically indicated.</li>
+          <li>Exercise, menstrual contamination and reagent-specific interference can affect findings. Use a properly collected specimen and follow laboratory handling instructions.</li>
+          <li>Interpret with symptoms, collection quality and relevant clinical findings. This series does not identify the cause of blood in urine or establish a diagnosis by itself.</li>
+        </ul>
+      </div>
+    </div>
+  `;
+}
+
+// PBG assay units, specimen protection and acute-porphyria assessment:
+// https://ltd.aruplab.com/Tests/Pub/0080260
+// https://mml.testcatalog.org/show/PBGU
+function buildUrinePorphobilinogenReportBody(test) {
+  const field = aliases => (test?.parameters || []).find(parameter =>
+    aliases.map(normalizeParameterName).includes(normalizeParameterName(parameter.parameter_name))) || {};
+  const text = parameter => escapeHtml(String(parameter?.value ?? "").trim() || "-").replace(/\r?\n/g, "<br />");
+  const row = (label, aliases, unit = "", range = "", optional = false) => {
+    const parameter = field(aliases);
+    if (optional && !String(parameter.value ?? "").trim()) return "";
+    return `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${text(parameter)}</td><td>${escapeHtml(String(parameter.normal_range || "").trim() || range)}</td><td>${escapeHtml(String(parameter.unit || "").trim() || unit)}</td></tr>`;
+  };
+  const textRow = (label, aliases) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${text(field(aliases))}</td></tr>`;
+  const specimen = field(["Specimen / Collection Type", "Specimen", "Collection Type"]);
+  return `
+    <div class="urine-porphobilinogen-report" data-report-content="urine-porphobilinogen">
+      <table class="results-table single-analyte-table urine-porphobilinogen-table">
+        <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead>
+        <tbody>
+          <tr class="single-analyte-sample-row"><td><strong>Specimen / Collection Type</strong></td><td colspan="3">${escapeHtml(String(specimen.value || test?.sample_type || "").trim() || "Urine (record actual collection type)")}</td></tr>
+          ${textRow("Collection Date / Time", ["Collection Date / Time", "Collection Date", "Collection Time"])}
+          ${textRow("Test / Reporting Basis", ["Test / Reporting Basis", "Test Type", "Reporting Basis"])}
+          <tr class="thyroid-antibodies-section"><td colspan="4"><strong>PORPHOBILINOGEN (PBG), URINE</strong></td></tr>
+          ${row("Porphobilinogen (PBG), Urine", ["Porphobilinogen (PBG), Urine", "Porphobilinogen, Urine", "Urine Porphobilinogen", "Porphobilinogen", "PBG", "Result"], "", "Assay-specific qualitative / quantitative reference")}
+          ${row("PBG / Creatinine Ratio, if reported", ["PBG / Creatinine Ratio, if reported", "PBG / Creatinine Ratio", "Porphobilinogen, Urine - ratio to CRT"], "", "Laboratory-validated ratio interval and units", true)}
+          ${row("PBG, 24-Hour Excretion, if reported", ["PBG, 24-Hour Excretion, if reported", "PBG, 24-Hour Excretion", "Porphobilinogen, Urine - per 24h"], "", "Laboratory-validated timed-excretion interval and units", true)}
+          ${row("Urine Creatinine, if measured", ["Urine Creatinine, if measured", "Urine Creatinine", "Creatinine, Urine - per volume"], "mg/dL", "", true)}
+          ${row("Total Urine Volume, if timed collection", ["Total Urine Volume, if timed collection", "Total Urine Volume", "Total Volume"], "mL", "", true)}
+          ${row("Collection Duration, if timed collection", ["Collection Duration, if timed collection", "Collection Duration", "Hours Collected"], "hours", "", true)}
+          ${textRow("Method / Analyzer", ["Method / Analyzer", "Method / Reagent", "Method", "Analyzer"])}
+          ${textRow("Light Protection / Storage", ["Light Protection / Storage", "Light Protection", "Storage", "Specimen Handling"])}
+          ${textRow("Clinical Details / Medication History", ["Clinical Details / Medication History", "Clinical Details", "Medication History"])}
+          ${textRow("Laboratory Interpretation", ["Laboratory Interpretation", "Interpretation", "Impression"])}
+          ${textRow("Comments / Limitations", ["Comments / Limitations", "Comments", "Remarks"])}
+        </tbody>
+      </table>
+      <div class="single-analyte-notes report-template-notes urine-porphobilinogen-notes">
+        <div class="report-note-heading">Reference guidance :</div>
+        <p>For a qualitative screen, report the assay&rsquo;s validated category (usually not detected as the expected finding). For quantitative testing, retain the laboratory&rsquo;s result, unit and interval. A creatinine-normalized LC-MS/MS example is &le; 0.2 mmol/mol creatinine; it is not a concentration or a daily-excretion limit. The performing laboratory&rsquo;s validated reference takes precedence.</p>
+        <div class="report-note-heading">Clinical use and interpretation :</div>
+        <ul>
+          <li>Urinary PBG testing supports assessment of suspected acute porphyria. Interpret with symptoms, timing, medication history and related biochemical findings; this result alone does not establish a porphyria subtype.</li>
+          <li>PBG is not interchangeable with total urine porphyrins, urobilinogen or aminolevulinic acid. Report only the investigation performed.</li>
+          <li>A qualitative screen and a quantitative measurement are different results. Confirm the method and reporting basis; a screen does not establish a numerical PBG concentration.</li>
+          <li>Creatinine-normalized ratios and timed excretion require the appropriate measured data and collection details. No ratio, daily excretion or negative finding is generated automatically from blank fields.</li>
+        </ul>
+        <div class="report-note-heading">Specimen note :</div>
+        <p>Protect urine from light and follow the performing laboratory&rsquo;s storage and transport procedure. Record collection type, date and time; for timed collections include duration and total volume. Light exposure or inappropriate handling can compromise interpretation.</p>
+      </div>
+    </div>
+  `;
+}
+
+// Urine hCG screening and assay-dependent detection / validity guidance:
+// https://www.medlineplus.gov/lab-tests/pregnancy-test/
+// https://www.fda.gov/medical-devices/home-use-tests/pregnancy
+// https://www.medline.com/media/catalog/Docs/MKT/MPL_PKG_MPH11025HCG_INS_P-T%20%281%29.pdf
+function buildUrinePregnancyReportBody(test) {
+  const field = aliases => (test?.parameters || []).find(parameter =>
+    aliases.map(normalizeParameterName).includes(normalizeParameterName(parameter.parameter_name))) || {};
+  const text = parameter => escapeHtml(String(parameter?.value ?? "").trim() || "-").replace(/\r?\n/g, "<br />");
+  const result = field(["Urine hCG, Qualitative Result", "Urine Pregnancy Test", "Pregnancy Test Result", "Urine hCG Result", "hCG Qualitative Result", "Result"]);
+  const cutOff = field(["Assay Cut-off / Detection Limit, if supplied", "Assay Cut-off / Detection Limit", "Detection Limit", "Cut-off"]);
+  const textRow = (label, aliases) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${text(field(aliases))}</td></tr>`;
+  return `
+    <div class="urine-pregnancy-report" data-report-content="urine-pregnancy-test">
+      <table class="results-table single-analyte-table urine-pregnancy-table">
+        <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead>
+        <tbody>
+          <tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(String(test?.sample_type || "").trim() || "Urine")}</td></tr>
+          ${textRow("Collection Date / Time", ["Collection Date / Time", "Collection Date", "Collection Time"])}
+          <tr class="thyroid-antibodies-section"><td colspan="4"><strong>URINE hCG - QUALITATIVE</strong></td></tr>
+          <tr><td><strong>Urine hCG, Qualitative Result</strong></td><td>${text(result)}</td><td>${escapeHtml(String(result.normal_range || "").trim() || "Negative / hCG not detected (assay-specific)")}</td><td>${escapeHtml(String(result.unit || "").trim())}</td></tr>
+          ${textRow("Method / Assay", ["Method / Assay", "Method / Reagent", "Method", "Assay"])}
+          ${textRow("Kit / Platform", ["Kit / Platform", "Kit", "Platform"])}
+          ${String(cutOff.value ?? "").trim() ? `<tr><td><strong>Assay Cut-off / Detection Limit</strong></td><td>${text(cutOff)}</td><td>${escapeHtml(String(cutOff.normal_range || "").trim() || "Manufacturer / laboratory-validated limit")}</td><td>${escapeHtml(String(cutOff.unit || "").trim() || "mIU/mL")}</td></tr>` : ""}
+          ${textRow("Control / Test Validity, if applicable", ["Control / Test Validity, if applicable", "Control / Test Validity", "Control Status", "Test Validity"])}
+          ${textRow("Clinical Details / Testing Timing", ["Clinical Details / Testing Timing", "Clinical Details", "Testing Timing"])}
+          ${textRow("Laboratory Interpretation", ["Laboratory Interpretation", "Interpretation", "Impression"])}
+          ${textRow("Comments / Limitations", ["Comments / Limitations", "Comments", "Remarks"])}
+        </tbody>
+      </table>
+      <div class="single-analyte-notes report-template-notes urine-pregnancy-notes">
+        <div class="report-note-heading">Clinical use :</div>
+        <p>This qualitative test checks urine for human chorionic gonadotropin (hCG) to support assessment of suspected pregnancy. It does not provide a numerical hCG level or gestational age.</p>
+        <div class="report-note-heading">Interpretation guide :</div>
+        <table class="notes-table"><thead><tr><th>Reported finding</th><th>Explanation</th></tr></thead><tbody>
+          <tr><td>Positive / hCG detected</td><td>hCG detected according to the assay criteria; pregnancy is likely. Clinical confirmation and appropriate follow-up are required.</td></tr>
+          <tr><td>Negative / hCG not detected</td><td>hCG not detected at the assay threshold. Testing too early or using dilute urine can give a negative result despite pregnancy; seek clinician-directed repeat testing if suspicion remains.</td></tr>
+          <tr><td>Invalid / non-interpretable</td><td>Do not treat an invalid test as negative. Follow the kit and laboratory instructions for repeat testing and report only a valid, reviewed result.</td></tr>
+        </tbody></table>
+        <div class="report-note-heading">Reference and method note :</div>
+        <p>The usual non-pregnant expected finding is negative. Detection limits and reading times depend on the kit; no universal numerical cut-off is assigned here. Record the actual method, kit and applicable validity checks.</p>
+        <div class="report-note-heading">Limitations :</div>
+        <p>Interpret with symptoms, testing timing and medication history; hCG-containing fertility treatment can affect results. Follow collection instructions and avoid excessive fluid intake before testing. A blank result is unreported, not negative; quantitative serum beta-hCG is a separate investigation.</p>
+      </div>
+    </div>
+  `;
+}
+
+// Screening versus measured albumin / protein and creatinine-normalized assays:
+// https://www.niddk.nih.gov/health-information/kidney-disease/chronic-kidney-disease-ckd/tests-diagnosis/albuminuria-albumin-urine
+// https://www.niddk.nih.gov/health-information/professionals/clinical-tools-patient-management/kidney-disease/identify-manage-patients/evaluate-ckd/assess-urine-albumin
+// https://news.mayocliniclabs.com/2023/05/22/applying-mass-fix-to-urine-samples/
+function buildUrineProteinAlbuminReportBody(test) {
+  const field = aliases => (test?.parameters || []).find(parameter =>
+    aliases.map(normalizeParameterName).includes(normalizeParameterName(parameter.parameter_name))) || {};
+  const text = parameter => escapeHtml(String(parameter?.value ?? "").trim() || "-").replace(/\r?\n/g, "<br />");
+  const result = field(["Urine Protein / Albumin Result", "Urine Protein / Albumin", "Result"]);
+  const protein = field(["Urine Protein", "Protein, Urine", "Urine Total Protein", "Total Protein, Urine"]);
+  const albumin = field(["Urine Albumin", "Albumin, Urine"]);
+  const recorded = parameter => String(parameter.value ?? "").trim().length > 0;
+  const measurementRow = (label, parameter, range) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${text(parameter)}</td><td>${escapeHtml(String(parameter.normal_range || "").trim() || range)}</td><td>${escapeHtml(String(parameter.unit || "").trim())}</td></tr>`;
+  const grade = field(["Grade / Semiquantitative Category, if reported", "Grade", "Semiquantitative Category"]);
+  const specimen = field(["Specimen / Collection Type", "Specimen", "Collection Type"]);
+  const textRow = (label, aliases) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${text(field(aliases))}</td></tr>`;
+  return `
+    <div class="urine-protein-albumin-report" data-report-content="urine-protein-albumin">
+      <table class="results-table single-analyte-table urine-protein-albumin-table">
+        <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead>
+        <tbody>
+          <tr class="single-analyte-sample-row"><td><strong>Specimen / Collection Type</strong></td><td colspan="3">${escapeHtml(String(specimen.value || test?.sample_type || "").trim() || "Urine (record actual collection type)")}</td></tr>
+          ${textRow("Collection Date / Time", ["Collection Date / Time", "Collection Date", "Collection Time"])}
+          <tr class="thyroid-antibodies-section"><td colspan="4"><strong>URINE PROTEIN / ALBUMIN</strong></td></tr>
+          ${recorded(result) || (!recorded(protein) && !recorded(albumin)) ? measurementRow("Urine Protein / Albumin Result", result, "Negative (qualitative screen); quantitative methods: lab-specific") : ""}
+          ${recorded(protein) ? measurementRow("Protein, Urine (reported)", protein, "Laboratory-validated method-specific reference") : ""}
+          ${recorded(albumin) ? measurementRow("Albumin, Urine (reported)", albumin, "Laboratory-validated method-specific reference") : ""}
+          ${String(grade.value ?? "").trim() ? `<tr><td><strong>Grade / Semiquantitative Category</strong></td><td colspan="3">${text(grade)}</td></tr>` : ""}
+          ${textRow("Method / Reagent", ["Method / Reagent", "Method", "Reagent"])}
+          ${textRow("Reporting Basis / Measured Analyte", ["Reporting Basis / Measured Analyte", "Reporting Basis", "Measured Analyte", "Test Type"])}
+          ${textRow("Laboratory Interpretation", ["Laboratory Interpretation", "Interpretation", "Impression"])}
+          ${textRow("Comments / Limitations", ["Comments / Limitations", "Comments", "Remarks"])}
+        </tbody>
+      </table>
+      <div class="single-analyte-notes report-template-notes urine-protein-albumin-notes">
+        <div class="report-note-heading">Clinical use :</div>
+        <p>Urine protein or albumin testing supports assessment of protein loss in urine. Albumin is one type of protein; a combined catalogue label does not establish that total protein and albumin were measured separately.</p>
+        <div class="report-note-heading">Reference and interpretation guide :</div>
+        <table class="notes-table"><thead><tr><th>Reporting basis</th><th>Guidance</th></tr></thead><tbody>
+          <tr><td>Qualitative screen</td><td>The usual expected category is negative. Retain the laboratory&rsquo;s actual result and validated grading; trace or positive findings need clinical correlation.</td></tr>
+          <tr><td>Semiquantitative grade</td><td>Grades depend on the reagent and urine concentration. A grade is not an exact protein concentration, daily excretion or creatinine ratio.</td></tr>
+          <tr><td>Quantitative measurement, if performed</td><td>Identify the measured analyte (total protein or albumin), unit and method-specific interval. A concentration is not interchangeable with a creatinine-normalized ratio.</td></tr>
+        </tbody></table>
+        <div class="report-note-heading">Notes and limitations :</div>
+        <ul>
+          <li>Routine protein dipsticks are mainly responsive to albumin and may miss some non-albumin proteins. A negative screen does not exclude low-level albuminuria.</li>
+          <li>Urine concentration affects screening and concentration results. When indicated, separately requested albumin-creatinine or protein-creatinine ratios provide additional assessment.</li>
+          <li>ACR, UPCR, microalbumin and 24-hour urine protein are distinct investigations that must be explicitly requested and reported. None is inferred from a qualitative result.</li>
+          <li>Follow laboratory collection and handling instructions. Interpret with clinical history and related findings; one abnormal result alone does not establish chronic kidney disease.</li>
+        </ul>
+      </div>
+    </div>
+  `;
+}
+
+// Timed total-protein measurement, method-specific reference and limitations:
+// https://ltd.aruplab.com/Tests/Pub/0020479
+// https://www.mayocliniclabs.com/test-catalog/overview/614001
+function build24HourUrineProteinReportBody(test) {
+  const field = aliases => (test?.parameters || []).find(parameter =>
+    aliases.map(normalizeParameterName).includes(normalizeParameterName(parameter.parameter_name))) || {};
+  const text = parameter => escapeHtml(String(parameter?.value ?? "").trim() || "-").replace(/\r?\n/g, "<br />");
+  const row = (label, aliases, unit, range = "") => {
+    const parameter = field(aliases);
+    return `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${text(parameter)}</td><td>${escapeHtml(String(parameter.normal_range || "").trim() || range)}</td><td>${escapeHtml(String(parameter.unit || "").trim() || unit)}</td></tr>`;
+  };
+  const textRow = (label, aliases) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${text(field(aliases))}</td></tr>`;
+  return `
+    <div class="urine-protein-24-hour-report" data-report-content="urine-protein-24-hour">
+      <table class="results-table single-analyte-table urine-protein-24-hour-table">
+        <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead>
+        <tbody>
+          <tr class="single-analyte-sample-row"><td><strong>Specimen / Collection</strong></td><td colspan="3">${escapeHtml(String(test?.sample_type || "").trim() || "24-hour urine collection (verify collection details)")}</td></tr>
+          ${textRow("Collection Start Date / Time", ["Collection Start Date / Time", "Collection Start"])}
+          ${textRow("Collection End Date / Time", ["Collection End Date / Time", "Collection End"])}
+          ${row("Collection Duration", ["Collection Duration", "Hours Collected", "Duration"], "hours")}
+          ${row("Total Urine Volume", ["Total Urine Volume", "Total Volume", "Urine Volume"], "mL")}
+          <tr class="thyroid-antibodies-section"><td colspan="4"><strong>TOTAL PROTEIN, 24-HOUR URINE</strong></td></tr>
+          ${row("Urine Protein Concentration", ["Urine Protein Concentration", "Total Protein, Urine-per volume", "Urine Protein", "Protein Total"], "mg/dL", "Interpret with the complete timed collection")}
+          ${row("Total Urine Protein, 24 Hour", ["Total Urine Protein, 24 Hour", "Urine 24 Hour Protein", "Urine Protein 24 Hours", "24 Hour Urine Protein", "Protein, Total, 24 Hour, Urine", "Result"], "mg/24 h", "Laboratory-validated 24-hour reference interval")}
+          ${textRow("Method / Analyzer", ["Method / Analyzer", "Method", "Analyzer"])}
+          ${textRow("Collection Completeness / Comments", ["Collection Completeness / Comments", "Collection Completeness", "Comments", "Remarks"])}
+          ${textRow("Laboratory Interpretation", ["Laboratory Interpretation", "Interpretation"])}
+          ${textRow("Clinical Details / Indication", ["Clinical Details / Indication", "Clinical Details", "Indication"])}
+        </tbody>
+      </table>
+      <div class="single-analyte-notes report-template-notes urine-protein-24-hour-notes">
+        <div class="report-note-heading">Reference guidance :</div>
+        <p>A published spectrophotometric reference example is 40 - 150 mg/24 h. Intervals vary by method; use the performing laboratory&rsquo;s validated interval and appropriate age and pregnancy context. This daily-excretion guide does not apply to a random concentration or a creatinine ratio.</p>
+        <div class="report-note-heading">Collection and calculation :</div>
+        <p>For a verified complete 24-hour collection, total protein (mg/24 h) = protein concentration (mg/dL) &times; total volume (mL) &divide; 100. This formula is valid only with these units and a complete collection. Enter the laboratory-verified daily result; no result is calculated automatically or extrapolated from partial timing.</p>
+        <div class="report-note-heading">Interpretive notes :</div>
+        <ul>
+          <li>This measures total protein excreted in the submitted timed urine, not albumin alone. It is distinct from a dipstick protein screen, ACR, UPCR or serum total protein.</li>
+          <li>Increased excretion may accompany kidney or urinary-tract disorders; exercise and contamination can also affect findings. Interpret with clinical history, renal assessment and related investigations.</li>
+          <li>Missed portions, spillage or incorrect collection times can invalidate daily excretion. Record actual timing and volume, and follow laboratory collection and storage instructions.</li>
+          <li>Some total-protein methods may underestimate urinary light chains. Further investigation depends on the clinical indication; this measurement does not identify the protein type or establish a diagnosis by itself.</li>
+        </ul>
+      </div>
+    </div>
+  `;
+}
+
+// Physical, chemical and sediment examination; laboratory intervals take precedence.
+// https://medlineplus.gov/ency/article/003579.htm
+// https://medlineplus.gov/ency/article/003587.htm
+// https://medlineplus.gov/ency/article/003583.htm
+function buildUrineRoutineReportBody(test) {
+  const used = new Set();
+  const field = aliases => {
+    const parameter = (test?.parameters || []).find(p => aliases.map(normalizeParameterName).includes(normalizeParameterName(p.parameter_name)));
+    if (parameter) used.add(parameter);
+    return parameter || {};
+  };
+  const text = p => escapeHtml(String(p?.value ?? "").trim() || "-").replace(/\r?\n/g, "<br />");
+  const measurement = (label, p, range = "", unit = "") => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${text(p)}</td><td>${escapeHtml(String(p.normal_range || "").trim() || range)}</td><td>${escapeHtml(String(p.unit || "").trim() || unit)}</td></tr>`;
+  const row = (label, aliases, range = "", unit = "", optional = false) => {
+    const p = field([label, ...aliases]);
+    return optional && !String(p.value ?? "").trim() ? "" : measurement(label, p, range, unit);
+  };
+  const textRow = (label, aliases) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${text(field([label, ...aliases]))}</td></tr>`;
+  const section = label => `<tr class="thyroid-antibodies-section"><td colspan="4"><strong>${label}</strong></td></tr>`;
+  const specimen = field(["Specimen / Collection Type", "Specimen", "Collection Type"]);
+  const rows = [
+    `<tr class="single-analyte-sample-row"><td><strong>Specimen / Collection Type</strong></td><td colspan="3">${escapeHtml(String(specimen.value || test?.sample_type || "").trim() || "Urine (record actual collection type)")}</td></tr>`,
+    textRow("Collection Date / Time", ["Collection Date", "Collection Time"]),
+    textRow("Method / Analyzer", ["Method", "Analyzer"]),
+    textRow("Microscopy Preparation / Method", ["Microscopy Method", "Preparation"]),
+    section("PHYSICAL EXAMINATION"),
+    row("Volume Received", ["Sample Volume", "Volume"], "Volume of submitted sample, not daily output", "mL"),
+    row("Colour", ["Color", "Urine Colour", "Urine Color"], "Almost colourless to dark yellow"),
+    row("Appearance / Clarity", ["Appearance", "Clarity", "Transparency"], "Usually clear; correlate with sediment"),
+    row("Specific Gravity", ["Urine Specific Gravity", "Sp Gravity"], "1.005 - 1.030 (guide; lab-specific)"),
+    section("CHEMICAL EXAMINATION"),
+    row("pH", ["Urine pH", "Reaction"], "4.6 - 8.0 (guide; lab-specific)"),
+    ...[
+      ["Protein / Albumin", ["Protein", "Albumin", "Urine Protein", "Urine Albumin"]],
+      ["Glucose", ["Sugar", "Urine Glucose", "Urine Sugar"]],
+      ["Ketones", ["Ketone", "Acetone", "Ketone Bodies"]],
+      ["Blood / Haemoglobin", ["Blood", "Haemoglobin", "Hemoglobin", "Occult Blood"]],
+      ["Bilirubin / Bile Pigments", ["Bilirubin", "Bile Pigments", "Bile Pigment"]],
+      ["Nitrite", ["Nitrites"]],
+      ["Leukocyte Esterase", ["Leucocyte Esterase"]],
+    ].map(([label, aliases]) => row(label, aliases, "Negative (method-specific)")),
+    row("Urobilinogen", [], "Assay-specific reference and units"),
+    row("Bile Salts, if performed", ["Bile Salts"], "Laboratory method-specific reference", "", true),
+    section("MICROSCOPIC EXAMINATION"),
+    row("WBC / Pus Cells", ["WBC", "Pus Cells", "White Blood Cells", "Leucocytes", "Leukocytes"], "Laboratory-validated microscopy interval", "/HPF"),
+    row("RBC", ["Red Blood Cells", "Erythrocytes"], "Laboratory-validated microscopy interval", "/HPF"),
+    row("Epithelial Cells", ["Epithelial Cell"], "Report type and quantity; method-specific"),
+    row("Casts", ["Cast"], "Type- and method-specific"),
+    row("Crystals", ["Crystal"], "Type- and context-specific"),
+    row("Bacteria", [], "Usually not seen; assess collection quality"),
+    row("Yeast / Fungal Elements", ["Yeast", "Fungal Elements"], "Usually not seen"),
+    row("Parasites / Trichomonas, if examined", ["Parasites", "Trichomonas"], "Report only if examined", "", true),
+    row("Mucus", ["Mucus Threads"], "Interpret with other sediment findings"),
+    textRow("Other Microscopic Findings", ["Other Sediment Findings"]),
+    section("INTERPRETATION / COMMENTS"),
+    textRow("Laboratory Interpretation", ["Interpretation", "Impression"]),
+    textRow("Comments / Limitations", ["Comments", "Comment", "Remarks"]),
+  ];
+  // Retain legacy narrative and additional configured fields without assigning them to an analyte.
+  const extra = (test?.parameters || []).filter(p => !used.has(p) && String(p.value ?? "").trim());
+  if (extra.length) rows.push(section("OTHER RECORDED FINDINGS"), ...extra.map(p => measurement(p.parameter_name, p)));
+  return `
+    <div class="urine-routine-report" data-report-content="urine-routine-examination">
+      <table class="results-table single-analyte-table urine-routine-table">
+        <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead>
+        <tbody>${rows.join("\n")}</tbody>
+      </table>
+      <div class="single-analyte-notes report-template-notes urine-routine-notes">
+        <div class="report-note-heading">Clinical use :</div>
+        <p>This examination brings together urine appearance, reagent chemistry and sediment findings to support assessment of urinary symptoms and metabolic or renal concerns. Correlate with clinical history and other investigations.</p>
+        <div class="report-note-heading">Reference and interpretation guide :</div>
+        <table class="notes-table"><thead><tr><th>Section</th><th>Guidance</th></tr></thead><tbody>
+          <tr><td>Physical findings</td><td>Colour and clarity vary with urine concentration, diet, medicines and sediment. Specific gravity is a concentration measure, not osmolality. The laboratory&rsquo;s validated reference takes precedence over the general guide.</td></tr>
+          <tr><td>Chemical findings</td><td>Retain the actual reagent category or measured value with its unit. Screening grades are not exact concentrations. Urobilinogen reference limits depend on the assay and reporting units.</td></tr>
+          <tr><td>Microscopic findings</td><td>Record cell counts and sediment types using the laboratory method. Counts per high-power field and automated counts per microlitre are not interchangeable; no conversion is inferred here.</td></tr>
+        </tbody></table>
+        <div class="report-note-heading">Notes and limitations :</div>
+        <ul>
+          <li>Follow laboratory instructions for collection, prompt transport and specimen handling. Collection quality and processing delay can affect findings.</li>
+          <li>A blood-strip result is not an RBC count. Interpret it alongside sediment microscopy and the clinical context.</li>
+          <li>Nitrite, leukocyte esterase and bacteria findings need correlation with symptoms and specimen quality; microscopy does not replace a separately requested urine culture.</li>
+          <li>Report casts and crystals by type and quantity where identified; their presence alone does not establish a diagnosis.</li>
+          <li>Routine protein screening does not replace a separately requested albumin-creatinine ratio or timed protein measurement.</li>
+          <li>A dash indicates no entered result, not a negative finding. Optional bile-salt or parasite findings appear only when recorded; do not assume they were examined.</li>
+        </ul>
+      </div>
+    </div>`;
+}
+
+// Non-specific urine reducing-substance screen; not a glucose-specific assay.
+// https://www.nwlpathology.nhs.uk/test/reducing-substances-urine/
+// https://www.southtees.nhs.uk/services/pathology/tests/reducing-substances-urine-and-faecal/
+// https://www.mayocliniclabs.com/test-catalog/Overview/9255
+function buildUrineReducingSubstancesReportBody(test) {
+  const used = new Set();
+  const field = aliases => {
+    const parameter = (test?.parameters || []).find(p => aliases.map(normalizeParameterName).includes(normalizeParameterName(p.parameter_name)));
+    if (parameter) used.add(parameter);
+    return parameter || {};
+  };
+  const text = p => escapeHtml(String(p?.value ?? "").trim() || "-").replace(/\r?\n/g, "<br />");
+  const measurement = (label, p, range = "") => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${text(p)}</td><td>${escapeHtml(String(p.normal_range || "").trim() || range)}</td><td>${escapeHtml(String(p.unit || "").trim())}</td></tr>`;
+  const textRow = (label, aliases, optional = false) => {
+    const p = field([label, ...aliases]);
+    return optional && !String(p.value ?? "").trim() ? "" : `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${text(p)}</td></tr>`;
+  };
+  const result = field(["Urine Reducing Substances Result", "Urine Reducing Substances", "Urine Reducing Substance", "Reducing Substances", "Reducing Substance", "Result"]);
+  const specimen = field(["Specimen / Collection Type", "Specimen", "Collection Type"]);
+  const rows = [
+    `<tr class="single-analyte-sample-row"><td><strong>Specimen / Collection Type</strong></td><td colspan="3">${escapeHtml(String(specimen.value || test?.sample_type || "").trim() || "Urine (record actual collection type)")}</td></tr>`,
+    textRow("Collection Date / Time", ["Collection Date", "Collection Time"]),
+    measurement("Urine Reducing Substances", result, "Negative / not detected (method-specific)"),
+    textRow("Grade / Semiquantitative Category, if reported", ["Grade", "Semiquantitative Category"], true),
+    textRow("Method / Reagent", ["Method", "Reagent"]),
+    textRow("Observed Reaction, if recorded", ["Observed Reaction", "Reaction", "Colour Reaction", "Color Reaction"], true),
+    textRow("Clinical Details / Indication", ["Clinical Details", "Indication"]),
+    textRow("Laboratory Interpretation", ["Interpretation", "Impression"]),
+    textRow("Comments / Limitations", ["Comments", "Comment", "Remarks"]),
+  ];
+  // Keep independently recorded glucose and other legacy results, without inferring assays.
+  const extra = (test?.parameters || []).filter(p => !used.has(p) && String(p.value ?? "").trim());
+  if (extra.length) rows.push(`<tr class="thyroid-antibodies-section"><td colspan="4"><strong>OTHER RECORDED FINDINGS</strong></td></tr>`, ...extra.map(p => measurement(p.parameter_name, p)));
+  return `
+    <div class="urine-reducing-substances-report" data-report-content="urine-reducing-substances">
+      <table class="results-table single-analyte-table urine-reducing-substances-table">
+        <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead>
+        <tbody>${rows.join("\n")}</tbody>
+      </table>
+      <div class="single-analyte-notes report-template-notes urine-reducing-substances-notes">
+        <div class="report-note-heading">Clinical use :</div>
+        <p>A non-specific screening test for reducing substances in urine, used when clinically indicated in investigating carbohydrate metabolism disorders. It does not identify an individual sugar or establish a metabolic diagnosis.</p>
+        <div class="report-note-heading">Method and reporting :</div>
+        <p>Record the method actually performed. Copper-reduction methods, such as Benedict-type reactions, respond to several reducing compounds and are different from glucose-specific assays. Preserve the laboratory&rsquo;s actual category, grade or measured value; no concentration is inferred from a reaction colour or plus grade.</p>
+        <div class="report-note-heading">Reference and interpretation guide :</div>
+        <table class="notes-table"><thead><tr><th>Finding</th><th>Guidance</th></tr></thead><tbody>
+          <tr><td>Negative / not detected</td><td>The usual expected screening category. It means no reducing reaction was detected under the method conditions; it does not exclude every carbohydrate metabolism disorder.</td></tr>
+          <tr><td>Trace / positive</td><td>A reducing reaction was observed. Glucose, other sugars, vitamin C, medicines or other reducing compounds may contribute; the screen does not identify which substance is present.</td></tr>
+          <tr><td>Grade / semiquantitative result</td><td>Use the reagent&rsquo;s validated grading and reference criteria. Grades are method-dependent, not exact glucose concentrations.</td></tr>
+          <tr><td>Confirmation</td><td>Positive findings may require specific sugar identification, such as urine sugar chromatography, and further testing selected by the clinician or specialist laboratory.</td></tr>
+        </tbody></table>
+        <div class="report-note-heading">Notes and limitations :</div>
+        <ul>
+          <li>Use a fresh urine specimen and arrange prompt processing or transport. Follow the performing laboratory&rsquo;s preservation and freezing instructions; older specimens can give falsely negative screening results.</li>
+          <li>Interpret with age, diet or feeding history, medicines and clinical findings. In younger patients, normal carbohydrate excretion can sometimes produce a positive reducing-substance screen.</li>
+          <li>A glucose-specific urine test and a reducing-substance screen are separate investigations. Neither result nor a diagnosis of diabetes or galactosaemia is inferred from this screen.</li>
+          <li>Retain any laboratory-validated reference, unit and interpretive comment. A dash denotes no entered result, not a negative finding. This urine report is not a stool reducing-substance test.</li>
+        </ul>
+      </div>
+    </div>`;
+}
+
+// Urine sugar reporting: actual method and analyte must be identified.
+// https://medlineplus.gov/lab-tests/glucose-in-urine-test/
+// https://www.mayocliniclabs.com/test-catalog/Overview/609796
+// https://www.nwlpathology.nhs.uk/test/reducing-substances-urine/
+function buildUrineSugarReportBody(test) {
+  const used = new Set();
+  const field = aliases => {
+    const parameter = (test?.parameters || []).find(p => aliases.map(normalizeParameterName).includes(normalizeParameterName(p.parameter_name)));
+    if (parameter) used.add(parameter);
+    return parameter || {};
+  };
+  const text = p => escapeHtml(String(p?.value ?? "").trim() || "-").replace(/\r?\n/g, "<br />");
+  const measurement = (label, p, range = "") => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${text(p)}</td><td>${escapeHtml(String(p.normal_range || "").trim() || range)}</td><td>${escapeHtml(String(p.unit || "").trim())}</td></tr>`;
+  const textRow = (label, aliases, optional = false) => {
+    const p = field([label, ...aliases]);
+    return optional && !String(p.value ?? "").trim() ? "" : `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${text(p)}</td></tr>`;
+  };
+  const result = field(["Urine Sugar Result", "Urine Sugar", "Glucose, Urine", "Urine Glucose", "Sugar", "Glucose", "Result"]);
+  const specimen = field(["Specimen / Collection Type", "Specimen", "Collection Type"]);
+  const rows = [
+    `<tr class="single-analyte-sample-row"><td><strong>Specimen / Collection Type</strong></td><td colspan="3">${escapeHtml(String(specimen.value || test?.sample_type || "").trim() || "Urine (record actual collection type)")}</td></tr>`,
+    textRow("Collection Date / Time", ["Collection Date", "Collection Time"]),
+    measurement("Urine Sugar", result, "Negative (qualitative screen); quantitative: lab-specific"),
+    textRow("Grade / Semiquantitative Category, if reported", ["Grade", "Semiquantitative Category"], true),
+    textRow("Method / Reagent", ["Method", "Reagent"]),
+    textRow("Reporting Basis / Measured Analyte", ["Reporting Basis", "Measured Analyte", "Test Type"]),
+    textRow("Clinical Details / Indication", ["Clinical Details", "Indication"]),
+    textRow("Laboratory Interpretation", ["Interpretation", "Impression"]),
+    textRow("Comments / Limitations", ["Comments", "Comment", "Remarks"]),
+  ];
+  // Preserve other independently recorded results; do not use blood glucose or
+  // reducing-substance results as the urine sugar value.
+  const extra = (test?.parameters || []).filter(p => !used.has(p) && String(p.value ?? "").trim());
+  if (extra.length) rows.push(`<tr class="thyroid-antibodies-section"><td colspan="4"><strong>OTHER RECORDED FINDINGS</strong></td></tr>`, ...extra.map(p => measurement(p.parameter_name, p)));
+  return `
+    <div class="urine-sugar-report" data-report-content="urine-sugar">
+      <table class="results-table single-analyte-table urine-sugar-table">
+        <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead>
+        <tbody>${rows.join("\n")}</tbody>
+      </table>
+      <div class="single-analyte-notes report-template-notes urine-sugar-notes">
+        <div class="report-note-heading">Clinical use :</div>
+        <p>Urine sugar testing commonly assesses glucose excretion in urine. Findings support clinical assessment but do not replace blood glucose or HbA1c testing for diabetes diagnosis and monitoring.</p>
+        <div class="report-note-heading">Method and reporting :</div>
+        <p>Identify the actual method and measured analyte. A glucose-specific strip or enzymatic assay is different from a non-specific copper-reduction test, which can react with other reducing compounds. Do not assume a Benedict-type result identifies glucose alone.</p>
+        <div class="report-note-heading">Reference and interpretation guide :</div>
+        <table class="notes-table"><thead><tr><th>Finding / reporting basis</th><th>Guidance</th></tr></thead><tbody>
+          <tr><td>Negative glucose screen</td><td>The usual expected qualitative category is negative. Small amounts of glucose may be below the assay&rsquo;s detection limit; a negative urine result does not exclude high blood glucose or diabetes.</td></tr>
+          <tr><td>Trace / positive glucose screen</td><td>May accompany raised blood glucose, pregnancy or altered renal glucose handling. Interpret with clinical findings and blood investigations rather than making a diagnosis from urine alone.</td></tr>
+          <tr><td>Grade / semiquantitative category</td><td>Report the reagent&rsquo;s actual validated category. A plus grade is not an exact concentration; no numerical value is inferred here.</td></tr>
+          <tr><td>Quantitative result, if measured</td><td>Retain the measured value, unit and laboratory-validated reference interval. A urine concentration is not a blood glucose value or a daily excretion total.</td></tr>
+        </tbody></table>
+        <div class="report-note-heading">Notes and limitations :</div>
+        <ul>
+          <li>Follow laboratory specimen collection and handling instructions. Record collection timing and relevant clinical information when supplied.</li>
+          <li>Medicines and supplements can affect results. Follow the assay&rsquo;s interference guidance and interpret with the patient&rsquo;s medication history.</li>
+          <li>For a non-specific reducing reaction, identify the method and consider confirmatory sugar identification when clinically indicated. The separate Urine Reducing Substance report is not inferred from this entry.</li>
+          <li>Preserve laboratory-specific reference criteria and comments. A dash means no result was entered, not that sugar was absent.</li>
+        </ul>
+      </div>
+    </div>`;
+}
+
+// Physiological urobilinogen and assay-specific reporting; no universal negative range.
+// https://medlineplus.gov/lab-tests/urobilinogen-in-urine/
+// Siemens Multistix package insert 11306392 Rev. A, urobilinogen section:
+// https://content.doclib.siemens-healthineers.com/rest/v1/view?document-id=401929
+function buildUrineUrobilinogenReportBody(test) {
+  const used = new Set();
+  const field = aliases => {
+    const parameter = (test?.parameters || []).find(p => aliases.map(normalizeParameterName).includes(normalizeParameterName(p.parameter_name)));
+    if (parameter) used.add(parameter);
+    return parameter || {};
+  };
+  const text = p => escapeHtml(String(p?.value ?? "").trim() || "-").replace(/\r?\n/g, "<br />");
+  const measurement = (label, p, range = "") => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${text(p)}</td><td>${escapeHtml(String(p.normal_range || "").trim() || range)}</td><td>${escapeHtml(String(p.unit || "").trim())}</td></tr>`;
+  const textRow = (label, aliases, optional = false) => {
+    const p = field([label, ...aliases]);
+    return optional && !String(p.value ?? "").trim() ? "" : `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${text(p)}</td></tr>`;
+  };
+  const result = field(["Urobilinogen, Urine", "Urine Urobilinogen", "Urobilinogen", "Urobilinogen Result", "Result"]);
+  const specimen = field(["Specimen / Collection Type", "Specimen", "Collection Type"]);
+  const rows = [
+    `<tr class="single-analyte-sample-row"><td><strong>Specimen / Collection Type</strong></td><td colspan="3">${escapeHtml(String(specimen.value || test?.sample_type || "").trim() || "Urine (record actual collection type)")}</td></tr>`,
+    textRow("Collection Date / Time", ["Collection Date", "Collection Time"]),
+    measurement("Urobilinogen, Urine", result, "Laboratory-validated method-specific range / category"),
+    textRow("Reporting Category / Grade, if supplied", ["Reporting Category", "Grade", "Semiquantitative Category"], true),
+    textRow("Method / Reagent / Analyzer", ["Method / Reagent", "Method / Analyzer", "Method", "Reagent", "Analyzer"]),
+    textRow("Specimen Handling / Quality, if supplied", ["Specimen Handling", "Specimen Quality"], true),
+    textRow("Clinical Details / Indication", ["Clinical Details", "Indication"]),
+    textRow("Laboratory Interpretation", ["Interpretation", "Impression"]),
+    textRow("Comments / Limitations", ["Comments", "Comment", "Remarks"]),
+  ];
+  // Bilirubin, porphobilinogen and other results are retained separately, never
+  // substituted for the urobilinogen value.
+  const extra = (test?.parameters || []).filter(p => !used.has(p) && String(p.value ?? "").trim());
+  if (extra.length) rows.push(`<tr class="thyroid-antibodies-section"><td colspan="4"><strong>OTHER RECORDED FINDINGS</strong></td></tr>`, ...extra.map(p => measurement(p.parameter_name, p)));
+  return `
+    <div class="urine-urobilinogen-report" data-report-content="urine-urobilinogen">
+      <table class="results-table single-analyte-table urine-urobilinogen-table">
+        <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead>
+        <tbody>${rows.join("\n")}</tbody>
+      </table>
+      <div class="single-analyte-notes report-template-notes urine-urobilinogen-notes">
+        <div class="report-note-heading">Clinical use :</div>
+        <p>Urobilinogen is formed from bilirubin metabolism in the intestine, and small amounts normally appear in urine. Testing can support assessment of hepatic, biliary or haemolytic concerns alongside clinical findings and other investigations.</p>
+        <div class="report-note-heading">Reference and reporting guide :</div>
+        <table class="notes-table"><thead><tr><th>Reporting basis</th><th>Guidance</th></tr></thead><tbody>
+          <tr><td>Laboratory reference</td><td>Use the performing laboratory&rsquo;s validated range or category for the actual reagent and reporting units. Do not apply a universal negative reference or convert grades into exact concentrations.</td></tr>
+          <tr><td>Manufacturer example only</td><td>The Siemens Multistix insert describes an expected concentration up to 16 &micro;mol/L (1 Ehrlich Unit/dL) for that method. This is not a universal interval or evidence that this reagent was used; the actual laboratory reference takes precedence.</td></tr>
+          <tr><td>Semiquantitative category</td><td>Reagent-strip colour blocks or analyzer categories represent concentration bands. Preserve the reported value and unit; mg/dL, &micro;mol/L and Ehrlich units must not be substituted or converted without validated method guidance.</td></tr>
+        </tbody></table>
+        <div class="report-note-heading">Interpretation :</div>
+        <ul>
+          <li>Increased urobilinogen may accompany liver dysfunction or increased red-cell breakdown. A result alone does not establish a diagnosis.</li>
+          <li>Low or undetected findings need method-aware interpretation and clinical correlation; reduced bile delivery is one possible consideration, not an automatic diagnosis of obstruction.</li>
+          <li>Some strip methods cannot establish complete absence of urobilinogen. Interpret alongside separately measured bilirubin, liver tests or haemolysis investigations when indicated.</li>
+        </ul>
+        <div class="report-note-heading">Notes and limitations :</div>
+        <ul>
+          <li>Use fresh urine and follow laboratory handling instructions. Delay and exposure to light or room temperature can affect urobilinogen stability.</li>
+          <li>Interference depends on the reagent; medicines, preservatives and atypical urine colour can affect reactions. Review the manufacturer&rsquo;s instructions before interpreting an unusual finding.</li>
+          <li>Urobilinogen is distinct from urine bilirubin, total porphyrins and porphobilinogen. A urobilinogen strip is not a substitute for a specifically requested PBG test.</li>
+          <li>A dash denotes no entered result, not normality or absence. Retain the laboratory&rsquo;s actual interpretive comments.</li>
+        </ul>
+      </div>
+    </div>`;
+}
+
+// General urine pH guide; preserve actual method, precision and lab reference.
+// https://medlineplus.gov/ency/article/003583.htm
+// https://content.doclib.siemens-healthineers.com/rest/v1/view?document-id=401929
+function buildUrinePhReportBody(test) {
+  const used = new Set();
+  const field = aliases => {
+    const parameter = (test?.parameters || []).find(p => aliases.map(normalizeParameterName).includes(normalizeParameterName(p.parameter_name)));
+    if (parameter) used.add(parameter);
+    return parameter || {};
+  };
+  const text = p => escapeHtml(String(p?.value ?? "").trim() || "-").replace(/\r?\n/g, "<br />");
+  const measurement = (label, p, range = "") => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${text(p)}</td><td>${escapeHtml(String(p.normal_range || "").trim() || range)}</td><td>${escapeHtml(String(p.unit || "").trim())}</td></tr>`;
+  const textRow = (label, aliases, optional = false) => {
+    const p = field([label, ...aliases]);
+    return optional && !String(p.value ?? "").trim() ? "" : `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${text(p)}</td></tr>`;
+  };
+  const result = field(["Urine pH", "pH, Urine", "pH", "Urine pH Result", "Result"]);
+  const specimen = field(["Specimen / Collection Type", "Specimen", "Collection Type"]);
+  const rows = [
+    `<tr class="single-analyte-sample-row"><td><strong>Specimen / Collection Type</strong></td><td colspan="3">${escapeHtml(String(specimen.value || test?.sample_type || "").trim() || "Urine (record actual collection type)")}</td></tr>`,
+    textRow("Collection Date / Time", ["Collection Date", "Collection Time"]),
+    measurement("Urine pH", result, "4.6 - 8.0 (general guide; lab-specific)"),
+    textRow("Reaction / Description, if recorded", ["Reaction", "Description", "Urine Reaction"], true),
+    textRow("Method / Reagent / Analyzer", ["Method / Reagent", "Method / Analyzer", "Method", "Reagent", "Analyzer"]),
+    textRow("Specimen Handling / Quality, if supplied", ["Specimen Handling", "Specimen Quality"], true),
+    textRow("Clinical Details / Diet / Medication History", ["Clinical Details", "Diet / Medication History", "Medication History"]),
+    textRow("Laboratory Interpretation", ["Interpretation", "Impression"]),
+    textRow("Comments / Limitations", ["Comments", "Comment", "Remarks"]),
+  ];
+  // Keep independently recorded blood pH or legacy narrative separate; do not
+  // infer a numerical urine pH from a description such as 'acidic'.
+  const extra = (test?.parameters || []).filter(p => !used.has(p) && String(p.value ?? "").trim());
+  if (extra.length) rows.push(`<tr class="thyroid-antibodies-section"><td colspan="4"><strong>OTHER RECORDED FINDINGS</strong></td></tr>`, ...extra.map(p => measurement(p.parameter_name, p)));
+  return `
+    <div class="urine-ph-report" data-report-content="urine-ph">
+      <table class="results-table single-analyte-table urine-ph-table">
+        <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead>
+        <tbody>${rows.join("\n")}</tbody>
+      </table>
+      <div class="single-analyte-notes report-template-notes urine-ph-notes">
+        <div class="report-note-heading">Clinical use :</div>
+        <p>Urine pH describes urine acidity or alkalinity. It can support assessment of urinary stone risk and selected metabolic or renal concerns when interpreted with clinical findings and other investigations.</p>
+        <div class="report-note-heading">Reference and interpretation guide :</div>
+        <table class="notes-table"><thead><tr><th>Finding / reporting basis</th><th>Guidance</th></tr></thead><tbody>
+          <tr><td>General reference guide</td><td>A commonly cited urine pH range is 4.6 - 8.0. Use the performing laboratory&rsquo;s validated range and the actual collection context; an acidic or alkaline description alone does not determine whether a result is abnormal.</td></tr>
+          <tr><td>Acidic / neutral / alkaline</td><td>On the pH scale, values below 7 are acidic, 7 is neutral and values above 7 are alkaline. These are descriptive terms, not diagnostic categories or treatment recommendations.</td></tr>
+          <tr><td>Lower pH</td><td>May be influenced by diet, medicines and metabolic circumstances. Interpret persistent findings with history and related tests rather than diagnosing systemic acidosis from urine alone.</td></tr>
+          <tr><td>Higher pH</td><td>May reflect diet, medicines, altered renal acid handling or some urinary infections. Specimen delay and bacterial growth can also raise pH; pH alone does not establish a urinary infection.</td></tr>
+        </tbody></table>
+        <div class="report-note-heading">Method and reporting :</div>
+        <p>Record the method actually performed, such as a reagent strip or pH meter. Strip results have method-dependent reading intervals and resolution; preserve the reported precision. pH is dimensionless and is not a concentration in mg/dL or mmol/L.</p>
+        <div class="report-note-heading">Notes and limitations :</div>
+        <ul>
+          <li>Use fresh urine and follow laboratory instructions for prompt testing, transport and storage. Delayed testing can change urine chemistry.</li>
+          <li>Record relevant diet, medicines and collection timing when available. Do not stop prescribed medicines or change treatment based on this result without clinical advice.</li>
+          <li>Urine pH is distinct from blood pH and does not by itself establish systemic acid-base status, stone composition or renal function.</li>
+          <li>A reaction description is retained as recorded; no numerical pH or diagnosis is inferred from it. A dash indicates no entered result, not a normal result.</li>
+        </ul>
+      </div>
+    </div>`;
+}
+
+// Free uroflowmetry measurements and clinical context, not inferred pressure-flow diagnosis.
+// https://uroweb.org/guidelines/management-of-non-neurogenic-male-luts/chapter/diagnostic-evaluation
+// https://uroweb.org/guidelines/non-neurogenic-female-luts/chapter/diagnosis
+// https://www.ics.org/Wasabi/Documents/DocumentsDownload.aspx?DocumentID=3
+function buildUroflowmetryReportBody(test) {
+  const used = new Set();
+  const field = aliases => {
+    const parameter = (test?.parameters || []).find(p => aliases.map(normalizeParameterName).includes(normalizeParameterName(p.parameter_name)));
+    if (parameter) used.add(parameter);
+    return parameter || {};
+  };
+  const text = p => escapeHtml(String(p?.value ?? "").trim() || "-").replace(/\r?\n/g, "<br />");
+  const measurement = (label, p, range = "", unit = "") => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${text(p)}</td><td>${escapeHtml(String(p.normal_range || "").trim() || range)}</td><td>${escapeHtml(String(p.unit || "").trim() || unit)}</td></tr>`;
+  const row = (label, aliases, range, unit, optional = false) => {
+    const p = field([label, ...aliases]);
+    return optional && !String(p.value ?? "").trim() ? "" : measurement(label, p, range, unit);
+  };
+  const textRow = (label, aliases, optional = false) => {
+    const p = field([label, ...aliases]);
+    return optional && !String(p.value ?? "").trim() ? "" : `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${text(p)}</td></tr>`;
+  };
+  const section = label => `<tr class="thyroid-antibodies-section"><td colspan="4"><strong>${label}</strong></td></tr>`;
+  const rows = [
+    textRow("Clinical Details", ["Clinical Details / Indication", "Indication", "Clinical History"]),
+    textRow("Examination Date / Time", ["Study Date / Time", "Test Date / Time"]),
+    textRow("Method / Device", ["Method", "Device", "Uroflowmeter"]),
+    textRow("Voiding Position", ["Position"]),
+    section("UROFLOWMETRY MEASUREMENTS"),
+    row("Voided Volume", ["Volume Voided", "Voided Urine Volume"], "Interpret flow with the actual voided volume", "mL"),
+    row("Maximum Flow Rate (Qmax)", ["Qmax", "Maximum Flow Rate", "Peak Flow Rate"], "Age-, sex- and voided-volume-specific assessment", "mL/s"),
+    row("Average Flow Rate (Qavg)", ["Qavg", "Qave", "Average Flow Rate", "Mean Flow Rate"], "Age-, sex- and voided-volume-specific assessment", "mL/s"),
+    row("Flow Time", ["Flow Duration"], "Duration of measurable urine flow", "s"),
+    row("Voiding Time", ["Total Voiding Time", "Voiding Duration"], "Total void duration, including interruptions", "s"),
+    row("Time to Maximum Flow", ["Time to Qmax", "TQmax", "Time to Peak Flow"], "", "s"),
+    section("FLOW PATTERN / STUDY QUALITY"),
+    textRow("Flow Curve / Pattern", ["Flow Pattern", "Curve Pattern", "Flow Curve"]),
+    textRow("Representative of Usual Voiding", ["Usual Voiding", "Representativeness"]),
+    textRow("Straining / Artefacts / Study Quality", ["Straining", "Artefacts", "Artifacts", "Study Quality"]),
+    row("Post-Void Residual (PVR), if measured", ["Post-Void Residual", "Post Void Residual", "PVR", "Residual Urine"], "Interpret with method, timing and clinical context", "mL", true),
+    textRow("PVR Method / Timing, if measured", ["PVR Method / Timing", "PVR Method", "PVR Timing"], true),
+    section("FINDINGS / IMPRESSION"),
+    textRow("Findings", ["Result", "Observations"]),
+    textRow("Impression", ["Interpretation", "Laboratory Interpretation"]),
+    textRow("Advice", ["Advice / Correlation", "Recommendations"]),
+    textRow("Comments", ["Comments / Limitations", "Comment", "Remarks"]),
+  ];
+  const extra = (test?.parameters || []).filter(p => !used.has(p) && String(p.value ?? "").trim());
+  if (extra.length) rows.push(section("OTHER RECORDED FINDINGS"), ...extra.map(p => measurement(p.parameter_name, p)));
+  return `
+    <div class="uroflowmetry-report" data-report-content="uroflowmetry">
+      <table class="results-table single-analyte-table uroflowmetry-table">
+        <thead><tr><th style="width:34%">Measurement / Finding</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead>
+        <tbody>${rows.join("\n")}</tbody>
+      </table>
+      <div class="single-analyte-notes report-template-notes uroflowmetry-notes">
+        <div class="report-note-heading">Clinical use :</div>
+        <p>Uroflowmetry records urine flow during voiding. Assess the measured flow rates, voided volume, recorded curve and whether the study reflects the patient&rsquo;s usual voiding.</p>
+        <div class="report-note-heading">Measurement guide :</div>
+        <table class="notes-table"><thead><tr><th>Parameter</th><th>Meaning / assessment</th></tr></thead><tbody>
+          <tr><td>Qmax / Qavg</td><td>Maximum and average urine flow rates. Interpret against appropriate age-, sex- and voided-volume-dependent references or nomograms, not a single universal normal cutoff.</td></tr>
+          <tr><td>Flow time / voiding time</td><td>Flow time covers measurable flow; voiding time includes interruptions. These are not interchangeable in an interrupted void.</td></tr>
+          <tr><td>Time to maximum flow</td><td>Elapsed time from flow onset to maximum flow. Report the instrument&rsquo;s verified measurement.</td></tr>
+          <tr><td>Flow curve / pattern</td><td>Describe the actual recorded tracing and any artefacts. Summary values alone do not reconstruct a flow-time curve; no curve is generated from these entries.</td></tr>
+          <tr><td>Post-void residual, if measured</td><td>A separate assessment of urine remaining after voiding. Record its actual method and timing; do not infer zero residual from a completed flow study.</td></tr>
+        </tbody></table>
+        <div class="report-note-heading">Interpretation and limitations :</div>
+        <ul>
+          <li>In adult male LUTS assessment, measurements with voided volumes above 150 mL are preferred; a smaller or unrepresentative void may warrant repetition. This adequacy guide is not a universal minimum for women or children.</li>
+          <li>Flow depends on voided volume and varies between voids. A low peak flow can reflect obstruction, reduced bladder contraction or an under-filled bladder; free uroflowmetry alone cannot distinguish these mechanisms.</li>
+          <li>A relatively high peak flow does not exclude obstruction. Interpret with symptoms, study quality and separately measured residual volume where available.</li>
+          <li>Record straining, interruptions and artefacts, and ask whether the void was representative. Review the original instrument tracing when available.</li>
+          <li>All measurements are entered as reported. No average flow, pressure-flow index, diagnosis or residual volume is calculated automatically. A dash means no entered result, not normality.</li>
+        </ul>
+      </div>
+    </div>`;
+}
+
+// Broad specimen label: document actual site and examinations, not an assumed panel.
+// https://laboratories.newcastle-hospitals.nhs.uk/test-directory/genital-sample-culture/
+// https://www.cdc.gov/std/treatment-guidelines/vaginal-discharge.htm
+// https://www.cdc.gov/std/treatment-guidelines/urethritis-and-cervicitis.htm
+function buildVaginalCervicalSwabReportBody(test) {
+  const used = new Set();
+  const field = aliases => {
+    const parameter = (test?.parameters || []).find(p => aliases.map(normalizeParameterName).includes(normalizeParameterName(p.parameter_name)));
+    if (parameter) used.add(parameter);
+    return parameter || {};
+  };
+  const text = p => escapeHtml(String(p?.value ?? "").trim() || "-").replace(/\r?\n/g, "<br />");
+  const measurement = (label, p, range = "") => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${text(p)}</td><td>${escapeHtml(String(p.normal_range || "").trim() || range)}</td><td>${escapeHtml(String(p.unit || "").trim())}</td></tr>`;
+  const textRow = (label, aliases, optional = false) => {
+    const p = field([label, ...aliases]);
+    return optional && !String(p.value ?? "").trim() ? "" : `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${text(p)}</td></tr>`;
+  };
+  const result = field(["Laboratory Result / Findings", "Result / Findings", "Result", "Findings"]);
+  const rows = [
+    textRow("Specimen / Exact Collection Site", ["Specimen / Collection Site", "Specimen", "Collection Site", "Site"]),
+    textRow("Collection Date / Time", ["Collection Date", "Collection Time"]),
+    textRow("Clinical Details / Relevant Treatment", ["Clinical Details", "Clinical History", "Relevant Treatment", "Medication History"]),
+    textRow("Examination Requested / Performed", ["Examination Performed", "Examination Requested", "Test Performed"]),
+    textRow("Method / Preparation", ["Method", "Preparation"]),
+    textRow("Specimen Quality / Adequacy", ["Specimen Quality", "Specimen Adequacy"]),
+    measurement("Laboratory Result / Findings", result, "Site- and method-specific interpretation"),
+    textRow("Microscopy / Gram Stain Findings, if performed", ["Microscopy Findings", "Microscopy", "Gram Stain Findings", "Gram Stain"], true),
+    textRow("Culture Result, if performed", ["Culture Result", "Culture"], true),
+    textRow("Organism Identification / Growth, if isolated", ["Organism Identification", "Organism Isolated", "Isolate", "Growth"], true),
+    textRow("Antimicrobial Susceptibility, if performed", ["Antimicrobial Susceptibility", "Antibiotic Sensitivity", "Sensitivity", "Susceptibility"], true),
+    textRow("Susceptibility Method / Standard, if performed", ["Susceptibility Method / Standard", "AST Method / Standard", "AST Standard"], true),
+    textRow("Additional Specific Tests, if performed", ["Additional Specific Tests", "Additional Tests", "NAAT Results"], true),
+    textRow("Laboratory Interpretation", ["Interpretation", "Impression"]),
+    textRow("Comments / Limitations", ["Comments", "Comment", "Remarks", "Advice"]),
+  ];
+  const extra = (test?.parameters || []).filter(p => !used.has(p) && String(p.value ?? "").trim());
+  if (extra.length) rows.push(`<tr class="thyroid-antibodies-section"><td colspan="4"><strong>OTHER RECORDED FINDINGS</strong></td></tr>`, ...extra.map(p => measurement(p.parameter_name, p)));
+  return `
+    <div class="vaginal-cervical-swab-report" data-report-content="vaginal-cervical-swab">
+      <table class="results-table single-analyte-table vaginal-cervical-swab-table">
+        <thead><tr><th style="width:34%">Examination / Finding</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead>
+        <tbody>${rows.join("\n")}</tbody>
+      </table>
+      <div class="single-analyte-notes report-template-notes vaginal-cervical-swab-notes">
+        <div class="report-note-heading">Scope of examination :</div>
+        <p>Vaginal and cervical swabs are different specimen sites. Record the exact source and the examinations actually requested and performed. The combined catalogue label does not imply that both sites were sampled or that microscopy, culture, susceptibility and molecular tests were all done.</p>
+        <div class="report-note-heading">Reference and interpretation guide :</div>
+        <table class="notes-table"><thead><tr><th>Examination</th><th>Guidance</th></tr></thead><tbody>
+          <tr><td>Microscopy, if performed</td><td>Describe the preparation and actual cells, organisms or other findings observed. Negative wet-mount findings do not reliably exclude yeast or Trichomonas infection.</td></tr>
+          <tr><td>Culture, if performed</td><td>Retain the laboratory&rsquo;s growth description and identification. Genital organisms may represent normal flora, colonisation or infection; interpret with the collection site and symptoms rather than applying a sterile-specimen reference.</td></tr>
+          <tr><td>Susceptibility, if performed</td><td>Associate each tested antimicrobial result with its identified isolate and the laboratory&rsquo;s method and interpretive standard. No susceptible or resistant category is assigned automatically.</td></tr>
+          <tr><td>Targeted testing</td><td>Routine microscopy or culture does not replace specifically requested pathogen assays. For suspected cervicitis, Chlamydia and gonorrhoea assessment commonly uses appropriate nucleic-acid amplification tests (NAATs).</td></tr>
+        </tbody></table>
+        <div class="report-note-heading">Notes and limitations :</div>
+        <ul>
+          <li>Use the correct collection device and transport medium for the requested investigation. Send promptly and follow the performing laboratory&rsquo;s storage instructions.</li>
+          <li>Record symptoms and relevant treatment when supplied. Clinical examination and appropriate laboratory tests are needed to identify the cause of genital symptoms.</li>
+          <li>Report only investigations actually performed. Empty optional sections are omitted; a dash means no entered result, not no growth or absence of organisms.</li>
+          <li>This is not a PAP cytology, AFB stain, Gram-stain-only or dedicated STI screening report. Those separately requested investigations remain distinct.</li>
+          <li>Preserve the laboratory&rsquo;s site- and method-specific comments. Do not infer bacterial vaginosis, candidiasis or an STI diagnosis solely from this generic specimen label.</li>
+        </ul>
+      </div>
+    </div>`;
+}
+
+// AFB microscopy reporting and limitations, not organism identification or DST.
+// https://www.cdc.gov/tb/hcp/testing-diagnosis/clinical-and-laboratory-diagnosis.html
+// https://www.cdc.gov/tb/php/false-positive-investigation-toolkit/prevention-practices.html
+function buildVaginalSwabAfbStainReportBody(test) {
+  const used = new Set();
+  const field = aliases => {
+    const parameter = (test?.parameters || []).find(p => aliases.map(normalizeParameterName).includes(normalizeParameterName(p.parameter_name)));
+    if (parameter) used.add(parameter);
+    return parameter || {};
+  };
+  const text = p => escapeHtml(String(p?.value ?? "").trim() || "-").replace(/\r?\n/g, "<br />");
+  const measurement = (label, p, range = "") => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${text(p)}</td><td>${escapeHtml(String(p.normal_range || "").trim() || range)}</td><td>${escapeHtml(String(p.unit || "").trim())}</td></tr>`;
+  const textRow = (label, aliases, optional = false) => {
+    const p = field([label, ...aliases]);
+    return optional && !String(p.value ?? "").trim() ? "" : `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${text(p)}</td></tr>`;
+  };
+  const result = field(["AFB Smear Microscopy Result", "AFB Result", "AFB Smear Result", "Result"]);
+  const grade = field(["AFB Smear Grade / Quantitation", "AFB Grade", "Grade / Quantitation", "Grade"]);
+  const specimen = field(["Specimen / Collection Site", "Specimen", "Collection Site"]);
+  const rows = [
+    `<tr class="single-analyte-sample-row"><td><strong>Specimen / Collection Site</strong></td><td colspan="3">${escapeHtml(String(specimen.value || test?.sample_type || "").trim() || "Vaginal swab (record exact collection site)")}</td></tr>`,
+    textRow("Collection Date / Time", ["Collection Date", "Collection Time"]),
+    textRow("Clinical Details / Relevant Treatment", ["Clinical Details", "Clinical History", "Relevant Treatment"]),
+    `<tr class="thyroid-antibodies-section"><td colspan="4"><strong>DIRECT AFB MICROSCOPY</strong></td></tr>`,
+    measurement("AFB Smear Microscopy Result", result, "No acid-fast bacilli seen (expected finding)"),
+    measurement("AFB Smear Grade / Quantitation", grade, "Use the laboratory-validated method and grading scheme"),
+    textRow("Stain Method", ["Stain / Method", "Method"]),
+    textRow("Smear Preparation / Processing", ["Smear Preparation", "Processing Notes"]),
+    textRow("Specimen Adequacy", ["Specimen Adequacy / Processing Notes", "Adequacy"]),
+    textRow("Microscopy Remarks", ["Microscopic Findings", "Findings", "Remarks"]),
+    textRow("Impression", ["Interpretation", "Laboratory Interpretation"]),
+    textRow("Culture / Molecular Test Status, if performed", ["Culture / Molecular Test Status", "Culture Status", "Molecular Test Status", "NAAT Status"], true),
+    textRow("Comments / Limitations", ["Comments", "Comment", "Limitations", "Advice"]),
+  ];
+  const extra = (test?.parameters || []).filter(p => !used.has(p) && String(p.value ?? "").trim());
+  if (extra.length) rows.push(`<tr class="thyroid-antibodies-section"><td colspan="4"><strong>OTHER RECORDED FINDINGS</strong></td></tr>`, ...extra.map(p => measurement(p.parameter_name, p)));
+  return `
+    <div class="vaginal-swab-afb-stain-report" data-report-content="vaginal-swab-afb-stain">
+      <table class="results-table single-analyte-table vaginal-swab-afb-stain-table">
+        <thead><tr><th style="width:34%">Examination / Finding</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead>
+        <tbody>${rows.join("\n")}</tbody>
+      </table>
+      <div class="single-analyte-notes report-template-notes vaginal-swab-afb-stain-notes">
+        <div class="report-note-heading">Scope and method :</div>
+        <p>Direct examination of a vaginal-swab smear for acid-fast bacilli (AFB). Record the actual stain, preparation, collection site and adequacy; the test name does not establish which staining method was used.</p>
+        <div class="report-note-heading">Reference and reporting guide :</div>
+        <table class="notes-table"><thead><tr><th>Finding</th><th>Guidance</th></tr></thead><tbody>
+          <tr><td>No AFB seen</td><td>The expected microscopy finding, if examination was performed. A negative smear does not exclude mycobacterial infection or tuberculosis.</td></tr>
+          <tr><td>AFB seen</td><td>Report the observed finding and the laboratory&rsquo;s verified grade or count. Smear positivity does not identify the species or confirm Mycobacterium tuberculosis complex.</td></tr>
+          <tr><td>Grade / quantitation</td><td>Retain the grade or count assigned using the laboratory&rsquo;s validated stain and microscopy protocol. No grade, organism count or negative finding is inferred automatically.</td></tr>
+        </tbody></table>
+        <div class="report-note-heading">Interpretation and limitations :</div>
+        <ul>
+          <li>AFB microscopy is not species-specific; nontuberculous mycobacteria or acid-fast environmental material can contribute to a positive smear. Correlate with clinical findings and appropriate confirmatory testing.</li>
+          <li>Smear microscopy does not establish organism viability or drug susceptibility. Culture, molecular identification and resistance testing are separate investigations; report their status only when supplied.</li>
+          <li>For suspected genital-tract mycobacterial disease, specimen selection and further investigations require clinical and laboratory assessment. This swab result is not interchangeable with cervical, tissue or endometrial specimen results.</li>
+          <li>Follow the performing laboratory&rsquo;s collection and transport instructions. Specimen adequacy, preparation quality, staining controls and contamination can affect interpretation.</li>
+          <li>Preserve the actual findings, grade and comments. A dash means no entered result, not that AFB were absent; an inadequate or unperformed smear must not be reported as negative.</li>
+        </ul>
+      </div>
+    </div>`;
+}
+
+// Vaginal Gram morphology and optional verified Nugent scoring, not species ID.
+// https://www.cdc.gov/std/treatment-guidelines/bv.htm
+// https://www.cdc.gov/std/treatment-guidelines/vaginal-discharge.htm
+// https://laboratories.newcastle-hospitals.nhs.uk/test-directory/genital-sample-culture/
+function buildVaginalSwabGramStainReportBody(test) {
+  const used = new Set();
+  const field = aliases => {
+    const parameter = (test?.parameters || []).find(p => aliases.map(normalizeParameterName).includes(normalizeParameterName(p.parameter_name)));
+    if (parameter) used.add(parameter);
+    return parameter || {};
+  };
+  const text = p => escapeHtml(String(p?.value ?? "").trim() || "-").replace(/\r?\n/g, "<br />");
+  const measurement = (label, p, range = "") => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${text(p)}</td><td>${escapeHtml(String(p.normal_range || "").trim() || range)}</td><td>${escapeHtml(String(p.unit || "").trim())}</td></tr>`;
+  const row = (label, aliases, range = "", optional = false) => {
+    const p = field([label, ...aliases]);
+    return optional && !String(p.value ?? "").trim() ? "" : measurement(label, p, range);
+  };
+  const textRow = (label, aliases, optional = false) => {
+    const p = field([label, ...aliases]);
+    return optional && !String(p.value ?? "").trim() ? "" : `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${text(p)}</td></tr>`;
+  };
+  const specimen = field(["Specimen / Collection Site", "Specimen", "Collection Site"]);
+  const section = label => `<tr class="thyroid-antibodies-section"><td colspan="4"><strong>${label}</strong></td></tr>`;
+  const rows = [
+    `<tr class="single-analyte-sample-row"><td><strong>Specimen / Collection Site</strong></td><td colspan="3">${escapeHtml(String(specimen.value || test?.sample_type || "").trim() || "Vaginal swab (record exact collection site)")}</td></tr>`,
+    textRow("Collection Date / Time", ["Collection Date", "Collection Time"]),
+    textRow("Clinical Details / Relevant Treatment", ["Clinical Details", "Clinical History", "Relevant Treatment"]),
+    textRow("Smear Preparation / Stain Method", ["Smear Preparation", "Stain Method", "Method"]),
+    textRow("Specimen Adequacy", ["Specimen Quality", "Adequacy"]),
+    section("DIRECT GRAM-STAIN MICROSCOPY"),
+    row("Gram Stain Findings", ["Gram Stain Result", "Findings", "Result"], "Site- and method-specific microscopy interpretation"),
+    row("Inflammatory Cells / PMNs", ["Inflammatory Cells", "PMNs", "Pus Cells", "WBC"], "Report quantity using the laboratory method"),
+    row("Epithelial Cells", ["Epithelial Cell"], "Report observed quantity / morphology"),
+    row("Clue Cells", ["Clue Cell"], "Report observed presence / quantity"),
+    row("Lactobacillus-type Morphotypes", ["Lactobacillus Morphotypes", "Lactobacilli", "Large Gram-positive Rods"], "Assess relative abundance in the vaginal flora"),
+    row("Small Gram-variable / Gram-negative Rods", ["Small Gram-variable Rods", "Small Gram-negative Rods"], "Assess relative abundance in the vaginal flora"),
+    row("Curved Rod Morphotypes", ["Curved Rods"], "Assess relative abundance in the vaginal flora"),
+    row("Other Bacterial Morphology", ["Bacterial Morphology", "Other Bacteria"]),
+    row("Yeast / Fungal Elements", ["Yeast", "Fungal Elements", "Budding Yeast / Pseudohyphae"]),
+    row("Nugent Score, if assessed", ["Nugent Score"], "0 - 3: Lactobacillus-predominant; 4 - 6: intermediate; 7 - 10: BV-associated", true),
+    textRow("Nugent Interpretation, if assessed", ["Nugent Interpretation"], true),
+    section("IMPRESSION / COMMENTS"),
+    textRow("Impression", ["Interpretation", "Laboratory Interpretation"]),
+    textRow("Culture / Specific Test Status, if performed", ["Culture / Specific Test Status", "Culture Status", "Specific Test Status", "NAAT Status"], true),
+    textRow("Comments / Limitations", ["Comments", "Comment", "Remarks", "Advice"]),
+  ];
+  const extra = (test?.parameters || []).filter(p => !used.has(p) && String(p.value ?? "").trim());
+  if (extra.length) rows.push(section("OTHER RECORDED FINDINGS"), ...extra.map(p => measurement(p.parameter_name, p)));
+  return `
+    <div class="vaginal-swab-gram-stain-report" data-report-content="vaginal-swab-gram-stain">
+      <table class="results-table single-analyte-table vaginal-swab-gram-stain-table">
+        <thead><tr><th style="width:34%">Examination / Finding</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead>
+        <tbody>${rows.join("\n")}</tbody>
+      </table>
+      <div class="single-analyte-notes report-template-notes vaginal-swab-gram-stain-notes">
+        <div class="report-note-heading">Scope of examination :</div>
+        <p>Direct Gram-stain examination of vaginal material records cellular findings and bacterial or fungal morphology. Normal vaginal flora can be present; this is not a sterile-site examination or a species-identification test.</p>
+        <div class="report-note-heading">Reference and interpretation guide :</div>
+        <table class="notes-table"><thead><tr><th>Finding / assessment</th><th>Guidance</th></tr></thead><tbody>
+          <tr><td>Vaginal bacterial morphotypes</td><td>Assess the relative abundance of Lactobacillus-type rods, small Gram-variable or Gram-negative rods and curved rods using the laboratory&rsquo;s validated method. Morphology alone does not identify a species.</td></tr>
+          <tr><td>Nugent score, only if assessed</td><td>0 - 3: Lactobacillus-predominant microbiota; 4 - 6: intermediate microbiota; 7 - 10: consistent with bacterial vaginosis by this scoring system. Record only a verified score from the appropriate vaginal Gram-stain assessment.</td></tr>
+          <tr><td>Clue cells / inflammatory cells</td><td>Record actual observed presence and quantity. These findings need correlation with other microscopy, symptoms and clinical assessment; no diagnosis is assigned automatically.</td></tr>
+          <tr><td>Yeast / fungal elements</td><td>Record morphology when observed. A negative microscopic examination does not reliably exclude fungal infection; further testing may be appropriate when symptoms persist.</td></tr>
+        </tbody></table>
+        <div class="report-note-heading">Notes and limitations :</div>
+        <ul>
+          <li>Use the exact specimen site and laboratory-approved collection, transport and preparation procedure. Specimen quality and treatment history can influence interpretation.</li>
+          <li>The Nugent score is optional and is not calculated from narrative entries here. Do not infer a score, a normal flora category or absence of organisms from unentered fields.</li>
+          <li>This fixed Gram-stained smear is not a motility assessment for Trichomonas and does not replace specifically requested STI tests. Culture, NAAT, AFB staining and PAP cytology remain separate investigations.</li>
+          <li>Smear morphology does not establish antimicrobial susceptibility. Include separate test status only when actually supplied.</li>
+          <li>Preserve the laboratory&rsquo;s actual grading, units, reference criteria and comments. A dash indicates no entered result, not a negative examination.</li>
+        </ul>
+      </div>
+    </div>`;
+}
+
+// Therapeutic-drug monitoring: distinguish total/free levels and sampling timing.
+// https://www.mayocliniclabs.com/test-catalog/Overview/37066
+// https://www.mayocliniclabs.com/test-catalog/Overview/37067
+function buildValproateLevelReportBody(test) {
+  const used = new Set();
+  const field = aliases => {
+    const parameter = (test?.parameters || []).find(p => aliases.map(normalizeParameterName).includes(normalizeParameterName(p.parameter_name)));
+    if (parameter) used.add(parameter);
+    return parameter || {};
+  };
+  const text = p => escapeHtml(String(p?.value ?? "").trim() || "-").replace(/\r?\n/g, "<br />");
+  const recorded = p => String(p.value ?? "").trim().length > 0;
+  const measurement = (label, p, range = "", unit = "") => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${text(p)}</td><td>${escapeHtml(String(p.normal_range || "").trim() || range)}</td><td>${escapeHtml(String(p.unit || "").trim() || unit)}</td></tr>`;
+  const textRow = (label, aliases, optional = false) => {
+    const p = field([label, ...aliases]);
+    return optional && !recorded(p) ? "" : `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${text(p)}</td></tr>`;
+  };
+  const result = field(["Valproic Acid (Valproate) Level", "Valproic Acid", "Valproate", "Valproate Level", "Result"]);
+  const total = field(["Valproic Acid, Total", "Valproate, Total", "Total Valproic Acid", "Valproic Acid Total"]);
+  const free = field(["Valproic Acid, Free", "Free Valproic Acid", "Valproate, Free", "Valproic Acid Free"]);
+  const specimen = field(["Specimen", "Specimen Type"]);
+  const elapsed = field(["Time Since Last Dose, if supplied", "Time Since Last Dose", "Hours Since Last Dose"]);
+  const rows = [
+    `<tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(String(specimen.value || test?.sample_type || "").trim() || "Serum / plasma (record actual specimen)")}</td></tr>`,
+    textRow("Collection Date / Time", ["Collection Date", "Collection Time"]),
+    recorded(result) || (!recorded(total) && !recorded(free)) ? measurement("Valproic Acid (Valproate) Level", result, "Declare total/free basis; lab-validated therapeutic interval", "µg/mL") : "",
+    recorded(total) ? measurement("Valproic Acid, Total (reported)", total, "Laboratory total-level interval for indication and timing", "µg/mL") : "",
+    recorded(free) ? measurement("Valproic Acid, Free (reported)", free, "Laboratory free-level interval", "µg/mL") : "",
+    textRow("Measurement Basis (Total / Free)", ["Measurement Basis", "Total / Free", "Reporting Basis"]),
+    textRow("Dose / Regimen", ["Dose", "Regimen", "Current Dose"]),
+    textRow("Last Dose Date / Time", ["Last Dose", "Last Dose Time"]),
+    textRow("Sampling Timing (Trough / Peak / Random)", ["Sampling Timing", "Trough / Peak / Random", "Sample Timing"]),
+    recorded(elapsed) ? measurement("Time Since Last Dose", elapsed, "", "hours") : "",
+    textRow("Method / Analyzer", ["Method", "Analyzer"]),
+    textRow("Clinical Indication / Relevant Medicines", ["Clinical Indication", "Indication", "Relevant Medicines", "Medication History"]),
+    textRow("Laboratory Interpretation", ["Interpretation", "Impression"]),
+    textRow("Critical Result Communication, if applicable", ["Critical Result Communication", "Critical Communication"], true),
+    textRow("Comments / Limitations", ["Comments", "Comment", "Remarks"]),
+  ];
+  const extra = (test?.parameters || []).filter(p => !used.has(p) && recorded(p));
+  if (extra.length) rows.push(`<tr class="thyroid-antibodies-section"><td colspan="4"><strong>OTHER RECORDED FINDINGS</strong></td></tr>`, ...extra.map(p => measurement(p.parameter_name, p)));
+  return `
+    <div class="valproate-level-report" data-report-content="valproate-level">
+      <table class="results-table single-analyte-table valproate-level-table">
+        <thead><tr><th style="width:34%">Investigation / Context</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead>
+        <tbody>${rows.join("\n")}</tbody>
+      </table>
+      <div class="single-analyte-notes report-template-notes valproate-level-notes">
+        <div class="report-note-heading">Clinical use :</div>
+        <p>Valproate concentration supports therapeutic-drug monitoring alongside clinical response, adverse effects and the prescribed regimen. Identify whether the assay measured total drug or the unbound (free) fraction.</p>
+        <div class="report-note-heading">Reference and interpretation guide :</div>
+        <table class="notes-table"><thead><tr><th>Assessment</th><th>Guidance</th></tr></thead><tbody>
+          <tr><td>Total level: example guide</td><td>Mayo Clinic Laboratories describes 50 (trough) - 125 (peak) &micro;g/mL for total valproic acid. This is an example, not a universal trough target; the indication, sampling time and performing laboratory&rsquo;s validated interval take precedence.</td></tr>
+          <tr><td>Free level: separate assay</td><td>Mayo&rsquo;s free-level example interval is 5 - 25 &micro;g/mL. Do not apply the total-drug range to a free result. Laboratory intervals can differ; report a free level only when actually measured.</td></tr>
+          <tr><td>Collection timing</td><td>Concentrations vary with time since the dose. Record the collection and last-dose times, and identify trough, peak or random sampling rather than assuming timing from the concentration.</td></tr>
+          <tr><td>Protein binding</td><td>Low albumin, altered renal or hepatic function and interacting medicines can change the free fraction. A total level may not reflect the active unbound concentration.</td></tr>
+        </tbody></table>
+        <div class="report-note-heading">Notes and limitations :</div>
+        <ul>
+          <li>Use the laboratory-approved specimen and handling procedure. Record relevant dose changes, treatment context and other medicines when supplied.</li>
+          <li>A result outside the target interval requires clinical assessment; a concentration alone does not establish treatment failure or toxicity. Follow the laboratory&rsquo;s critical-result communication policy when applicable.</li>
+          <li>No dose adjustment, free fraction, albumin correction or time-since-dose calculation is performed by this format. Do not change or stop prescribed treatment based on this report alone.</li>
+          <li>Total and free results are distinct measurements. Preserve the actual value, units and assay-specific reference; do not invent an unperformed measurement.</li>
+          <li>A dash indicates no entered result, not a therapeutic or normal level. An unspecified measurement basis must be clarified by the performing laboratory.</li>
+        </ul>
+      </div>
+    </div>`;
+}
+
+// Qualitative diazo reaction categories; quantitative bilirubin is reported separately.
+// https://pubmed.ncbi.nlm.nih.gov/16747977/
+// https://documents.thermofisher.com/TFS-Assets/CDD/manuals/Direct-Bilirubin-Reagent-EN.pdf
+// https://www.labcorp.com/tests/001214/bilirubin-total-and-direct
+function buildVanDenBerghReactionReportBody(test) {
+  const used = new Set();
+  const field = aliases => {
+    const parameter = (test?.parameters || []).find(p => aliases.map(normalizeParameterName).includes(normalizeParameterName(p.parameter_name)));
+    if (parameter) used.add(parameter);
+    return parameter || {};
+  };
+  const text = p => escapeHtml(String(p?.value ?? "").trim() || "-").replace(/\r?\n/g, "<br />");
+  const recorded = p => String(p.value ?? "").trim().length > 0;
+  const measurement = (label, p, range = "", unit = "") => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${text(p)}</td><td>${escapeHtml(String(p.normal_range || "").trim() || range)}</td><td>${escapeHtml(String(p.unit || "").trim() || unit)}</td></tr>`;
+  const textRow = (label, aliases, optional = false) => {
+    const p = field([label, ...aliases]);
+    return optional && !recorded(p) ? "" : `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${text(p)}</td></tr>`;
+  };
+  const result = field(["Van den Bergh Reaction Result", "Vanden Burgh Reaction Result", "Van den Bergh Reaction", "Vanden Burgh Reaction", "Result"]);
+  const specimen = field(["Specimen", "Specimen Type"]);
+  const total = field(["Total Bilirubin, if measured", "Total Bilirubin", "Bilirubin Total"]);
+  const direct = field(["Direct Bilirubin, if measured", "Direct Bilirubin", "Bilirubin Direct"]);
+  const indirect = field(["Indirect Bilirubin, if reported", "Indirect Bilirubin", "Bilirubin Indirect"]);
+  const rows = [
+    `<tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(String(specimen.value || test?.sample_type || "").trim() || "Serum (record actual specimen)")}</td></tr>`,
+    textRow("Collection Date / Time", ["Collection Date", "Collection Time"]),
+    textRow("Clinical Details / Indication", ["Clinical Details", "Indication", "Clinical History"]),
+    measurement("Van den Bergh Reaction Result", result, "Laboratory-validated qualitative reaction criteria"),
+    textRow("Reaction Category (Direct / Indirect / Biphasic), if assigned", ["Reaction Category", "Reaction Type", "Direct / Indirect / Biphasic"], true),
+    textRow("Observed Colour / Reaction", ["Observed Colour", "Observed Color", "Colour Reaction", "Color Reaction", "Observed Reaction"]),
+    textRow("Reaction Timing / Accelerator Details", ["Reaction Timing", "Accelerator Details", "Reaction Time"]),
+    textRow("Method / Reagent", ["Method", "Reagent"]),
+    textRow("Specimen Quality / Light Protection", ["Specimen Quality", "Light Protection"]),
+  ];
+  if ([total, direct, indirect].some(recorded)) {
+    rows.push(`<tr class="thyroid-antibodies-section"><td colspan="4"><strong>SEPARATELY REPORTED BILIRUBIN VALUES</strong></td></tr>`);
+    for (const [label, parameter] of [["Total Bilirubin, if measured", total], ["Direct Bilirubin, if measured", direct], ["Indirect Bilirubin, if reported", indirect]]) {
+      if (recorded(parameter)) rows.push(measurement(label, parameter, "Laboratory-validated age- and method-specific interval", "mg/dL"));
+    }
+  }
+  rows.push(textRow("Laboratory Interpretation", ["Interpretation", "Impression"]), textRow("Comments / Limitations", ["Comments", "Comment", "Remarks"]));
+  const extra = (test?.parameters || []).filter(p => !used.has(p) && recorded(p));
+  if (extra.length) rows.push(`<tr class="thyroid-antibodies-section"><td colspan="4"><strong>OTHER RECORDED FINDINGS</strong></td></tr>`, ...extra.map(p => measurement(p.parameter_name, p)));
+  return `
+    <div class="van-den-bergh-reaction-report" data-report-content="van-den-bergh-reaction">
+      <table class="results-table single-analyte-table van-den-bergh-reaction-table">
+        <thead><tr><th style="width:34%">Examination / Finding</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead>
+        <tbody>${rows.join("\n")}</tbody>
+      </table>
+      <div class="single-analyte-notes report-template-notes van-den-bergh-reaction-notes">
+        <div class="report-note-heading">Principle and scope :</div>
+        <p>The Van den Bergh reaction describes bilirubin reactivity with a diazo reagent. Record the observed colour, reaction timing and laboratory-assigned category according to the method actually performed. A qualitative reaction category is not a bilirubin concentration.</p>
+        <div class="report-note-heading">Reaction reporting guide :</div>
+        <table class="notes-table"><thead><tr><th>Laboratory-assigned category</th><th>Meaning / reporting guidance</th></tr></thead><tbody>
+          <tr><td>Direct reaction</td><td>A direct-reacting response under the method&rsquo;s unaccelerated conditions. Retain the actual observation and protocol; this label alone does not establish the cause of jaundice.</td></tr>
+          <tr><td>Indirect reaction</td><td>A response characterised after the method&rsquo;s accelerator step. Record only the category actually assigned; do not infer a numerical indirect fraction from colour or timing.</td></tr>
+          <tr><td>Biphasic reaction</td><td>A laboratory-described combination of initial and subsequent reaction phases. It does not specify the concentrations or proportions of bilirubin fractions.</td></tr>
+          <tr><td>No visible reaction / negative</td><td>Interpret against the method&rsquo;s detection and reporting criteria. No visible reaction does not mean that bilirubin is completely absent from serum.</td></tr>
+        </tbody></table>
+        <div class="report-note-heading">Reference and interpretation :</div>
+        <p>Use laboratory-validated qualitative criteria for the reaction. When bilirubin concentrations are separately measured or reported, retain their actual units and age- and method-specific intervals. Quantitative total/direct bilirubin testing and clinical assessment are needed for fuller interpretation; qualitative categories alone do not diagnose haemolytic, hepatic or obstructive disease.</p>
+        <div class="report-note-heading">Notes and limitations :</div>
+        <ul>
+          <li>Follow laboratory collection and handling instructions and protect bilirubin specimens from bright light. Haemolysis, lipaemia and other interference must be assessed using the actual assay&rsquo;s guidance.</li>
+          <li>Diazo procedures differ in reagents, accelerators and reading conditions. Do not assume a manufacturer, reaction time or quantitative calibration from this catalogue name.</li>
+          <li>No bilirubin concentration, indirect fraction, reaction category or diagnosis is calculated automatically. Optional quantitative rows appear only when values are actually entered.</li>
+          <li>Preserve the laboratory&rsquo;s interpretation and limitations. A dash means no entered result, not a negative or normal reaction.</li>
+        </ul>
+      </div>
+    </div>`;
+}
+
+// Weil-Felix agglutination: method/local-baseline interpretation, not pathogen confirmation.
+// https://www.tulipgroup.com/PDFs/Serology/QRG/Progen-OX2-QRG.pdf
+// https://www.cdc.gov/typhus/hcp/clinical-overview/clinical-overview-of-scrub-typhus.html
+// DHR-ICMR rickettsial guidelines: https://pmc.ncbi.nlm.nih.gov/articles/PMC4510721/
+function buildWeilFelixReportBody(test) {
+  const used = new Set();
+  const field = aliases => {
+    const parameter = (test?.parameters || []).find(p => aliases.map(normalizeParameterName).includes(normalizeParameterName(p.parameter_name)));
+    if (parameter) used.add(parameter);
+    return parameter || {};
+  };
+  const text = p => escapeHtml(String(p?.value ?? "").trim() || "-").replace(/\r?\n/g, "<br />");
+  const recorded = p => String(p.value ?? "").trim().length > 0;
+  const measurement = (label, p, range = "") => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${text(p)}</td><td>${escapeHtml(String(p.normal_range || "").trim() || range)}</td><td>${escapeHtml(String(p.unit || "").trim())}</td></tr>`;
+  const textRow = (label, aliases, optional = false) => {
+    const p = field([label, ...aliases]);
+    return optional && !recorded(p) ? "" : `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${text(p)}</td></tr>`;
+  };
+  const specimen = field(["Specimen", "Specimen Type"]);
+  const rows = [
+    `<tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${escapeHtml(String(specimen.value || test?.sample_type || "").trim() || "Serum (record actual specimen)")}</td></tr>`,
+    textRow("Collection Date / Time", ["Collection Date", "Collection Time"]),
+    textRow("Fever Onset / Illness Timing", ["Fever Onset", "Illness Timing", "Days Since Onset"]),
+    textRow("Clinical Details / Exposure / Relevant Treatment", ["Clinical Details", "Exposure", "Relevant Treatment"]),
+    `<tr class="thyroid-antibodies-section"><td colspan="4"><strong>WEIL-FELIX ANTIGEN RESULTS</strong></td></tr>`,
+    ...[
+      ["Proteus OX2 Result / Titre", ["OX2", "OX2 Titre", "OX2 Result", "Proteus OX2"]],
+      ["Proteus OX19 Result / Titre", ["OX19", "OX19 Titre", "OX19 Result", "Proteus OX19"]],
+      ["Proteus OXK Result / Titre", ["OXK", "OXK Titre", "OXK Result", "Proteus OXK"]],
+    ].map(([label, aliases]) => measurement(label, field([label, ...aliases]), "Laboratory-validated method and local baseline cut-off")),
+    textRow("Overall Screening Result, if reported", ["Overall Screening Result", "Overall Result", "Result"], true),
+    textRow("Method (Slide / Tube Agglutination)", ["Method", "Agglutination Method", "Slide / Tube Agglutination"]),
+    textRow("Kit / Reagent", ["Kit", "Reagent"]),
+    textRow("Laboratory Cut-off / Local Baseline", ["Laboratory Cut-off", "Local Baseline", "Cut-off"]),
+    textRow("Paired Specimen / Comparison, if available", ["Paired Specimen", "Paired Serum Comparison", "Comparison"], true),
+    textRow("Laboratory Interpretation", ["Interpretation", "Impression"]),
+    textRow("Specific / Confirmatory Test Status, if performed", ["Confirmatory Test Status", "Specific Test Status", "ELISA Status", "IFA Status", "PCR Status"], true),
+    textRow("Comments / Limitations", ["Comments", "Comment", "Remarks"]),
+  ];
+  const extra = (test?.parameters || []).filter(p => !used.has(p) && recorded(p));
+  if (extra.length) rows.push(`<tr class="thyroid-antibodies-section"><td colspan="4"><strong>OTHER RECORDED FINDINGS</strong></td></tr>`, ...extra.map(p => measurement(p.parameter_name, p)));
+  return `
+    <div class="weil-felix-report" data-report-content="weil-felix">
+      <table class="results-table single-analyte-table weil-felix-table">
+        <thead><tr><th style="width:34%">Antigen / Context</th><th style="width:22%">Result / Titre</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead>
+        <tbody>${rows.join("\n")}</tbody>
+      </table>
+      <div class="single-analyte-notes report-template-notes weil-felix-notes">
+        <div class="report-note-heading">Principle and scope :</div>
+        <p>The Weil&ndash;Felix test uses Proteus OX2, OX19 and OXK antigen suspensions to detect cross-reacting agglutinins. Report each antigen separately using the method actually performed; it is not a direct test for the presence or identity of a rickettsial organism.</p>
+        <div class="report-note-heading">Reference and reporting guide :</div>
+        <table class="notes-table"><thead><tr><th>Reporting basis</th><th>Guidance</th></tr></thead><tbody>
+          <tr><td>Qualitative slide screen</td><td>Retain the observed reactive or non-reactive category. Do not convert a slide reaction into an endpoint titre unless a validated titration was performed and reported.</td></tr>
+          <tr><td>Endpoint titre</td><td>Record the actual reported dilution, for example in 1:x format, with the antigen and method. Preserve less-than values and laboratory comments; no titre is inferred from reaction strength.</td></tr>
+          <tr><td>Reference cut-off</td><td>Use the performing laboratory&rsquo;s validated method, antigen-specific criteria and local background titres. A single universal titre threshold is not applied by this format.</td></tr>
+          <tr><td>Paired specimens, if available</td><td>Record collection dates and the laboratory&rsquo;s comparison using compatible methods. No fold-rise or diagnosis is calculated automatically.</td></tr>
+        </tbody></table>
+        <div class="report-note-heading">Interpretation and limitations :</div>
+        <ul>
+          <li>This test has important sensitivity and specificity limitations. A reactive result alone does not confirm a rickettsial infection, and a non-reactive result does not reliably exclude one.</li>
+          <li>CDC notes that Weil&ndash;Felix OXK assays have very low sensitivity and specificity and are not recommended as diagnostic assays for scrub typhus. Appropriate specific serology or molecular testing should be considered with clinical assessment.</li>
+          <li>Interpret with illness timing, clinical findings, exposure and treatment history. Antigen patterns do not establish a species diagnosis; report confirmatory test status only when supplied.</li>
+          <li>Follow the laboratory&rsquo;s specimen and reagent instructions. Report only investigations actually performed; an overall legacy result is not assigned to all three antigens.</li>
+          <li>A dash denotes no entered result, not a negative finding. Preserve each antigen&rsquo;s actual result, reference and interpretive comment.</li>
+        </ul>
+      </div>
+    </div>`;
+}
+
+// Configurable adult women's reporting template, not a universal screening order.
+// https://medlineplus.gov/lab-tests/complete-blood-count-cbc/
+// https://medlineplus.gov/lab-tests/cholesterol-levels/
+// https://medlineplus.gov/lab-tests/hemoglobin-a1c-hba1c-test/
+// https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/thyroid-dysfunction-screening
+function buildWellWomenProfileReportBody(test) {
+  const used = new Set();
+  const recorded = p => String(p?.value ?? "").trim().length > 0;
+  const text = p => escapeHtml(String(p?.value ?? "").trim() || "-").replace(/\r?\n/g, "<br />");
+  const resolved = WELL_WOMEN_FIELDS.map(definition => {
+    const names = [definition.parameterName, ...definition.aliases].map(normalizeParameterName);
+    const parameter = (test?.parameters || []).find(p => names.includes(normalizeParameterName(p.parameter_name)));
+    if (parameter) used.add(parameter);
+    return { ...definition, parameter: parameter || {} };
+  });
+  const section = label => `<tr class="thyroid-antibodies-section"><td colspan="4"><strong>${escapeHtml(label)}</strong></td></tr>`;
+  const measurement = (label, parameter, range = "", unit = "") => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${text(parameter)}</td><td>${escapeHtml(String(parameter.normal_range || "").trim() || range)}</td><td>${escapeHtml(String(parameter.unit || "").trim() || unit)}</td></tr>`;
+  const narrative = item => `<tr><td><strong>${escapeHtml(item.parameterName)}</strong></td><td colspan="3">${text(item.parameter)}</td></tr>`;
+  const rows = resolved.filter(item => item.section === 'context').map(narrative);
+  const measurements = resolved.filter(item => !['context', 'summary'].includes(item.section) && recorded(item.parameter));
+  let currentSection;
+  for (const item of measurements) {
+    if (item.section !== currentSection) { rows.push(section(item.section)); currentSection = item.section; }
+    // Numeric defaults are expressed in the schema unit; don't silently apply
+    // those decision limits to a differently configured unit.
+    const sameUnit = !String(item.parameter.unit || '').trim() || normalizeParameterName(item.parameter.unit) === normalizeParameterName(item.unit);
+    const range = sameUnit ? item.normalRange : 'Laboratory-validated reference for the reported unit';
+    rows.push(measurement(item.parameterName, item.parameter, range, item.unit));
+  }
+  if (!measurements.length) rows.push(section('PROFILE RESULTS'), '<tr><td><strong>Measurements</strong></td><td>-</td><td colspan="2">No results entered; not a normal or negative profile</td></tr>');
+  rows.push(section('FINDINGS / COMMENTS'), ...resolved.filter(item => item.section === 'summary').map(narrative));
+  const extra = (test?.parameters || []).filter(p => !used.has(p) && recorded(p));
+  if (extra.length) rows.push(section('OTHER RECORDED RESULTS'), ...extra.map(p => measurement(p.parameter_name, p)));
+  return `
+    <div class="well-women-profile-report" data-report-content="well-women-profile">
+      <table class="results-table single-analyte-table well-women-profile-table">
+        <thead><tr><th style="width:34%">Investigation / Context</th><th style="width:22%">Result</th><th style="width:30%">Reference / Decision Guide</th><th style="width:14%">Unit</th></tr></thead>
+        <tbody>${rows.join("\n")}</tbody>
+      </table>
+      <div class="single-analyte-notes report-template-notes well-women-profile-notes">
+        <div class="report-note-heading">Profile scope :</div>
+        <p>A configurable adult women&rsquo;s health reporting template covering CBC, glucose assessment and lipids, with targeted additions when requested. The laboratory and clinician must confirm the actual package contents and clinical indication; this is not a universal screening order for all women.</p>
+        <div class="report-note-heading">Reference and interpretation guide :</div>
+        <table class="notes-table"><thead><tr><th>Section</th><th>Guidance</th></tr></thead><tbody>
+          <tr><td>CBC / haemoglobin</td><td>Interpret cell counts and red-cell indices using laboratory-validated age-, sex- and pregnancy-specific intervals. Low haemoglobin is not by itself proof of iron deficiency; targeted evaluation may be needed.</td></tr>
+          <tr><td>Glucose screening, if selected</td><td>The need for screening depends on age and risk factors. Fasting glucose or HbA1c may be selected; both are not automatically required. HbA1c guides for nonpregnant adults are below 5.7% (usual range), 5.7 - 6.4% (prediabetes range) and 6.5% or higher (diabetes range), subject to clinical assessment and confirmation where appropriate.</td></tr>
+          <tr><td>Lipids</td><td>General adult decision guides are not individual treatment targets. Interpret with cardiovascular risk, age and collection conditions. Record LDL as reported by the laboratory; no LDL value is calculated here.</td></tr>
+          <tr><td>Targeted additions</td><td>Ferritin, renal assessment and TSH are optional, not routine mandatory components. Report only requested and performed investigations. Evidence is insufficient to support universal thyroid screening in asymptomatic nonpregnant adults.</td></tr>
+        </tbody></table>
+        <div class="report-note-heading">Notes and limitations :</div>
+        <ul>
+          <li>Record actual specimens and fasting status. CBC/HbA1c and serum/plasma chemistry may need different collection tubes according to laboratory procedures.</li>
+          <li>Pregnancy, menstrual or bleeding history, medicines and other clinical circumstances can affect interpretation. This is not an antenatal, infertility or menopause hormone panel.</li>
+          <li>HbA1c may be unreliable in some haemoglobin disorders or altered red-cell turnover; interpret with the clinical context and an appropriate glucose measurement.</li>
+          <li>This profile does not replace cervical or breast screening and does not automatically include PAP/HPV testing, cancer markers, reproductive hormones, vitamin assays or infection screening.</li>
+          <li>Only entered measurement rows appear. Missing fields do not imply testing was performed or results were normal. No diagnosis, eGFR, LDL, red-cell index or other value is calculated automatically.</li>
+          <li>Review abnormal or clinically significant results with the treating clinician. Laboratory-approved ranges and the actual request take precedence over example decision guides.</li>
+        </ul>
+      </div>
+    </div>`;
+}
+
+// Wound-site AFB microscopy and swab limitations; no inferred species or resistance.
+// https://www.mayocliniclabs.com/test-catalog/overview/8213
+// https://www.cdc.gov/tb/hcp/testing-diagnosis/clinical-and-laboratory-diagnosis.html
+function buildWoundSwabGramStainReportBody(test) {
+  const used = new Set();
+  const field = aliases => {
+    const parameter = (test?.parameters || []).find(p => aliases.map(normalizeParameterName).includes(normalizeParameterName(p.parameter_name)));
+    if (parameter) used.add(parameter);
+    return parameter || {};
+  };
+  const text = p => escapeHtml(String(p?.value ?? "").trim() || "-").replace(/\r?\n/g, "<br />");
+  const measurement = (label, p, range = "") => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${text(p)}</td><td>${escapeHtml(String(p.normal_range || "").trim() || range)}</td><td>${escapeHtml(String(p.unit || "").trim())}</td></tr>`;
+  const textRow = (label, aliases, optional = false) => {
+    const p = field([label, ...aliases]);
+    return optional && !String(p.value ?? "").trim() ? "" : `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${text(p)}</td></tr>`;
+  };
+  const specimen = field(["Specimen / Wound Site", "Specimen / Collection Site", "Wound Site", "Collection Site", "Specimen"]);
+  const findings = field(["Gram Stain Findings", "Gram Stain Result", "Result / Findings", "Findings", "Result"]);
+  const rows = [
+    `<tr class="single-analyte-sample-row"><td><strong>Specimen / Wound Site</strong></td><td colspan="3">${text({ value: String(specimen.value ?? "").trim() || test?.sample_type || "Wound swab (record exact collection site)" })}</td></tr>`,
+    textRow("Collection Date / Time", ["Collection Date", "Collection Time"]),
+    textRow("Collection Context / Surface or Deep Site", ["Collection Context", "Surface or Deep Site", "Collection Depth"]),
+    textRow("Clinical Details / Relevant Treatment", ["Clinical Details", "Clinical History", "Relevant Treatment"]),
+    textRow("Smear Preparation / Stain Method", ["Smear Preparation", "Stain Method", "Stain / Method", "Method"]),
+    textRow("Specimen Adequacy", ["Adequacy"]),
+    `<tr class="thyroid-antibodies-section"><td colspan="4"><strong>DIRECT GRAM-STAIN MICROSCOPY</strong></td></tr>`,
+    measurement("Gram Stain Findings", findings, "Interpret according to collection site and laboratory method"),
+    measurement("Inflammatory Cells / PMNs", field(["Inflammatory Cells / PMNs", "Pus Cells", "PMNs", "White Blood Cells", "WBCs"])),
+    measurement("Squamous Epithelial Cells", field(["Squamous Epithelial Cells", "Epithelial Cells"])),
+    measurement("Gram-positive Cocci", field(["Gram-positive Cocci", "Gram Positive Cocci", "GPC"])),
+    measurement("Gram-positive Bacilli", field(["Gram-positive Bacilli", "Gram Positive Bacilli", "Gram-positive Rods", "GPB"])),
+    measurement("Gram-negative Bacilli", field(["Gram-negative Bacilli", "Gram Negative Bacilli", "Gram-negative Rods", "GNB"])),
+    measurement("Other Bacterial Morphology / Mixed Morphotypes", field(["Other Bacterial Morphology / Mixed Morphotypes", "Other Bacterial Morphology", "Mixed Morphotypes", "Other Organisms"])),
+    measurement("Yeast / Fungal Elements", field(["Yeast / Fungal Elements", "Yeast", "Fungal Elements"])),
+    textRow("Impression", ["Interpretation", "Laboratory Interpretation"]),
+    textRow("Culture / Specific Test Status, if performed", ["Culture / Specific Test Status", "Culture Status", "Specific Test Status"], true),
+    textRow("Comments / Limitations", ["Comments", "Comment", "Limitations", "Advice"]),
+  ];
+  const extra = (test?.parameters || []).filter(p => !used.has(p) && String(p.value ?? "").trim());
+  if (extra.length) rows.push(`<tr class="thyroid-antibodies-section"><td colspan="4"><strong>OTHER RECORDED FINDINGS</strong></td></tr>`, ...extra.map(p => measurement(p.parameter_name, p)));
+  return `
+    <div class="wound-swab-gram-stain-report" data-report-content="wound-swab-gram-stain">
+      <table class="results-table single-analyte-table wound-swab-gram-stain-table">
+        <thead><tr><th style="width:34%">Examination / Finding</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead>
+        <tbody>${rows.join("\n")}</tbody>
+      </table>
+      <div class="single-analyte-notes report-template-notes wound-swab-gram-stain-notes">
+        <div class="report-note-heading">Scope and reference guidance :</div>
+        <p>Direct microscopy of wound-swab material documents cells and observed microbial morphology. Reference findings depend on the anatomical site, collection context and laboratory method; there is no single numerical normal range for all wound swabs.</p>
+        <div class="report-note-heading">Interpretation guide :</div>
+        <table class="notes-table"><thead><tr><th>Finding</th><th>Guidance</th></tr></thead><tbody>
+          <tr><td>Inflammatory cells / PMNs</td><td>Describe the observed quantity using the laboratory&rsquo;s reporting scheme. Inflammation alone does not identify its cause.</td></tr>
+          <tr><td>Squamous epithelial cells</td><td>May reflect surface material. Assess adequacy in the wound-site and sampling context; do not apply sputum rejection thresholds to a wound swab.</td></tr>
+          <tr><td>Bacterial morphology</td><td>Record Gram reaction, shape, arrangement and quantity actually observed, including mixed morphotypes when present. Morphology is not species identification.</td></tr>
+          <tr><td>No organisms seen</td><td>Report only if microscopy was performed and this was the observed finding. A negative smear does not exclude infection.</td></tr>
+        </tbody></table>
+        <div class="report-note-heading">Sampling and limitations :</div>
+        <ul>
+          <li>Superficial wound swabs may contain colonising flora that do not represent the organisms causing a deeper infection. Correlate with clinical findings; an appropriate aspirate or tissue specimen may be preferable when accepted by the performing laboratory.</li>
+          <li>Detection depends on organism burden, specimen quality, processing and prior treatment. Some organisms stain poorly or require other methods; routine Gram stain is not an AFB examination.</li>
+          <li>Culture, organism identification and antimicrobial susceptibility are separate investigations. Gram reaction alone must not be used to assign a species, susceptibility result or treatment.</li>
+          <li>Use the performing laboratory&rsquo;s validated reporting scheme and collection instructions. Do not infer collection depth, adequacy, quantity or organism arrangement from the test name.</li>
+          <li>A dash means no entered result. No negative finding, infection diagnosis or specimen-quality grade is assigned automatically.</li>
+        </ul>
+      </div>
+    </div>`;
+}
+
+function buildWoundSwabAfbStainReportBody(test) {
+  const used = new Set();
+  const field = aliases => {
+    const parameter = (test?.parameters || []).find(p => aliases.map(normalizeParameterName).includes(normalizeParameterName(p.parameter_name)));
+    if (parameter) used.add(parameter);
+    return parameter || {};
+  };
+  const text = p => escapeHtml(String(p?.value ?? "").trim() || "-").replace(/\r?\n/g, "<br />");
+  const measurement = (label, p, range = "") => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${text(p)}</td><td>${escapeHtml(String(p.normal_range || "").trim() || range)}</td><td>${escapeHtml(String(p.unit || "").trim())}</td></tr>`;
+  const textRow = (label, aliases, optional = false) => {
+    const p = field([label, ...aliases]);
+    return optional && !String(p.value ?? "").trim() ? "" : `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${text(p)}</td></tr>`;
+  };
+  const result = field(["AFB Smear Microscopy Result", "AFB Result", "AFB Smear Result", "Result"]);
+  const grade = field(["AFB Smear Grade / Quantitation", "AFB Grade", "Grade / Quantitation", "Grade"]);
+  const specimen = field(["Specimen / Wound Site", "Specimen / Collection Site", "Wound Site", "Collection Site", "Specimen"]);
+  const rows = [
+    `<tr class="single-analyte-sample-row"><td><strong>Specimen / Wound Site</strong></td><td colspan="3">${escapeHtml(String(specimen.value || test?.sample_type || "").trim() || "Wound swab (record exact collection site)")}</td></tr>`,
+    textRow("Collection Date / Time", ["Collection Date", "Collection Time"]),
+    textRow("Collection Context / Surface or Deep Site", ["Collection Context", "Surface or Deep Site", "Collection Depth"]),
+    textRow("Clinical Details / Relevant Treatment", ["Clinical Details", "Clinical History", "Relevant Treatment"]),
+    `<tr class="thyroid-antibodies-section"><td colspan="4"><strong>DIRECT AFB MICROSCOPY</strong></td></tr>`,
+    measurement("AFB Smear Microscopy Result", result, "No acid-fast bacilli seen (expected finding)"),
+    measurement("AFB Smear Grade / Quantitation", grade, "Use the laboratory-validated method and grading scheme"),
+    textRow("Stain Method", ["Stain / Method", "Method"]),
+    textRow("Smear Preparation / Processing", ["Smear Preparation", "Processing Notes"]),
+    textRow("Specimen Adequacy", ["Specimen Adequacy / Processing Notes", "Adequacy"]),
+    textRow("Microscopy Remarks", ["Microscopic Findings", "Findings", "Remarks"]),
+    textRow("Impression", ["Interpretation", "Laboratory Interpretation"]),
+    textRow("Culture / Molecular Test Status, if performed", ["Culture / Molecular Test Status", "Culture Status", "Molecular Test Status", "NAAT Status"], true),
+    textRow("Comments / Limitations", ["Comments", "Comment", "Limitations", "Advice"]),
+  ];
+  const extra = (test?.parameters || []).filter(p => !used.has(p) && String(p.value ?? "").trim());
+  if (extra.length) rows.push(`<tr class="thyroid-antibodies-section"><td colspan="4"><strong>OTHER RECORDED FINDINGS</strong></td></tr>`, ...extra.map(p => measurement(p.parameter_name, p)));
+  return `
+    <div class="wound-swab-afb-stain-report" data-report-content="wound-swab-afb-stain">
+      <table class="results-table single-analyte-table wound-swab-afb-stain-table">
+        <thead><tr><th style="width:34%">Examination / Finding</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead>
+        <tbody>${rows.join("\n")}</tbody>
+      </table>
+      <div class="single-analyte-notes report-template-notes wound-swab-afb-stain-notes">
+        <div class="report-note-heading">Scope and method :</div>
+        <p>Direct examination of wound-swab material for acid-fast bacilli (AFB). Record the anatomical site, collection context, actual stain and preparation, and laboratory assessment of specimen adequacy.</p>
+        <div class="report-note-heading">Reference and reporting guide :</div>
+        <table class="notes-table"><thead><tr><th>Finding</th><th>Guidance</th></tr></thead><tbody>
+          <tr><td>No AFB seen</td><td>The expected finding if microscopy was performed. A negative smear does not exclude tuberculosis or another mycobacterial infection.</td></tr>
+          <tr><td>AFB seen</td><td>Report the observed finding and verified grade or count. Microscopy does not identify the species or confirm Mycobacterium tuberculosis complex.</td></tr>
+          <tr><td>Grade / quantitation</td><td>Use the laboratory&rsquo;s validated stain-specific microscopy and grading protocol. No organism count, grade or negative result is assigned automatically.</td></tr>
+          <tr><td>Sampling limitation</td><td>Mycobacterial recovery from swabs can be low. Fresh tissue or an appropriate aspirate may be preferred when clinically suitable and accepted by the performing laboratory; a superficial swab is not equivalent to a deep specimen.</td></tr>
+        </tbody></table>
+        <div class="report-note-heading">Interpretation and limitations :</div>
+        <ul>
+          <li>AFB can include organisms other than M. tuberculosis. Correlate a positive smear with clinical findings and appropriate mycobacterial culture or molecular identification.</li>
+          <li>Low organism burden, limited sampling and specimen quality can reduce detection. Do not regard a negative wound swab as excluding disease at another or deeper site.</li>
+          <li>Smear microscopy does not establish viability or drug susceptibility. Culture, molecular testing and resistance assessment are separate investigations; include their status only when supplied.</li>
+          <li>Follow the laboratory&rsquo;s approved collection device, transport and processing instructions. Do not infer the stain method or sample adequacy from the test name.</li>
+          <li>Keep the actual findings and comments. A dash means no entered result; an inadequate or unperformed smear must not be reported as AFB-negative.</li>
+        </ul>
+      </div>
+    </div>`;
+}
+
 function buildBunReportBody(test) {
+  if (isWoundSwabGramStainTest(test) && !String(test.report_body || "").trim()) return buildWoundSwabGramStainReportBody(test);
+  if (isWoundSwabAfbStainTest(test) && !String(test.report_body || "").trim()) return buildWoundSwabAfbStainReportBody(test);
+  if (isWellWomenProfileName(test?.name) && !String(test.report_body || "").trim()) return buildWellWomenProfileReportBody(test);
+  if (isWeilFelixTest(test) && !String(test.report_body || "").trim()) return buildWeilFelixReportBody(test);
+  if (isVanDenBerghReactionTest(test) && !String(test.report_body || "").trim()) return buildVanDenBerghReactionReportBody(test);
+  if (isValproateLevelTest(test) && !String(test.report_body || "").trim()) return buildValproateLevelReportBody(test);
+  if (isVaginalSwabGramStainTest(test) && !String(test.report_body || "").trim()) return buildVaginalSwabGramStainReportBody(test);
+  if (isVaginalSwabAfbStainTest(test) && !String(test.report_body || "").trim()) return buildVaginalSwabAfbStainReportBody(test);
+  if (isVaginalCervicalSwabTest(test) && !String(test.report_body || "").trim()) return buildVaginalCervicalSwabReportBody(test);
+  if (isUroflowmetryTest(test) && !String(test.report_body || "").trim()) return buildUroflowmetryReportBody(test);
+  if (isUrinePhTest(test) && !String(test.report_body || "").trim()) return buildUrinePhReportBody(test);
+  if (isUrineUrobilinogenTest(test) && !String(test.report_body || "").trim()) return buildUrineUrobilinogenReportBody(test);
+  if (isUrineSugarTest(test) && !String(test.report_body || "").trim()) return buildUrineSugarReportBody(test);
+  if (isUrineReducingSubstancesTest(test) && !String(test.report_body || "").trim()) return buildUrineReducingSubstancesReportBody(test);
+  if (isUrineRoutineTest(test) && !String(test.report_body || "").trim()) return buildUrineRoutineReportBody(test);
+  if (is24HourUrineProteinTest(test) && !String(test.report_body || "").trim()) return build24HourUrineProteinReportBody(test);
+  if (isUrineProteinAlbuminTest(test) && !String(test.report_body || "").trim()) return buildUrineProteinAlbuminReportBody(test);
+  if (isUrinePregnancyTest(test) && !String(test.report_body || "").trim()) return buildUrinePregnancyReportBody(test);
+  if (isUrinePorphobilinogenTest(test) && !String(test.report_body || "").trim()) return buildUrinePorphobilinogenReportBody(test);
+  if (isUrineObtThreeDayTest(test) && !String(test.report_body || "").trim()) return buildUrineObtThreeDayReportBody(test);
+  if (isUrinaryVmaTest(test) && !String(test.report_body || "").trim()) return buildUrinaryVmaReportBody(test);
+  if (isUrinary17KetosteroidTest(test) && !String(test.report_body || "").trim()) return buildUrinary17KetosteroidReportBody(test);
   if (isRandomUrineUricAcidTest(test) && !String(test.report_body || "").trim()) return buildRandomUrineUricAcidReportBody(test);
   if (is24HourUrineUricAcidTest(test) && !String(test.report_body || "").trim()) return build24HourUrineUricAcidReportBody(test);
   if (isUrethralSwabAfbTest(test) && !String(test.report_body || "").trim()) return buildUrethralSwabAfbReportBody(test);
@@ -18583,7 +20108,6 @@ function buildBunReportBody(test) {
   if (isUrineCultureTest(test)) return buildCultureReportBody(test, {
     cultureName: "CULTURE, URINE",
     aliases: ["Culture, Urine", "Culture Result", "Urine Culture", "Result"],
-    defaultComment: "No growth after incubation."
   });
   if (isMalariaParasiteIdentificationTest(test)) return buildMalariaParasiteIdentificationReportBody(test);
   if (isMycobacteriumCombinedPanelTest(test)) return buildMycobacteriumCombinedPanelReportBody(test);
@@ -21045,6 +22569,28 @@ function buildReportHtml(reportData) {
         if (reportData.tests.length === 1 && isDigoxinTest(t)) return "DIGOXIN";
         if (reportData.tests.length === 1 && isUrethralSwabAfbTest(t) && !String(t.report_body || "").trim()) return "URETHRAL SWAB - AFB STAIN";
         if (reportData.tests.length === 1 && isUrethralDischargeCultureSensitivityTest(t) && !String(t.report_body || "").trim()) return "URETHRAL DISCHARGE - CULTURE & SENSITIVITY";
+        if (reportData.tests.length === 1 && isWoundSwabGramStainTest(t) && !String(t.report_body || "").trim()) return "WOUND SWAB - GRAM STAIN";
+        if (reportData.tests.length === 1 && isWoundSwabAfbStainTest(t) && !String(t.report_body || "").trim()) return "WOUND SWAB - AFB STAIN";
+        if (reportData.tests.length === 1 && isWellWomenProfileName(t?.name) && !String(t.report_body || "").trim()) return "WELL WOMEN PROFILE";
+        if (reportData.tests.length === 1 && isWeilFelixTest(t) && !String(t.report_body || "").trim()) return "WEIL-FELIX TEST";
+        if (reportData.tests.length === 1 && isVanDenBerghReactionTest(t) && !String(t.report_body || "").trim()) return "VAN DEN BERGH REACTION";
+        if (reportData.tests.length === 1 && isValproateLevelTest(t) && !String(t.report_body || "").trim()) return "VALPROIC ACID (VALPROATE) LEVEL";
+        if (reportData.tests.length === 1 && isVaginalSwabGramStainTest(t) && !String(t.report_body || "").trim()) return "VAGINAL SWAB - GRAM STAIN";
+        if (reportData.tests.length === 1 && isVaginalSwabAfbStainTest(t) && !String(t.report_body || "").trim()) return "VAGINAL SWAB - AFB STAIN";
+        if (reportData.tests.length === 1 && isVaginalCervicalSwabTest(t) && !String(t.report_body || "").trim()) return "VAGINAL / CERVICAL SWAB";
+        if (reportData.tests.length === 1 && isUroflowmetryTest(t) && !String(t.report_body || "").trim()) return "UROFLOWMETRY";
+        if (reportData.tests.length === 1 && isUrinePhTest(t) && !String(t.report_body || "").trim()) return "URINE pH";
+        if (reportData.tests.length === 1 && isUrineUrobilinogenTest(t) && !String(t.report_body || "").trim()) return "URINE UROBILINOGEN";
+        if (reportData.tests.length === 1 && isUrineSugarTest(t) && !String(t.report_body || "").trim()) return "URINE SUGAR";
+        if (reportData.tests.length === 1 && isUrineReducingSubstancesTest(t) && !String(t.report_body || "").trim()) return "URINE REDUCING SUBSTANCES";
+        if (reportData.tests.length === 1 && isUrineRoutineTest(t) && !String(t.report_body || "").trim()) return "URINE ROUTINE EXAMINATION (RE)";
+        if (reportData.tests.length === 1 && is24HourUrineProteinTest(t) && !String(t.report_body || "").trim()) return "TOTAL PROTEIN, 24-HOUR URINE";
+        if (reportData.tests.length === 1 && isUrineProteinAlbuminTest(t) && !String(t.report_body || "").trim()) return "URINE PROTEIN / ALBUMIN";
+        if (reportData.tests.length === 1 && isUrinePregnancyTest(t) && !String(t.report_body || "").trim()) return "URINE PREGNANCY TEST (QUALITATIVE hCG)";
+        if (reportData.tests.length === 1 && isUrinePorphobilinogenTest(t) && !String(t.report_body || "").trim()) return "PORPHOBILINOGEN (PBG), URINE";
+        if (reportData.tests.length === 1 && isUrineObtThreeDayTest(t) && !String(t.report_body || "").trim()) return "URINE OBT (THREE CONSECUTIVE DAYS)";
+        if (reportData.tests.length === 1 && isUrinaryVmaTest(t) && !String(t.report_body || "").trim()) return "URINARY VMA (VANILLYLMANDELIC ACID)";
+        if (reportData.tests.length === 1 && isUrinary17KetosteroidTest(t) && !String(t.report_body || "").trim()) return "URINARY 17-KETOSTEROIDS, 24-HOUR URINE";
         if (reportData.tests.length === 1 && isRandomUrineUricAcidTest(t) && !String(t.report_body || "").trim()) return "URIC ACID, RANDOM URINE";
         if (reportData.tests.length === 1 && is24HourUrineUricAcidTest(t) && !String(t.report_body || "").trim()) return "URIC ACID, 24-HOUR URINE";
         if (reportData.tests.length === 1 && is24HourUrineUreaTest(t) && !String(t.report_body || "").trim()) return "UREA, 24-HOUR URINE";
@@ -21418,16 +22964,21 @@ function buildReportHtml(reportData) {
         .info-row { margin-bottom: 3px; font-size: 12px; line-height: 1.2; }
         
         .qr-frame {
-          width: 72px;
-          height: 72px;
+          /* Preserve the previous 81px outside size (72 + padding + border),
+             but let the QR image fill it. The embedded SVG has a quiet zone. */
+          width: 81px;
+          height: 81px;
+          box-sizing: border-box;
+          flex: 0 0 81px;
           display: flex;
           align-items: center;
           justify-content: center;
           margin: 1px 0 0;
-          padding: 3px;
+          padding: 0;
           border: 1.5px solid #000;
+          background: #fff;
         }
-        .qr-img { width: 64px; height: 64px; display: block; }
+        .qr-img { width: 100%; height: 100%; display: block; }
         .collection-heading { font-size: 15px; font-weight: 700; line-height: 1.18; margin-bottom: 5px; }
         .collection-location { font-size: 12px; line-height: 1.32; min-height: 32px; white-space: pre-line; }
         .referral-row { margin-top: 9px; font-size: 13px; line-height: 1.25; }

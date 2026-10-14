@@ -385,6 +385,22 @@ const REPORT_CONTENT = [
     sources: ['https://www.bd.com/en-ca/products-and-solutions/products/product-page.442193', 'https://www.bd.com/en-ca/products-and-solutions/solutions/capabilities/bd-bactec-blood-culture-media', 'https://stacks.cdc.gov/view/cdc/23251/cdc_23251_DS1.pdf'],
   },
   {
+    key: 'urine-culture',
+    names: ['Urine Culture', 'Urine Culture & Sensitivity', 'Urine Culture and Sensitivity'],
+    codes: ['URINECULTURE'], specimens: ['urine', 'midstreamurine', 'cleancatchurine', 'catheterurine'], allowMissingSpecimen: true,
+    use: 'Urine culture investigates bacterial growth. Interpret the laboratory findings with urinary symptoms, specimen collection and relevant clinical history; growth alone does not establish a urinary tract infection.',
+    rows: [
+      ['No growth / no significant growth', 'No significant bacterial growth recovered under the reported conditions. Prior antibiotics, low organism numbers or organisms requiring other tests can affect recovery.'],
+      ['Pure or predominant growth', 'Interpret the identified organism and colony count together with symptoms and collection type. A single colony-count threshold does not apply to every patient or specimen.'],
+      ['Mixed growth', 'May reflect contamination or delayed processing; true mixed infection is also possible. Consider collection quality and clinical assessment, with repeat culture if significance is uncertain.'],
+      ['Susceptibility, if performed', 'Use only the isolate-specific results actually reported by the laboratory. An unreported antibiotic must not be assumed susceptible.'],
+    ],
+    referenceNote: 'The usual expected finding is no significant bacterial growth. Colony counts, when reported, must retain their stated units (for example CFU/mL); interpretation depends on the specimen and clinical context, not a universal numerical normal range.',
+    note: 'State preliminary or final status in the laboratory findings. Do not interpret a blank entry as no growth. Follow laboratory collection and transport instructions; correlate with antibiotic exposure and other relevant findings.',
+    allowExistingComment: true,
+    sources: ['https://www.gov.uk/government/publications/urinary-tract-infection-diagnosis/diagnosis-of-urinary-tract-infections-quick-reference-tools-for-primary-care', 'https://www.mayocliniclabs.com/test-catalog/overview/60515'],
+  },
+  {
     key: 'afb-culture', names: ['AFB Culture & Sensitivity'], codes: ['AFBCULTURESENS'],
     use: 'Mycobacterial culture investigates organisms that may include Mycobacterium tuberculosis complex and non-tuberculous mycobacteria. Identification establishes the organism recovered.',
     rows: [['No growth', 'No organism recovered under the reported culture conditions. A negative culture does not completely exclude tuberculosis.'], ['Growth detected', 'Interpret with organism identification; acid-fast organisms are not all M. tuberculosis.'], ['Susceptibility', 'Use findings for the identified organism. An unreported drug must not be assumed susceptible.']],

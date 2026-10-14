@@ -12,6 +12,28 @@ const { CELL_REPORT_DEFINITIONS, getCellReportDefinition, getCellReportParameter
 const { getFallbackReportParameters } = require('../src/services/reportSchemaService');
 const { ensureAntiInsulinAntibodyTestConfiguration, ensureAntiLeptospiraAntibodyTestConfiguration, ensureAntiMicrosomalAntibodyTestConfiguration, ensureAntiDsDnaAntibodyTestConfiguration, ensureAntiSsDnaAntibodyTestConfiguration, ensureAntiHistoneAntibodyTestConfiguration, ensureAntiRibosomalPAntibodyTestConfiguration, ensureAntiCcpAbTestConfiguration, ensureAntiSpermAntibodyTestConfiguration, ensureApolipoproteinA1TestConfiguration, ensureUrineArsenicTestConfiguration, ensureArthritisProfileTestConfiguration, ensureAsciticFluidGramStainTestConfiguration, ensureAsciticFluidTotalProteinTestConfiguration, ensureBodyFluidBiochemistryTestConfiguration, ensureBodyFluidSpecificGravityTestConfiguration, ensureCsfFluidChlorideTestConfiguration, ensureCsfFluidProteinTestConfiguration, ensureCsfFluidAfbStainTestConfiguration, ensureCsfFluidGramStainTestConfiguration, ensureComplementC3TestConfiguration, ensureComplementC4TestConfiguration, ensureCancaAntiPr3TestConfiguration, ensureBronchialWashingCultureSensitivityTestConfiguration, ensureBactecAerobicCultureTestConfiguration, ensureBactecAnaerobicCultureTestConfiguration, ensureBronchialPapCytologyTestConfigurations, ensureCryoglobulinsScreeningTestConfiguration } = require('../src/db/init');
 const { sampleReport } = require('./audit-report-content.cjs');
+const { ensureUrinary17KetosteroidTestConfiguration } = require('../src/db/init');
+const { ensureUrinaryVmaTestConfiguration } = require('../src/db/init');
+const { ensureUrineObtThreeDayTestConfiguration } = require('../src/db/init');
+const { ensureUrinePorphobilinogenTestConfiguration } = require('../src/db/init');
+const { ensureUrinePregnancyTestConfiguration } = require('../src/db/init');
+const { ensureUrineProteinAlbuminTestConfiguration } = require('../src/db/init');
+const { ensure24HourUrineProteinTestConfiguration } = require('../src/db/init');
+const { ensureUrineRoutineTestConfiguration } = require('../src/db/init');
+const { ensureUrineReducingSubstancesTestConfiguration } = require('../src/db/init');
+const { ensureUrineSugarTestConfiguration } = require('../src/db/init');
+const { ensureUrineUrobilinogenTestConfiguration } = require('../src/db/init');
+const { ensureUrinePhTestConfiguration } = require('../src/db/init');
+const { ensureUroflowmetryTestConfiguration } = require('../src/db/init');
+const { ensureVaginalCervicalSwabTestConfiguration } = require('../src/db/init');
+const { ensureVaginalSwabAfbStainTestConfiguration } = require('../src/db/init');
+const { ensureVaginalSwabGramStainTestConfiguration } = require('../src/db/init');
+const { ensureValproateLevelTestConfiguration } = require('../src/db/init');
+const { ensureVanDenBerghReactionTestConfiguration } = require('../src/db/init');
+const { ensureWeilFelixTestConfiguration } = require('../src/db/init');
+const { ensureWellWomenProfileTestConfiguration } = require('../src/db/init');
+const { ensureWoundSwabAfbStainTestConfiguration } = require('../src/db/init');
+const { ensureWoundSwabGramStainTestConfiguration } = require('../src/db/init');
 const { isBillingOnlyTest } = require('../frontend/scripts/reportEligibility');
 
 function extractMainContentMarkup(html) {
@@ -3290,6 +3312,1822 @@ test('24-hour urine uric acid preserves daily-excretion units and actual collect
   assert.doesNotMatch(random, /data-report-content="urine-uric-acid-24-hour"/);
 });
 
+test('Wound Swab Gram Stain reports actual cells and morphology with wound-site-specific guidance', () => {
+  for (const name of ['Wound Swab Gram Stain', 'Wound Swab for Gram Stain', 'Wound Gram Stain', 'Gram Stain Wound Swab']) {
+    const input = { name, parameters: [
+      { parameter_name: 'Gram Stain Findings', value: 'Recorded <finding>\nMixed morphology', normal_range: 'Actual local reference' },
+      { parameter_name: 'Specimen / Wound Site', value: 'Left foot wound\nExact site recorded' },
+      { parameter_name: 'Collection Date / Time', value: 'Recorded collection time' },
+      { parameter_name: 'Collection Context / Surface or Deep Site', value: 'Actual collection context' },
+      { parameter_name: 'Smear Preparation / Stain Method', value: 'Recorded smear method' },
+      { parameter_name: 'Specimen Adequacy', value: 'Actual adequacy assessment' },
+      { parameter_name: 'Pus Cells', value: '12', normal_range: 'Local microscopy guide', unit: '/field' },
+      { parameter_name: 'Squamous Epithelial Cells', value: 'Few observed' },
+      { parameter_name: 'GPC', value: 'Few in clusters' },
+      { parameter_name: 'Gram-positive Bacilli', value: 'Recorded GP rods' },
+      { parameter_name: 'GNB', value: 'Recorded GN rods' },
+      { parameter_name: 'Other Bacterial Morphology / Mixed Morphotypes', value: 'Recorded mixed forms' },
+      { parameter_name: 'Yeast / Fungal Elements', value: 'Recorded yeast finding' },
+      { parameter_name: 'Culture Status', value: 'Actual separately requested culture status' },
+      { parameter_name: 'Comments / Limitations', value: 'Actual laboratory comment' },
+    ], additional_report_text: 'Doctor advice' };
+    const original = JSON.stringify(input);
+    const html = buildReportHtml(sampleReport(input));
+    assert.match(html, /<div class="test-title">WOUND SWAB - GRAM STAIN<\/div>/);
+    assert.match(html, /data-report-content="wound-swab-gram-stain"/);
+    assert.match(html, /Recorded &lt;finding&gt;<br \/>Mixed morphology<\/td><td>Actual local reference/);
+    assert.match(html, /Left foot wound<br \/>Exact site recorded/);
+    assert.match(html, /<strong>Inflammatory Cells \/ PMNs<\/strong><\/td><td>12<\/td><td>Local microscopy guide<\/td><td>\/field/);
+    assert.match(html, /<strong>Gram-positive Cocci<\/strong><\/td><td>Few in clusters/);
+    assert.match(html, /Recorded smear method/);
+    assert.match(html, /Actual adequacy assessment/);
+    assert.match(html, /Actual separately requested culture status/);
+    assert.match(html, /do not apply sputum rejection thresholds to a wound swab/);
+    assert.match(html, /A negative smear does not exclude infection/);
+    assert.ok(html.indexOf('Doctor advice') > html.indexOf('Actual laboratory comment'));
+    assert.ok(html.indexOf('Doctor advice') < html.indexOf('<div class="single-analyte-notes report-template-notes wound-swab-gram-stain-notes">'));
+    assert.equal(JSON.stringify(input), original);
+    const schema = getFallbackReportParameters({ name });
+    assert.equal(schema.length, 17);
+    assert.ok(schema.every(p => p.entryMode === 'manual'));
+  }
+});
+
+test('Wound Swab Gram Stain preserves legacy and custom findings without inventing negative microscopy', () => {
+  const blank = buildReportHtml(sampleReport({ name: 'Wound Swab Gram Stain', parameters: [] }));
+  for (const label of ['Gram Stain Findings', 'Gram-positive Cocci', 'Gram-negative Bacilli']) assert.ok(blank.includes(`<strong>${label}</strong></td><td>-</td>`));
+  assert.doesNotMatch(blank, /<strong>Culture \/ Specific Test Status, if performed<\/strong>/);
+  assert.doesNotMatch(blank, /<strong>Gram Stain Findings<\/strong><\/td><td>No organisms seen<\/td>/);
+  const legacy = buildReportHtml(sampleReport({ name: 'Wound Swab Gram Stain', parameters: [
+    { parameter_name: 'Findings', value: 'Historical <finding>\nRetained', normal_range: 'Original reference', unit: 'original unit' },
+    { parameter_name: 'Impression', value: 'Prior impression' },
+    { parameter_name: 'Comments', value: 'Prior comments' },
+    { parameter_name: 'Custom Count', value: '0', unit: 'local unit', normal_range: 'Local reference' },
+  ] }));
+  assert.match(legacy, /<strong>Gram Stain Findings<\/strong><\/td><td>Historical &lt;finding&gt;<br \/>Retained<\/td><td>Original reference<\/td><td>original unit/);
+  assert.match(legacy, /Prior impression/);
+  assert.match(legacy, /Prior comments/);
+  assert.match(legacy, /<strong>Custom Count<\/strong><\/td><td>0<\/td><td>Local reference<\/td><td>local unit/);
+  const partial = buildReportHtml(sampleReport({ name: 'Wound Swab Gram Stain', parameters: [{ parameter_name: 'Result', value: 'Organisms seen' }] }));
+  assert.match(partial, /<strong>Gram Stain Findings<\/strong><\/td><td>Organisms seen<\/td>/);
+  assert.match(partial, /<strong>Gram-positive Cocci<\/strong><\/td><td>-<\/td>/);
+  const manual = buildReportHtml(sampleReport({ name: 'Wound Swab Gram Stain', report_body: 'Manual format <retained>', parameters: [] }));
+  assert.match(manual, /Manual format &lt;retained&gt;/);
+  assert.doesNotMatch(manual, /data-report-content="wound-swab-gram-stain"/);
+  for (const name of ['Wound Swab AFB Stain', 'Vaginal Swab Gram Stain', 'PUS Gram Stain', 'Gram Stain of Smears', 'Swab Culture & Sensitivity for Any Site Swab']) assert.doesNotMatch(buildReportHtml(sampleReport({ name, parameters: [] })), /data-report-content="wound-swab-gram-stain"/);
+});
+
+test('Wound Swab Gram Stain schema repair protects used, bundled and custom records and keeps existing IDs', async () => {
+  const db = await fixture();
+  try {
+    for (let i = 0; i < 9; i++) {
+      await db.run('INSERT INTO tests (id,name,category,sample_type,report_body) VALUES (?,?,?,?,?)', [10110 + i, i === 6 ? 'Wound Swab AFB Stain' : i === 7 ? 'Wound Swab for Gram Stain' : 'Wound Swab Gram Stain', 'Imported legacy catalogue', i === 5 ? 'Cervical Swab' : null, i === 4 ? 'Manual format' : null]);
+      for (const [order, name] of ['Findings', 'Impression', 'Comments'].entries()) await db.run('INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,?,?,?,?,?)', [10110 + i, name, '', i === 3 ? 'Custom reference' : '', 'manual', order + 1]);
+    }
+    const original = await db.all('SELECT id FROM test_parameters WHERE test_id=10110 ORDER BY display_order');
+    await db.run('INSERT INTO visit_tests VALUES (10111)');
+    await db.run('INSERT INTO test_bundle_items VALUES (999,10112)');
+    await db.run('INSERT INTO test_bundle_items VALUES (10118,999)');
+    await ensureWoundSwabGramStainTestConfiguration(db);
+    for (const id of [10110, 10117]) {
+      const fields = await db.all('SELECT * FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(p => p.parameter_name), getFallbackReportParameters({ name: 'Wound Swab Gram Stain' }).map(p => p.parameterName));
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, 'Wound Swab');
+      if (id === 10110) assert.deepEqual(fields.slice(0, 3).map(p => p.id), original.map(p => p.id));
+    }
+    for (const i of [1,2,3,4,5,6,8]) assert.equal((await db.get('SELECT COUNT(*) AS n FROM test_parameters WHERE test_id=?', [10110 + i])).n, 3);
+    assert.equal((await db.get('SELECT COUNT(*) AS n FROM tests WHERE id BETWEEN 10110 AND 10118')).n, 9);
+    await db.run("UPDATE test_parameters SET normal_range='Local override' WHERE test_id=10110 AND display_order=1");
+    await ensureWoundSwabGramStainTestConfiguration(db);
+    assert.equal((await db.get('SELECT normal_range FROM test_parameters WHERE test_id=10110 AND display_order=1')).normal_range, 'Local override');
+  } finally { await db.close(); }
+});
+
+test('Wound Swab AFB Stain reports microscopy and grade with the actual wound site and sampling limitations', () => {
+  for (const name of ['Wound Swab AFB Stain', 'Wound Swab for AFB Stain', 'Wound AFB Stain', 'AFB Stain Wound Swab']) {
+    const input = { name, parameters: [
+      { parameter_name: 'AFB Smear Microscopy Result', value: 'AFB seen', normal_range: 'Actual laboratory reference' },
+      { parameter_name: 'AFB Smear Grade / Quantitation', value: 'Actual reported grade', normal_range: 'Local grading protocol' },
+      { parameter_name: 'Specimen / Wound Site', value: 'Left leg wound swab' },
+      { parameter_name: 'Collection Context / Surface or Deep Site', value: 'Actual surface collection context' },
+      { parameter_name: 'Stain Method', value: 'Actual laboratory stain' },
+      { parameter_name: 'Smear Preparation / Processing', value: 'Recorded processing' },
+      { parameter_name: 'Specimen Adequacy', value: 'Actual adequacy assessment' },
+      { parameter_name: 'Microscopy Remarks', value: 'Review <smear>\nRecorded observations' },
+      { parameter_name: 'Culture / Molecular Test Status, if performed', value: 'Actual separately performed test status' },
+      { parameter_name: 'Comments / Limitations', value: 'Actual laboratory comment' },
+    ], additional_report_text: 'Doctor advice' };
+    const original = JSON.stringify(input);
+    const html = buildReportHtml(sampleReport(input));
+    assert.match(html, /<div class="test-title">WOUND SWAB - AFB STAIN<\/div>/);
+    assert.match(html, /data-report-content="wound-swab-afb-stain"/);
+    assert.match(html, /<strong>AFB Smear Microscopy Result<\/strong><\/td><td>AFB seen<\/td><td>Actual laboratory reference/);
+    assert.match(html, />Actual reported grade<\/td><td>Local grading protocol/);
+    assert.match(html, /Left leg wound swab/);
+    assert.match(html, /Actual surface collection context/);
+    assert.match(html, /Actual laboratory stain/);
+    assert.match(html, /Review &lt;smear&gt;<br \/>Recorded observations/);
+    assert.match(html, /Actual separately performed test status/);
+    assert.match(html, /a superficial swab is not equivalent to a deep specimen/);
+    assert.match(html, /A negative smear does not exclude tuberculosis or another mycobacterial infection/);
+    assert.ok(html.indexOf('Doctor advice') > html.indexOf('Actual laboratory comment'));
+    assert.ok(html.indexOf('Doctor advice') < html.indexOf('<div class="single-analyte-notes report-template-notes wound-swab-afb-stain-notes">'));
+    assert.equal(JSON.stringify(input), original);
+    const schema = getFallbackReportParameters({ name });
+    assert.equal(schema.length, 13);
+    assert.ok(schema.every(p => p.entryMode === 'manual'));
+  }
+});
+
+test('Wound Swab AFB Stain leaves missing results blank and retains historical findings without inferring grades', () => {
+  const blank = buildReportHtml(sampleReport({ name: 'Wound Swab AFB Stain', parameters: [] }));
+  assert.match(blank, /<strong>AFB Smear Microscopy Result<\/strong><\/td><td>-<\/td>/);
+  assert.match(blank, /<strong>AFB Smear Grade \/ Quantitation<\/strong><\/td><td>-<\/td>/);
+  assert.doesNotMatch(blank, /<strong>Culture \/ Molecular Test Status, if performed<\/strong>/);
+  const legacy = buildReportHtml(sampleReport({ name: 'Wound Swab AFB Stain', parameters: [
+    { parameter_name: 'Findings', value: 'Historical <finding>\nRetained' },
+    { parameter_name: 'Impression', value: 'Prior impression' },
+    { parameter_name: 'Comments', value: 'Prior comments' },
+    { parameter_name: 'Custom Count', value: '0', unit: 'local unit', normal_range: 'Local reference' },
+  ] }));
+  assert.match(legacy, /<strong>Microscopy Remarks<\/strong><\/td><td colspan="3">Historical &lt;finding&gt;<br \/>Retained/);
+  assert.match(legacy, /Prior impression/);
+  assert.match(legacy, /Prior comments/);
+  assert.match(legacy, /<strong>Custom Count<\/strong><\/td><td>0<\/td><td>Local reference<\/td><td>local unit/);
+  const partial = buildReportHtml(sampleReport({ name: 'Wound Swab AFB Stain', parameters: [{ parameter_name: 'Result', value: 'AFB seen' }] }));
+  assert.match(partial, /<strong>AFB Smear Microscopy Result<\/strong><\/td><td>AFB seen<\/td>/);
+  assert.match(partial, /<strong>AFB Smear Grade \/ Quantitation<\/strong><\/td><td>-<\/td>/);
+  const manual = buildReportHtml(sampleReport({ name: 'Wound Swab AFB Stain', report_body: 'Manual format <retained>', parameters: [] }));
+  assert.match(manual, /Manual format &lt;retained&gt;/);
+  assert.doesNotMatch(manual, /data-report-content="wound-swab-afb-stain"/);
+  for (const name of ['Wound Swab Gram Stain', 'Vaginal Swab AFB Stain', 'PUS AFB Stain', 'AFB Culture & Sensitivity', 'Swab Culture & Sensitivity for Any Site Swab']) assert.doesNotMatch(buildReportHtml(sampleReport({ name, parameters: [] })), /data-report-content="wound-swab-afb-stain"/);
+});
+
+test('Wound Swab AFB Stain schema repair protects used, bundled and custom records and keeps existing IDs', async () => {
+  const db = await fixture();
+  try {
+    for (let i = 0; i < 9; i++) {
+      await db.run('INSERT INTO tests (id,name,category,sample_type,report_body) VALUES (?,?,?,?,?)', [10100 + i, i === 6 ? 'Wound Swab Gram Stain' : i === 7 ? 'Wound Swab for AFB Stain' : 'Wound Swab AFB Stain', 'Imported legacy catalogue', i === 5 ? 'Cervical Swab' : null, i === 4 ? 'Manual format' : null]);
+      for (const [order, name] of ['Findings', 'Impression', 'Comments'].entries()) await db.run('INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,?,?,?,?,?)', [10100 + i, name, '', i === 3 ? 'Custom reference' : '', 'manual', order + 1]);
+    }
+    const original = await db.all('SELECT id FROM test_parameters WHERE test_id=10100 ORDER BY display_order');
+    await db.run('INSERT INTO visit_tests VALUES (10101)');
+    await db.run('INSERT INTO test_bundle_items VALUES (999,10102)');
+    await db.run('INSERT INTO test_bundle_items VALUES (10108,999)');
+    await ensureWoundSwabAfbStainTestConfiguration(db);
+    for (const id of [10100, 10107]) {
+      const fields = await db.all('SELECT * FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(p => p.parameter_name), getFallbackReportParameters({ name: 'Wound Swab AFB Stain' }).map(p => p.parameterName));
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, 'Wound Swab');
+      if (id === 10100) assert.deepEqual(fields.slice(0, 3).map(p => p.id), original.map(p => p.id));
+    }
+    for (const i of [1,2,3,4,5,6,8]) assert.equal((await db.get('SELECT COUNT(*) AS n FROM test_parameters WHERE test_id=?', [10100 + i])).n, 3);
+    assert.equal((await db.get('SELECT COUNT(*) AS n FROM tests WHERE id BETWEEN 10100 AND 10108')).n, 9);
+    await db.run("UPDATE test_parameters SET normal_range='Local override' WHERE test_id=10100 AND display_order=1");
+    await ensureWoundSwabAfbStainTestConfiguration(db);
+    assert.equal((await db.get('SELECT normal_range FROM test_parameters WHERE test_id=10100 AND display_order=1')).normal_range, 'Local override');
+  } finally { await db.close(); }
+});
+
+test('Well Women Profile provides a proposed core with actual-only measurements and optional targeted results', () => {
+  for (const name of ['Well Women Profile', 'WellWomenProfile', 'Well Woman Profile']) {
+    const input = { name, parameters: [
+      { parameter_name: 'Profile Scope / Tests Requested', value: 'CBC, glucose and lipids as requested' },
+      { parameter_name: 'Specimen(s) / Collection Conditions', value: 'Actual EDTA blood and serum' },
+      { parameter_name: 'Fasting Status / Hours', value: 'Fasting as recorded' },
+      { parameter_name: 'Haemoglobin', value: '12.5', unit: 'g/dL', normal_range: 'Local female reference' },
+      { parameter_name: 'Platelet Count', value: '250000', unit: 'cells/µL', normal_range: 'Local platelet reference' },
+      { parameter_name: 'Fasting Plasma Glucose', value: '5.0', unit: 'mmol/L', normal_range: 'Local fasting mmol/L interval' },
+      { parameter_name: 'Total Cholesterol', value: '180', unit: 'mg/dL' },
+      { parameter_name: 'Ferritin, if ordered', value: '20', unit: 'ng/mL', normal_range: 'Actual ferritin interval' },
+      { parameter_name: 'Comments / Limitations', value: 'Review <history>\nRecorded comment' },
+    ], additional_report_text: 'Doctor advice' };
+    const original = JSON.stringify(input);
+    const html = buildReportHtml(sampleReport(input));
+    assert.match(html, /<div class="test-title">WELL WOMEN PROFILE<\/div>/);
+    assert.match(html, /data-report-content="well-women-profile"/);
+    assert.match(html, /<strong>Haemoglobin<\/strong><\/td><td>12.5<\/td><td>Local female reference<\/td><td>g\/dL/);
+    assert.match(html, /<strong>Fasting Plasma Glucose<\/strong><\/td><td>5.0<\/td><td>Local fasting mmol\/L interval<\/td><td>mmol\/L/);
+    assert.match(html, /OPTIONAL TARGETED TESTS, ONLY IF ORDERED/);
+    assert.match(html, /<strong>Ferritin, if ordered<\/strong><\/td><td>20<\/td><td>Actual ferritin interval/);
+    assert.match(html, /Review &lt;history&gt;<br \/>Recorded comment/);
+    assert.match(html, /not a universal screening order for all women/);
+    assert.match(html, /Evidence is insufficient to support universal thyroid screening/);
+    assert.ok(html.indexOf('Doctor advice') > html.indexOf('Recorded comment'));
+    assert.ok(html.indexOf('Doctor advice') < html.indexOf('<div class="single-analyte-notes report-template-notes well-women-profile-notes">'));
+    assert.equal(JSON.stringify(input), original);
+    const schema = getFallbackReportParameters({ name });
+    assert.equal(schema.length, 33);
+    assert.ok(schema.every(p => p.entryMode === 'manual'));
+    assert.ok(schema.every(p => !p.calculationFormula));
+    assert.ok(!schema.some(p => /FSH|CA.?125|HIV|Vitamin|PAP|HPV|Urine Culture/.test(p.parameterName)));
+  }
+});
+
+test('Well Women Profile does not fabricate optional assays, diagnoses or calculations and retains legacy results', () => {
+  const blank = buildReportHtml(sampleReport({ name: 'Well Women Profile', parameters: [] }));
+  assert.match(blank, /No results entered; not a normal or negative profile/);
+  assert.doesNotMatch(blank, /<strong>Haemoglobin<\/strong>|<strong>HbA1c<\/strong>|<strong>Ferritin, if ordered<\/strong>|<strong>TSH, if ordered<\/strong>/);
+  const legacy = buildReportHtml(sampleReport({ name: 'Well Women Profile', parameters: [
+    { parameter_name: 'Result / Findings', value: 'Original <findings>\nRetained' },
+    { parameter_name: 'Comments', value: 'Original comment' },
+    { parameter_name: 'Custom Investigation', value: '0', unit: 'local unit', normal_range: 'Local reference' },
+  ] }));
+  assert.match(legacy, /<strong>Overall Findings<\/strong><\/td><td colspan="3">Original &lt;findings&gt;<br \/>Retained/);
+  assert.match(legacy, /Original comment/);
+  assert.match(legacy, /<strong>Custom Investigation<\/strong><\/td><td>0<\/td><td>Local reference<\/td><td>local unit/);
+  const subset = buildReportHtml(sampleReport({ name: 'Well Women Profile', parameters: [
+    { parameter_name: 'Total Cholesterol', value: '180' },
+    { parameter_name: 'Triglycerides', value: '100' },
+    { parameter_name: 'HDL', value: '55' },
+    { parameter_name: 'Creatinine', value: '1.0' },
+  ] }));
+  assert.doesNotMatch(subset, /<strong>LDL Cholesterol<\/strong>|<strong>eGFR, if reported<\/strong>|<strong>TSH, if ordered<\/strong>/);
+  const differentUnit = buildReportHtml(sampleReport({ name: 'Well Women Profile', parameters: [{ parameter_name: 'FPG', value: '5.0', unit: 'mmol/L' }] }));
+  assert.match(differentUnit, /<strong>Fasting Plasma Glucose<\/strong><\/td><td>5.0<\/td><td>Laboratory-validated reference for the reported unit<\/td><td>mmol\/L/);
+  const manual = buildReportHtml(sampleReport({ name: 'Well Women Profile', report_body: 'Manual format <retained>', parameters: [] }));
+  assert.match(manual, /Manual format &lt;retained&gt;/);
+  assert.doesNotMatch(manual, /data-report-content="well-women-profile"/);
+  for (const name of ['Female Infertility Profile', 'Antenatal Profile', 'General Health Check Up', 'Complete Blood Count', 'Lipid Profile']) assert.doesNotMatch(buildReportHtml(sampleReport({ name, parameters: [] })), /data-report-content="well-women-profile"/);
+});
+
+test('Well Women Profile schema repair expands only unused generic placeholders and leaves bundle membership intact', async () => {
+  const db = await fixture();
+  try {
+    for (let i = 0; i < 9; i++) {
+      await db.run('INSERT INTO tests (id,name,category,sample_type,report_body) VALUES (?,?,?,?,?)', [10090 + i, i === 6 ? 'Female Infertility Profile' : i === 7 ? 'Well Woman Profile' : 'Well Women Profile', 'Imported legacy catalogue', i === 5 ? 'Urine' : null, i === 4 ? 'Manual format' : null]);
+      for (const [order, name] of ['Result / Findings', 'Comments'].entries()) await db.run('INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,?,?,?,?,?)', [10090 + i, name, '', i === 3 ? 'Custom reference' : '', 'manual', order + 1]);
+    }
+    const original = await db.all('SELECT id FROM test_parameters WHERE test_id=10090 ORDER BY display_order');
+    await db.run('INSERT INTO visit_tests VALUES (10091)');
+    await db.run('INSERT INTO test_bundle_items VALUES (999,10092)');
+    await db.run('INSERT INTO test_bundle_items VALUES (10098,999)');
+    const bundlesBefore = await db.all('SELECT * FROM test_bundle_items');
+    await ensureWellWomenProfileTestConfiguration(db);
+    for (const id of [10090, 10097]) {
+      const fields = await db.all('SELECT * FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(p => p.parameter_name), getFallbackReportParameters({ name: 'Well Women Profile' }).map(p => p.parameterName));
+      assert.equal(fields.length, 33);
+      if (id === 10090) assert.deepEqual(fields.slice(0, 2).map(p => p.id), original.map(p => p.id));
+    }
+    for (const i of [1,2,3,4,5,6,8]) assert.equal((await db.get('SELECT COUNT(*) AS n FROM test_parameters WHERE test_id=?', [10090 + i])).n, 2);
+    assert.deepEqual(await db.all('SELECT * FROM test_bundle_items'), bundlesBefore);
+    assert.equal((await db.get('SELECT name FROM tests WHERE id=10090')).name, 'Well Women Profile');
+    await db.run("UPDATE test_parameters SET normal_range='Local override' WHERE test_id=10090 AND parameter_name='Haemoglobin'");
+    await ensureWellWomenProfileTestConfiguration(db);
+    assert.equal((await db.get("SELECT normal_range FROM test_parameters WHERE test_id=10090 AND parameter_name='Haemoglobin'")).normal_range, 'Local override');
+  } finally { await db.close(); }
+});
+
+test('Weil Felix Test reports OX2, OX19 and OXK separately with method-specific reference guidance', () => {
+  for (const name of ['Well Felix Test', 'Weil Felix Test', 'Weil-Felix Test', 'Weil Felix', 'Well Felix']) {
+    const input = { name, parameters: [
+      { parameter_name: 'Proteus OX2 Result / Titre', value: '<1:20', normal_range: 'Local OX2 baseline' },
+      { parameter_name: 'Proteus OX19 Result / Titre', value: '1:80', normal_range: 'Local OX19 baseline' },
+      { parameter_name: 'Proteus OXK Result / Titre', value: '1:160', normal_range: 'Local OXK baseline' },
+      { parameter_name: 'Method (Slide / Tube Agglutination)', value: 'Actual tube agglutination method' },
+      { parameter_name: 'Kit / Reagent', value: 'Actual laboratory reagent' },
+      { parameter_name: 'Laboratory Cut-off / Local Baseline', value: 'Actual local criteria' },
+      { parameter_name: 'Fever Onset / Illness Timing', value: 'Reported illness timing' },
+      { parameter_name: 'Paired Specimen / Comparison, if available', value: 'Actual laboratory paired comparison' },
+      { parameter_name: 'Specific / Confirmatory Test Status, if performed', value: 'Actual specific test status' },
+      { parameter_name: 'Comments / Limitations', value: 'Review <history>\nRecorded comment' },
+    ], additional_report_text: 'Doctor advice' };
+    const original = JSON.stringify(input);
+    const html = buildReportHtml(sampleReport(input));
+    assert.match(html, /<div class="test-title">WEIL-FELIX TEST<\/div>/);
+    assert.match(html, /data-report-content="weil-felix"/);
+    assert.match(html, /<strong>Proteus OX2 Result \/ Titre<\/strong><\/td><td>&lt;1:20<\/td><td>Local OX2 baseline/);
+    assert.match(html, /<strong>Proteus OX19 Result \/ Titre<\/strong><\/td><td>1:80<\/td><td>Local OX19 baseline/);
+    assert.match(html, /<strong>Proteus OXK Result \/ Titre<\/strong><\/td><td>1:160<\/td><td>Local OXK baseline/);
+    assert.match(html, /Actual tube agglutination method/);
+    assert.match(html, /Actual local criteria/);
+    assert.match(html, /Actual laboratory paired comparison/);
+    assert.match(html, /Actual specific test status/);
+    assert.match(html, /Review &lt;history&gt;<br \/>Recorded comment/);
+    assert.match(html, /A single universal titre threshold is not applied/);
+    assert.match(html, /very low sensitivity and specificity/);
+    assert.ok(html.indexOf('Doctor advice') > html.indexOf('Recorded comment'));
+    assert.ok(html.indexOf('Doctor advice') < html.indexOf('<div class="single-analyte-notes report-template-notes weil-felix-notes">'));
+    assert.equal(JSON.stringify(input), original);
+    const schema = getFallbackReportParameters({ name });
+    assert.equal(schema.length, 15);
+    assert.ok(schema.every(p => p.entryMode === 'manual'));
+  }
+});
+
+test('Weil Felix Test preserves overall legacy results without filling antigen titres or diagnoses', () => {
+  const blank = buildReportHtml(sampleReport({ name: 'Well Felix Test', parameters: [] }));
+  for (const antigen of ['OX2', 'OX19', 'OXK']) assert.match(blank, new RegExp(`<strong>Proteus ${antigen} Result / Titre</strong></td><td>-</td>`));
+  assert.doesNotMatch(blank, /<strong>Overall Screening Result, if reported<\/strong>|<strong>Paired Specimen \/ Comparison, if available<\/strong>|<strong>Specific \/ Confirmatory Test Status, if performed<\/strong>/);
+  const legacy = buildReportHtml(sampleReport({ name: 'Well Felix Test', parameters: [
+    { parameter_name: 'Result', value: 'Original reactive screen' },
+    { parameter_name: 'Findings', value: 'Historical <finding>\nRetained' },
+    { parameter_name: 'Impression', value: 'Prior interpretation' },
+    { parameter_name: 'Custom Parameter', value: '0', unit: 'local unit', normal_range: 'Local reference' },
+  ] }));
+  assert.match(legacy, /<strong>Overall Screening Result, if reported<\/strong><\/td><td colspan="3">Original reactive screen/);
+  assert.match(legacy, /Historical &lt;finding&gt;<br \/>Retained/);
+  assert.match(legacy, /Prior interpretation/);
+  assert.match(legacy, /<strong>Custom Parameter<\/strong><\/td><td>0<\/td><td>Local reference<\/td><td>local unit/);
+  for (const antigen of ['OX2', 'OX19', 'OXK']) assert.match(legacy, new RegExp(`<strong>Proteus ${antigen} Result / Titre</strong></td><td>-</td>`));
+  const partial = buildReportHtml(sampleReport({ name: 'Well Felix Test', parameters: [{ parameter_name: 'OX2', value: 'Reactive (slide)' }, { parameter_name: 'OXK', value: '1:160' }] }));
+  assert.match(partial, /<strong>Proteus OX2 Result \/ Titre<\/strong><\/td><td>Reactive \(slide\)<\/td>/);
+  assert.match(partial, /<strong>Proteus OX19 Result \/ Titre<\/strong><\/td><td>-<\/td>/);
+  assert.match(partial, /<strong>Laboratory Interpretation<\/strong><\/td><td colspan="3">-<\/td>/);
+  const manual = buildReportHtml(sampleReport({ name: 'Well Felix Test', report_body: 'Manual format <retained>', parameters: [] }));
+  assert.match(manual, /Manual format &lt;retained&gt;/);
+  assert.doesNotMatch(manual, /data-report-content="weil-felix"/);
+  for (const name of ['Widal', 'Scrub Typhus IgM', 'Leptospira Antibody IgM', 'VDRL', 'Wasserman Test']) assert.doesNotMatch(buildReportHtml(sampleReport({ name, parameters: [] })), /data-report-content="weil-felix"/);
+});
+
+test('Weil Felix Test schema repair expands unused placeholders and preserves custom formats and catalogue names', async () => {
+  const db = await fixture();
+  try {
+    for (let i = 0; i < 9; i++) {
+      await db.run('INSERT INTO tests (id,name,category,sample_type,report_body) VALUES (?,?,?,?,?)', [10080 + i, i === 6 ? 'Widal' : i === 7 ? 'Weil-Felix Test' : 'Well Felix Test', 'Imported legacy catalogue', i === 5 ? 'Urine' : null, i === 4 ? 'Manual format' : null]);
+      await db.run('INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,?,?,?,?,?)', [10080 + i, 'Result', i === 3 ? 'Custom unit' : '', '', 'manual', 1]);
+    }
+    const original = await db.get('SELECT id FROM test_parameters WHERE test_id=10080');
+    await db.run('INSERT INTO visit_tests VALUES (10081)');
+    await db.run('INSERT INTO test_bundle_items VALUES (999,10082)');
+    await db.run('INSERT INTO test_bundle_items VALUES (10088,999)');
+    await ensureWeilFelixTestConfiguration(db);
+    for (const id of [10080, 10087]) {
+      const fields = await db.all('SELECT * FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(p => p.parameter_name), getFallbackReportParameters({ name: 'Well Felix Test' }).map(p => p.parameterName));
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, 'Serum');
+      if (id === 10080) assert.equal(fields[0].id, original.id);
+    }
+    for (const i of [1,2,3,4,5,6,8]) assert.equal((await db.get('SELECT COUNT(*) AS n FROM test_parameters WHERE test_id=?', [10080 + i])).n, 1);
+    assert.equal((await db.get('SELECT COUNT(*) AS n FROM tests WHERE id BETWEEN 10080 AND 10088')).n, 9);
+    assert.equal((await db.get('SELECT name FROM tests WHERE id=10080')).name, 'Well Felix Test');
+    await db.run("UPDATE test_parameters SET normal_range='Local override' WHERE test_id=10080 AND parameter_name='Proteus OX2 Result / Titre'");
+    await ensureWeilFelixTestConfiguration(db);
+    assert.equal((await db.get("SELECT normal_range FROM test_parameters WHERE test_id=10080 AND parameter_name='Proteus OX2 Result / Titre'")).normal_range, 'Local override');
+  } finally { await db.close(); }
+});
+
+test('Van den Bergh Reaction reports the observed qualitative reaction and separately entered bilirubin values', () => {
+  for (const name of ['Vanden Burgh Reaction', 'Van den Burgh Reaction', 'Vanden Bergh Reaction', 'Van den Bergh Reaction', 'Van den Bergh Test', 'Van den Burgh Test']) {
+    const input = { name, parameters: [
+      { parameter_name: 'Van den Bergh Reaction Result', value: 'Actual observed reaction', normal_range: 'Local qualitative criteria' },
+      { parameter_name: 'Reaction Category (Direct / Indirect / Biphasic), if assigned', value: 'Biphasic (laboratory-assigned)' },
+      { parameter_name: 'Observed Colour / Reaction', value: 'Recorded colour' },
+      { parameter_name: 'Reaction Timing / Accelerator Details', value: 'Actual protocol timing and accelerator' },
+      { parameter_name: 'Method / Reagent', value: 'Actual laboratory diazo method' },
+      { parameter_name: 'Total Bilirubin, if measured', value: '30', unit: 'µmol/L', normal_range: 'Local total interval' },
+      { parameter_name: 'Direct Bilirubin, if measured', value: '10', unit: 'µmol/L', normal_range: 'Local direct interval' },
+      { parameter_name: 'Comments / Limitations', value: 'Review <sample>\nRecorded comment' },
+    ], additional_report_text: 'Doctor advice' };
+    const original = JSON.stringify(input);
+    const html = buildReportHtml(sampleReport(input));
+    assert.match(html, /<div class="test-title">VAN DEN BERGH REACTION<\/div>/);
+    assert.match(html, /data-report-content="van-den-bergh-reaction"/);
+    assert.match(html, /Actual observed reaction<\/td><td>Local qualitative criteria/);
+    assert.match(html, /Biphasic \(laboratory-assigned\)/);
+    assert.match(html, /Recorded colour/);
+    assert.match(html, /Actual protocol timing and accelerator/);
+    assert.match(html, /Actual laboratory diazo method/);
+    assert.match(html, /<strong>Total Bilirubin, if measured<\/strong><\/td><td>30<\/td><td>Local total interval<\/td><td>µmol\/L/);
+    assert.match(html, /<strong>Direct Bilirubin, if measured<\/strong><\/td><td>10<\/td><td>Local direct interval<\/td><td>µmol\/L/);
+    assert.doesNotMatch(html, /<strong>Indirect Bilirubin, if reported<\/strong>/);
+    assert.match(html, /Review &lt;sample&gt;<br \/>Recorded comment/);
+    assert.match(html, /A qualitative reaction category is not a bilirubin concentration/);
+    assert.ok(html.indexOf('Doctor advice') > html.indexOf('Recorded comment'));
+    assert.ok(html.indexOf('Doctor advice') < html.indexOf('<div class="single-analyte-notes report-template-notes van-den-bergh-reaction-notes">'));
+    assert.equal(JSON.stringify(input), original);
+    const schema = getFallbackReportParameters({ name });
+    assert.equal(schema.length, 14);
+    assert.equal(schema[0].unit, '');
+    assert.ok(schema.every(p => p.entryMode === 'manual'));
+  }
+});
+
+test('Van den Bergh Reaction retains legacy results and does not infer categories or concentrations', () => {
+  const blank = buildReportHtml(sampleReport({ name: 'Vanden Burgh Reaction', parameters: [] }));
+  assert.match(blank, /<strong>Van den Bergh Reaction Result<\/strong><\/td><td>-<\/td>/);
+  assert.doesNotMatch(blank, /<strong>Reaction Category \(Direct \/ Indirect \/ Biphasic\), if assigned<\/strong>|SEPARATELY REPORTED BILIRUBIN VALUES/);
+  const legacy = buildReportHtml(sampleReport({ name: 'Vanden Burgh Reaction', parameters: [
+    { parameter_name: 'Result', value: 'Historical <reaction>\nRetained', unit: 'Recorded legacy unit', normal_range: 'Local reference' },
+    { parameter_name: 'Findings', value: 'Original findings' },
+    { parameter_name: 'Impression', value: 'Prior interpretation' },
+  ] }));
+  assert.match(legacy, /Historical &lt;reaction&gt;<br \/>Retained<\/td><td>Local reference<\/td><td>Recorded legacy unit/);
+  assert.match(legacy, /Original findings/);
+  assert.match(legacy, /Prior interpretation/);
+  const colourOnly = buildReportHtml(sampleReport({ name: 'Vanden Burgh Reaction', parameters: [{ parameter_name: 'Observed Colour', value: 'Pink-red' }] }));
+  assert.match(colourOnly, /Pink-red/);
+  assert.match(colourOnly, /<strong>Van den Bergh Reaction Result<\/strong><\/td><td>-<\/td>/);
+  assert.doesNotMatch(colourOnly, /<strong>Reaction Category \(Direct \/ Indirect \/ Biphasic\), if assigned<\/strong>/);
+  const measuredZero = buildReportHtml(sampleReport({ name: 'Van den Bergh Reaction', parameters: [{ parameter_name: 'Indirect Bilirubin', value: '0', unit: 'mg/dL', normal_range: 'Actual reported interval' }] }));
+  assert.match(measuredZero, /<strong>Indirect Bilirubin, if reported<\/strong><\/td><td>0<\/td><td>Actual reported interval<\/td><td>mg\/dL/);
+  const manual = buildReportHtml(sampleReport({ name: 'Vanden Burgh Reaction', report_body: 'Manual format <retained>', parameters: [] }));
+  assert.match(manual, /Manual format &lt;retained&gt;/);
+  assert.doesNotMatch(manual, /data-report-content="van-den-bergh-reaction"/);
+  for (const name of ['Bilirubin Total, Direct & Indirect', 'Indirect Bilirubin', 'Urine Urobilinogen', 'Urine Bilirubin', 'VDRL', 'Valproic Acid']) assert.doesNotMatch(buildReportHtml(sampleReport({ name, parameters: [] })), /data-report-content="van-den-bergh-reaction"/);
+});
+
+test('Van den Bergh Reaction schema repair expands only unused placeholders and preserves names and IDs', async () => {
+  const db = await fixture();
+  try {
+    for (let i = 0; i < 9; i++) {
+      await db.run('INSERT INTO tests (id,name,category,sample_type,report_body) VALUES (?,?,?,?,?)', [10070 + i, i === 6 ? 'Bilirubin Total, Direct & Indirect' : i === 7 ? 'Van den Bergh Reaction' : 'Vanden Burgh Reaction', 'Imported legacy catalogue', i === 5 ? 'Urine' : null, i === 4 ? 'Manual format' : null]);
+      await db.run('INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,?,?,?,?,?)', [10070 + i, 'Result', '', i === 3 ? 'Custom reference' : '', 'manual', 1]);
+    }
+    const original = await db.get('SELECT id FROM test_parameters WHERE test_id=10070');
+    await db.run('INSERT INTO visit_tests VALUES (10071)');
+    await db.run('INSERT INTO test_bundle_items VALUES (999,10072)');
+    await db.run('INSERT INTO test_bundle_items VALUES (10078,999)');
+    await ensureVanDenBerghReactionTestConfiguration(db);
+    for (const id of [10070, 10077]) {
+      const fields = await db.all('SELECT * FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(p => p.parameter_name), getFallbackReportParameters({ name: 'Van den Bergh Reaction' }).map(p => p.parameterName));
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, 'Serum');
+      if (id === 10070) assert.equal(fields[0].id, original.id);
+    }
+    for (const i of [1,2,3,4,5,6,8]) assert.equal((await db.get('SELECT COUNT(*) AS n FROM test_parameters WHERE test_id=?', [10070 + i])).n, 1);
+    assert.equal((await db.get('SELECT COUNT(*) AS n FROM tests WHERE id BETWEEN 10070 AND 10078')).n, 9);
+    assert.equal((await db.get('SELECT name FROM tests WHERE id=10070')).name, 'Vanden Burgh Reaction');
+    await db.run("UPDATE test_parameters SET normal_range='Local override' WHERE test_id=10070 AND display_order=1");
+    await ensureVanDenBerghReactionTestConfiguration(db);
+    assert.equal((await db.get('SELECT normal_range FROM test_parameters WHERE test_id=10070 AND display_order=1')).normal_range, 'Local override');
+  } finally { await db.close(); }
+});
+
+test('Valproate Level reports measured concentration with dose and sampling context without automated dose advice', () => {
+  for (const name of ['Valporic Acid (Sodium valproate)', 'Valproic Acid (Sodium Valproate)', 'Valproic Acid', 'Valporic Acid', 'Sodium Valproate', 'Valproate Level']) {
+    const input = { name, parameters: [
+      { parameter_name: 'Valproic Acid (Valproate) Level', value: '68', unit: 'mg/L', normal_range: 'Actual laboratory total-level interval' },
+      { parameter_name: 'Measurement Basis (Total / Free)', value: 'Total' },
+      { parameter_name: 'Specimen', value: 'Serum' },
+      { parameter_name: 'Collection Date / Time', value: '2026-10-14 08:00' },
+      { parameter_name: 'Dose / Regimen', value: 'Actual prescribed regimen' },
+      { parameter_name: 'Last Dose Date / Time', value: '2026-10-13 20:00' },
+      { parameter_name: 'Sampling Timing (Trough / Peak / Random)', value: 'Trough (recorded)' },
+      { parameter_name: 'Time Since Last Dose, if supplied', value: '12', unit: 'hours' },
+      { parameter_name: 'Method / Analyzer', value: 'Actual laboratory assay' },
+      { parameter_name: 'Critical Result Communication, if applicable', value: 'Actual communication record' },
+      { parameter_name: 'Comments / Limitations', value: 'Review <history>\nRecorded comment' },
+    ], additional_report_text: 'Doctor advice' };
+    const original = JSON.stringify(input);
+    const html = buildReportHtml(sampleReport(input));
+    assert.match(html, /<div class="test-title">VALPROIC ACID \(VALPROATE\) LEVEL<\/div>/);
+    assert.match(html, /data-report-content="valproate-level"/);
+    assert.match(html, /<strong>Valproic Acid \(Valproate\) Level<\/strong><\/td><td>68<\/td><td>Actual laboratory total-level interval<\/td><td>mg\/L/);
+    assert.match(html, /Actual prescribed regimen/);
+    assert.match(html, /Trough \(recorded\)/);
+    assert.match(html, /<strong>Time Since Last Dose<\/strong><\/td><td>12<\/td><td><\/td><td>hours/);
+    assert.match(html, /Actual laboratory assay/);
+    assert.match(html, /Actual communication record/);
+    assert.match(html, /Review &lt;history&gt;<br \/>Recorded comment/);
+    assert.match(html, /not a universal trough target/);
+    assert.match(html, /Do not apply the total-drug range to a free result/);
+    assert.match(html, /No dose adjustment, free fraction, albumin correction or time-since-dose calculation/);
+    assert.ok(html.indexOf('Doctor advice') > html.indexOf('Recorded comment'));
+    assert.ok(html.indexOf('Doctor advice') < html.indexOf('<div class="single-analyte-notes report-template-notes valproate-level-notes">'));
+    assert.equal(JSON.stringify(input), original);
+    const schema = getFallbackReportParameters({ name });
+    assert.equal(schema.length, 13);
+    assert.equal(schema[0].unit, 'µg/mL');
+    assert.ok(schema.every(p => p.entryMode === 'manual'));
+  }
+});
+
+test('Valproate Level keeps total and free assays distinct and retains legacy results without fabricated timing or concentration', () => {
+  const blank = buildReportHtml(sampleReport({ name: 'Valporic Acid (Sodium valproate)', parameters: [] }));
+  assert.match(blank, /<strong>Valproic Acid \(Valproate\) Level<\/strong><\/td><td>-<\/td>/);
+  assert.match(blank, /<strong>Measurement Basis \(Total \/ Free\)<\/strong><\/td><td colspan="3">-<\/td>/);
+  assert.doesNotMatch(blank, /<strong>Time Since Last Dose<\/strong>|<strong>Critical Result Communication, if applicable<\/strong>/);
+  const legacy = buildReportHtml(sampleReport({ name: 'Valproic Acid', parameters: [
+    { parameter_name: 'Result', value: '0', unit: 'mg/L', normal_range: 'Local reference' },
+    { parameter_name: 'Findings', value: 'Historical <finding>\nRetained' },
+    { parameter_name: 'Impression', value: 'Prior impression' },
+  ] }));
+  assert.match(legacy, /<strong>Valproic Acid \(Valproate\) Level<\/strong><\/td><td>0<\/td><td>Local reference<\/td><td>mg\/L/);
+  assert.match(legacy, /Historical &lt;finding&gt;<br \/>Retained/);
+  assert.match(legacy, /Prior impression/);
+  const freeOnly = buildReportHtml(sampleReport({ name: 'Valproic Acid', parameters: [{ parameter_name: 'Free Valproic Acid', value: '9', unit: 'µg/mL', normal_range: 'Actual free assay interval' }] }));
+  assert.match(freeOnly, /<strong>Valproic Acid, Free \(reported\)<\/strong><\/td><td>9<\/td><td>Actual free assay interval/);
+  assert.doesNotMatch(freeOnly, /<strong>Valproic Acid, Total \(reported\)<\/strong>|<strong>Valproic Acid \(Valproate\) Level<\/strong>/);
+  const totalOnly = buildReportHtml(sampleReport({ name: 'Valproic Acid', parameters: [{ parameter_name: 'Total Valproic Acid', value: '60' }, { parameter_name: 'Collection Date / Time', value: '2026-10-14 08:00' }, { parameter_name: 'Last Dose Date / Time', value: '2026-10-13 20:00' }] }));
+  assert.match(totalOnly, /<strong>Valproic Acid, Total \(reported\)<\/strong><\/td><td>60<\/td>/);
+  assert.doesNotMatch(totalOnly, /<strong>Valproic Acid, Free \(reported\)<\/strong>|<strong>Time Since Last Dose<\/strong>/);
+  const manual = buildReportHtml(sampleReport({ name: 'Valproic Acid', report_body: 'Manual format <retained>', parameters: [] }));
+  assert.match(manual, /Manual format &lt;retained&gt;/);
+  assert.doesNotMatch(manual, /data-report-content="valproate-level"/);
+  for (const name of ['Valproic Acid, Free', 'Valproic Acid, Free and Total', 'Lithium', 'Phenytoin / Dilantin', 'Phenobarbital']) assert.doesNotMatch(buildReportHtml(sampleReport({ name, parameters: [] })), /data-report-content="valproate-level"/);
+});
+
+test('Valproate Level schema repair protects used, bundled and custom records without renaming the catalogue entry', async () => {
+  const db = await fixture();
+  try {
+    for (let i = 0; i < 9; i++) {
+      await db.run('INSERT INTO tests (id,name,category,sample_type,report_body) VALUES (?,?,?,?,?)', [10060 + i, i === 6 ? 'Valproic Acid, Free' : i === 7 ? 'Valproic Acid' : 'Valporic Acid (Sodium valproate)', 'Imported legacy catalogue', i === 5 ? 'Urine' : null, i === 4 ? 'Manual format' : null]);
+      await db.run('INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,?,?,?,?,?)', [10060 + i, 'Result', i === 3 ? 'Custom unit' : '', '', 'manual', 1]);
+    }
+    const original = await db.get('SELECT id FROM test_parameters WHERE test_id=10060');
+    await db.run('INSERT INTO visit_tests VALUES (10061)');
+    await db.run('INSERT INTO test_bundle_items VALUES (999,10062)');
+    await db.run('INSERT INTO test_bundle_items VALUES (10068,999)');
+    await ensureValproateLevelTestConfiguration(db);
+    for (const id of [10060, 10067]) {
+      const fields = await db.all('SELECT * FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(p => p.parameter_name), getFallbackReportParameters({ name: 'Valproic Acid' }).map(p => p.parameterName));
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, 'Serum');
+      if (id === 10060) assert.equal(fields[0].id, original.id);
+    }
+    for (const i of [1,2,3,4,5,6,8]) assert.equal((await db.get('SELECT COUNT(*) AS n FROM test_parameters WHERE test_id=?', [10060 + i])).n, 1);
+    assert.equal((await db.get('SELECT COUNT(*) AS n FROM tests WHERE id BETWEEN 10060 AND 10068')).n, 9);
+    assert.equal((await db.get('SELECT name FROM tests WHERE id=10060')).name, 'Valporic Acid (Sodium valproate)');
+    await db.run("UPDATE test_parameters SET normal_range='Local override' WHERE test_id=10060 AND display_order=1");
+    await ensureValproateLevelTestConfiguration(db);
+    assert.equal((await db.get('SELECT normal_range FROM test_parameters WHERE test_id=10060 AND display_order=1')).normal_range, 'Local override');
+  } finally { await db.close(); }
+});
+
+test('Vaginal Swab Gram Stain reports cells, morphotypes and optional verified Nugent assessment', () => {
+  for (const name of ['Vaginal Swab Gram Stain', 'Vaginal Swab for Gram Stain', 'Vaginal Gram Stain', 'Gram Stain Vaginal Swab', 'Vaginal Swab for Fram Stain']) {
+    const input = { name, parameters: [
+      { parameter_name: 'Gram Stain Findings', value: 'Actual reported microscopy', normal_range: 'Local microscopy interpretation' },
+      { parameter_name: 'Specimen / Collection Site', value: 'High vaginal swab' },
+      { parameter_name: 'Smear Preparation / Stain Method', value: 'Actual Gram-stain preparation' },
+      { parameter_name: 'Inflammatory Cells / PMNs', value: '4', unit: '/HPF', normal_range: 'Local cell reference' },
+      { parameter_name: 'Clue Cells', value: 'Reported finding' },
+      { parameter_name: 'Lactobacillus-type Morphotypes', value: 'Recorded abundance' },
+      { parameter_name: 'Small Gram-variable / Gram-negative Rods', value: 'Recorded small rods' },
+      { parameter_name: 'Curved Rod Morphotypes', value: 'Recorded curved rods' },
+      { parameter_name: 'Yeast / Fungal Elements', value: 'Actual observation' },
+      { parameter_name: 'Nugent Score, if assessed', value: '0', normal_range: 'Local validated scoring reference' },
+      { parameter_name: 'Nugent Interpretation, if assessed', value: 'Reported laboratory category' },
+      { parameter_name: 'Comments / Limitations', value: 'Review <smear>\nRecorded comment' },
+    ], additional_report_text: 'Doctor advice' };
+    const original = JSON.stringify(input);
+    const html = buildReportHtml(sampleReport(input));
+    assert.match(html, /<div class="test-title">VAGINAL SWAB - GRAM STAIN<\/div>/);
+    assert.match(html, /data-report-content="vaginal-swab-gram-stain"/);
+    assert.match(html, /Actual reported microscopy<\/td><td>Local microscopy interpretation/);
+    assert.match(html, /<strong>Inflammatory Cells \/ PMNs<\/strong><\/td><td>4<\/td><td>Local cell reference<\/td><td>\/HPF/);
+    assert.match(html, /Actual Gram-stain preparation/);
+    assert.match(html, /Recorded abundance/);
+    assert.match(html, /Recorded small rods/);
+    assert.match(html, /Recorded curved rods/);
+    assert.match(html, /<strong>Nugent Score, if assessed<\/strong><\/td><td>0<\/td><td>Local validated scoring reference/);
+    assert.match(html, /Reported laboratory category/);
+    assert.match(html, /Review &lt;smear&gt;<br \/>Recorded comment/);
+    assert.match(html, /4 - 6: intermediate microbiota/);
+    assert.match(html, /7 - 10: consistent with bacterial vaginosis/);
+    assert.ok(html.indexOf('Doctor advice') > html.indexOf('Recorded comment'));
+    assert.ok(html.indexOf('Doctor advice') < html.indexOf('<div class="single-analyte-notes report-template-notes vaginal-swab-gram-stain-notes">'));
+    assert.equal(JSON.stringify(input), original);
+    const schema = getFallbackReportParameters({ name });
+    assert.equal(schema.length, 19);
+    assert.ok(schema.every(p => p.entryMode === 'manual'));
+  }
+});
+
+test('Vaginal Swab Gram Stain keeps absent entries blank and does not calculate Nugent scores or diagnostic categories', () => {
+  const blank = buildReportHtml(sampleReport({ name: 'Vaginal Swab Gram Stain', parameters: [] }));
+  assert.match(blank, /<strong>Gram Stain Findings<\/strong><\/td><td>-<\/td>/);
+  assert.match(blank, /<strong>Clue Cells<\/strong><\/td><td>-<\/td>/);
+  assert.match(blank, /<strong>Yeast \/ Fungal Elements<\/strong><\/td><td>-<\/td>/);
+  assert.doesNotMatch(blank, /<strong>Nugent Score, if assessed<\/strong>|<strong>Nugent Interpretation, if assessed<\/strong>|<strong>Culture \/ Specific Test Status, if performed<\/strong>/);
+  const legacy = buildReportHtml(sampleReport({ name: 'Vaginal Swab Gram Stain', parameters: [
+    { parameter_name: 'Findings', value: 'Historical <finding>\nRetained' },
+    { parameter_name: 'Impression', value: 'Prior impression' },
+    { parameter_name: 'Comments', value: 'Prior comments' },
+    { parameter_name: 'Custom Count', value: '0', unit: 'local unit', normal_range: 'Local reference' },
+  ] }));
+  assert.match(legacy, /<strong>Gram Stain Findings<\/strong><\/td><td>Historical &lt;finding&gt;<br \/>Retained/);
+  assert.match(legacy, /Prior impression/);
+  assert.match(legacy, /Prior comments/);
+  assert.match(legacy, /<strong>Custom Count<\/strong><\/td><td>0<\/td><td>Local reference<\/td><td>local unit/);
+  const morphologyOnly = buildReportHtml(sampleReport({ name: 'Vaginal Swab Gram Stain', parameters: [{ parameter_name: 'Lactobacilli', value: 'Present' }, { parameter_name: 'Clue Cells', value: 'Present' }] }));
+  assert.doesNotMatch(morphologyOnly, /<strong>Nugent Score, if assessed<\/strong>/);
+  const scoreOnly = buildReportHtml(sampleReport({ name: 'Vaginal Swab Gram Stain', parameters: [{ parameter_name: 'Nugent Score', value: '8' }] }));
+  assert.match(scoreOnly, /<strong>Nugent Score, if assessed<\/strong><\/td><td>8<\/td>/);
+  assert.doesNotMatch(scoreOnly, /<strong>Nugent Interpretation, if assessed<\/strong>/);
+  const manual = buildReportHtml(sampleReport({ name: 'Vaginal Swab Gram Stain', report_body: 'Manual format <retained>', parameters: [] }));
+  assert.match(manual, /Manual format &lt;retained&gt;/);
+  assert.doesNotMatch(manual, /data-report-content="vaginal-swab-gram-stain"/);
+  for (const name of ['Vaginal / Cervical swab', 'Vaginal Swab AFB Stain', 'Cervical Swab Gram Stain', 'Vaginal Swab Culture', 'Gram Stain for Bacterial Vaginosis (BV)', 'Vaginal Smear for PAP Stain']) assert.doesNotMatch(buildReportHtml(sampleReport({ name, parameters: [] })), /data-report-content="vaginal-swab-gram-stain"/);
+});
+
+test('Vaginal Swab Gram Stain schema repair expands both unused entries without renaming or deleting custom data', async () => {
+  const db = await fixture();
+  try {
+    for (let i = 0; i < 9; i++) {
+      await db.run('INSERT INTO tests (id,name,category,sample_type,report_body) VALUES (?,?,?,?,?)', [10050 + i, i === 6 ? 'Cervical Swab Gram Stain' : i === 7 ? 'Vaginal Swab for Fram Stain' : 'Vaginal Swab Gram Stain', 'Imported legacy catalogue', i === 5 ? 'Cervical Swab' : null, i === 4 ? 'Manual format' : null]);
+      for (const [order, name] of ['Findings', 'Impression', 'Comments'].entries()) await db.run('INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,?,?,?,?,?)', [10050 + i, name, '', i === 3 ? 'Custom reference' : '', 'manual', order + 1]);
+    }
+    const original = await db.all('SELECT id FROM test_parameters WHERE test_id=10050 ORDER BY display_order');
+    await db.run('INSERT INTO visit_tests VALUES (10051)');
+    await db.run('INSERT INTO test_bundle_items VALUES (999,10052)');
+    await db.run('INSERT INTO test_bundle_items VALUES (10058,999)');
+    await ensureVaginalSwabGramStainTestConfiguration(db);
+    for (const id of [10050, 10057]) {
+      const fields = await db.all('SELECT * FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(p => p.parameter_name), getFallbackReportParameters({ name: 'Vaginal Swab Gram Stain' }).map(p => p.parameterName));
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, 'Vaginal Swab');
+      if (id === 10050) assert.deepEqual(fields.slice(0, 3).map(p => p.id), original.map(p => p.id));
+    }
+    for (const i of [1,2,3,4,5,6,8]) assert.equal((await db.get('SELECT COUNT(*) AS n FROM test_parameters WHERE test_id=?', [10050 + i])).n, 3);
+    assert.equal((await db.get('SELECT COUNT(*) AS n FROM tests WHERE id BETWEEN 10050 AND 10058')).n, 9);
+    assert.equal((await db.get('SELECT name FROM tests WHERE id=10057')).name, 'Vaginal Swab for Fram Stain');
+    await db.run("UPDATE test_parameters SET normal_range='Local override' WHERE test_id=10050 AND display_order=1");
+    await ensureVaginalSwabGramStainTestConfiguration(db);
+    assert.equal((await db.get('SELECT normal_range FROM test_parameters WHERE test_id=10050 AND display_order=1')).normal_range, 'Local override');
+  } finally { await db.close(); }
+});
+
+test('Vaginal Swab AFB Stain reports actual microscopy, grading and method with explanatory limitations', () => {
+  for (const name of ['Vaginal Swab AFB Stain', 'Vaginal Swab for AFB Stain', 'Vaginal AFB Stain', 'AFB Stain Vaginal Swab']) {
+    const input = { name, parameters: [
+      { parameter_name: 'AFB Smear Microscopy Result', value: 'AFB seen', normal_range: 'Actual laboratory reference' },
+      { parameter_name: 'AFB Smear Grade / Quantitation', value: 'Recorded grade', normal_range: 'Validated local grading protocol' },
+      { parameter_name: 'Specimen / Collection Site', value: 'High vaginal swab' },
+      { parameter_name: 'Stain Method', value: 'Actual laboratory stain' },
+      { parameter_name: 'Smear Preparation / Processing', value: 'Recorded processing' },
+      { parameter_name: 'Specimen Adequacy', value: 'Actual adequacy assessment' },
+      { parameter_name: 'Microscopy Remarks', value: 'Review <smear>\nRecorded observations' },
+      { parameter_name: 'Culture / Molecular Test Status, if performed', value: 'Actual separately performed test status' },
+      { parameter_name: 'Comments / Limitations', value: 'Actual laboratory comment' },
+    ], additional_report_text: 'Doctor advice' };
+    const original = JSON.stringify(input);
+    const html = buildReportHtml(sampleReport(input));
+    assert.match(html, /<div class="test-title">VAGINAL SWAB - AFB STAIN<\/div>/);
+    assert.match(html, /data-report-content="vaginal-swab-afb-stain"/);
+    assert.match(html, /<strong>AFB Smear Microscopy Result<\/strong><\/td><td>AFB seen<\/td><td>Actual laboratory reference/);
+    assert.match(html, />Recorded grade<\/td><td>Validated local grading protocol/);
+    assert.match(html, /High vaginal swab/);
+    assert.match(html, /Actual laboratory stain/);
+    assert.match(html, /Recorded processing/);
+    assert.match(html, /Review &lt;smear&gt;<br \/>Recorded observations/);
+    assert.match(html, /Actual separately performed test status/);
+    assert.match(html, /Smear positivity does not identify the species or confirm Mycobacterium tuberculosis complex/);
+    assert.match(html, /A negative smear does not exclude mycobacterial infection or tuberculosis/);
+    assert.ok(html.indexOf('Doctor advice') > html.indexOf('Actual laboratory comment'));
+    assert.ok(html.indexOf('Doctor advice') < html.indexOf('<div class="single-analyte-notes report-template-notes vaginal-swab-afb-stain-notes">'));
+    assert.equal(JSON.stringify(input), original);
+    const schema = getFallbackReportParameters({ name });
+    assert.equal(schema.length, 12);
+    assert.ok(schema.every(p => p.entryMode === 'manual'));
+  }
+});
+
+test('Vaginal Swab AFB Stain keeps missing results blank and preserves legacy findings without inferring grades', () => {
+  const blank = buildReportHtml(sampleReport({ name: 'Vaginal Swab AFB Stain', parameters: [] }));
+  assert.match(blank, /<strong>AFB Smear Microscopy Result<\/strong><\/td><td>-<\/td>/);
+  assert.match(blank, /<strong>AFB Smear Grade \/ Quantitation<\/strong><\/td><td>-<\/td>/);
+  assert.doesNotMatch(blank, /<strong>Culture \/ Molecular Test Status, if performed<\/strong>/);
+  const legacy = buildReportHtml(sampleReport({ name: 'Vaginal Swab AFB Stain', parameters: [
+    { parameter_name: 'Findings', value: 'Historical <finding>\nRetained' },
+    { parameter_name: 'Impression', value: 'Prior impression' },
+    { parameter_name: 'Comments', value: 'Prior comments' },
+    { parameter_name: 'Custom Count', value: '0', unit: 'local unit', normal_range: 'Local reference' },
+  ] }));
+  assert.match(legacy, /<strong>Microscopy Remarks<\/strong><\/td><td colspan="3">Historical &lt;finding&gt;<br \/>Retained/);
+  assert.match(legacy, /Prior impression/);
+  assert.match(legacy, /Prior comments/);
+  assert.match(legacy, /<strong>Custom Count<\/strong><\/td><td>0<\/td><td>Local reference<\/td><td>local unit/);
+  const partial = buildReportHtml(sampleReport({ name: 'Vaginal Swab AFB Stain', parameters: [{ parameter_name: 'Result', value: 'AFB seen' }] }));
+  assert.match(partial, /<strong>AFB Smear Microscopy Result<\/strong><\/td><td>AFB seen<\/td>/);
+  assert.match(partial, /<strong>AFB Smear Grade \/ Quantitation<\/strong><\/td><td>-<\/td>/);
+  const manual = buildReportHtml(sampleReport({ name: 'Vaginal Swab AFB Stain', report_body: 'Manual format <retained>', parameters: [] }));
+  assert.match(manual, /Manual format &lt;retained&gt;/);
+  assert.doesNotMatch(manual, /data-report-content="vaginal-swab-afb-stain"/);
+  for (const name of ['Vaginal / Cervical swab', 'Vaginal Swab Gram Stain', 'Cervical Swab AFB Stain', 'Vaginal Swab Culture', 'AFB Culture & Sensitivity', 'Vaginal Smear for PAP Stain']) assert.doesNotMatch(buildReportHtml(sampleReport({ name, parameters: [] })), /data-report-content="vaginal-swab-afb-stain"/);
+});
+
+test('Vaginal Swab AFB Stain schema repair supports both entries while protecting used and custom formats', async () => {
+  const db = await fixture();
+  try {
+    for (let i = 0; i < 9; i++) {
+      await db.run('INSERT INTO tests (id,name,category,sample_type,report_body) VALUES (?,?,?,?,?)', [10040 + i, i === 6 ? 'Cervical Swab AFB Stain' : i === 7 ? 'Vaginal Swab for AFB Stain' : 'Vaginal Swab AFB Stain', 'Imported legacy catalogue', i === 5 ? 'Cervical Swab' : null, i === 4 ? 'Manual format' : null]);
+      for (const [order, name] of ['Findings', 'Impression', 'Comments'].entries()) await db.run('INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,?,?,?,?,?)', [10040 + i, name, '', i === 3 ? 'Custom reference' : '', 'manual', order + 1]);
+    }
+    const original = await db.all('SELECT id FROM test_parameters WHERE test_id=10040 ORDER BY display_order');
+    await db.run('INSERT INTO visit_tests VALUES (10041)');
+    await db.run('INSERT INTO test_bundle_items VALUES (999,10042)');
+    await db.run('INSERT INTO test_bundle_items VALUES (10048,999)');
+    await ensureVaginalSwabAfbStainTestConfiguration(db);
+    for (const id of [10040, 10047]) {
+      const fields = await db.all('SELECT * FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(p => p.parameter_name), getFallbackReportParameters({ name: 'Vaginal Swab AFB Stain' }).map(p => p.parameterName));
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, 'Vaginal Swab');
+      if (id === 10040) assert.deepEqual(fields.slice(0, 3).map(p => p.id), original.map(p => p.id));
+    }
+    for (const i of [1,2,3,4,5,6,8]) assert.equal((await db.get('SELECT COUNT(*) AS n FROM test_parameters WHERE test_id=?', [10040 + i])).n, 3);
+    assert.equal((await db.get('SELECT COUNT(*) AS n FROM tests WHERE id BETWEEN 10040 AND 10048')).n, 9);
+    assert.equal((await db.get('SELECT name FROM tests WHERE id=10047')).name, 'Vaginal Swab for AFB Stain');
+    await db.run("UPDATE test_parameters SET normal_range='Local override' WHERE test_id=10040 AND display_order=1");
+    await ensureVaginalSwabAfbStainTestConfiguration(db);
+    assert.equal((await db.get('SELECT normal_range FROM test_parameters WHERE test_id=10040 AND display_order=1')).normal_range, 'Local override');
+  } finally { await db.close(); }
+});
+
+test('Vaginal Cervical swab records exact site and performed examinations with explanatory notes', () => {
+  for (const name of ['Vaginal / Cervical swab', 'Vaginal/Cervical Swab', 'Vaginal / Cervical Swabs', 'Cervical / Vaginal Swab']) {
+    const input = { name, parameters: [
+      { parameter_name: 'Specimen / Exact Collection Site', value: 'Endocervical swab' },
+      { parameter_name: 'Examination Requested / Performed', value: 'Actual microscopy and culture' },
+      { parameter_name: 'Method / Preparation', value: 'Recorded laboratory preparation' },
+      { parameter_name: 'Laboratory Result / Findings', value: 'Actual reported findings', normal_range: 'Site-specific local interpretation' },
+      { parameter_name: 'Microscopy / Gram Stain Findings, if performed', value: 'Recorded cells\nReview <finding>' },
+      { parameter_name: 'Culture Result, if performed', value: 'Actual culture description' },
+      { parameter_name: 'Organism Identification / Growth, if isolated', value: 'Isolate A: actual identification' },
+      { parameter_name: 'Antimicrobial Susceptibility, if performed', value: 'Isolate A\nDrug X: laboratory category' },
+      { parameter_name: 'Susceptibility Method / Standard, if performed', value: 'Actual AST method and standard' },
+      { parameter_name: 'Additional Specific Tests, if performed', value: 'Actual separately requested test result' },
+      { parameter_name: 'Comments / Limitations', value: 'Actual laboratory comment' },
+    ], additional_report_text: 'Doctor advice' };
+    const original = JSON.stringify(input);
+    const html = buildReportHtml(sampleReport(input));
+    assert.match(html, /<div class="test-title">VAGINAL \/ CERVICAL SWAB<\/div>/);
+    assert.match(html, /data-report-content="vaginal-cervical-swab"/);
+    assert.match(html, /Endocervical swab/);
+    assert.match(html, /Actual microscopy and culture/);
+    assert.match(html, /Recorded laboratory preparation/);
+    assert.match(html, /<strong>Laboratory Result \/ Findings<\/strong><\/td><td>Actual reported findings<\/td><td>Site-specific local interpretation/);
+    assert.match(html, /Recorded cells<br \/>Review &lt;finding&gt;/);
+    assert.match(html, /Actual culture description/);
+    assert.match(html, /Isolate A<br \/>Drug X: laboratory category/);
+    assert.match(html, /Actual AST method and standard/);
+    assert.match(html, /Actual separately requested test result/);
+    assert.match(html, /does not imply that both sites were sampled/);
+    assert.ok(html.indexOf('Doctor advice') > html.indexOf('Actual laboratory comment'));
+    assert.ok(html.indexOf('Doctor advice') < html.indexOf('<div class="single-analyte-notes report-template-notes vaginal-cervical-swab-notes">'));
+    assert.equal(JSON.stringify(input), original);
+    const schema = getFallbackReportParameters({ name });
+    assert.equal(schema.length, 15);
+    assert.ok(schema.every(p => p.entryMode === 'manual'));
+  }
+});
+
+test('Vaginal Cervical swab omits unperformed sections and retains original results and custom formats', () => {
+  const blank = buildReportHtml(sampleReport({ name: 'Vaginal / Cervical swab', parameters: [] }));
+  assert.match(blank, /<strong>Laboratory Result \/ Findings<\/strong><\/td><td>-<\/td>/);
+  assert.match(blank, /<strong>Specimen \/ Exact Collection Site<\/strong><\/td><td colspan="3">-<\/td>/);
+  assert.doesNotMatch(blank, /<strong>Culture Result, if performed<\/strong>|<strong>Microscopy \/ Gram Stain Findings, if performed<\/strong>|<strong>Antimicrobial Susceptibility, if performed<\/strong>/);
+  const legacy = buildReportHtml(sampleReport({ name: 'Vaginal / Cervical swab', parameters: [
+    { parameter_name: 'Result', value: 'Historical <finding>\nRetained', unit: 'Recorded unit', normal_range: 'Local reference' },
+    { parameter_name: 'Impression', value: 'Actual interpretation' },
+    { parameter_name: 'Comments', value: 'Prior comments' },
+    { parameter_name: 'Pus Cells', value: '0', unit: '/HPF', normal_range: 'Local microscopy reference' },
+  ] }));
+  assert.match(legacy, /Historical &lt;finding&gt;<br \/>Retained<\/td><td>Local reference<\/td><td>Recorded unit/);
+  assert.match(legacy, /Actual interpretation/);
+  assert.match(legacy, /Prior comments/);
+  assert.match(legacy, /<strong>Pus Cells<\/strong><\/td><td>0<\/td><td>Local microscopy reference<\/td><td>\/HPF/);
+  const microscopyOnly = buildReportHtml(sampleReport({ name: 'Vaginal / Cervical swab', parameters: [{ parameter_name: 'Microscopy', value: 'Reported microscopy findings' }] }));
+  assert.match(microscopyOnly, /Reported microscopy findings/);
+  assert.doesNotMatch(microscopyOnly, /<strong>Culture Result, if performed<\/strong>/);
+  const manual = buildReportHtml(sampleReport({ name: 'Vaginal / Cervical swab', report_body: 'Manual format <retained>', parameters: [] }));
+  assert.match(manual, /Manual format &lt;retained&gt;/);
+  assert.doesNotMatch(manual, /data-report-content="vaginal-cervical-swab"/);
+  for (const name of ['Vaginal Swab Culture', 'Vaginal Swab Gram Stain', 'Cervical Swab Gram Stain', 'Vaginal Smear for PAP Stain', 'Cervical Swab AFB Stain', 'Urine Culture']) assert.doesNotMatch(buildReportHtml(sampleReport({ name, parameters: [] })), /data-report-content="vaginal-cervical-swab"/);
+});
+
+test('Vaginal Cervical swab schema repair protects used, bundled and custom entries without deleting catalogue data', async () => {
+  const db = await fixture();
+  try {
+    for (let i = 0; i < 9; i++) {
+      await db.run('INSERT INTO tests (id,name,category,sample_type,report_body) VALUES (?,?,?,?,?)', [10030 + i, i === 6 ? 'Vaginal Swab Gram Stain' : i === 7 ? 'Cervical / Vaginal Swab' : 'Vaginal / Cervical swab', 'Imported legacy catalogue', i === 5 ? 'Serum' : null, i === 4 ? 'Manual format' : null]);
+      await db.run('INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,?,?,?,?,?)', [10030 + i, 'Result', i === 3 ? 'Custom unit' : '', '', 'manual', 1]);
+    }
+    const original = await db.get('SELECT id FROM test_parameters WHERE test_id=10030');
+    await db.run('INSERT INTO visit_tests VALUES (10031)');
+    await db.run('INSERT INTO test_bundle_items VALUES (999,10032)');
+    await db.run('INSERT INTO test_bundle_items VALUES (10038,999)');
+    await ensureVaginalCervicalSwabTestConfiguration(db);
+    for (const id of [10030, 10037]) {
+      const fields = await db.all('SELECT * FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(p => p.parameter_name), getFallbackReportParameters({ name: 'Vaginal / Cervical swab' }).map(p => p.parameterName));
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, 'Swab (record vaginal or cervical collection site)');
+      if (id === 10030) assert.equal(fields[0].id, original.id);
+    }
+    for (const i of [1,2,3,4,5,6,8]) assert.equal((await db.get('SELECT COUNT(*) AS n FROM test_parameters WHERE test_id=?', [10030 + i])).n, 1);
+    assert.equal((await db.get('SELECT COUNT(*) AS n FROM tests WHERE id BETWEEN 10030 AND 10038')).n, 9);
+    await db.run("UPDATE test_parameters SET normal_range='Local override' WHERE test_id=10030 AND display_order=1");
+    await ensureVaginalCervicalSwabTestConfiguration(db);
+    assert.equal((await db.get('SELECT normal_range FROM test_parameters WHERE test_id=10030 AND display_order=1')).normal_range, 'Local override');
+  } finally { await db.close(); }
+});
+
+test('Uroflowmetry reports measured flow, volume, timing and narrative without inventing a curve', () => {
+  for (const name of ['Uroflowmetry', 'Uroflowmetry Test', 'Urinary Flow Rate Study']) {
+    const input = { name, parameters: [
+      { parameter_name: 'Clinical Details', value: 'Actual clinical history' },
+      { parameter_name: 'Method / Device', value: 'Recorded uroflowmeter' },
+      { parameter_name: 'Voided Volume', value: '220', unit: 'mL' },
+      { parameter_name: 'Maximum Flow Rate (Qmax)', value: '18.5', unit: 'mL/s', normal_range: 'Local nomogram assessment' },
+      { parameter_name: 'Average Flow Rate (Qavg)', value: '9.0', unit: 'mL/s' },
+      { parameter_name: 'Flow Time', value: '24.4', unit: 's' },
+      { parameter_name: 'Voiding Time', value: '30', unit: 's' },
+      { parameter_name: 'Time to Maximum Flow', value: '7', unit: 's' },
+      { parameter_name: 'Flow Curve / Pattern', value: 'Actual recorded pattern' },
+      { parameter_name: 'Representative of Usual Voiding', value: 'Patient reports representative void' },
+      { parameter_name: 'Post-Void Residual (PVR), if measured', value: '0', unit: 'mL' },
+      { parameter_name: 'PVR Method / Timing, if measured', value: 'Recorded method and timing' },
+      { parameter_name: 'Findings', value: 'Review <tracing>\nRetained observations' },
+      { parameter_name: 'Impression', value: 'Clinician interpretation' },
+      { parameter_name: 'Advice', value: 'Actual clinician advice' },
+    ], additional_report_text: 'Additional doctor note' };
+    const original = JSON.stringify(input);
+    const html = buildReportHtml(sampleReport(input));
+    assert.match(html, /<div class="test-title">UROFLOWMETRY<\/div>/);
+    assert.match(html, /data-report-content="uroflowmetry"/);
+    assert.match(html, /<strong>Maximum Flow Rate \(Qmax\)<\/strong><\/td><td>18.5<\/td><td>Local nomogram assessment<\/td><td>mL\/s/);
+    assert.match(html, /<strong>Flow Time<\/strong><\/td><td>24.4<\/td>/);
+    assert.match(html, /<strong>Voiding Time<\/strong><\/td><td>30<\/td>/);
+    assert.match(html, /<strong>Post-Void Residual \(PVR\), if measured<\/strong><\/td><td>0<\/td>/);
+    assert.match(html, /Recorded method and timing/);
+    assert.match(html, /Review &lt;tracing&gt;<br \/>Retained observations/);
+    assert.match(html, /Clinician interpretation/);
+    assert.match(html, /no curve is generated from these entries/);
+    assert.match(html, /not a universal minimum for women or children/);
+    assert.ok(html.indexOf('Additional doctor note') > html.indexOf('Actual clinician advice'));
+    assert.ok(html.indexOf('Additional doctor note') < html.indexOf('<div class="single-analyte-notes report-template-notes uroflowmetry-notes">'));
+    assert.equal(JSON.stringify(input), original);
+    const schema = getFallbackReportParameters({ name });
+    assert.equal(schema.length, 19);
+    assert.equal(schema.find(p => p.parameterName === 'Maximum Flow Rate (Qmax)').unit, 'mL/s');
+    assert.ok(schema.every(p => p.entryMode === 'manual'));
+  }
+});
+
+test('Uroflowmetry keeps missing metrics blank and preserves original narrative or custom reports', () => {
+  const blank = buildReportHtml(sampleReport({ name: 'Uroflowmetry', parameters: [] }));
+  assert.match(blank, /<strong>Maximum Flow Rate \(Qmax\)<\/strong><\/td><td>-<\/td>/);
+  assert.doesNotMatch(blank, /<strong>Post-Void Residual \(PVR\), if measured<\/strong>|<strong>PVR Method \/ Timing, if measured<\/strong>/);
+  const partial = buildReportHtml(sampleReport({ name: 'Uroflowmetry', parameters: [
+    { parameter_name: 'Voided Volume', value: '100' },
+    { parameter_name: 'Flow Time', value: '20' },
+    { parameter_name: 'Clinical Details', value: 'Historical symptoms' },
+    { parameter_name: 'Findings', value: 'Historical <finding>\nUnchanged' },
+    { parameter_name: 'Impression', value: 'Historical impression' },
+    { parameter_name: 'Advice', value: 'Historical advice' },
+    { parameter_name: 'Custom Parameter', value: 'Actual value', unit: 'local unit', normal_range: 'Local reference' },
+  ] }));
+  assert.match(partial, /<strong>Average Flow Rate \(Qavg\)<\/strong><\/td><td>-<\/td>/);
+  assert.match(partial, /Historical symptoms/);
+  assert.match(partial, /Historical &lt;finding&gt;<br \/>Unchanged/);
+  assert.match(partial, /Historical impression/);
+  assert.match(partial, /Historical advice/);
+  assert.match(partial, /<strong>Custom Parameter<\/strong><\/td><td>Actual value<\/td><td>Local reference<\/td><td>local unit/);
+  const aliases = buildReportHtml(sampleReport({ name: 'Uroflowmetry', parameters: [{ parameter_name: 'Qmax', value: '0', unit: 'Recorded unit' }, { parameter_name: 'Result', value: 'Original result narrative' }] }));
+  assert.match(aliases, /<strong>Maximum Flow Rate \(Qmax\)<\/strong><\/td><td>0<\/td><td>Age-, sex- and voided-volume-specific assessment<\/td><td>Recorded unit/);
+  assert.match(aliases, /Original result narrative/);
+  const manual = buildReportHtml(sampleReport({ name: 'Uroflowmetry', report_body: 'Manual format <retained>', parameters: [] }));
+  assert.match(manual, /Manual format &lt;retained&gt;/);
+  assert.doesNotMatch(manual, /data-report-content="uroflowmetry"/);
+  assert.equal(isBillingOnlyTest({ name: 'Uroflowmetry' }), false);
+  for (const name of ['Urine RE (Routine Examination)', 'Urine pH', 'Creatinine Clearance Test', 'Spirometry']) assert.doesNotMatch(buildReportHtml(sampleReport({ name, parameters: [] })), /data-report-content="uroflowmetry"/);
+});
+
+test('Uroflowmetry schema repair expands unused narrative placeholders without altering custom or historical records', async () => {
+  const db = await fixture();
+  try {
+    for (let i = 0; i < 9; i++) {
+      await db.run('INSERT INTO tests (id,name,category,sample_type,report_body) VALUES (?,?,?,?,?)', [10020 + i, i === 6 ? 'Spirometry' : i === 7 ? 'Uroflowmetry Test' : 'Uroflowmetry', 'Imported legacy catalogue', i === 5 ? 'Serum' : null, i === 4 ? 'Manual format' : null]);
+      for (const [order, name] of ['Clinical Details', 'Findings', 'Impression', 'Advice'].entries()) await db.run('INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,?,?,?,?,?)', [10020 + i, name, '', i === 3 ? 'Custom reference' : '', 'manual', order + 1]);
+    }
+    const original = await db.all('SELECT id FROM test_parameters WHERE test_id=10020 ORDER BY display_order');
+    await db.run('INSERT INTO visit_tests VALUES (10021)');
+    await db.run('INSERT INTO test_bundle_items VALUES (999,10022)');
+    await db.run('INSERT INTO test_bundle_items VALUES (10028,999)');
+    await ensureUroflowmetryTestConfiguration(db);
+    for (const id of [10020, 10027]) {
+      const fields = await db.all('SELECT * FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(p => p.parameter_name), getFallbackReportParameters({ name: 'Uroflowmetry' }).map(p => p.parameterName));
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, 'N/A (non-invasive uroflowmetry)');
+      if (id === 10020) assert.deepEqual(fields.slice(0, 4).map(p => p.id), original.map(p => p.id));
+    }
+    for (const i of [1,2,3,4,5,6,8]) assert.equal((await db.get('SELECT COUNT(*) AS n FROM test_parameters WHERE test_id=?', [10020 + i])).n, 4);
+    assert.equal((await db.get('SELECT COUNT(*) AS n FROM tests WHERE id BETWEEN 10020 AND 10028')).n, 9);
+    await db.run("UPDATE test_parameters SET normal_range='Local override' WHERE test_id=10020 AND parameter_name='Maximum Flow Rate (Qmax)'");
+    await ensureUroflowmetryTestConfiguration(db);
+    assert.equal((await db.get("SELECT normal_range FROM test_parameters WHERE test_id=10020 AND parameter_name='Maximum Flow Rate (Qmax)'")).normal_range, 'Local override');
+  } finally { await db.close(); }
+});
+
+test('Urine pH provides manual findings and explanatory reference guidance without changing reported precision', () => {
+  for (const name of ['Urine pH', 'UrinepH', 'pH (Urine)', 'pH, Urine', 'Urine pH Test', 'pH Urine Test']) {
+    const input = { name, parameters: [
+      { parameter_name: 'Urine pH', value: '6.25', normal_range: 'Local interval: 5.0 - 8.0' },
+      { parameter_name: 'Reaction / Description, if recorded', value: 'Acidic (reported)' },
+      { parameter_name: 'Specimen / Collection Type', value: 'Fresh random urine' },
+      { parameter_name: 'Collection Date / Time', value: '2026-10-14 13:00' },
+      { parameter_name: 'Method / Reagent / Analyzer', value: 'Actual laboratory pH meter' },
+      { parameter_name: 'Specimen Handling / Quality, if supplied', value: 'Promptly tested' },
+      { parameter_name: 'Comments / Limitations', value: 'Review <history>\nCorrelate clinically' },
+    ], additional_report_text: 'Doctor advice' };
+    const original = JSON.stringify(input);
+    const html = buildReportHtml(sampleReport(input));
+    assert.match(html, /<div class="test-title">URINE pH<\/div>/);
+    assert.match(html, /data-report-content="urine-ph"/);
+    assert.match(html, /<strong>Urine pH<\/strong><\/td><td>6.25<\/td><td>Local interval: 5.0 - 8.0<\/td><td><\/td>/);
+    assert.match(html, /Actual laboratory pH meter/);
+    assert.match(html, /Acidic \(reported\)/);
+    assert.match(html, /Promptly tested/);
+    assert.match(html, /Review &lt;history&gt;<br \/>Correlate clinically/);
+    assert.match(html, /pH is dimensionless/);
+    assert.match(html, /pH alone does not establish a urinary infection/);
+    assert.ok(html.indexOf('Doctor advice') > html.indexOf('Correlate clinically'));
+    assert.ok(html.indexOf('Doctor advice') < html.indexOf('<div class="single-analyte-notes report-template-notes urine-ph-notes">'));
+    assert.equal(JSON.stringify(input), original);
+    const schema = getFallbackReportParameters({ name });
+    assert.equal(schema.length, 9);
+    assert.equal(schema[0].unit, '');
+    assert.match(schema[0].normalRange, /4.6 - 8.0/);
+    assert.ok(schema.every(p => p.entryMode === 'manual'));
+  }
+});
+
+test('Urine pH keeps missing values blank and does not infer numbers from reaction or blood pH', () => {
+  const blank = buildReportHtml(sampleReport({ name: 'Urine pH', parameters: [] }));
+  assert.match(blank, /<strong>Urine pH<\/strong><\/td><td>-<\/td><td>4.6 - 8.0 \(general guide; lab-specific\)<\/td><td><\/td>/);
+  assert.doesNotMatch(blank, /<strong>Reaction \/ Description, if recorded<\/strong>|<strong>Specimen Handling \/ Quality, if supplied<\/strong>/);
+  const legacy = buildReportHtml(sampleReport({ name: 'Urine pH', parameters: [
+    { parameter_name: 'Result', value: 'Acidic', normal_range: 'Original laboratory description', unit: 'Recorded legacy unit' },
+    { parameter_name: 'Findings', value: 'Prior <findings>\nRetained' },
+    { parameter_name: 'Impression', value: 'Actual interpretation' },
+  ] }));
+  assert.match(legacy, /<strong>Urine pH<\/strong><\/td><td>Acidic<\/td><td>Original laboratory description<\/td><td>Recorded legacy unit/);
+  assert.match(legacy, /Prior &lt;findings&gt;<br \/>Retained/);
+  assert.match(legacy, /Actual interpretation/);
+  const otherOnly = buildReportHtml(sampleReport({ name: 'Urine pH', parameters: [
+    { parameter_name: 'Blood pH', value: '7.40' },
+    { parameter_name: 'Reaction', value: 'Alkaline' },
+  ] }));
+  assert.match(otherOnly, /<strong>Urine pH<\/strong><\/td><td>-<\/td>/);
+  assert.match(otherOnly, /<strong>Blood pH<\/strong><\/td><td>7.40<\/td>/);
+  assert.match(otherOnly, /<strong>Reaction \/ Description, if recorded<\/strong><\/td><td colspan="3">Alkaline/);
+  const named = buildReportHtml(sampleReport({ name: 'Urine pH', parameters: [{ parameter_name: 'pH', value: '0' }] }));
+  assert.match(named, /<strong>Urine pH<\/strong><\/td><td>0<\/td>/);
+  const manual = buildReportHtml(sampleReport({ name: 'Urine pH', report_body: 'Manual format <retained>', parameters: [] }));
+  assert.match(manual, /Manual format &lt;retained&gt;/);
+  assert.doesNotMatch(manual, /data-report-content="urine-ph"/);
+  for (const name of ['Urine RE (Routine Examination)', 'Urine Phosphorus', 'Inorganic Phosphorus (Urine)', 'Urine Porphobilinogen', 'Stool RE + Red Sub + pH', 'Blood Gas Analysis, Arterial', 'Urine Urobilinogen']) assert.doesNotMatch(buildReportHtml(sampleReport({ name, parameters: [] })), /data-report-content="urine-ph"/);
+});
+
+test('Urine pH schema repair protects custom, used and bundled entries and preserves catalogue IDs', async () => {
+  const db = await fixture();
+  try {
+    for (let i = 0; i < 9; i++) {
+      await db.run('INSERT INTO tests (id,name,category,sample_type,report_body) VALUES (?,?,?,?,?)', [10010 + i, i === 6 ? 'Urine Phosphorus' : i === 7 ? 'pH (Urine)' : 'Urine pH', 'Imported legacy catalogue', i === 5 ? 'Serum' : null, i === 4 ? 'Manual format' : null]);
+      await db.run('INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,?,?,?,?,?)', [10010 + i, 'Result', '', i === 3 ? 'Custom reference' : '', 'manual', 1]);
+    }
+    const original = await db.get('SELECT id FROM test_parameters WHERE test_id=10010');
+    await db.run('INSERT INTO visit_tests VALUES (10011)');
+    await db.run('INSERT INTO test_bundle_items VALUES (999,10012)');
+    await db.run('INSERT INTO test_bundle_items VALUES (10018,999)');
+    await ensureUrinePhTestConfiguration(db);
+    for (const id of [10010, 10017]) {
+      const fields = await db.all('SELECT * FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(p => p.parameter_name), getFallbackReportParameters({ name: 'Urine pH' }).map(p => p.parameterName));
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, 'Urine');
+      if (id === 10010) assert.equal(fields[0].id, original.id);
+    }
+    for (const i of [1,2,3,4,5,6,8]) assert.equal((await db.get('SELECT COUNT(*) AS n FROM test_parameters WHERE test_id=?', [10010 + i])).n, 1);
+    assert.equal((await db.get('SELECT COUNT(*) AS n FROM tests WHERE id BETWEEN 10010 AND 10018')).n, 9);
+    await db.run("UPDATE test_parameters SET normal_range='Local override' WHERE test_id=10010 AND display_order=1");
+    await ensureUrinePhTestConfiguration(db);
+    assert.equal((await db.get('SELECT normal_range FROM test_parameters WHERE test_id=10010 AND display_order=1')).normal_range, 'Local override');
+  } finally { await db.close(); }
+});
+
+test('Urine Urobilinogen preserves method-specific values and references with explanatory notes', () => {
+  for (const name of ['Urine Urobilinogen', 'UrineUrobilinogen', 'Urobilinogen (Urine)', 'Urobilinogen, Urine', 'Urobilinogen Urine Test']) {
+    const input = { name, parameters: [
+      { parameter_name: 'Urobilinogen, Urine', value: '8', unit: 'µmol/L', normal_range: 'Validated local interval' },
+      { parameter_name: 'Reporting Category / Grade, if supplied', value: 'Reported local category' },
+      { parameter_name: 'Specimen / Collection Type', value: 'Fresh random urine' },
+      { parameter_name: 'Collection Date / Time', value: '2026-10-14 12:00' },
+      { parameter_name: 'Method / Reagent / Analyzer', value: 'Actual laboratory reagent' },
+      { parameter_name: 'Specimen Handling / Quality, if supplied', value: 'Recorded handling' },
+      { parameter_name: 'Comments / Limitations', value: 'Review <history>\nCorrelate clinically' },
+    ], additional_report_text: 'Doctor advice' };
+    const original = JSON.stringify(input);
+    const html = buildReportHtml(sampleReport(input));
+    assert.match(html, /<div class="test-title">URINE UROBILINOGEN<\/div>/);
+    assert.match(html, /data-report-content="urine-urobilinogen"/);
+    assert.match(html, /<strong>Urobilinogen, Urine<\/strong><\/td><td>8<\/td><td>Validated local interval<\/td><td>µmol\/L/);
+    assert.match(html, /Actual laboratory reagent/);
+    assert.match(html, /Reported local category/);
+    assert.match(html, /Recorded handling/);
+    assert.match(html, /Review &lt;history&gt;<br \/>Correlate clinically/);
+    assert.match(html, /Manufacturer example only/);
+    assert.match(html, /not a universal interval or evidence that this reagent was used/);
+    assert.match(html, /small amounts normally appear in urine/);
+    assert.ok(html.indexOf('Doctor advice') > html.indexOf('Correlate clinically'));
+    assert.ok(html.indexOf('Doctor advice') < html.indexOf('<div class="single-analyte-notes report-template-notes urine-urobilinogen-notes">'));
+    assert.equal(JSON.stringify(input), original);
+    const schema = getFallbackReportParameters({ name });
+    assert.equal(schema.length, 9);
+    assert.equal(schema[0].unit, '');
+    assert.doesNotMatch(schema[0].normalRange, /Negative|0\.2/);
+    assert.ok(schema.every(p => p.entryMode === 'manual'));
+  }
+});
+
+test('Urine Urobilinogen keeps missing results blank and does not substitute bilirubin or porphobilinogen', () => {
+  const blank = buildReportHtml(sampleReport({ name: 'Urine Urobilinogen', parameters: [] }));
+  assert.match(blank, /<strong>Urobilinogen, Urine<\/strong><\/td><td>-<\/td><td>Laboratory-validated method-specific range \/ category<\/td><td><\/td>/);
+  assert.doesNotMatch(blank, /<strong>Reporting Category \/ Grade, if supplied<\/strong>|<strong>Specimen Handling \/ Quality, if supplied<\/strong>/);
+  const legacy = buildReportHtml(sampleReport({ name: 'Urine Urobilinogen', parameters: [
+    { parameter_name: 'Result', value: '0', unit: 'EU/dL', normal_range: 'Local Ehrlich-unit reference' },
+    { parameter_name: 'Findings', value: 'Prior <findings>\nRetained' },
+    { parameter_name: 'Impression', value: 'Actual interpretation' },
+  ] }));
+  assert.match(legacy, /<strong>Urobilinogen, Urine<\/strong><\/td><td>0<\/td><td>Local Ehrlich-unit reference<\/td><td>EU\/dL/);
+  assert.match(legacy, /Prior &lt;findings&gt;<br \/>Retained/);
+  assert.match(legacy, /Actual interpretation/);
+  const otherOnly = buildReportHtml(sampleReport({ name: 'Urine Urobilinogen', parameters: [
+    { parameter_name: 'Urine Bilirubin', value: 'Positive' },
+    { parameter_name: 'Porphobilinogen', value: 'Not detected' },
+  ] }));
+  assert.match(otherOnly, /<strong>Urobilinogen, Urine<\/strong><\/td><td>-<\/td>/);
+  assert.match(otherOnly, /<strong>Urine Bilirubin<\/strong><\/td><td>Positive<\/td>/);
+  assert.match(otherOnly, /<strong>Porphobilinogen<\/strong><\/td><td>Not detected<\/td>/);
+  const named = buildReportHtml(sampleReport({ name: 'Urine Urobilinogen', parameters: [{ parameter_name: 'Urobilinogen', value: 'Normal', normal_range: 'Actual reagent category' }] }));
+  assert.match(named, /<strong>Urobilinogen, Urine<\/strong><\/td><td>Normal<\/td><td>Actual reagent category<\/td><td><\/td>/);
+  const manual = buildReportHtml(sampleReport({ name: 'Urine Urobilinogen', report_body: 'Manual format <retained>', parameters: [] }));
+  assert.match(manual, /Manual format &lt;retained&gt;/);
+  assert.doesNotMatch(manual, /data-report-content="urine-urobilinogen"/);
+  for (const name of ['Urine Porphobilinogen', 'Urine Bilirubin', 'Urine RE (Routine Examination)', 'Urine Porphyrins', 'Bilirubin Total, Direct & Indirect', 'Urine Sugar']) assert.doesNotMatch(buildReportHtml(sampleReport({ name, parameters: [] })), /data-report-content="urine-urobilinogen"/);
+});
+
+test('Urine Urobilinogen schema repair protects used, bundled and custom fields and keeps parameter IDs', async () => {
+  const db = await fixture();
+  try {
+    for (let i = 0; i < 9; i++) {
+      await db.run('INSERT INTO tests (id,name,category,sample_type,report_body) VALUES (?,?,?,?,?)', [10000 + i, i === 6 ? 'Urine Porphobilinogen' : i === 7 ? 'Urobilinogen (Urine)' : 'Urine Urobilinogen', 'Imported legacy catalogue', i === 5 ? 'Serum' : null, i === 4 ? 'Manual format' : null]);
+      await db.run('INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,?,?,?,?,?)', [10000 + i, 'Result', i === 3 ? 'Custom unit' : '', '', 'manual', 1]);
+    }
+    const original = await db.get('SELECT id FROM test_parameters WHERE test_id=10000');
+    await db.run('INSERT INTO visit_tests VALUES (10001)');
+    await db.run('INSERT INTO test_bundle_items VALUES (999,10002)');
+    await db.run('INSERT INTO test_bundle_items VALUES (10008,999)');
+    await ensureUrineUrobilinogenTestConfiguration(db);
+    for (const id of [10000, 10007]) {
+      const fields = await db.all('SELECT * FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(p => p.parameter_name), getFallbackReportParameters({ name: 'Urine Urobilinogen' }).map(p => p.parameterName));
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, 'Urine');
+      if (id === 10000) assert.equal(fields[0].id, original.id);
+    }
+    for (const i of [1,2,3,4,5,6,8]) assert.equal((await db.get('SELECT COUNT(*) AS n FROM test_parameters WHERE test_id=?', [10000 + i])).n, 1);
+    assert.equal((await db.get('SELECT COUNT(*) AS n FROM tests WHERE id BETWEEN 10000 AND 10008')).n, 9);
+    await db.run("UPDATE test_parameters SET normal_range='Local override',unit='mg/dL' WHERE test_id=10000 AND display_order=1");
+    await ensureUrineUrobilinogenTestConfiguration(db);
+    const override = await db.get('SELECT unit,normal_range FROM test_parameters WHERE test_id=10000 AND display_order=1');
+    assert.deepEqual(override, { unit: 'mg/dL', normal_range: 'Local override' });
+  } finally { await db.close(); }
+});
+
+test('Urine Sugar reports actual result, method, grading and explanatory reference guidance', () => {
+  for (const name of ['Urine Sugar', 'UrineSugar', 'Urine Sugar Test', 'Sugar (Urine)', 'UnneSugar']) {
+    const input = { name, parameters: [
+      { parameter_name: 'Urine Sugar Result', value: 'Trace', normal_range: 'Negative - local reagent' },
+      { parameter_name: 'Grade / Semiquantitative Category, if reported', value: '+ (reported grade)' },
+      { parameter_name: 'Specimen / Collection Type', value: 'Random urine' },
+      { parameter_name: 'Collection Date / Time', value: '2026-10-14 11:00' },
+      { parameter_name: 'Method / Reagent', value: 'Actual glucose-specific reagent' },
+      { parameter_name: 'Reporting Basis / Measured Analyte', value: 'Qualitative glucose screen' },
+      { parameter_name: 'Comments / Limitations', value: 'Review <history>\nCorrelate with blood testing' },
+    ], additional_report_text: 'Doctor advice' };
+    const original = JSON.stringify(input);
+    const html = buildReportHtml(sampleReport(input));
+    assert.match(html, /<div class="test-title">URINE SUGAR<\/div>/);
+    assert.match(html, /data-report-content="urine-sugar"/);
+    assert.match(html, /<strong>Urine Sugar<\/strong><\/td><td>Trace<\/td><td>Negative - local reagent<\/td><td><\/td>/);
+    assert.match(html, /\+ \(reported grade\)/);
+    assert.match(html, /Actual glucose-specific reagent/);
+    assert.match(html, /Qualitative glucose screen/);
+    assert.match(html, /Review &lt;history&gt;<br \/>Correlate with blood testing/);
+    assert.match(html, /a negative urine result does not exclude high blood glucose or diabetes/);
+    assert.match(html, /Do not assume a Benedict-type result identifies glucose alone/);
+    assert.ok(html.indexOf('Doctor advice') > html.indexOf('Correlate with blood testing'));
+    assert.ok(html.indexOf('Doctor advice') < html.indexOf('<div class="single-analyte-notes report-template-notes urine-sugar-notes">'));
+    assert.equal(JSON.stringify(input), original);
+    const schema = getFallbackReportParameters({ name });
+    assert.equal(schema.length, 9);
+    assert.equal(schema[0].unit, '');
+    assert.ok(schema.every(p => p.entryMode === 'manual'));
+  }
+});
+
+test('Urine Sugar preserves legacy units and narratives without substituting blood glucose or reducing reactions', () => {
+  const blank = buildReportHtml(sampleReport({ name: 'Urine Sugar', parameters: [] }));
+  assert.match(blank, /<strong>Urine Sugar<\/strong><\/td><td>-<\/td>/);
+  assert.doesNotMatch(blank, /<strong>Grade \/ Semiquantitative Category, if reported<\/strong>/);
+  const legacy = buildReportHtml(sampleReport({ name: 'Urine Sugar', parameters: [
+    { parameter_name: 'Result', value: '0', unit: 'mmol/L', normal_range: 'Local quantitative interval' },
+    { parameter_name: 'Findings', value: 'Prior <findings>\nRetained' },
+    { parameter_name: 'Impression', value: 'Actual interpretation' },
+  ] }));
+  assert.match(legacy, /<strong>Urine Sugar<\/strong><\/td><td>0<\/td><td>Local quantitative interval<\/td><td>mmol\/L/);
+  assert.match(legacy, /Prior &lt;findings&gt;<br \/>Retained/);
+  assert.match(legacy, /Actual interpretation/);
+  const otherOnly = buildReportHtml(sampleReport({ name: 'Urine Sugar', parameters: [
+    { parameter_name: 'Blood Glucose', value: '150', unit: 'mg/dL' },
+    { parameter_name: 'Reducing Substances', value: 'Positive' },
+  ] }));
+  assert.match(otherOnly, /<strong>Urine Sugar<\/strong><\/td><td>-<\/td>/);
+  assert.match(otherOnly, /<strong>Blood Glucose<\/strong><\/td><td>150<\/td>/);
+  assert.match(otherOnly, /<strong>Reducing Substances<\/strong><\/td><td>Positive<\/td>/);
+  const namedGlucose = buildReportHtml(sampleReport({ name: 'Urine Sugar', parameters: [{ parameter_name: 'Glucose, Urine', value: '12', unit: 'mg/dL', normal_range: 'Local concentration interval' }] }));
+  assert.match(namedGlucose, /<strong>Urine Sugar<\/strong><\/td><td>12<\/td><td>Local concentration interval<\/td><td>mg\/dL/);
+  const manual = buildReportHtml(sampleReport({ name: 'Urine Sugar', report_body: 'Manual format <retained>', parameters: [] }));
+  assert.match(manual, /Manual format &lt;retained&gt;/);
+  assert.doesNotMatch(manual, /data-report-content="urine-sugar"/);
+  for (const name of ['Urine Glucose', 'Urine Reducing Substance', 'Urine RE (Routine Examination)', 'Glucose Random', 'Fasting Blood Sugar', 'Joint Fluid for Sugar', 'Pleural Fluid for Sugar']) assert.doesNotMatch(buildReportHtml(sampleReport({ name, parameters: [] })), /data-report-content="urine-sugar"/);
+});
+
+test('Urine Sugar schema repair changes only unused placeholders and protects existing history and custom formats', async () => {
+  const db = await fixture();
+  try {
+    for (let i = 0; i < 9; i++) {
+      await db.run('INSERT INTO tests (id,name,category,sample_type,report_body) VALUES (?,?,?,?,?)', [9990 + i, i === 6 ? 'Urine Glucose' : i === 7 ? 'UnneSugar' : 'Urine Sugar', 'Imported legacy catalogue', i === 5 ? 'Serum' : null, i === 4 ? 'Manual format' : null]);
+      await db.run('INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,?,?,?,?,?)', [9990 + i, 'Result', '', i === 3 ? 'Custom reference' : '', 'manual', 1]);
+    }
+    const original = await db.get('SELECT id FROM test_parameters WHERE test_id=9990');
+    await db.run('INSERT INTO visit_tests VALUES (9991)');
+    await db.run('INSERT INTO test_bundle_items VALUES (999,9992)');
+    await db.run('INSERT INTO test_bundle_items VALUES (9998,999)');
+    await ensureUrineSugarTestConfiguration(db);
+    for (const id of [9990, 9997]) {
+      const fields = await db.all('SELECT * FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(p => p.parameter_name), getFallbackReportParameters({ name: 'Urine Sugar' }).map(p => p.parameterName));
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, 'Urine');
+      if (id === 9990) assert.equal(fields[0].id, original.id);
+    }
+    for (const i of [1,2,3,4,5,6,8]) assert.equal((await db.get('SELECT COUNT(*) AS n FROM test_parameters WHERE test_id=?', [9990 + i])).n, 1);
+    assert.equal((await db.get('SELECT COUNT(*) AS n FROM tests WHERE id BETWEEN 9990 AND 9998')).n, 9);
+    await db.run("UPDATE test_parameters SET normal_range='Local override' WHERE test_id=9990 AND display_order=1");
+    await ensureUrineSugarTestConfiguration(db);
+    assert.equal((await db.get('SELECT normal_range FROM test_parameters WHERE test_id=9990 AND display_order=1')).normal_range, 'Local override');
+  } finally { await db.close(); }
+});
+
+test('Urine Reducing Substance reports actual screen, method and grade with non-specific interpretation', () => {
+  for (const name of ['Urine Reducing Substance', 'Urine Reducing Substances', 'Reducing Substances (Urine)', 'Urine for Reducing Substances', 'UrineRedusing Substence', 'UrnineRedusing Substance']) {
+    const input = { name, parameters: [
+      { parameter_name: 'Urine Reducing Substances Result', value: 'Positive', normal_range: 'Negative - local method' },
+      { parameter_name: 'Grade / Semiquantitative Category, if reported', value: '++ (local category)' },
+      { parameter_name: 'Specimen / Collection Type', value: 'Fresh random urine' },
+      { parameter_name: 'Collection Date / Time', value: '2026-10-14 10:00' },
+      { parameter_name: 'Method / Reagent', value: 'Recorded laboratory reagent' },
+      { parameter_name: 'Observed Reaction, if recorded', value: 'Recorded colour' },
+      { parameter_name: 'Laboratory Interpretation', value: 'Review <history>\nConfirm as indicated' },
+    ], additional_report_text: 'Doctor advice' };
+    const original = JSON.stringify(input);
+    const html = buildReportHtml(sampleReport(input));
+    assert.match(html, /<div class="test-title">URINE REDUCING SUBSTANCES<\/div>/);
+    assert.match(html, /data-report-content="urine-reducing-substances"/);
+    assert.match(html, /<strong>Urine Reducing Substances<\/strong><\/td><td>Positive<\/td><td>Negative - local method<\/td><td><\/td>/);
+    assert.match(html, /\+\+ \(local category\)/);
+    assert.match(html, /Fresh random urine/);
+    assert.match(html, /Recorded laboratory reagent/);
+    assert.match(html, /Recorded colour/);
+    assert.match(html, /Review &lt;history&gt;<br \/>Confirm as indicated/);
+    assert.match(html, /no concentration is inferred from a reaction colour or plus grade/);
+    assert.match(html, /urine sugar chromatography/);
+    assert.ok(html.indexOf('Doctor advice') > html.indexOf('Confirm as indicated'));
+    assert.ok(html.indexOf('Doctor advice') < html.indexOf('<div class="single-analyte-notes report-template-notes urine-reducing-substances-notes">'));
+    assert.equal(JSON.stringify(input), original);
+    const schema = getFallbackReportParameters({ name });
+    assert.equal(schema.length, 9);
+    assert.equal(schema[0].unit, '');
+    assert.ok(schema.every(p => p.entryMode === 'manual'));
+  }
+});
+
+test('Urine Reducing Substance preserves legacy and quantitative values without inventing glucose or negative results', () => {
+  const blank = buildReportHtml(sampleReport({ name: 'Urine Reducing Substance', parameters: [] }));
+  assert.match(blank, /<strong>Urine Reducing Substances<\/strong><\/td><td>-<\/td>/);
+  assert.doesNotMatch(blank, /<strong>Grade \/ Semiquantitative Category, if reported<\/strong>|<strong>Observed Reaction, if recorded<\/strong>/);
+  const legacy = buildReportHtml(sampleReport({ name: 'Urine Reducing Substance', parameters: [
+    { parameter_name: 'Result', value: '0', unit: 'g/dL', normal_range: 'Validated local interval' },
+    { parameter_name: 'Urine Glucose', value: 'Not detected', normal_range: 'Separate assay reference' },
+    { parameter_name: 'Findings', value: 'Prior <findings>\nRetained' },
+    { parameter_name: 'Comments', value: 'Preserve comment' },
+  ] }));
+  assert.match(legacy, /<strong>Urine Reducing Substances<\/strong><\/td><td>0<\/td><td>Validated local interval<\/td><td>g\/dL/);
+  assert.match(legacy, /<strong>Urine Glucose<\/strong><\/td><td>Not detected<\/td><td>Separate assay reference/);
+  assert.match(legacy, /Prior &lt;findings&gt;<br \/>Retained/);
+  assert.match(legacy, /Preserve comment/);
+  const glucoseOnly = buildReportHtml(sampleReport({ name: 'Urine Reducing Substance', parameters: [{ parameter_name: 'Urine Glucose', value: 'Positive' }] }));
+  assert.match(glucoseOnly, /<strong>Urine Reducing Substances<\/strong><\/td><td>-<\/td>/);
+  const manual = buildReportHtml(sampleReport({ name: 'Urine Reducing Substance', report_body: 'Custom body <retained>', parameters: [] }));
+  assert.match(manual, /Custom body &lt;retained&gt;/);
+  assert.doesNotMatch(manual, /data-report-content="urine-reducing-substances"/);
+  for (const name of ['Urine RE (Routine Examination)', 'Urine Glucose', 'Glucose Random', 'Urine Protein / Albumin', 'Stool RE + Red Sub + pH', 'Stool Reducing Substances']) assert.doesNotMatch(buildReportHtml(sampleReport({ name, parameters: [] })), /data-report-content="urine-reducing-substances"/);
+});
+
+test('Urine Reducing Substance schema repair keeps both catalogue entries and protects used or custom formats', async () => {
+  const db = await fixture();
+  try {
+    for (let i = 0; i < 9; i++) {
+      await db.run('INSERT INTO tests (id,name,category,sample_type,report_body) VALUES (?,?,?,?,?)', [9980 + i, i === 6 ? 'Stool Reducing Substances' : i === 7 ? 'UrineRedusing Substence' : 'Urine Reducing Substance', 'Imported legacy catalogue', i === 5 ? 'Stool' : null, i === 4 ? 'Manual format' : null]);
+      await db.run('INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,?,?,?,?,?)', [9980 + i, 'Result', i === 3 ? 'Custom unit' : '', '', 'manual', 1]);
+    }
+    const original = await db.get('SELECT id FROM test_parameters WHERE test_id=9980');
+    await db.run('INSERT INTO visit_tests VALUES (9981)');
+    await db.run('INSERT INTO test_bundle_items VALUES (999,9982)');
+    await db.run('INSERT INTO test_bundle_items VALUES (9988,999)');
+    await ensureUrineReducingSubstancesTestConfiguration(db);
+    for (const id of [9980, 9987]) {
+      const fields = await db.all('SELECT * FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(p => p.parameter_name), getFallbackReportParameters({ name: 'Urine Reducing Substance' }).map(p => p.parameterName));
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, 'Urine');
+      if (id === 9980) assert.equal(fields[0].id, original.id);
+    }
+    for (const i of [1,2,3,4,5,6,8]) assert.equal((await db.get('SELECT COUNT(*) AS n FROM test_parameters WHERE test_id=?', [9980 + i])).n, 1);
+    assert.equal((await db.get('SELECT name FROM tests WHERE id=9987')).name, 'UrineRedusing Substence');
+    assert.equal((await db.get('SELECT COUNT(*) AS n FROM tests WHERE id BETWEEN 9980 AND 9988')).n, 9);
+    await db.run("UPDATE test_parameters SET normal_range='Local override' WHERE test_id=9980 AND display_order=1");
+    await ensureUrineReducingSubstancesTestConfiguration(db);
+    assert.equal((await db.get('SELECT normal_range FROM test_parameters WHERE test_id=9980 AND display_order=1')).normal_range, 'Local override');
+  } finally { await db.close(); }
+});
+
+test('Urine RE provides physical, chemical and microscopic sections with manual results and explanatory notes', () => {
+  for (const name of ['Urine RE (Routine Examination)', 'Urine RE', 'Urine Routine Examination', 'Routine Urine Examination', 'Urinalysis']) {
+    const input = { name, parameters: [
+      { parameter_name: 'Colour', value: 'Pale yellow' },
+      { parameter_name: 'Specific Gravity', value: '1.020', normal_range: 'Local interval' },
+      { parameter_name: 'pH', value: '6.0' },
+      { parameter_name: 'Blood / Haemoglobin', value: 'Trace' },
+      { parameter_name: 'WBC / Pus Cells', value: '18', unit: 'cells/µL', normal_range: 'Analyzer-specific interval' },
+      { parameter_name: 'RBC', value: '0', unit: '/HPF' },
+      { parameter_name: 'Casts', value: 'Hyaline casts\nReview <finding>' },
+      { parameter_name: 'Comments / Limitations', value: 'Correlate clinically' },
+    ], additional_report_text: 'Doctor advice' };
+    const original = JSON.stringify(input);
+    const html = buildReportHtml(sampleReport(input));
+    assert.match(html, /<div class="test-title">URINE ROUTINE EXAMINATION \(RE\)<\/div>/);
+    assert.match(html, /data-report-content="urine-routine-examination"/);
+    for (const section of ['PHYSICAL EXAMINATION', 'CHEMICAL EXAMINATION', 'MICROSCOPIC EXAMINATION']) assert.match(html, new RegExp(section));
+    assert.match(html, />1.020<\/td><td>Local interval<\/td>/);
+    assert.match(html, />18<\/td><td>Analyzer-specific interval<\/td><td>cells\/µL/);
+    assert.match(html, /<strong>RBC<\/strong><\/td><td>0<\/td>/);
+    assert.match(html, /Hyaline casts<br \/>Review &lt;finding&gt;/);
+    assert.match(html, /Counts per high-power field and automated counts per microlitre are not interchangeable/);
+    assert.ok(html.indexOf('Doctor advice') > html.indexOf('Correlate clinically'));
+    assert.ok(html.indexOf('Doctor advice') < html.indexOf('<div class="single-analyte-notes report-template-notes urine-routine-notes">'));
+    assert.equal(JSON.stringify(input), original);
+    const schema = getFallbackReportParameters({ name });
+    assert.equal(schema.length, 30);
+    assert.ok(schema.every(p => p.entryMode === 'manual'));
+  }
+});
+
+test('Urine RE preserves legacy narratives and custom results without inventing negative findings', () => {
+  const blank = buildReportHtml(sampleReport({ name: 'Urine RE', parameters: [] }));
+  assert.match(blank, /<strong>Glucose<\/strong><\/td><td>-<\/td>/);
+  assert.match(blank, /<strong>RBC<\/strong><\/td><td>-<\/td>/);
+  assert.doesNotMatch(blank, /<strong>Bile Salts, if performed<\/strong>|<strong>Parasites \/ Trichomonas, if examined<\/strong>/);
+  const legacy = buildReportHtml(sampleReport({ name: 'Urine RE', parameters: [
+    { parameter_name: 'Findings', value: 'Historical <findings>\nRetained' },
+    { parameter_name: 'Impression', value: 'Prior impression' },
+    { parameter_name: 'Custom Analyte', value: '12', unit: 'local unit', normal_range: 'Local range' },
+    { parameter_name: 'Bile Salts', value: 'Not detected' },
+  ] }));
+  assert.match(legacy, /Historical &lt;findings&gt;<br \/>Retained/);
+  assert.match(legacy, /<strong>Laboratory Interpretation<\/strong><\/td><td colspan="3">Prior impression/);
+  assert.match(legacy, /<strong>Custom Analyte<\/strong><\/td><td>12<\/td><td>Local range<\/td><td>local unit/);
+  assert.match(legacy, /<strong>Bile Salts, if performed<\/strong><\/td><td>Not detected/);
+  assert.match(legacy, /<strong>Colour<\/strong><\/td><td>-<\/td>/);
+  const manual = buildReportHtml(sampleReport({ name: 'Urine RE', report_body: 'Existing manual body <retained>', parameters: [] }));
+  assert.match(manual, /Existing manual body &lt;retained&gt;/);
+  assert.doesNotMatch(manual, /data-report-content="urine-routine-examination"/);
+  for (const name of ['Urine Protein / Albumin', 'Urine Reducing Substance', 'Urine Culture', 'Stool RE', 'Urine Protein 24 Hours']) assert.doesNotMatch(buildReportHtml(sampleReport({ name, parameters: [] })), /data-report-content="urine-routine-examination"/);
+});
+
+test('Urine RE schema repair expands only unused placeholders and retains test and parameter IDs', async () => {
+  const db = await fixture();
+  try {
+    for (let i = 0; i < 8; i++) {
+      await db.run('INSERT INTO tests (id,name,category,sample_type,report_body) VALUES (?,?,?,?,?)', [9970 + i, i === 6 ? 'Urine Reducing Substance' : i === 7 ? 'Urine RE' : 'Urine RE (Routine Examination)', 'Imported legacy catalogue', i === 5 ? 'Serum' : null, i === 4 ? 'Custom body' : null]);
+      for (const [order, name] of ['Findings', 'Impression', 'Comments'].entries()) await db.run('INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,?,?,?,?,?)', [9970 + i, name, '', i === 3 ? 'Custom reference' : '', 'manual', order + 1]);
+    }
+    const original = await db.all('SELECT id FROM test_parameters WHERE test_id=9970 ORDER BY display_order');
+    await db.run('INSERT INTO visit_tests VALUES (9971)');
+    await db.run('INSERT INTO test_bundle_items VALUES (9972,999)');
+    await ensureUrineRoutineTestConfiguration(db);
+    for (const id of [9970, 9977]) {
+      const fields = await db.all('SELECT * FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(p => p.parameter_name), getFallbackReportParameters({ name: 'Urine RE' }).map(p => p.parameterName));
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, 'Urine');
+      if (id === 9970) assert.deepEqual(fields.slice(0, 3).map(p => p.id), original.map(p => p.id));
+    }
+    for (let i = 1; i < 7; i++) assert.equal((await db.get('SELECT COUNT(*) AS n FROM test_parameters WHERE test_id=?', [9970 + i])).n, 3);
+    await db.run("UPDATE test_parameters SET normal_range='Local override' WHERE test_id=9970 AND parameter_name='pH'");
+    await ensureUrineRoutineTestConfiguration(db);
+    assert.equal((await db.get("SELECT normal_range FROM test_parameters WHERE test_id=9970 AND parameter_name='pH'")).normal_range, 'Local override');
+  } finally { await db.close(); }
+});
+
+test('24-hour Urine Protein separates concentration, daily excretion and verified collection details', () => {
+  for (const name of ['Urine Protein 24 Hours', '24 Hrs. Urinary Protein', '24 Hour Urine Protein', 'Total Protein (24 Hour Urine)']) {
+    const input = { name, parameters: [
+      { parameter_name: 'Total Urine Protein, 24 Hour', value: '180', unit: 'mg/24 h', normal_range: 'Local interval: 40 - 150' },
+      { parameter_name: 'Urine Protein Concentration', value: '12', unit: 'mg/dL' },
+      { parameter_name: 'Total Urine Volume', value: '1500', unit: 'mL' },
+      { parameter_name: 'Collection Duration', value: '24', unit: 'hours' },
+      { parameter_name: 'Collection Start Date / Time', value: '2026-10-13 07:00' },
+      { parameter_name: 'Collection End Date / Time', value: '2026-10-14 07:00' },
+      { parameter_name: 'Method / Analyzer', value: 'Actual laboratory method' },
+      { parameter_name: 'Collection Completeness / Comments', value: 'Complete collection\nReview <timing>' },
+    ], additional_report_text: 'Clinician advice' };
+    const original = JSON.stringify(input);
+    const html = buildReportHtml(sampleReport(input));
+    assert.match(html, /<div class="test-title">TOTAL PROTEIN, 24-HOUR URINE<\/div>/);
+    assert.match(html, /data-report-content="urine-protein-24-hour"/);
+    assert.match(html, />180<\/td><td>Local interval: 40 - 150<\/td><td>mg\/24 h/);
+    assert.match(html, /<strong>Urine Protein Concentration<\/strong><\/td><td>12<\/td>/);
+    assert.match(html, />1500<\/td>/);
+    assert.match(html, /2026-10-13 07:00/);
+    assert.match(html, /2026-10-14 07:00/);
+    assert.match(html, /Actual laboratory method/);
+    assert.match(html, /Complete collection<br \/>Review &lt;timing&gt;/);
+    assert.match(html, /&divide; 100/);
+    assert.match(html, /not albumin alone/);
+    assert.match(html, /no result is calculated automatically or extrapolated from partial timing/);
+    assert.ok(html.indexOf('Clinician advice') > html.indexOf('<strong>Clinical Details / Indication</strong>'));
+    assert.ok(html.indexOf('Clinician advice') < html.indexOf('<div class="single-analyte-notes report-template-notes urine-protein-24-hour-notes">'));
+    assert.equal(JSON.stringify(input), original);
+    const schema = getFallbackReportParameters({ name });
+    assert.equal(schema.length, 10);
+    assert.equal(schema[0].unit, 'mg/24 h');
+    assert.ok(schema.every(p => p.entryMode === 'manual'));
+  }
+});
+
+test('24-hour Urine Protein does not invent or extrapolate daily totals and preserves legacy units', () => {
+  const blank = buildReportHtml(sampleReport({ name: 'Urine Protein 24 Hours', parameters: [] }));
+  assert.match(blank, /<strong>Total Urine Protein, 24 Hour<\/strong><\/td><td>-<\/td>/);
+  const partial = buildReportHtml(sampleReport({ name: 'Urine Protein 24 Hours', parameters: [
+    { parameter_name: 'Urine Protein Concentration', value: '12' },
+    { parameter_name: 'Total Urine Volume', value: '1500' },
+    { parameter_name: 'Collection Duration', value: '12' },
+  ] }));
+  assert.match(partial, /<strong>Total Urine Protein, 24 Hour<\/strong><\/td><td>-<\/td>/);
+  const legacy = buildReportHtml(sampleReport({ name: 'Urine Protein 24 Hours', parameters: [{ parameter_name: 'Result', value: '0', unit: 'g/24 h', normal_range: 'Laboratory g/24 h interval' }] }));
+  assert.match(legacy, />0<\/td><td>Laboratory g\/24 h interval<\/td><td>g\/24 h/);
+  const manual = buildReportHtml(sampleReport({ name: 'Urine Protein 24 Hours', report_body: 'Manual notes <retained>', parameters: [] }));
+  assert.match(manual, /Manual notes &lt;retained&gt;/);
+  assert.doesNotMatch(manual, /data-report-content="urine-protein-24-hour"/);
+  for (const name of ['Urine Protein / Albumin', 'Urine Protein - Creatinine Ratio (UPCR)', 'Albumin Creatinine Ratio', 'Microalbumin (Urine)', 'Total Protein']) {
+    assert.doesNotMatch(buildReportHtml(sampleReport({ name, parameters: [] })), /data-report-content="urine-protein-24-hour"/);
+  }
+});
+
+test('24-hour Urine Protein schema repair supports both names without deleting or overwriting custom entries', async () => {
+  const db = await fixture();
+  try {
+    for (let i = 0; i < 8; i++) {
+      await db.run('INSERT INTO tests (id,name,category,sample_type,report_body) VALUES (?,?,?,?,?)', [9960 + i, i === 6 ? 'Urine Protein / Albumin' : i === 7 ? '24 Hrs. Urinary Protein' : 'Urine Protein 24 Hours', 'Imported legacy catalogue', i === 5 ? 'Random urine' : null, i === 4 ? 'Manual notes' : null]);
+      await db.run('INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,?,?,?,?,?)', [9960 + i, 'Result', i === 3 ? 'Custom unit' : '', '', 'manual', 1]);
+    }
+    await db.run('INSERT INTO visit_tests VALUES (9961)');
+    await db.run('INSERT INTO test_bundle_items VALUES (999, 9962)');
+    await ensure24HourUrineProteinTestConfiguration(db);
+    for (const id of [9960, 9967]) {
+      const fields = await db.all('SELECT * FROM test_parameters WHERE test_id=? ORDER BY display_order', [id]);
+      assert.deepEqual(fields.map(p => p.parameter_name), getFallbackReportParameters({ name: 'Urine Protein 24 Hours' }).map(p => p.parameterName));
+      assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=?', [id])).sample_type, '24-hour urine collection');
+    }
+    for (let i = 1; i < 7; i++) assert.equal((await db.get('SELECT COUNT(*) AS n FROM test_parameters WHERE test_id=?', [9960 + i])).n, 1);
+    await db.run("UPDATE test_parameters SET normal_range='Local override' WHERE test_id=9960 AND display_order=1");
+    await ensure24HourUrineProteinTestConfiguration(db);
+    assert.equal((await db.get('SELECT normal_range FROM test_parameters WHERE test_id=9960 AND display_order=1')).normal_range, 'Local override');
+    assert.equal((await db.get('SELECT name FROM tests WHERE id=9967')).name, '24 Hrs. Urinary Protein');
+  } finally { await db.close(); }
+});
+
+test('Urine Protein Albumin uses method-specific screening results without inferring creatinine ratios', () => {
+  for (const name of ['Urine Protein / Albumin', 'Urine Protein/Albumin', 'UnneProtein/Albumin', 'Protein / Albumin (Urine)']) {
+    const input = { name, parameters: [
+      { parameter_name: 'Urine Protein / Albumin Result', value: 'Trace', normal_range: 'Negative - laboratory reagent' },
+      { parameter_name: 'Grade / Semiquantitative Category, if reported', value: 'Trace (local category)' },
+      { parameter_name: 'Specimen / Collection Type', value: 'Random urine' },
+      { parameter_name: 'Collection Date / Time', value: '2026-10-14 09:00' },
+      { parameter_name: 'Method / Reagent', value: 'Recorded screening reagent' },
+      { parameter_name: 'Reporting Basis / Measured Analyte', value: 'Qualitative urine protein screen' },
+      { parameter_name: 'Comments / Limitations', value: 'Reviewed\nCheck <collection>' },
+    ], additional_report_text: 'Clinician advice' };
+    const original = JSON.stringify(input);
+    const html = buildReportHtml(sampleReport(input));
+    assert.match(html, /<div class="test-title">URINE PROTEIN \/ ALBUMIN<\/div>/);
+    assert.match(html, /data-report-content="urine-protein-albumin"/);
+    assert.match(html, />Trace<\/td><td>Negative - laboratory reagent<\/td><td><\/td>/);
+    assert.match(html, /Trace \(local category\)/);
+    assert.match(html, /Recorded screening reagent/);
+    assert.match(html, /Random urine/);
+    assert.match(html, /Reviewed<br \/>Check &lt;collection&gt;/);
+    assert.match(html, /A grade is not an exact protein concentration/);
+    assert.match(html, /may miss some non-albumin proteins/);
+    assert.match(html, /does not establish that total protein and albumin were measured separately/);
+    assert.ok(html.indexOf('Clinician advice') > html.indexOf('<strong>Comments / Limitations</strong>'));
+    assert.ok(html.indexOf('Clinician advice') < html.indexOf('<div class="single-analyte-notes report-template-notes urine-protein-albumin-notes">'));
+    assert.equal(JSON.stringify(input), original);
+    const schema = getFallbackReportParameters({ name });
+    assert.equal(schema.length, 8);
+    assert.equal(schema[0].unit, '');
+    assert.ok(schema.every(p => p.entryMode === 'manual'));
+  }
+});
+
+test('Urine Protein Albumin preserves blank, numerical and separately recorded protein/albumin values', () => {
+  const blank = buildReportHtml(sampleReport({ name: 'Urine Protein / Albumin', parameters: [] }));
+  assert.match(blank, /<strong>Urine Protein \/ Albumin Result<\/strong><\/td><td>-<\/td>/);
+  assert.doesNotMatch(blank, /<strong>Grade \/ Semiquantitative Category<\/strong>/);
+  const quantitative = buildReportHtml(sampleReport({ name: 'Urine Protein / Albumin', parameters: [
+    { parameter_name: 'Result', value: '0', normal_range: 'Laboratory quantitative interval', unit: 'mg/dL' },
+  ] }));
+  assert.match(quantitative, />0<\/td><td>Laboratory quantitative interval<\/td><td>mg\/dL/);
+  const separate = buildReportHtml(sampleReport({ name: 'Urine Protein / Albumin', parameters: [
+    { parameter_name: 'Urine Protein', value: '14', unit: 'mg/dL', normal_range: 'Protein interval' },
+    { parameter_name: 'Urine Albumin', value: '8', unit: 'mg/L', normal_range: 'Albumin interval' },
+  ] }));
+  assert.match(separate, /<strong>Protein, Urine \(reported\)<\/strong><\/td><td>14<\/td><td>Protein interval<\/td><td>mg\/dL/);
+  assert.match(separate, /<strong>Albumin, Urine \(reported\)<\/strong><\/td><td>8<\/td><td>Albumin interval<\/td><td>mg\/L/);
+  const manual = buildReportHtml(sampleReport({ name: 'Urine Protein / Albumin', report_body: 'Custom notes <retained>', parameters: [] }));
+  assert.match(manual, /Custom notes &lt;retained&gt;/);
+  assert.doesNotMatch(manual, /data-report-content="urine-protein-albumin"/);
+  for (const name of ['Urine Protein 24 Hours', 'Urine Protein - Creatinine Ratio (UPCR)', 'Albumin Creatinine Ratio', 'Microalbumin (Urine)', 'Albumin']) {
+    assert.doesNotMatch(buildReportHtml(sampleReport({ name, parameters: [] })), /data-report-content="urine-protein-albumin"/);
+  }
+});
+
+test('Urine Protein Albumin fills only unused blank urine entries and preserves related assays', async () => {
+  const db = await fixture();
+  try {
+    for (let i = 0; i < 7; i++) {
+      await db.run('INSERT INTO tests (id,name,category,sample_type,report_body) VALUES (?,?,?,?,?)', [9950 + i, i === 6 ? 'Urine Protein 24 Hours' : 'Urine Protein / Albumin', 'Imported legacy catalogue', i === 5 ? 'Serum' : null, i === 4 ? 'Manual report body' : null]);
+      await db.run('INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,?,?,?,?,?)', [9950 + i, 'Result', i === 3 ? 'Lab unit' : '', '', 'manual', 1]);
+    }
+    await db.run('INSERT INTO visit_tests VALUES (9951)');
+    await db.run('INSERT INTO test_bundle_items VALUES (9952, 999)');
+    await ensureUrineProteinAlbuminTestConfiguration(db);
+    const fields = await db.all('SELECT * FROM test_parameters WHERE test_id=9950 ORDER BY display_order');
+    assert.deepEqual(fields.map(p => p.parameter_name), getFallbackReportParameters({ name: 'Urine Protein / Albumin' }).map(p => p.parameterName));
+    assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=9950')).sample_type, 'Urine');
+    for (let i = 1; i < 7; i++) assert.equal((await db.get('SELECT COUNT(*) AS n FROM test_parameters WHERE test_id=?', [9950 + i])).n, 1);
+    await db.run("UPDATE test_parameters SET normal_range='Local override' WHERE test_id=9950 AND display_order=1");
+    await ensureUrineProteinAlbuminTestConfiguration(db);
+    assert.equal((await db.get('SELECT normal_range FROM test_parameters WHERE test_id=9950 AND display_order=1')).normal_range, 'Local override');
+  } finally { await db.close(); }
+});
+
+test('Urine Pregnancy Test uses a qualitative urine hCG format with laboratory-entered method and validity', () => {
+  for (const name of ['Urine Pregnancy Test', 'Pregnancy Test (Urine)', 'UnnePregnancyTest', 'Urine hCG Qualitative']) {
+    const input = { name, parameters: [
+      { parameter_name: 'Urine hCG, Qualitative Result', value: 'Positive', normal_range: 'Negative - kit-specific' },
+      { parameter_name: 'Collection Date / Time', value: '2026-10-14 09:00' },
+      { parameter_name: 'Method / Assay', value: 'Recorded urine hCG method' },
+      { parameter_name: 'Kit / Platform', value: 'Actual laboratory kit' },
+      { parameter_name: 'Assay Cut-off / Detection Limit, if supplied', value: '20', unit: 'mIU/mL' },
+      { parameter_name: 'Control / Test Validity, if applicable', value: 'Valid control - recorded' },
+      { parameter_name: 'Comments / Limitations', value: 'Clinical follow-up\nReview <timing>' },
+    ], additional_report_text: 'Clinician-entered advice' };
+    const original = JSON.stringify(input);
+    const html = buildReportHtml(sampleReport(input));
+    assert.match(html, /<div class="test-title">URINE PREGNANCY TEST \(QUALITATIVE hCG\)<\/div>/);
+    assert.match(html, /data-report-content="urine-pregnancy-test"/);
+    assert.match(html, />Positive<\/td><td>Negative - kit-specific<\/td><td><\/td>/);
+    assert.match(html, /Recorded urine hCG method/);
+    assert.match(html, /Actual laboratory kit/);
+    assert.match(html, />20<\/td><td>Manufacturer \/ laboratory-validated limit<\/td><td>mIU\/mL/);
+    assert.match(html, /Valid control - recorded/);
+    assert.match(html, /Clinical follow-up<br \/>Review &lt;timing&gt;/);
+    assert.match(html, /Testing too early or using dilute urine/);
+    assert.match(html, /Do not treat an invalid test as negative/);
+    assert.ok(html.indexOf('Clinician-entered advice') > html.indexOf('<strong>Comments / Limitations</strong>'));
+    assert.ok(html.indexOf('Clinician-entered advice') < html.indexOf('<div class="single-analyte-notes report-template-notes urine-pregnancy-notes">'));
+    assert.equal(JSON.stringify(input), original);
+    const schema = getFallbackReportParameters({ name });
+    assert.equal(schema.length, 9);
+    assert.equal(schema[0].unit, '');
+    assert.ok(schema.every(p => p.entryMode === 'manual'));
+  }
+});
+
+test('Urine Pregnancy Test keeps unreported results and cut-offs blank without implying valid or negative', () => {
+  const blank = buildReportHtml(sampleReport({ name: 'Urine Pregnancy Test', parameters: [] }));
+  assert.match(blank, /<strong>Urine hCG, Qualitative Result<\/strong><\/td><td>-<\/td>/);
+  assert.match(blank, /<strong>Control \/ Test Validity, if applicable<\/strong><\/td><td colspan="3">-<\/td>/);
+  assert.doesNotMatch(blank, /<strong>Assay Cut-off \/ Detection Limit<\/strong>/);
+  assert.doesNotMatch(blank, />25<\/td>/);
+  const invalid = buildReportHtml(sampleReport({ name: 'Urine Pregnancy Test', parameters: [
+    { parameter_name: 'Urine hCG, Qualitative Result', value: 'Invalid - repeat required' },
+    { parameter_name: 'Control / Test Validity, if applicable', value: 'Control not valid' },
+  ] }));
+  assert.match(invalid, />Invalid - repeat required<\/td>/);
+  assert.match(invalid, /Control not valid/);
+  const legacy = buildReportHtml(sampleReport({ name: 'Urine Pregnancy Test', parameters: [{ parameter_name: 'Result', value: 'Historical finding', normal_range: 'Historical reference' }] }));
+  assert.match(legacy, />Historical finding<\/td><td>Historical reference/);
+  const manual = buildReportHtml(sampleReport({ name: 'Urine Pregnancy Test', report_body: 'Lab note <preserved>', parameters: [] }));
+  assert.match(manual, /Lab note &lt;preserved&gt;/);
+  assert.doesNotMatch(manual, /data-report-content="urine-pregnancy-test"/);
+  for (const name of ['Pregnancy Elisa Test', 'HCG, Beta, Total, Pregnancy', 'Free Beta hCG']) {
+    assert.doesNotMatch(buildReportHtml(sampleReport({ name, parameters: [] })), /data-report-content="urine-pregnancy-test"/);
+  }
+});
+
+test('Urine Pregnancy Test expands only unused blank urine placeholders and preserves serum/custom tests', async () => {
+  const db = await fixture();
+  try {
+    for (let i = 0; i < 7; i++) {
+      await db.run('INSERT INTO tests (id,name,category,sample_type,report_body) VALUES (?,?,?,?,?)', [9940 + i, i === 6 ? 'Pregnancy Elisa Test' : 'Urine Pregnancy Test', 'Imported legacy catalogue', i === 5 ? 'Serum' : null, i === 4 ? 'Manual notes' : null]);
+      await db.run('INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,?,?,?,?,?)', [9940 + i, 'Result', '', i === 3 ? 'Custom interval' : '', 'manual', 1]);
+    }
+    await db.run('INSERT INTO visit_tests VALUES (9941)');
+    await db.run('INSERT INTO test_bundle_items VALUES (9942, 999)');
+    await ensureUrinePregnancyTestConfiguration(db);
+    const fields = await db.all('SELECT * FROM test_parameters WHERE test_id=9940 ORDER BY display_order');
+    assert.deepEqual(fields.map(p => p.parameter_name), getFallbackReportParameters({ name: 'Urine Pregnancy Test' }).map(p => p.parameterName));
+    assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=9940')).sample_type, 'Urine');
+    for (let i = 1; i < 7; i++) assert.equal((await db.get('SELECT COUNT(*) AS n FROM test_parameters WHERE test_id=?', [9940 + i])).n, 1);
+    await db.run("UPDATE test_parameters SET normal_range='Local reference' WHERE test_id=9940 AND display_order=1");
+    await ensureUrinePregnancyTestConfiguration(db);
+    assert.equal((await db.get('SELECT normal_range FROM test_parameters WHERE test_id=9940 AND display_order=1')).normal_range, 'Local reference');
+  } finally { await db.close(); }
+});
+
+test('Urine Porphobilinogen preserves qualitative results and method-specific reference guidance', () => {
+  for (const name of ['Urine Porphobilinogen', 'Porphobilinogen (Urine)', 'Porphobilinogen (PBG), Urine', 'Urine PBG']) {
+    const input = { name, parameters: [
+      { parameter_name: 'Porphobilinogen (PBG), Urine', value: 'Not detected', normal_range: 'Laboratory screening reference' },
+      { parameter_name: 'Test / Reporting Basis', value: 'Qualitative screen' },
+      { parameter_name: 'Method / Analyzer', value: 'Laboratory-entered method' },
+      { parameter_name: 'Collection Date / Time', value: '2026-10-14 09:00' },
+      { parameter_name: 'Light Protection / Storage', value: 'Light-protected specimen' },
+      { parameter_name: 'Comments / Limitations', value: 'Reviewed\nConfirm <handling>' },
+    ] };
+    const original = JSON.stringify(input);
+    const html = buildReportHtml(sampleReport(input));
+    assert.match(html, /<div class="test-title">PORPHOBILINOGEN \(PBG\), URINE<\/div>/);
+    assert.match(html, /data-report-content="urine-porphobilinogen"/);
+    assert.match(html, />Not detected<\/td><td>Laboratory screening reference<\/td><td><\/td>/);
+    assert.match(html, /Qualitative screen/);
+    assert.match(html, /Laboratory-entered method/);
+    assert.match(html, /Light-protected specimen/);
+    assert.match(html, /Reviewed<br \/>Confirm &lt;handling&gt;/);
+    assert.match(html, /&le; 0\.2 mmol\/mol creatinine/);
+    assert.match(html, /it is not a concentration or a daily-excretion limit/);
+    assert.doesNotMatch(html, /<strong>PBG \/ Creatinine Ratio, if reported<\/strong>/);
+    assert.equal(JSON.stringify(input), original);
+    const schema = getFallbackReportParameters({ name });
+    assert.equal(schema.length, 14);
+    assert.equal(schema[0].unit, '');
+    assert.ok(schema.every(p => p.entryMode === 'manual'));
+  }
+});
+
+test('Urine Porphobilinogen retains quantitative units and zero without calculating missing values', () => {
+  const html = buildReportHtml(sampleReport({ name: 'Urine Porphobilinogen', parameters: [
+    { parameter_name: 'Porphobilinogen (PBG), Urine', value: '1.4', unit: 'mg/L', normal_range: 'Local concentration interval' },
+    { parameter_name: 'PBG / Creatinine Ratio, if reported', value: '0', unit: 'mmol/mol creatinine', normal_range: '0.0 - 0.2' },
+    { parameter_name: 'Total Urine Volume, if timed collection', value: '1500', unit: 'mL' },
+    { parameter_name: 'Collection Duration, if timed collection', value: '12', unit: 'hours' },
+  ], additional_report_text: 'Doctor-entered advice' }));
+  assert.match(html, />1\.4<\/td><td>Local concentration interval<\/td><td>mg\/L/);
+  assert.match(html, />0<\/td><td>0.0 - 0.2<\/td><td>mmol\/mol creatinine/);
+  assert.doesNotMatch(html, /<strong>PBG, 24-Hour Excretion, if reported<\/strong>/);
+  assert.ok(html.indexOf('Doctor-entered advice') > html.indexOf('<strong>Comments / Limitations</strong>'));
+  assert.ok(html.indexOf('Doctor-entered advice') < html.indexOf('<div class="single-analyte-notes report-template-notes urine-porphobilinogen-notes">'));
+  const blank = buildReportHtml(sampleReport({ name: 'Urine Porphobilinogen', parameters: [] }));
+  assert.match(blank, /<strong>Porphobilinogen \(PBG\), Urine<\/strong><\/td><td>-<\/td>/);
+  const legacy = buildReportHtml(sampleReport({ name: 'Urine Porphobilinogen', parameters: [{ parameter_name: 'Result', value: 'Historical finding', normal_range: 'Historical reference', unit: 'Lab unit' }] }));
+  assert.match(legacy, />Historical finding<\/td><td>Historical reference<\/td><td>Lab unit/);
+  const manual = buildReportHtml(sampleReport({ name: 'Urine Porphobilinogen', report_body: 'Manual note <retained>', parameters: [] }));
+  assert.match(manual, /Manual note &lt;retained&gt;/);
+  assert.doesNotMatch(manual, /data-report-content="urine-porphobilinogen"/);
+  for (const name of ['Urine Porphyrins', 'Urine Urobilinogen', 'Aminolevulinic Acid, Urine', 'Porphyrins and PBG, Urine']) {
+    assert.doesNotMatch(buildReportHtml(sampleReport({ name, parameters: [] })), /data-report-content="urine-porphobilinogen"/);
+  }
+});
+
+test('Urine Porphobilinogen upgrades only unused blank placeholders and preserves custom assays', async () => {
+  const db = await fixture();
+  try {
+    for (let i = 0; i < 7; i++) {
+      await db.run('INSERT INTO tests (id,name,category,sample_type,report_body) VALUES (?,?,?,?,?)', [9930 + i, i === 6 ? 'Urine Porphyrins' : 'Urine Porphobilinogen', 'Imported legacy catalogue', i === 5 ? 'Blood' : null, i === 4 ? 'Manual notes' : null]);
+      await db.run('INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,?,?,?,?,?)', [9930 + i, 'Result', i === 3 ? 'Custom unit' : '', '', 'manual', 1]);
+    }
+    await db.run('INSERT INTO visit_tests VALUES (9931)');
+    await db.run('INSERT INTO test_bundle_items VALUES (999, 9932)');
+    await ensureUrinePorphobilinogenTestConfiguration(db);
+    const fields = await db.all('SELECT * FROM test_parameters WHERE test_id=9930 ORDER BY display_order');
+    assert.deepEqual(fields.map(p => p.parameter_name), getFallbackReportParameters({ name: 'Urine Porphobilinogen' }).map(p => p.parameterName));
+    assert.match((await db.get('SELECT sample_type FROM tests WHERE id=9930')).sample_type, /protect from light/);
+    for (let i = 1; i < 7; i++) assert.equal((await db.get('SELECT COUNT(*) AS n FROM test_parameters WHERE test_id=?', [9930 + i])).n, 1);
+    await db.run("UPDATE test_parameters SET normal_range='Local interval' WHERE test_id=9930 AND display_order=1");
+    await ensureUrinePorphobilinogenTestConfiguration(db);
+    assert.equal((await db.get('SELECT normal_range FROM test_parameters WHERE test_id=9930 AND display_order=1')).normal_range, 'Local interval');
+  } finally { await db.close(); }
+});
+
+test('Urine OBT three-day series records independent urine dates, results and method-specific grades', () => {
+  for (const name of ['Urine OBT (3 Consecutive days)', 'Urine OBT (Three Consecutive Days)', 'Urine Occult Blood Test (3 Days)']) {
+    const input = { name, parameters: [
+      { parameter_name: 'Day 1 Collection Date / Time', value: '2026-10-12 08:00' },
+      { parameter_name: 'Day 1 Urine Blood / OBT Result', value: 'Not detected', normal_range: 'Laboratory reference' },
+      { parameter_name: 'Day 2 Collection Date / Time', value: '2026-10-13 08:00' },
+      { parameter_name: 'Day 2 Urine Blood / OBT Result', value: 'Trace' },
+      { parameter_name: 'Day 2 Grade, if reported', value: 'Local trace category' },
+      { parameter_name: 'Day 3 Collection Date / Time', value: '2026-10-14 08:00' },
+      { parameter_name: 'Method / Reagent', value: 'Recorded urine assay' },
+      { parameter_name: 'Comments / Specimen Limitations', value: 'Day 3 pending\nReview <collection>' },
+    ], additional_report_text: 'Clinician-entered advice' };
+    const original = JSON.stringify(input);
+    const html = buildReportHtml(sampleReport(input));
+    assert.match(html, /<div class="test-title">URINE OBT \(THREE CONSECUTIVE DAYS\)<\/div>/);
+    assert.match(html, /data-report-content="urine-obt-three-days"/);
+    assert.match(html, /2026-10-12 08:00/);
+    assert.match(html, /2026-10-13 08:00/);
+    assert.match(html, /<strong>Day 2<\/strong><\/td><td>2026-10-13 08:00<\/td><td>Trace<\/td><td>Local trace category/);
+    assert.match(html, /<strong>Day 3<\/strong><\/td><td>2026-10-14 08:00<\/td><td>-<\/td>/);
+    assert.match(html, /Day 3 pending<br \/>Review &lt;collection&gt;/);
+    assert.match(html, /not a stool occult blood test/);
+    assert.match(html, /does not establish microscopic haematuria/);
+    assert.equal(JSON.stringify(input), original);
+    const advicePosition = html.indexOf('Clinician-entered advice');
+    assert.ok(advicePosition > html.indexOf('<strong>Comments / Specimen Limitations</strong>'));
+    assert.ok(advicePosition < html.indexOf('<div class="single-analyte-notes report-template-notes urine-obt-three-day-notes">'));
+    assert.equal(getFallbackReportParameters({ name }).length, 13);
+    assert.ok(getFallbackReportParameters({ name }).every(p => p.entryMode === 'manual'));
+  }
+});
+
+test('Urine OBT three-day series leaves missing days blank and preserves unassigned historical results', () => {
+  const blank = buildReportHtml(sampleReport({ name: 'Urine OBT (3 Consecutive days)', parameters: [] }));
+  for (const day of [1, 2, 3]) assert.match(blank, new RegExp(`<strong>Day ${day}</strong></td><td>-</td><td>-</td><td>-</td>`));
+  const legacy = buildReportHtml(sampleReport({ name: 'Urine OBT (3 Consecutive days)', parameters: [{ parameter_name: 'Result', value: 'Old result <retained>' }] }));
+  assert.match(legacy, /Previously Recorded Result \(day not specified\)/);
+  assert.match(legacy, /Old result &lt;retained&gt;/);
+  assert.match(legacy, /<strong>Day 1<\/strong><\/td><td>-<\/td><td>-<\/td>/);
+  const manual = buildReportHtml(sampleReport({ name: 'Urine OBT (3 Consecutive days)', report_body: 'Custom notes <retained>', parameters: [] }));
+  assert.match(manual, /Custom notes &lt;retained&gt;/);
+  assert.doesNotMatch(manual, /data-report-content="urine-obt-three-days"/);
+  for (const name of ['Urine OBT', 'Stool OBT', 'Stool OBT + RE (3 Days)', 'Occult Blood Stool Examination']) {
+    assert.doesNotMatch(buildReportHtml(sampleReport({ name, parameters: [] })), /data-report-content="urine-obt-three-days"/);
+  }
+});
+
+test('Urine OBT three-day schema repair preserves used/custom tests and neighbouring stool tests', async () => {
+  const db = await fixture();
+  try {
+    for (let i = 0; i < 7; i++) {
+      await db.run('INSERT INTO tests (id,name,category,sample_type,report_body) VALUES (?,?,?,?,?)', [9920 + i, i === 6 ? 'Stool OBT + RE (3 Days)' : 'Urine OBT (3 Consecutive days)', 'Imported legacy catalogue', i === 5 ? 'Stool' : null, i === 4 ? 'Manual report body' : null]);
+      await db.run('INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,?,?,?,?,?)', [9920 + i, 'Result', '', i === 3 ? 'Custom interval' : '', 'manual', 1]);
+    }
+    await db.run('INSERT INTO visit_tests VALUES (9921)');
+    await db.run('INSERT INTO test_bundle_items VALUES (9922, 999)');
+    await ensureUrineObtThreeDayTestConfiguration(db);
+    const fields = await db.all('SELECT * FROM test_parameters WHERE test_id=9920 ORDER BY display_order');
+    assert.deepEqual(fields.map(p => p.parameter_name), getFallbackReportParameters({ name: 'Urine OBT (3 Consecutive days)' }).map(p => p.parameterName));
+    for (let i = 1; i < 7; i++) assert.equal((await db.get('SELECT COUNT(*) AS n FROM test_parameters WHERE test_id=?', [9920 + i])).n, 1);
+    await db.run("UPDATE test_parameters SET normal_range='Local interval' WHERE test_id=9920 AND display_order=2");
+    await ensureUrineObtThreeDayTestConfiguration(db);
+    assert.equal((await db.get('SELECT normal_range FROM test_parameters WHERE test_id=9920 AND display_order=2')).normal_range, 'Local interval');
+  } finally { await db.close(); }
+});
+
+test('Urinary VMA separates timed excretion, concentration and creatinine-normalized results', () => {
+  for (const name of ['Urinary V M A', 'Urinary VMA', 'VMA (Urine)', 'Vanillylmandelic Acid (VMA), Urine']) {
+    const html = buildReportHtml(sampleReport({ name, parameters: [
+      { parameter_name: 'VMA, 24-Hour Urine', value: '4.2', unit: 'mg/24 h', normal_range: 'Laboratory interval: 0 - 6' },
+      { parameter_name: 'VMA, Urine Concentration', value: '2.8', unit: 'mg/L' },
+      { parameter_name: 'VMA / Creatinine Ratio, if reported', value: '3.5', unit: 'mg/g creatinine', normal_range: 'Age-specific laboratory interval' },
+      { parameter_name: 'Total Urine Volume', value: '1500', unit: 'mL' },
+      { parameter_name: 'Collection Duration', value: '24', unit: 'hours' },
+      { parameter_name: 'Specimen / Collection Type', value: 'Complete timed urine' },
+      { parameter_name: 'Collection Completeness / Interpretation / Comments', value: 'Reviewed\nDiscuss <medications>' },
+    ] }));
+    assert.match(html, /<div class="test-title">URINARY VMA \(VANILLYLMANDELIC ACID\)<\/div>/);
+    assert.match(html, /data-report-content="urinary-vma"/);
+    assert.match(html, />4\.2<\/td><td>Laboratory interval: 0 - 6<\/td><td>mg\/24 h/);
+    assert.match(html, />2\.8<\/td><td>No established concentration reference interval<\/td><td>mg\/L/);
+    assert.match(html, />3\.5<\/td><td>Age-specific laboratory interval<\/td><td>mg\/g creatinine/);
+    assert.match(html, /Complete timed urine/);
+    assert.match(html, /Reviewed<br \/>Discuss &lt;medications&gt;/);
+    assert.match(html, /a normal result does not exclude a tumour/);
+    assert.match(html, /0 - 27/);
+    assert.equal(getFallbackReportParameters({ name }).length, 13);
+    assert.equal(getFallbackReportParameters({ name })[0].unit, 'mg/24 h');
+    assert.ok(getFallbackReportParameters({ name }).every(p => p.entryMode === 'manual'));
+  }
+});
+
+test('Urinary VMA preserves blank and legacy values without confusing concentration with daily excretion', () => {
+  const blank = buildReportHtml(sampleReport({ name: 'Urinary V M A', parameters: [] }));
+  assert.match(blank, /<strong>VMA, 24-Hour Urine<\/strong><\/td><td>-<\/td>/);
+  const partial = buildReportHtml(sampleReport({ name: 'Urinary V M A', parameters: [
+    { parameter_name: 'VMA, Urine Concentration', value: '2.8' },
+    { parameter_name: 'Total Urine Volume', value: '1500' },
+    { parameter_name: 'Collection Duration', value: '12' },
+  ] }));
+  assert.match(partial, /<strong>VMA, 24-Hour Urine<\/strong><\/td><td>-<\/td>/);
+  assert.match(partial, /<strong>VMA \/ Creatinine Ratio, if reported<\/strong><\/td><td>-<\/td>/);
+  const legacy = buildReportHtml(sampleReport({ name: 'Urinary V M A', parameters: [{ parameter_name: 'Result', value: '0', unit: 'Lab unit', normal_range: 'Lab range' }] }));
+  assert.match(legacy, />0<\/td><td>Lab range<\/td><td>Lab unit/);
+  const manual = buildReportHtml(sampleReport({ name: 'Urinary V M A', report_body: 'Preserve laboratory note <original>', parameters: [] }));
+  assert.match(manual, /Preserve laboratory note &lt;original&gt;/);
+  assert.doesNotMatch(manual, /data-report-content="urinary-vma"/);
+  for (const name of ['Homovanillic Acid (HVA), Urine', 'VMA & HVA, Urine', 'Urinary 17 Ketosteroid', 'Urinary 17 Oxysteriod', 'Metanephrines, Urine', 'VMA (Random Urine)']) {
+    assert.doesNotMatch(buildReportHtml(sampleReport({ name, parameters: [] })), /data-report-content="urinary-vma"/);
+  }
+});
+
+test('Urinary VMA upgrades only unused blank timed-urine placeholders and preserves custom schemas', async () => {
+  const db = await fixture();
+  try {
+    for (let i = 0; i < 7; i++) {
+      await db.run('INSERT INTO tests (id,name,category,sample_type,report_body) VALUES (?,?,?,?,?)', [9910 + i, i === 6 ? 'Urinary 17 Oxysteriod' : 'Urinary V M A', 'Imported legacy catalogue', i === 5 ? 'Random urine' : null, i === 4 ? 'Manual format' : null]);
+      await db.run('INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,?,?,?,?,?)', [9910 + i, 'Result', i === 3 ? 'Custom unit' : '', '', 'manual', 1]);
+    }
+    await db.run('INSERT INTO visit_tests VALUES (9911)');
+    await db.run('INSERT INTO test_bundle_items VALUES (999, 9912)');
+    await ensureUrinaryVmaTestConfiguration(db);
+    const fields = await db.all('SELECT * FROM test_parameters WHERE test_id=9910 ORDER BY display_order');
+    assert.deepEqual(fields.map(p => p.parameter_name), getFallbackReportParameters({ name: 'Urinary V M A' }).map(p => p.parameterName));
+    assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=9910')).sample_type, '24-hour urine collection');
+    for (let i = 1; i < 7; i++) assert.equal((await db.get('SELECT COUNT(*) AS n FROM test_parameters WHERE test_id=?', [9910 + i])).n, 1);
+    await db.run("UPDATE test_parameters SET normal_range='Local override' WHERE test_id=9910 AND display_order=1");
+    await ensureUrinaryVmaTestConfiguration(db);
+    assert.equal((await db.get('SELECT normal_range FROM test_parameters WHERE test_id=9910 AND display_order=1')).normal_range, 'Local override');
+  } finally { await db.close(); }
+});
+
+test('Urinary 17 Ketosteroid uses a complete timed-urine format with qualified reference guidance', () => {
+  for (const name of ['Urinary 17 Ketosteroid', 'Urinary 17-Ketosteroids', '17-Ketosteroids, Urine', '17-KS Urine']) {
+    const html = buildReportHtml(sampleReport({ name, parameters: [
+      { parameter_name: '17-Ketosteroids, 24-Hour Urine', value: '8.5', unit: 'mg/24 h', normal_range: 'Local interval: 4 - 12' },
+      { parameter_name: '17-Ketosteroids, Urine Concentration', value: '5.7', unit: 'mg/L' },
+      { parameter_name: 'Total Urine Volume', value: '1500', unit: 'mL' },
+      { parameter_name: 'Collection Duration', value: '24', unit: 'hours' },
+      { parameter_name: 'Collection Start Date / Time', value: '2026-10-13 07:00' },
+      { parameter_name: 'Collection End Date / Time', value: '2026-10-14 07:00' },
+      { parameter_name: 'Method / Analyzer', value: 'Laboratory-entered method' },
+      { parameter_name: 'Collection Completeness / Comments', value: 'Complete collection\nReview <medication>' },
+    ] }));
+    assert.match(html, /<div class="test-title">URINARY 17-KETOSTEROIDS, 24-HOUR URINE<\/div>/);
+    assert.match(html, /data-report-content="urinary-17-ketosteroids"/);
+    assert.match(html, />8\.5<\/td><td>Local interval: 4 - 12<\/td><td>mg\/24 h/);
+    assert.match(html, />5\.7<\/td>/);
+    assert.match(html, /Complete collection<br \/>Review &lt;medication&gt;/);
+    assert.match(html, /5\.3 - 17\.6/);
+    assert.match(html, /children need their own age-specific intervals/);
+    assert.match(html, /must not be compared with mg\/24 h limits/);
+    assert.equal(getFallbackReportParameters({ name })[0].unit, 'mg/24 h');
+    assert.equal(getFallbackReportParameters({ name }).length, 11);
+  }
+});
+
+test('Urinary 17 Ketosteroid preserves zero and legacy results without fabricating timed excretion', () => {
+  const blank = buildReportHtml(sampleReport({ name: 'Urinary 17 Ketosteroid', parameters: [] }));
+  assert.match(blank, /<strong>17-Ketosteroids, 24-Hour Urine<\/strong><\/td><td>-<\/td>/);
+  const partial = buildReportHtml(sampleReport({ name: 'Urinary 17 Ketosteroid', parameters: [
+    { parameter_name: '17-Ketosteroids, Urine Concentration', value: '5.7' },
+    { parameter_name: 'Total Urine Volume', value: '1500' },
+    { parameter_name: 'Collection Duration', value: '12' },
+  ] }));
+  assert.match(partial, /<strong>17-Ketosteroids, 24-Hour Urine<\/strong><\/td><td>-<\/td>/);
+  const legacy = buildReportHtml(sampleReport({ name: 'Urinary 17 Ketosteroid', parameters: [{ parameter_name: 'Result', value: '0', unit: 'lab-unit', normal_range: 'Lab range' }] }));
+  assert.match(legacy, />0<\/td><td>Lab range<\/td><td>lab-unit/);
+  const manual = buildReportHtml(sampleReport({ name: 'Urinary 17 Ketosteroid', report_body: 'Lab-approved notes <retain>', parameters: [] }));
+  assert.match(manual, /Lab-approved notes &lt;retain&gt;/);
+  assert.doesNotMatch(manual, /data-report-content="urinary-17-ketosteroids"/);
+  for (const name of ['17-Hydroxycorticosteroids, Urine', '17-Hydroxyprogesterone', 'Uric Acid(Urine)']) {
+    assert.doesNotMatch(buildReportHtml(sampleReport({ name, parameters: [] })), /data-report-content="urinary-17-ketosteroids"/);
+  }
+});
+
+test('Urinary 17 Ketosteroid upgrades only unused blank placeholders and is idempotent', async () => {
+  const db = await fixture();
+  try {
+    for (let i = 0; i < 6; i++) {
+      await db.run('INSERT INTO tests (id,name,category,sample_type,report_body) VALUES (?,?,?,?,?)', [9900 + i, 'Urinary 17 Ketosteroid', 'Imported legacy catalogue', null, i === 4 ? 'Manual format' : null]);
+      await db.run('INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (?,?,?,?,?,?)', [9900 + i, 'Result', i === 3 ? 'Custom unit' : '', '', 'manual', 1]);
+    }
+    await db.run('INSERT INTO visit_tests VALUES (9901)');
+    await db.run('INSERT INTO test_bundle_items VALUES (9902, 999)');
+    await db.run("UPDATE tests SET sample_type='Serum' WHERE id=9905");
+    await ensureUrinary17KetosteroidTestConfiguration(db);
+    const fields = await db.all('SELECT * FROM test_parameters WHERE test_id=9900 ORDER BY display_order');
+    assert.deepEqual(fields.map(p => p.parameter_name), getFallbackReportParameters({ name: 'Urinary 17 Ketosteroid' }).map(p => p.parameterName));
+    assert.equal((await db.get('SELECT sample_type FROM tests WHERE id=9900')).sample_type, '24-hour urine collection');
+    for (let i = 1; i < 6; i++) assert.equal((await db.get('SELECT COUNT(*) AS n FROM test_parameters WHERE test_id=?', [9900 + i])).n, 1);
+    await db.run("UPDATE test_parameters SET normal_range='Local override' WHERE test_id=9900 AND display_order=1");
+    await ensureUrinary17KetosteroidTestConfiguration(db);
+    assert.equal((await db.get('SELECT normal_range FROM test_parameters WHERE test_id=9900 AND display_order=1')).normal_range, 'Local override');
+  } finally { await db.close(); }
+});
+
 test('24-hour urine urea keeps daily excretion, concentration and collection details separate', () => {
   for (const name of ['Urea(24 hrs. Urine)', 'Urea (24 hour urine)', '24 Hour Urine Urea']) {
     const html = buildReportHtml(sampleReport({ name, parameters: [
@@ -5325,6 +7163,56 @@ test('bone marrow aspiration and cytology has a complete modern morphology and a
   assert.ok(fallback.some(field => field.parameterName === 'Integrated Diagnosis / Report Status'));
 });
 
+test('Urine Culture adds explanatory notes while preserving laboratory findings and the existing table', () => {
+  for (const name of ['Urine Culture', 'Urine Culture & Sensitivity', 'Urine Culture and Sensitivity']) {
+    const input = { name, sample_type: 'Urine', parameters: [
+      { parameter_name: 'Culture, Urine', value: 'Mixed growth\nLab review <required>', normal_range: 'Lab-validated reference', unit: 'CFU/mL' },
+      { parameter_name: 'Comments', value: 'Preliminary report\nRecollection advised by laboratory' },
+      { parameter_name: 'Culture Method', value: 'Recorded culture method' },
+    ] };
+    const before = JSON.stringify(input);
+    const html = buildReportHtml(sampleReport(input));
+    assert.match(html, /<div class="test-title">URINE CULTURE<\/div>/);
+    assert.match(html, /class="results-table culture-table"/);
+    assert.match(html, /Mixed growth<br \/>Lab review &lt;required&gt;/);
+    assert.match(html, /Lab-validated reference/);
+    assert.match(html, /CFU\/mL/);
+    assert.match(html, /Recorded culture method/);
+    assert.match(html, /Preliminary report<br \/>Recollection advised by laboratory/);
+    assert.equal((html.match(/data-report-content="urine-culture"/g) || []).length, 1);
+    assert.match(html, /A single colony-count threshold does not apply/);
+    assert.match(html, /true mixed infection is also possible/);
+    assert.match(html, /unreported antibiotic must not be assumed susceptible/);
+    assert.equal(JSON.stringify(input), before);
+  }
+});
+
+test('Urine Culture does not invent findings, no-growth comments or performed susceptibility', () => {
+  const html = buildReportHtml(sampleReport({ name: 'Urine Culture', sample_type: 'Urine', parameters: [] }));
+  const table = html.match(/<table class="results-table culture-table">[\s\S]*?<\/table>/)[0];
+  assert.match(table, /<span class="">-<\/span>/);
+  assert.match(html, /Comments:<\/div><p>-<\/p>/);
+  assert.doesNotMatch(html, /No growth after incubation\.|Automated Identification &amp; Sensitivity/);
+  const entered = buildReportHtml(sampleReport({ name: 'Urine Culture', parameters: [
+    { parameter_name: 'Culture, Urine', value: 'No growth at 24 hours - preliminary' },
+  ] }));
+  assert.match(entered, /No growth at 24 hours - preliminary/);
+  const manual = buildReportHtml(sampleReport({ name: 'Urine Culture', report_body: 'Laboratory-authored notes <preserved>', parameters: [] }));
+  assert.match(manual, /Laboratory-authored notes &lt;preserved&gt;/);
+  assert.doesNotMatch(manual, /data-report-content="urine-culture"/);
+  for (const name of ['Urine Culture / Bacteriuria Screen', 'Stool Culture', 'AFB Culture & Sensitivity']) {
+    assert.notEqual(getReportContent({ name, sample_type: 'Urine' })?.key, 'urine-culture');
+  }
+  assert.equal(getReportContent({ name: 'Urine Culture', sample_type: 'Blood' }), null);
+});
+
+test('each urine culture report in a multi-test visit receives its own notes', () => {
+  const input = { name: 'Urine Culture', sample_type: 'Urine', parameters: [{ parameter_name: 'Culture, Urine', value: 'Laboratory finding' }] };
+  const html = buildReportHtml({ ...sampleReport(input), tests: [input, { name: 'Urinary V M A', sample_type: 'Urine', parameters: [] }] });
+  assert.equal((html.match(/data-report-content="urine-culture"/g) || []).length, 1);
+  assert.equal((html.match(/data-report-content="urinary-vma"/g) || []).length, 1);
+});
+
 test('multiple reports receive their own notes through the same renderer', () => {
   const tests = [
     { name: 'FT4 & TSH', sample_type: 'Serum', parameters: [] },
@@ -5377,6 +7265,12 @@ test('local catalogue: existing report bodies stay unchanged inside the paginati
       const newHtml = buildReportHtml(sampleReport(input));
       // Named combinations now display all requested components, not TLC alone.
       const normalizedInputName = String(input.name).toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (normalizedInputName === 'urineculture') {
+        assert.match(newHtml, /class="results-table culture-table"/);
+        assert.match(newHtml, /data-report-content="urine-culture"/);
+        assert.doesNotMatch(newHtml, /No growth after incubation\./);
+        continue;
+      }
       const isActh = normalizedInputName === 'acth'
         || normalizedInputName === 'acthplasma'
         || normalizedInputName.includes('adrenocortic');
@@ -5723,6 +7617,28 @@ test('local catalogue: existing report bodies stay unchanged inside the paginati
       const is24HourUrineUrea = ['urea24hrsurine', 'urea24hoururine', 'urea24hoursurine', '24hoururineurea', 'urineurea24hour'].includes(normalizedInputName);
       const is24HourUrineUricAcid = ['uricacid24hrsurine', 'uricacid24hoururine', 'uricacid24hoursurine', '24hoururineuricacid', 'urineuricacid24hour'].includes(normalizedInputName);
       const isRandomUrineUricAcid = ['uricacidurine', 'urineuricacid', 'randomurineuricacid', 'uricacidrandomurine', 'uricacidurinerandom'].includes(normalizedInputName);
+      const isUrinary17Ketosteroid = ['urinary17ketosteroid', 'urinary17ketosteroids', 'urine17ketosteroids', '17ketosteroidsurine', '17ketosteroids24hoururine', '17ksurine'].includes(normalizedInputName);
+      const isUrinaryVma = ['urinaryvma', 'urinevma', 'vmaurine', 'vma24hoururine', 'vanillylmandelicacidurine', 'vanillylmandelicacid24hoururine', 'vanillylmandelicacidvmaurine'].includes(normalizedInputName);
+      const isUrineObtThreeDay = ['urineobt3consecutivedays', 'urineobtthreeconsecutivedays', 'urineoccultblood3consecutivedays', 'urineoccultbloodtest3days'].includes(normalizedInputName);
+      const isUrinePorphobilinogen = ['urineporphobilinogen', 'porphobilinogenurine', 'porphobilinogenpbgurine', 'urinepbg', 'pbgurine'].includes(normalizedInputName);
+      const isUrinePregnancy = ['urinepregnancytest', 'pregnancytesturine', 'unnepregnancytest', 'urinehcgqualitative', 'hcgurinequalitative'].includes(normalizedInputName);
+      const isUrineProteinAlbumin = ['urineproteinalbumin', 'unneproteinalbumin', 'proteinalbuminurine'].includes(normalizedInputName);
+      const is24HourUrineProtein = ['urineprotein24hours', 'urineprotein24hour', '24hrsurinaryprotein', '24hoururinaryprotein', '24hoururineprotein', 'protein24hoururine', 'totalprotein24hoururine'].includes(normalizedInputName);
+      const isUrineRoutine = ['urinereroutineexamination', 'urinere', 'urineroutineexamination', 'routineurineexamination', 'urinalysis'].includes(normalizedInputName);
+      const isUrineReducingSubstances = ['urinereducingsubstance', 'urinereducingsubstances', 'reducingsubstancesurine', 'urineforreducingsubstances', 'urineredusingsubstence', 'urnineredusingsubstance'].includes(normalizedInputName);
+      const isUrineSugar = ['urinesugar', 'urinesugartest', 'sugarurine', 'unnesugar'].includes(normalizedInputName);
+      const isUrineUrobilinogen = ['urineurobilinogen', 'urobilinogenurine', 'urobilinogenurinetest'].includes(normalizedInputName);
+      const isUrinePh = ['urineph', 'phurine', 'urinephtest', 'phurinetest'].includes(normalizedInputName);
+      const isUroflowmetry = ['uroflowmetry', 'uroflowmetrytest', 'urinaryflowratestudy'].includes(normalizedInputName);
+      const isVaginalCervicalSwab = ['vaginalcervicalswab', 'vaginalcervicalswabs', 'cervicalvaginalswab'].includes(normalizedInputName);
+      const isVaginalSwabAfb = ['vaginalswabafbstain', 'vaginalswabforafbstain', 'vaginalafbstain', 'afbstainvaginalswab'].includes(normalizedInputName);
+      const isVaginalSwabGram = ['vaginalswabgramstain', 'vaginalswabforgramstain', 'vaginalgramstain', 'gramstainvaginalswab', 'vaginalswabforframstain'].includes(normalizedInputName);
+      const isValproateLevel = ['valporicacidsodiumvalproate', 'valproicacidsodiumvalproate', 'valproicacid', 'valporicacid', 'sodiumvalproate', 'valproatelevel'].includes(normalizedInputName);
+      const isVanDenBerghReaction = ['vandenburghreaction', 'vandenberghreaction', 'vandenberghtest', 'vandenburghtest'].includes(normalizedInputName);
+      const isWeilFelix = ['wellfelixtest', 'weilfelixtest', 'weilfelix', 'wellfelix'].includes(normalizedInputName);
+      const isWellWomenProfile = ['wellwomenprofile', 'wellwomanprofile'].includes(normalizedInputName);
+      const isWoundSwabAfb = ['woundswabafbstain', 'woundswabforafbstain', 'woundafbstain', 'afbstainwoundswab'].includes(normalizedInputName);
+      const isWoundSwabGram = ['woundswabgramstain', 'woundswabforgramstain', 'woundgramstain', 'gramstainwoundswab'].includes(normalizedInputName);
       const isUrethralDischargeCulture = ['urethraldischargecs', 'urethraldischargecultureandsensitivity', 'urethraldischargeculturesensitivity'].includes(normalizedInputName);
       const isUrethralSwabAfb = ['urethralswabafbstain', 'urethralswabforafb', 'urethralafbstain', 'afbstainurethralswab'].includes(normalizedInputName);
       const isAlbertStainKlb = normalizedInputName === 'albertstainofsmearsforklb'
@@ -6466,6 +8382,143 @@ test('local catalogue: existing report bodies stay unchanged inside the paginati
         assert.match(newHtml, /URIC ACID, 24-HOUR URINE/);
         assert.match(newHtml, /data-report-content="urine-uric-acid-24-hour"/);
         assert.match(newHtml, /aged 18 years or older/);
+        continue;
+      }
+      if (isWoundSwabGram) {
+        assert.match(newHtml, /WOUND SWAB - GRAM STAIN/);
+        assert.match(newHtml, /data-report-content="wound-swab-gram-stain"/);
+        assert.match(newHtml, /do not apply sputum rejection thresholds to a wound swab/);
+        continue;
+      }
+      if (isWoundSwabAfb) {
+        assert.match(newHtml, /WOUND SWAB - AFB STAIN/);
+        assert.match(newHtml, /data-report-content="wound-swab-afb-stain"/);
+        assert.match(newHtml, /a superficial swab is not equivalent to a deep specimen/);
+        continue;
+      }
+      if (isWellWomenProfile) {
+        assert.match(newHtml, /WELL WOMEN PROFILE/);
+        assert.match(newHtml, /data-report-content="well-women-profile"/);
+        assert.match(newHtml, /not a universal screening order for all women/);
+        continue;
+      }
+      if (isWeilFelix) {
+        assert.match(newHtml, /WEIL-FELIX TEST/);
+        assert.match(newHtml, /data-report-content="weil-felix"/);
+        assert.match(newHtml, /very low sensitivity and specificity/);
+        continue;
+      }
+      if (isVanDenBerghReaction) {
+        assert.match(newHtml, /VAN DEN BERGH REACTION/);
+        assert.match(newHtml, /data-report-content="van-den-bergh-reaction"/);
+        assert.match(newHtml, /A qualitative reaction category is not a bilirubin concentration/);
+        continue;
+      }
+      if (isValproateLevel) {
+        assert.match(newHtml, /VALPROIC ACID \(VALPROATE\) LEVEL/);
+        assert.match(newHtml, /data-report-content="valproate-level"/);
+        assert.match(newHtml, /Do not apply the total-drug range to a free result/);
+        continue;
+      }
+      if (isVaginalSwabGram) {
+        assert.match(newHtml, /VAGINAL SWAB - GRAM STAIN/);
+        assert.match(newHtml, /data-report-content="vaginal-swab-gram-stain"/);
+        assert.match(newHtml, /4 - 6: intermediate microbiota/);
+        continue;
+      }
+      if (isVaginalSwabAfb) {
+        assert.match(newHtml, /VAGINAL SWAB - AFB STAIN/);
+        assert.match(newHtml, /data-report-content="vaginal-swab-afb-stain"/);
+        assert.match(newHtml, /A negative smear does not exclude mycobacterial infection or tuberculosis/);
+        continue;
+      }
+      if (isVaginalCervicalSwab) {
+        assert.match(newHtml, /VAGINAL \/ CERVICAL SWAB/);
+        assert.match(newHtml, /data-report-content="vaginal-cervical-swab"/);
+        assert.match(newHtml, /does not imply that both sites were sampled/);
+        continue;
+      }
+      if (isUroflowmetry) {
+        assert.match(newHtml, /UROFLOWMETRY/);
+        assert.match(newHtml, /data-report-content="uroflowmetry"/);
+        assert.match(newHtml, /no curve is generated from these entries/);
+        assert.match(newHtml, /not a universal minimum for women or children/);
+        continue;
+      }
+      if (isUrinePh) {
+        assert.match(newHtml, /URINE pH/);
+        assert.match(newHtml, /data-report-content="urine-ph"/);
+        assert.match(newHtml, /pH is dimensionless/);
+        assert.match(newHtml, /4.6 - 8.0/);
+        continue;
+      }
+      if (isUrineUrobilinogen) {
+        assert.match(newHtml, /URINE UROBILINOGEN/);
+        assert.match(newHtml, /data-report-content="urine-urobilinogen"/);
+        assert.match(newHtml, /Manufacturer example only/);
+        assert.match(newHtml, /small amounts normally appear in urine/);
+        continue;
+      }
+      if (isUrineSugar) {
+        assert.match(newHtml, /URINE SUGAR/);
+        assert.match(newHtml, /data-report-content="urine-sugar"/);
+        assert.match(newHtml, /Do not assume a Benedict-type result identifies glucose alone/);
+        continue;
+      }
+      if (isUrineReducingSubstances) {
+        assert.match(newHtml, /URINE REDUCING SUBSTANCES/);
+        assert.match(newHtml, /data-report-content="urine-reducing-substances"/);
+        assert.match(newHtml, /no concentration is inferred from a reaction colour or plus grade/);
+        continue;
+      }
+      if (isUrineRoutine) {
+        assert.match(newHtml, /URINE ROUTINE EXAMINATION \(RE\)/);
+        assert.match(newHtml, /data-report-content="urine-routine-examination"/);
+        assert.match(newHtml, /PHYSICAL EXAMINATION/);
+        assert.match(newHtml, /CHEMICAL EXAMINATION/);
+        assert.match(newHtml, /MICROSCOPIC EXAMINATION/);
+        continue;
+      }
+      if (is24HourUrineProtein) {
+        assert.match(newHtml, /TOTAL PROTEIN, 24-HOUR URINE/);
+        assert.match(newHtml, /data-report-content="urine-protein-24-hour"/);
+        assert.match(newHtml, /no result is calculated automatically or extrapolated from partial timing/);
+        continue;
+      }
+      if (isUrineProteinAlbumin) {
+        assert.match(newHtml, /URINE PROTEIN \/ ALBUMIN/);
+        assert.match(newHtml, /data-report-content="urine-protein-albumin"/);
+        assert.match(newHtml, /A grade is not an exact protein concentration/);
+        continue;
+      }
+      if (isUrinePregnancy) {
+        assert.match(newHtml, /URINE PREGNANCY TEST \(QUALITATIVE hCG\)/);
+        assert.match(newHtml, /data-report-content="urine-pregnancy-test"/);
+        assert.match(newHtml, /Testing too early or using dilute urine/);
+        continue;
+      }
+      if (isUrinePorphobilinogen) {
+        assert.match(newHtml, /PORPHOBILINOGEN \(PBG\), URINE/);
+        assert.match(newHtml, /data-report-content="urine-porphobilinogen"/);
+        assert.match(newHtml, /Protect urine from light/);
+        continue;
+      }
+      if (isUrineObtThreeDay) {
+        assert.match(newHtml, /URINE OBT \(THREE CONSECUTIVE DAYS\)/);
+        assert.match(newHtml, /data-report-content="urine-obt-three-days"/);
+        assert.match(newHtml, /not a stool occult blood test/);
+        continue;
+      }
+      if (isUrinaryVma) {
+        assert.match(newHtml, /URINARY VMA \(VANILLYLMANDELIC ACID\)/);
+        assert.match(newHtml, /data-report-content="urinary-vma"/);
+        assert.match(newHtml, /a normal result does not exclude a tumour/);
+        continue;
+      }
+      if (isUrinary17Ketosteroid) {
+        assert.match(newHtml, /URINARY 17-KETOSTEROIDS, 24-HOUR URINE/);
+        assert.match(newHtml, /data-report-content="urinary-17-ketosteroids"/);
+        assert.match(newHtml, /children need their own age-specific intervals/);
         continue;
       }
       if (isRandomUrineUricAcid) {
