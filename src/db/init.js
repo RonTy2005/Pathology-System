@@ -1,7 +1,7 @@
 const fs = require("fs/promises");
 const path = require("path");
 
-const { all, ensureColumn, get, run, transaction } = require("./helpers");
+const { all, ensureColumn, get, run: databaseRun, transaction } = require("./helpers");
 const { switchDatabasePath, getDatabasePath } = require("./connection");
 const { hashPassword } = require("../services/authService");
 const { DEFAULT_BUSINESS_NAME, DEFAULT_SUPERADMIN_USERNAME, DEFAULT_SUPERADMIN_PASSWORD, PERMISSIONS, ROLES, ROLE_ACCESS_CONTROL_DEFAULTS, ROLE_PERMISSION_DEFAULTS } = require("../config/constants");
@@ -14,6 +14,34 @@ const { repairCellReportSchemas } = require("../services/cellReportService");
 
 function buildNow() {
   return new Date().toISOString();
+}
+
+// Catalogue/configuration migrations run against databases created by many
+// earlier app versions. Some of those records carry the current catalogue code
+// under an old display name. During initialization only, reuse that existing
+// test so a unique-code conflict cannot prevent the server from starting.
+async function run(sql, params = []) {
+  try {
+    return await databaseRun(sql, params);
+  } catch (error) {
+    const columnsMatch = /\bINSERT(?:\s+OR\s+\w+)?\s+INTO\s+tests\s*\(([^)]+)\)/i.exec(String(sql || ""));
+    const isCodeCollision = /UNIQUE constraint failed:\s*tests\.code/i.test(String(error.message || ""))
+      && Boolean(columnsMatch);
+    if (!isCodeCollision) throw error;
+
+    const columns = columnsMatch ? columnsMatch[1].split(",").map((column) => column.trim().replace(/["`\[\]]/g, "").toLowerCase()) : [];
+    const codeIndex = columns.indexOf("code");
+    const conflictingCode = codeIndex >= 0 ? String(params[codeIndex] || "").trim() : "";
+    if (!conflictingCode) throw error;
+
+    const existing = await get(
+      "SELECT id FROM tests WHERE LOWER(code) = LOWER(?) ORDER BY id ASC LIMIT 1",
+      [conflictingCode]
+    );
+    if (!existing) throw error;
+    console.warn(`Reusing legacy test code ${conflictingCode} during catalogue migration.`);
+    return { id: existing.id, changes: 0, reusedExistingTest: true };
+  }
 }
 
 async function createTables() {
@@ -180,6 +208,7 @@ async function createTables() {
   `);
 
   await ensureColumn("tests", "report_body", "TEXT");
+  await ensureColumn("tests", "default_report_body", "TEXT");
 
   await run(`
     CREATE TABLE IF NOT EXISTS test_parameters (
@@ -669,7 +698,16 @@ async function seedAssociates() {
 
 async function seedPathologyReportCatalog() {
   for (const test of PATHOLOGY_REPORT_CATALOG) {
-    const existing = await get("SELECT id FROM tests WHERE LOWER(name) = LOWER(?)", [test.name]);
+    // Older installations can already contain the same catalogue code under a
+    // differently-spelled name.  The code is unique, so treating either match
+    // as an existing record keeps startup non-destructive and idempotent.
+    const existing = await get(
+      `SELECT id FROM tests
+       WHERE LOWER(name) = LOWER(?)
+          OR (TRIM(COALESCE(code, '')) <> '' AND LOWER(code) = LOWER(?))
+       ORDER BY id ASC LIMIT 1`,
+      [test.name, test.code]
+    );
     if (existing) continue;
 
     const created = await run(
@@ -11543,7 +11581,7 @@ async function ensureIndividualHematologyReportTestConfigurations() {
     const matchingNames = [definition.name, ...definition.aliases];
     const namePlaceholders = matchingNames.map(() => "LOWER(?)").join(", ");
     let test = await get(
-      `SELECT id FROM tests
+      `SELECT id, code FROM tests
        WHERE LOWER(name) IN (${namePlaceholders})
        ORDER BY id ASC LIMIT 1`,
       matchingNames
@@ -11558,11 +11596,22 @@ async function ensureIndividualHematologyReportTestConfigurations() {
       test = { id: created.id };
     }
 
+    const codeOwner = await get(
+      "SELECT id FROM tests WHERE LOWER(code) = LOWER(?) ORDER BY id ASC LIMIT 1",
+      [definition.code]
+    );
+    // A historic import can contain the desired display name and desired code
+    // on different records. Keep the named record's code in that case rather
+    // than merging tests or failing startup.
+    const codeToKeep = codeOwner && Number(codeOwner.id) !== Number(test.id)
+      ? String(test.code || "").trim()
+      : definition.code;
+
     await run(
       `UPDATE tests
        SET name = ?, code = ?, category = ?, sample_type = ?, turnaround_hours = ?, active = 1
        WHERE id = ?`,
-      [definition.name, definition.code, definition.category || "Hematology", definition.sampleType, 24, test.id]
+      [definition.name, codeToKeep, definition.category || "Hematology", definition.sampleType, 24, test.id]
     );
 
     for (const [index, parameterDefinition] of definition.parameters.entries()) {
@@ -12447,6 +12496,14 @@ async function ensureUserDefaults() {
 async function initializeDatabase() {
   try {
     await createTables();
+    // Preserve the report body that existed before editor customisation was
+    // introduced. Restore default can then safely return to that format.
+    await run(`
+      UPDATE tests
+      SET default_report_body = report_body
+      WHERE default_report_body IS NULL
+        AND TRIM(COALESCE(report_body, '')) <> ''
+    `);
     await seedAdmin();
     await seedDoctors();
     await seedTests();

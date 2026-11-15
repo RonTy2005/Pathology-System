@@ -44,8 +44,14 @@ test("the Test Catalogue provides an editable rich description toolbar", () => {
   assert.match(markup, /id="insertReportBodyTableBtn"/);
   assert.match(markup, /id="testStandardReportDescription"/);
   assert.match(markup, /id="copyStandardReportDescriptionBtn"/);
+  assert.match(markup, /id="undoReportBodyBtn"/);
+  assert.match(markup, /id="redoReportBodyBtn"/);
+  assert.match(markup, /id="restoreDefaultReportBodyBtn"/);
   assert.match(script, /function getReportBodyEditorValue/);
   assert.match(script, /function insertReportBodyTable/);
   assert.match(script, /function renderStandardReportDescription/);
+  assert.match(script, /function undoReportBody/);
+  assert.match(script, /function redoReportBody/);
+  assert.match(script, /function restoreDefaultReportBody/);
   assert.match(script, /reportBody: getReportBodyEditorValue\(\)/);
 });

@@ -966,6 +966,8 @@ function createTestParameterRow(parameter = {}) {
   const row = document.createElement("div");
   row.className = "catalog-parameter-row";
   const entryMode = parameter.entry_mode === "calculated" || parameter.entryMode === "calculated" ? "calculated" : "manual";
+  const referenceValue = parameter.normal_range || parameter.normalRange || "";
+  const hasMultipleReferenceLines = /\r?\n/.test(referenceValue);
   row.innerHTML = `
     <div class="catalog-parameter-row-fields" role="row">
       <input data-catalog-parameter-name aria-label="Investigation" placeholder="Investigation" value="${escapeHtml(parameter.parameter_name || parameter.parameterName || "")}" />
@@ -973,7 +975,7 @@ function createTestParameterRow(parameter = {}) {
         <option value="manual" ${entryMode === "manual" ? "selected" : ""}>Manual</option>
         <option value="calculated" ${entryMode === "calculated" ? "selected" : ""}>Calculated</option>
       </select>
-      <input data-catalog-normal-range aria-label="Reference Value" placeholder="Reference value" value="${escapeHtml(parameter.normal_range || parameter.normalRange || "")}" />
+      <textarea class="catalog-reference-value${hasMultipleReferenceLines ? " is-expanded" : ""}" data-catalog-normal-range aria-label="Reference Value" placeholder="Reference value" rows="1">${escapeHtml(referenceValue)}</textarea>
       <input data-catalog-unit aria-label="Unit" placeholder="Unit" value="${escapeHtml(parameter.unit || "")}" />
       <button type="button" class="danger-btn compact-btn" data-remove-test-parameter aria-label="Remove parameter">Remove</button>
     </div>
@@ -982,6 +984,15 @@ function createTestParameterRow(parameter = {}) {
       <label>Decimals <input data-catalog-calculation-precision type="number" min="0" max="8" value="${escapeHtml(parameter.calculation_precision ?? parameter.calculationPrecision ?? 2)}" /></label>
     </div>`;
   row.querySelector("[data-catalog-entry-mode]").addEventListener("change", () => syncCalculationParameterRow(row));
+  const referenceValueInput = row.querySelector("[data-catalog-normal-range]");
+  referenceValueInput?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      referenceValueInput.classList.add("is-expanded");
+    }
+  });
+  referenceValueInput?.addEventListener("input", () => {
+    referenceValueInput.classList.toggle("is-expanded", /\r?\n/.test(referenceValueInput.value));
+  });
   row.querySelector("[data-remove-test-parameter]").addEventListener("click", () => {
     row.remove();
     if (!document.querySelector("#testParameterRows [data-catalog-parameter-name]")) addTestParameterRow();
@@ -1040,6 +1051,85 @@ function getReportBodyEditorValue() {
   return hasFormatting ? `[[LABSHIELD_RICH]]${editor.innerHTML.trim()}` : text;
 }
 
+const reportBodyHistories = new Map();
+let activeReportBodyHistoryId = null;
+
+function updateReportBodyHistoryButtons() {
+  const history = reportBodyHistories.get(activeReportBodyHistoryId);
+  const editingExistingTest = Boolean(document.getElementById("editingTestId")?.value);
+  const undoButton = document.getElementById("undoReportBodyBtn");
+  const redoButton = document.getElementById("redoReportBodyBtn");
+  const restoreButton = document.getElementById("restoreDefaultReportBodyBtn");
+  if (undoButton) undoButton.disabled = !history?.undo.length;
+  if (redoButton) redoButton.disabled = !history?.redo.length;
+  if (restoreButton) restoreButton.disabled = !editingExistingTest || !getReportBodyEditorValue();
+}
+
+function beginReportBodyHistory(testId, value = "", defaultValue = value) {
+  const key = String(testId || "new");
+  const serverValue = String(value || "").trim();
+  const preservedDefaultValue = String(defaultValue || "").trim();
+  const existing = reportBodyHistories.get(key);
+  const history = existing && existing.current === serverValue
+    ? existing
+    : { current: serverValue, defaultValue: preservedDefaultValue, undo: [], redo: [] };
+  reportBodyHistories.set(key, history);
+  activeReportBodyHistoryId = key;
+  setReportBodyEditorValue(history.current);
+  updateReportBodyHistoryButtons();
+}
+
+function recordReportBodyHistory() {
+  const history = reportBodyHistories.get(activeReportBodyHistoryId);
+  if (!history) return;
+  const next = getReportBodyEditorValue();
+  if (next === history.current) return;
+  history.undo.push(history.current);
+  if (history.undo.length > 100) history.undo.shift();
+  history.current = next;
+  history.redo = [];
+  updateReportBodyHistoryButtons();
+}
+
+function applyReportBodyHistory(value) {
+  setReportBodyEditorValue(value);
+  getReportBodyEditor()?.focus();
+  updateReportBodyHistoryButtons();
+}
+
+function undoReportBody() {
+  const history = reportBodyHistories.get(activeReportBodyHistoryId);
+  if (!history?.undo.length) return;
+  history.redo.push(history.current);
+  history.current = history.undo.pop();
+  applyReportBodyHistory(history.current);
+}
+
+function redoReportBody() {
+  const history = reportBodyHistories.get(activeReportBodyHistoryId);
+  if (!history?.redo.length) return;
+  history.undo.push(history.current);
+  history.current = history.redo.pop();
+  applyReportBodyHistory(history.current);
+}
+
+function restoreDefaultReportBody() {
+  const testId = document.getElementById("editingTestId")?.value;
+  if (!testId) return;
+  if (!confirm("Restore this test's original report format? Your custom report-note changes will be replaced after you click Update test. Test parameters and reference values will not change.")) return;
+  const history = reportBodyHistories.get(activeReportBodyHistoryId);
+  if (!history) return;
+  const defaultValue = history.defaultValue || "";
+  if (history.current !== defaultValue) {
+    history.undo.push(history.current);
+    history.current = defaultValue;
+    history.redo = [];
+  }
+  applyReportBodyHistory(defaultValue);
+  void loadStandardReportDescription({ id: testId }, true);
+  showMessage("testMessage", "Original report format restored in the editor. Click Update test to save it.");
+}
+
 let activeStandardReportDescription = null;
 
 function buildStandardReportDescriptionMarkup(description = {}) {
@@ -1050,7 +1140,7 @@ function buildStandardReportDescriptionMarkup(description = {}) {
     blocks.push(`<table><tbody>${rows.map((row) => `<tr><th>${escapeHtml(row.heading)}</th><td>${escapeHtml(row.text)}</td></tr>`).join("")}</tbody></table>`);
   }
   if (description.referenceNote) blocks.push(`<p><strong>Reference guidance:</strong> ${escapeHtml(description.referenceNote)}</p>`);
-  if (description.note) blocks.push(`<p><strong>Notes and limitations:</strong> ${escapeHtml(description.note)}</p>`);
+  if (description.note) blocks.push(`<p><strong>Notes and limitations:</strong> ${escapeHtml(description.note).replace(/\r?\n/g, "<br>")}</p>`);
   return blocks.join("");
 }
 
@@ -1065,10 +1155,22 @@ function renderStandardReportDescription(description = null) {
   content.innerHTML = activeStandardReportDescription ? buildStandardReportDescriptionMarkup(activeStandardReportDescription) : "";
 }
 
+async function loadStandardReportDescription(test, useDefaultFormat = false) {
+  if (!test?.id) return;
+  try {
+    const data = await API.request(`/api/tests/${test.id}/standard-report-description${useDefaultFormat ? "?default=1" : ""}`);
+    if (Number(document.getElementById("editingTestId")?.value) !== Number(test.id)) return;
+    renderStandardReportDescription(data?.description || null);
+  } catch (_error) {
+    // A catalogue description is helpful but must never prevent test editing.
+  }
+}
+
 function copyStandardReportDescriptionToEditor() {
   if (!activeStandardReportDescription) return;
   const markup = buildStandardReportDescriptionMarkup(activeStandardReportDescription);
   setReportBodyEditorValue(`[[LABSHIELD_RICH]]${markup}`);
+  recordReportBodyHistory();
   getReportBodyEditor()?.focus();
 }
 
@@ -1078,6 +1180,7 @@ function insertReportBodyTable() {
   editor.focus();
   const table = "<table><thead><tr><th>Heading 1</th><th>Heading 2</th></tr></thead><tbody><tr><td>Text</td><td>Text</td></tr></tbody></table><p><br></p>";
   document.execCommand("insertHTML", false, table);
+  recordReportBodyHistory();
 }
 
 function clearReportBodyFormatting() {
@@ -1085,6 +1188,7 @@ function clearReportBodyFormatting() {
   if (!editor) return;
   editor.focus();
   document.execCommand("removeFormat", false, null);
+  recordReportBodyHistory();
 }
 
 function getSelectedPermissions() {
@@ -1602,7 +1706,7 @@ function resetTestForm() {
   document.getElementById("editingTestId").value = "";
   document.getElementById("saveTestBtn").textContent = "Add test";
   setTestParameterRows();
-  setReportBodyEditorValue();
+  beginReportBodyHistory("new", "");
   renderStandardReportDescription();
 }
 
@@ -2499,8 +2603,9 @@ function renderTestList(query = "") {
       document.getElementById("testPrice").value = test.price || 0;
       document.getElementById("testTurnaroundHours").value = test.turnaround_hours || 24;
       setTestParameterRows(test.parameters || []);
-      setReportBodyEditorValue(test.report_body || "");
+      beginReportBodyHistory(test.id, test.report_body || "", test.default_report_body ?? (test.report_body || ""));
       renderStandardReportDescription(test.standard_report_description);
+      void loadStandardReportDescription(test, true);
       document.getElementById("saveTestBtn").textContent = "Update test";
       showMessage("testMessage", `Editing ${test.name}`);
       openTaskWindow("#window-test-catalog");
@@ -2607,6 +2712,11 @@ document.querySelectorAll("[data-report-body-command]").forEach((button) => {
 document.getElementById("insertReportBodyTableBtn")?.addEventListener("click", insertReportBodyTable);
 document.getElementById("clearReportBodyFormatBtn")?.addEventListener("click", clearReportBodyFormatting);
 document.getElementById("copyStandardReportDescriptionBtn")?.addEventListener("click", copyStandardReportDescriptionToEditor);
+document.getElementById("undoReportBodyBtn")?.addEventListener("click", undoReportBody);
+document.getElementById("redoReportBodyBtn")?.addEventListener("click", redoReportBody);
+document.getElementById("restoreDefaultReportBodyBtn")?.addEventListener("click", restoreDefaultReportBody);
+getReportBodyEditor()?.addEventListener("input", recordReportBodyHistory);
+beginReportBodyHistory("new", getReportBodyEditorValue());
 
 document.getElementById("userForm").addEventListener("submit", async (event) => {
   event.preventDefault();

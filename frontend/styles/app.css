@@ -1430,7 +1430,25 @@ body:has(.app-shell) {
 .catalog-parameter-row-fields { padding: 8px; }
 
 .catalog-parameter-row-fields input,
-.catalog-parameter-row-fields select { width: 100%; min-width: 0; }
+.catalog-parameter-row-fields select,
+.catalog-parameter-row-fields textarea { width: 100%; min-width: 0; }
+
+.catalog-parameter-row-fields textarea[data-catalog-normal-range] {
+  height: 42px;
+  min-height: 42px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  resize: none;
+  line-height: 1.35;
+  overflow: hidden;
+}
+
+.catalog-parameter-row-fields textarea[data-catalog-normal-range].is-expanded {
+  height: 74px;
+  min-height: 74px;
+  resize: vertical;
+  overflow: auto;
+}
 
 .catalog-calculation-settings {
   display: grid;

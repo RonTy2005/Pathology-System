@@ -23120,6 +23120,9 @@ function buildReportHtml(reportData) {
           font-size: 15px;
         }
         table.results-table td { padding: 4px 5px; font-size: 15px; vertical-align: top; }
+        /* Catalogue reference values may contain ranges, decision limits, or
+           specimen-specific notes on separate lines. */
+        table.results-table td:nth-child(3) { white-space: pre-line; }
         .center { text-align: center; }
         .high-val { color: #d32f2f; font-weight: bold; }
         .low-val { color: #1976d2; font-weight: bold; }

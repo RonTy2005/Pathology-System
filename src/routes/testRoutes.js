@@ -53,6 +53,59 @@ function getStandardReportDescription(test) {
   };
 }
 
+function decodeReportDescriptionText(value) {
+  return String(value || "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(?:p|li|tr|div|h[1-6])\s*>/gi, "\n")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&(?:amp|#38);/gi, "&")
+    .replace(/&(?:lt|#60);/gi, "<")
+    .replace(/&(?:gt|#62);/gi, ">")
+    .replace(/&(?:quot|#34);/gi, '"')
+    .replace(/&#(?:39|8217);/gi, "'")
+    .replace(/&rsquo;/gi, "'")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+}
+
+function getFormatterReportDescription(test) {
+  if (String(test?.report_body || "").trim()) return null;
+  try {
+    const html = buildReportHtml({
+      patient: { id: "CATALOGUE-PREVIEW", name: "Catalogue preview", age: "", gender: "" },
+      visit: { bill_no: "CATALOGUE-PREVIEW", created_at: new Date().toISOString() },
+      report: { report_no: "CATALOGUE-PREVIEW", finalized_at: new Date().toISOString() },
+      tests: [{
+        ...test,
+        parameters: (test.parameters || []).map((parameter) => ({
+          ...parameter,
+          value: getCellReportPreviewValue(test, parameter) ?? getBundlePreviewValue(parameter),
+        })),
+      }],
+      isPreview: true,
+      embeddedPreview: true,
+    });
+    const resultTable = /<table\b[^>]*class="[^"]*\bresults-table\b[^"]*"[^>]*>[\s\S]*?<\/table>/i.exec(html);
+    if (!resultTable) return null;
+    const afterResults = html.slice(resultTable.index + resultTable[0].length);
+    const footerIndex = afterResults.search(/<div\b[^>]*class="[^"]*\breport-footer\b/i);
+    const explanation = footerIndex >= 0 ? afterResults.slice(0, footerIndex) : afterResults;
+    if (!/class="[^"]*(?:\b[\w-]*notes?\b|\b[\w-]*interpretation[\w-]*\b)/i.test(explanation)) return null;
+    const note = decodeReportDescriptionText(explanation);
+    if (note.length < 40) return null;
+    return {
+      title: "Standard generated report description",
+      purpose: "This is the explanatory text currently generated below this test’s results.",
+      note,
+    };
+  } catch (_error) {
+    return null;
+  }
+}
+
 function resolveTestParameters(parameters, test = {}) {
   const configuredParameters = (Array.isArray(parameters) ? parameters : [])
     .map(normalizeParameterDefinition)
@@ -150,6 +203,25 @@ testRouter.post(
     }
   }
 );
+
+testRouter.get("/:id/standard-report-description", allowPermissions(PERMISSIONS.MANAGE_TESTS), async (req, res, next) => {
+  try {
+    const test = await get("SELECT * FROM tests WHERE id = ?", [req.params.id]);
+    if (!test) return res.status(404).json({ message: "Test not found" });
+    if (isBillingOnlyTest(test)) return res.json({ description: null });
+    test.parameters = await all(
+      `SELECT parameter_name, unit, normal_range, entry_mode, calculation_formula, calculation_precision
+       FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC`,
+      [test.id]
+    );
+    const descriptionTest = req.query.default === "1"
+      ? { ...test, report_body: "" }
+      : test;
+    res.json({ description: getStandardReportDescription(descriptionTest) || getFormatterReportDescription(descriptionTest) });
+  } catch (error) {
+    next(error);
+  }
+});
 
 testRouter.get("/:id/sample-report", allowPermissions(PERMISSIONS.MANAGE_TESTS), async (req, res, next) => {
   try {

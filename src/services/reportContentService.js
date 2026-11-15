@@ -72,6 +72,20 @@ const REPORT_CONTENT = [
     sources: [medline('creatinine-test')],
   },
   {
+    // The serum-urea report has a dedicated formatter.  This entry exposes the
+    // same lower-report explanation in the catalogue editor without changing
+    // what is printed for existing reports.
+    key: 'urea-serum', names: ['Urea', 'Urea (Serum)', 'Serum Urea', 'Blood Urea'], codes: ['UREA'], specimens: ['serum', 'plasma'],
+    use: 'Serum urea is a waste product of protein metabolism. It is commonly interpreted with creatinine, estimated GFR, hydration status, diet, liver function and the clinical presentation when assessing renal or metabolic status.',
+    rows: [
+      ['Increased serum urea', 'May occur with reduced kidney perfusion or function, dehydration, increased protein breakdown, gastrointestinal bleeding, a high-protein intake or medication effects.'],
+      ['Decreased serum urea', 'May occur with low protein intake, overhydration, reduced hepatic urea production, pregnancy or other clinical conditions.'],
+      ['Interpretation', 'Serum urea and blood urea nitrogen (BUN) are related but not numerically interchangeable. Use the performing laboratory’s units and reference interval.'],
+    ],
+    note: 'The supplied result and reference interval take precedence. An out-of-range result should be clinically correlated and, where appropriate, reviewed with other renal and metabolic investigations.',
+    sources: [medline('bun-test')],
+  },
+  {
     key: 'creatinine-urine-24h', names: ['Creatinine, 24-Hour Urine'], codes: ['CREATININE_24H_URINE'], specimens: ['urine'],
     use: 'Timed urine creatinine measures excretion during the stated collection period. It can contribute to a clearance assessment when paired with blood measurements.',
     note: 'Interpretation depends on a complete timed collection. A urine concentration and an amount excreted per 24 hours are different measurements; compare matching units. Muscle mass and incomplete collection can affect the result.',

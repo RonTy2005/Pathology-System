@@ -853,9 +853,13 @@
                   <button class="secondary-btn compact-btn" data-report-body-command="insertUnorderedList" type="button">Bullets</button>
                   <button class="secondary-btn compact-btn" data-report-body-command="insertOrderedList" type="button">Numbered list</button>
                   <button class="secondary-btn compact-btn" id="insertReportBodyTableBtn" type="button">Add table</button>
+                  <button class="secondary-btn compact-btn" id="undoReportBodyBtn" type="button" disabled>Undo</button>
+                  <button class="secondary-btn compact-btn" id="redoReportBodyBtn" type="button" disabled>Redo</button>
                   <button class="ghost-btn compact-btn" id="clearReportBodyFormatBtn" type="button">Clear formatting</button>
+                  <button class="danger-btn compact-btn" id="restoreDefaultReportBodyBtn" type="button" disabled>Restore default format</button>
                 </div>
                 <div id="testReportBody" class="catalog-report-body-input" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="testReportBodyLabel" data-placeholder="Add notes, interpretation, method, reference information, or a table to print below this test's results."></div>
+                <small class="helper">Undo and Redo apply to report-note edits. Restore default removes custom report notes only; test parameters and reference values are not changed.</small>
               </section>
               <section id="testStandardReportDescriptionSection" class="catalog-standard-report-description" hidden aria-labelledby="testStandardReportDescriptionLabel">
                 <div class="catalog-report-description-header">
