@@ -7,7 +7,7 @@ const { logAction } = require("../services/logService");
 const { buildReportHtml } = require("../utils/reportFormatter");
 const { buildBillHtml } = require("../utils/billFormatter");
 const { getBusinessSettings } = require("../services/businessSettingsService");
-const { createPatientPortalToken, getPatientPortalUrl, getPatientPortalReportUrl, getPatientPortalBillUrl } = require("../utils/patientPortal");
+const { createPatientPortalToken, getPatientPortalReportUrl, getPatientPortalBillUrl } = require("../utils/patientPortal");
 const { applyCalculatedParameters } = require("../utils/resultCalculations");
 const { expandTestBundleConfigs, expandBundleReportTests } = require("../services/testBundleService");
 const { materializeRegistrationTests } = require("../services/registrationTestService");
@@ -530,6 +530,7 @@ async function getReportBundle(visitId) {
       t.turnaround_hours,
       t.report_body,
       vt.additional_report_text,
+      vt.additional_report_rows_json,
       COALESCE(vt.custom_test_price, t.price) AS price,
       vt.is_outside,
       vt.external_lab_name
@@ -964,7 +965,7 @@ visitRouter.get("/:id/bill", allowRoles(ROLES.ADMIN, ROLES.MANAGER, ROLES.RECEPT
       return res.send(buildBillHtml({
         ...bill,
         businessSettings,
-        patientPortalUrl: getPatientPortalUrl(req, bill.visit.patient_portal_token, businessSettings.patientPortalBaseUrl),
+        patientPortalUrl: getPatientPortalBillUrl(req, bill.visit.patient_portal_token, businessSettings.patientPortalBaseUrl),
       }));
     }
 
@@ -1026,8 +1027,18 @@ visitRouter.get(
         const pdfMode = req.query.pdf === "1";
         const canDownloadReportPdf = hasPermission(req.user, PERMISSIONS.DOWNLOAD_REPORTS);
         const canShareWhatsAppPdf = hasPermission(req.user, PERMISSIONS.SHARE_WHATSAPP_PDF);
+        const reportTests = report.tests.map((test) => ({
+          ...test,
+          digital_report_url: getPatientPortalReportUrl(
+            req,
+            report.visit.patient_portal_token,
+            businessSettings.patientPortalBaseUrl,
+            test
+          ),
+        }));
         return res.send(buildReportHtml({
           ...report,
+          tests: reportTests,
           businessName: businessSettings.businessName,
           facilityType: businessSettings.facilityType,
           address: businessSettings.address,
@@ -1045,6 +1056,7 @@ visitRouter.get(
           reportDoctorQualification: businessSettings.reportDoctorQualification,
           reportDoctorRegistrationNo: businessSettings.reportDoctorRegistrationNo,
           reportDoctorSignatureDataUrl: businessSettings.reportDoctorSignatureDataUrl,
+          additionalReportDoctors: businessSettings.additionalReportDoctors,
           showPrintControls: false,
           readOnlyView: !printMode && !pdfMode,
           showReportActions: !printMode && req.query.actions !== "0" && (canDownloadReportPdf || canShareWhatsAppPdf),
@@ -1304,10 +1316,33 @@ visitRouter.post(
   allowPermissions(PERMISSIONS.ENTER_RESULTS),
   async (req, res, next) => {
   try {
-    const { visitTestId, parameters = [], additionalReportText } = req.body;
+    const { visitTestId, parameters = [], additionalReportText, additionalReportRows } = req.body;
     const hasAdditionalReportText = Object.prototype.hasOwnProperty.call(req.body, "additionalReportText");
+    const hasAdditionalReportRows = Object.prototype.hasOwnProperty.call(req.body, "additionalReportRows");
     if (hasAdditionalReportText && (typeof additionalReportText !== "string" || additionalReportText.length > 20000)) {
       return res.status(400).json({ message: "Additional report text must be text of at most 20,000 characters" });
+    }
+    let normalizedAdditionalReportRows = null;
+    if (hasAdditionalReportRows) {
+      if (!Array.isArray(additionalReportRows) || additionalReportRows.length > 50) {
+        return res.status(400).json({ message: "Additional test rows must be a list of at most 50 rows" });
+      }
+      normalizedAdditionalReportRows = [];
+      for (const row of additionalReportRows) {
+        if (!row || typeof row !== "object" || Array.isArray(row)) {
+          return res.status(400).json({ message: "Each additional test row must contain text fields" });
+        }
+        const normalizedRow = {
+          investigation: String(row.investigation ?? ""),
+          result: String(row.result ?? ""),
+          referenceValue: String(row.referenceValue ?? ""),
+          unit: String(row.unit ?? ""),
+        };
+        if (Object.values(normalizedRow).some((value) => value.length > 2000)) {
+          return res.status(400).json({ message: "Each additional test field must be at most 2,000 characters" });
+        }
+        if (Object.values(normalizedRow).some((value) => value.trim())) normalizedAdditionalReportRows.push(normalizedRow);
+      }
     }
     const visitTest = await get(
       `SELECT vt.*, COALESCE(vt.custom_test_name, t.name) AS name, t.category, t.code, COALESCE(vt.custom_test_price, t.price) AS price, vt.external_lab_name
@@ -1376,9 +1411,17 @@ visitRouter.post(
        SET status = 'completed',
            result_entered_at = CURRENT_TIMESTAMP,
            assigned_to = COALESCE(assigned_to, ?),
-           additional_report_text = CASE WHEN ? THEN ? ELSE additional_report_text END
+           additional_report_text = CASE WHEN ? THEN ? ELSE additional_report_text END,
+           additional_report_rows_json = CASE WHEN ? THEN ? ELSE additional_report_rows_json END
        WHERE id = ?`,
-      [assignmentClaimUserId, hasAdditionalReportText ? 1 : 0, hasAdditionalReportText ? additionalReportText : "", visitTestId]
+      [
+        assignmentClaimUserId,
+        hasAdditionalReportText ? 1 : 0,
+        hasAdditionalReportText ? additionalReportText : "",
+        hasAdditionalReportRows ? 1 : 0,
+        hasAdditionalReportRows ? JSON.stringify(normalizedAdditionalReportRows) : "[]",
+        visitTestId,
+      ]
     );
     });
 

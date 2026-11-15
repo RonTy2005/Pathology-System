@@ -18,6 +18,7 @@
         <a href="#reception-summary" class="active">Overview</a>
         <a href="#new-visit" id="navNewVisit">New Patient</a>
         <a href="#patient-management">Patient Management</a>
+        <a href="#billing" id="navBilling">Billing</a>
         <a href="#test-catalog" id="navTestCatalog" hidden>Test Catalogue</a>
         <a href="#results-entry" id="navResultsEntry">Enter Results</a>
         <a href="#reports">Reports</a>
@@ -102,13 +103,13 @@
               </label>
               <label class="field">
                 <span>Phone</span>
-                <input id="patientPhone" />
+                <input id="patientPhone" type="tel" placeholder="Enter mobile number" autocomplete="tel" />
               </label>
             </div>
             <div class="inline-grid">
               <label class="field">
                 <span>Age</span>
-                <input id="patientAge" type="number" required />
+                <input id="patientAge" type="number" placeholder="Enter age" required />
               </label>
               <label class="field">
                 <span>Gender</span>
@@ -162,8 +163,10 @@
               </div>
               
               <div id="inlabTabContent">
-                <input id="testSearch" placeholder="Search test by name, code, or category" autocomplete="off" />
-                <div id="testResults" class="autocomplete"></div>
+                <div class="test-search-control">
+                  <input id="testSearch" placeholder="Search test by name, code, or category" autocomplete="off" />
+                  <div id="testResults" class="autocomplete"></div>
+                </div>
                 <p class="helper">Can't find a test? Search by its full name, then choose “Add as new test” and enter its price. It will be saved in the catalogue when this registration is saved.</p>
               </div>
 
@@ -256,6 +259,29 @@
           </div>
           <div id="recentVisits" class="list"></div>
         </article>
+      </section>
+
+      <section id="billing" class="panel" hidden>
+        <div class="section-title">
+          <h2>Billing</h2>
+          <span>Find bills, collect authorized dues, and manage bill copies</span>
+        </div>
+        <div class="inline-grid">
+          <label class="field">
+            <span>Search patient or bill</span>
+            <input id="billingSearchInput" placeholder="Search by bill, patient, or phone" autocomplete="off" />
+          </label>
+          <label class="field">
+            <span>From date</span>
+            <input id="billingDateFrom" type="date" />
+          </label>
+          <label class="field">
+            <span>To date</span>
+            <input id="billingDateTo" type="date" />
+          </label>
+        </div>
+        <p class="helper">Bill access lets you view, print, download, and share bills. Due collection and bill editing are shown only when those permissions are granted.</p>
+        <div id="billingVisits" class="list"></div>
       </section>
 
       <section id="patient-management" class="panel" hidden>
@@ -372,8 +398,10 @@
             </div>
 
             <div id="editInlabTabContent">
-              <input id="editTestSearch" placeholder="Search test by name, code, or category" autocomplete="off" />
-              <div id="editTestResults" class="autocomplete"></div>
+              <div class="test-search-control">
+                <input id="editTestSearch" placeholder="Search test by name, code, or category" autocomplete="off" />
+                <div id="editTestResults" class="autocomplete"></div>
+              </div>
               <p class="helper">Can't find a test? Search by its full name, then choose “Add as new test” and enter its price. It will be saved in the catalogue when this registration is saved.</p>
             </div>
 

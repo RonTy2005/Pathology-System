@@ -5,6 +5,7 @@ const path = require("node:path");
 
 const {
   getPatientPortalReportUrl,
+  getPatientPortalBillUrl,
   shouldIncludePortalLetterhead,
 } = require("../src/utils/patientPortal");
 const { getPortalPathologyReportLinks } = require("../src/routes/patientPortalRoutes");
@@ -29,6 +30,17 @@ test("public QR URL remains independent of the staff print style", () => {
   assert.equal(
     getPatientPortalReportUrl(request(), "patient-token", "https://reports.example.test"),
     "https://reports.example.test/api/patient-reports/patient-token/report"
+  );
+});
+
+test("printed QR links identify their exact bill and report test", () => {
+  assert.equal(
+    getPatientPortalBillUrl(request(), "patient-token", "https://reports.example.test"),
+    "https://reports.example.test/api/patient-reports/patient-token/bill"
+  );
+  assert.equal(
+    getPatientPortalReportUrl(request(), "patient-token", "https://reports.example.test", { visit_test_id: 102, test_id: 12 }),
+    "https://reports.example.test/api/patient-reports/patient-token/report?visitTestId=102&testId=12"
   );
 });
 

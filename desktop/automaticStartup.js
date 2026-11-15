@@ -20,13 +20,14 @@ function ensureAutomaticStartup({
     enabled: true,
     name: appMode === "server" ? "LabShield Server" : "LabShield",
     path: executablePath,
+    args: ["--autostart"],
   };
 
   let loginItemConfigured = false;
   try {
     app.setLoginItemSettings(settings);
     const current = typeof app.getLoginItemSettings === "function"
-      ? app.getLoginItemSettings({ path: executablePath })
+      ? app.getLoginItemSettings({ path: executablePath, args: settings.args })
       : { openAtLogin: true };
 
     const willLaunch = typeof current?.executableWillLaunchAtLogin === "boolean"
@@ -52,7 +53,9 @@ function ensureAutomaticStartup({
     try { existing = shell?.readShortcutLink?.(shortcutPath); } catch (_error) { /* No existing shortcut. */ }
     const sameTarget = existing?.target
       && pathModule.normalize(existing.target).toLowerCase() === pathModule.normalize(executablePath).toLowerCase();
-    if (sameTarget && existing.args === "--autostart") {
+    const expectedCwd = pathModule.dirname(executablePath);
+    const sameCwd = existing?.cwd && pathModule.normalize(existing.cwd).toLowerCase() === pathModule.normalize(expectedCwd).toLowerCase();
+    if (sameTarget && sameCwd && existing.args === "--autostart") {
       shortcutConfigured = true;
     } else if (shell?.writeShortcutLink) {
       fileSystem.mkdirSync(startupDirectory, { recursive: true });

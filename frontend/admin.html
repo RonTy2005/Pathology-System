@@ -269,6 +269,12 @@
               <button class="ghost-btn window-close" data-close-window="#window-report-doctor-signature" type="button">Close</button>
             </div>
             <form id="reportDoctorSignatureForm" class="stack" style="max-width: 900px;">
+              <div class="actions">
+                <button id="addReportDoctorBtn" class="secondary-btn" type="button">+ Add doctor</button>
+              </div>
+              <p class="helper">All saved reporting doctors appear side by side after the report results. Select a doctor below to edit their details and signature. Extra doctors wrap onto another row when needed.</p>
+              <div id="reportDoctorsList" class="report-doctors-list" aria-label="Reporting doctors"></div>
+              <h3 id="reportDoctorEditorHeading">Edit reporting doctor</h3>
               <p class="helper">Admins can update the reporting doctor details and signature shown after “End of Report” on blood and pathology reports. Facility, subscription, and letterhead settings remain Super Admin-only.</p>
               <div class="form-grid">
                 <label class="field">
@@ -322,7 +328,7 @@
               <div class="actions-row">
                 <button id="resetReportDoctorSignatureAdjustmentsBtn" class="secondary-btn" type="button" disabled>Reset crop &amp; adjustments</button>
                 <button id="removeReportDoctorSignatureBtn" class="ghost-btn" type="button" disabled>Remove signature image</button>
-                <button class="primary-btn" type="submit">Save report doctor signature</button>
+                <button class="primary-btn" type="submit">Save all report doctors</button>
               </div>
               <p id="reportDoctorSignatureMessage" class="message"></p>
             </form>
@@ -809,19 +815,57 @@
             </div>
             <form id="testForm" class="stack">
               <input id="editingTestId" type="hidden" />
-              <input id="testName" placeholder="Test name" required />
+              <label class="field">Test name<input id="testName" placeholder="Enter test name" required /></label>
               <div class="inline-grid">
-                <input id="testCode" placeholder="Code" />
-                <input id="testCategory" placeholder="Category" />
+                <label class="field">Test code<input id="testCode" placeholder="Enter code" /></label>
+                <label class="field">Category<input id="testCategory" placeholder="Enter category" /></label>
               </div>
               <div class="inline-grid">
-                <input id="testSampleType" placeholder="Sample type" />
-                <input id="testPrice" type="number" placeholder="Price" />
+                <label class="field">Sample type<input id="testSampleType" placeholder="Enter sample type" /></label>
+                <label class="field">Test price<input id="testPrice" type="number" placeholder="Enter price" /></label>
               </div>
-              <input id="testTurnaroundHours" type="number" placeholder="Process / turnaround hours" />
-              <textarea id="testParameters" rows="5" placeholder="Manual: Hemoglobin|g/dL|13 - 17&#10;Calculated: Indirect Bilirubin|mg/dL|0.20 - 0.80|calculated|{Bilirubin Total} - {Bilirubin Direct}|2"></textarea>
-              <small class="helper">Manual: <code>name|unit|range</code>. Automatic: <code>name|unit|range|calculated|{Source parameter} * 2|decimals</code>.</small>
-              <textarea id="testReportBody" rows="5" maxlength="8000" placeholder="Report body text - add notes, interpretation, method, or any text to print below this test's results."></textarea>
+              <label class="field">Process / turnaround hours<input id="testTurnaroundHours" type="number" placeholder="Enter turnaround hours" /></label>
+              <section class="catalog-parameter-editor" aria-label="Test parameter editor">
+                <div class="catalog-parameter-editor-header">
+                  <button id="addTestParameterBtn" class="secondary-btn" type="button">Add parameter</button>
+                </div>
+                <div class="catalog-parameter-grid" role="table" aria-label="Report parameters">
+                  <div class="catalog-parameter-grid-head" role="row">
+                    <span role="columnheader">Investigation</span>
+                    <span role="columnheader">Result</span>
+                    <span role="columnheader">Reference Value</span>
+                    <span role="columnheader">Unit</span>
+                    <span aria-hidden="true"></span>
+                  </div>
+                  <div id="testParameterRows"></div>
+                </div>
+                <small class="helper">Choose whether the result is entered manually or calculated. Calculated rows can include a formula below the four report columns.</small>
+              </section>
+              <section class="catalog-report-description-editor" aria-labelledby="testReportBodyLabel">
+                <div class="catalog-report-description-header">
+                  <label id="testReportBodyLabel" for="testReportBody">Editable test description / report notes</label>
+                  <span class="helper">Add or customise notes shown below this test's results.</span>
+                </div>
+                <div class="catalog-report-toolbar" role="toolbar" aria-label="Description formatting">
+                  <button class="secondary-btn compact-btn" data-report-body-command="bold" type="button" aria-label="Bold"><strong>B</strong></button>
+                  <button class="secondary-btn compact-btn" data-report-body-command="italic" type="button" aria-label="Italic"><em>I</em></button>
+                  <button class="secondary-btn compact-btn" data-report-body-command="underline" type="button" aria-label="Underline"><u>U</u></button>
+                  <button class="secondary-btn compact-btn" data-report-body-command="insertUnorderedList" type="button">Bullets</button>
+                  <button class="secondary-btn compact-btn" data-report-body-command="insertOrderedList" type="button">Numbered list</button>
+                  <button class="secondary-btn compact-btn" id="insertReportBodyTableBtn" type="button">Add table</button>
+                  <button class="ghost-btn compact-btn" id="clearReportBodyFormatBtn" type="button">Clear formatting</button>
+                </div>
+                <div id="testReportBody" class="catalog-report-body-input" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="testReportBodyLabel" data-placeholder="Add notes, interpretation, method, reference information, or a table to print below this test's results."></div>
+              </section>
+              <section id="testStandardReportDescriptionSection" class="catalog-standard-report-description" hidden aria-labelledby="testStandardReportDescriptionLabel">
+                <div class="catalog-report-description-header">
+                  <strong id="testStandardReportDescriptionLabel">Standard generated report description</strong>
+                  <span class="helper">This is the current built-in text used by the report format.</span>
+                </div>
+                <div id="testStandardReportDescription" class="catalog-standard-report-description-content"></div>
+                <button id="copyStandardReportDescriptionBtn" class="secondary-btn compact-btn" type="button">Copy standard text to editable notes</button>
+                <small class="helper">Copy only when you want to maintain a customised version of these standard notes for this test.</small>
+              </section>
               <small class="helper">Use this catalogue to maintain test details, prices, parameters, and report formats.</small>
               <div class="actions-row">
                 <button class="primary-btn" id="saveTestBtn" type="submit">Add test</button>

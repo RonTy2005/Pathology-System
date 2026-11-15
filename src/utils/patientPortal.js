@@ -54,8 +54,23 @@ function getPatientPortalUrl(req, token, savedBaseUrl) {
   return `${getPatientPortalBaseUrl(req, savedBaseUrl)}/report-status.html?token=${encodeURIComponent(token)}`;
 }
 
-function getPatientPortalReportUrl(req, token, savedBaseUrl) {
-  return `${getPatientPortalBaseUrl(req, savedBaseUrl)}/api/patient-reports/${encodeURIComponent(token)}/report`;
+function getPatientPortalReportUrl(req, token, savedBaseUrl, reportTest = null) {
+  const reportUrl = new URL(
+    `${getPatientPortalBaseUrl(req, savedBaseUrl)}/api/patient-reports/${encodeURIComponent(token)}/report`
+  );
+  const visitTestId = Number(reportTest?.visitTestId ?? reportTest?.visit_test_id);
+  const testId = Number(reportTest?.testId ?? reportTest?.test_id);
+
+  // A token identifies one visit. Adding the immutable visit-test id makes a
+  // QR printed on an individual report page reopen that exact report rather
+  // than the complete visit report when several tests were registered.
+  if (Number.isSafeInteger(visitTestId) && visitTestId > 0
+    && Number.isSafeInteger(testId) && testId > 0) {
+    reportUrl.searchParams.set("visitTestId", String(visitTestId));
+    reportUrl.searchParams.set("testId", String(testId));
+  }
+
+  return reportUrl.toString();
 }
 
 function shouldIncludePortalLetterhead(letterheadDataUrl) {

@@ -2784,6 +2784,22 @@ function getFallbackReportParameters(test = {}) {
     ];
   }
 
+  if (["17ohprogesterone", "17hydroxyprogesterone", "17hydroxyprogesteroneserum", "17alphahydroxyprogesterone", "17ohp"].includes(normalizedName)) {
+    return [
+      createParameter("17-Hydroxyprogesterone, Serum", { unit: "ng/dL", normalRange: "Age-, sex- and method-specific laboratory interval" }),
+      createParameter("Specimen"),
+      createParameter("Collection Date / Time"),
+      createParameter("Age / Pubertal or Gestational Context"),
+      createParameter("Menstrual Phase / Pregnancy Status"),
+      createParameter("Sampling Context / Baseline or Stimulated"),
+      createParameter("ACTH Stimulation Details, if performed"),
+      createParameter("Relevant Treatment / Dose Timing"),
+      createParameter("Assay Method / Platform"),
+      createParameter("Laboratory Interpretation"),
+      createParameter("Comments / Limitations"),
+    ];
+  }
+
   if (["woundswabgramstain", "woundswabforgramstain", "woundgramstain", "gramstainwoundswab"].includes(normalizedName)) {
     return [
       createParameter("Gram Stain Findings", { normalRange: "Interpret according to collection site and laboratory method" }),

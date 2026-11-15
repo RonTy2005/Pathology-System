@@ -6,31 +6,32 @@ const vm = require("node:vm");
 const { buildBillHtml } = require("../src/utils/billFormatter");
 const { sampleBill } = require("./bill-layout-fixture.cjs");
 
-test("short bills remain in the upper half of A4 with readable print typography", () => {
-  const html = buildBillHtml(sampleBill(5));
+test("one- and two-service bills remain in the upper half of A4 with large readable typography", () => {
+  const html = buildBillHtml(sampleBill(2));
   assert.match(html, /<h1>LabShield Diagnostic Centre<\/h1>/);
   assert.doesNotMatch(html, /Diagnostic Laboratory/, "business category is not printed below the name");
   assert.match(html, /@page \{ size: A4 portrait; margin: 0 !important; \}/);
   assert.match(html, /\.bill-slip \{ width: 210mm; height: 148\.5mm; padding: 5mm 8mm 4mm;/);
-  assert.match(html, /body \{[^}]*font-size: 11\.5px; line-height: 1\.3;/);
-  assert.match(html, /\.items-table th \{[^}]*font-size: 10px;/);
-  assert.match(html, /\.items-table td \{[^}]*min-height: 7mm;[^}]*font-size: 11\.2px;/);
-  assert.match(html, /\.details-column p \{[^}]*font-size: 10\.5px;/);
-  assert.match(html, /\.totals-table \{[^}]*font-size: 10px;/);
+  assert.match(html, /body \{[^}]*font-size: 15px; line-height: 1\.4;/);
+  assert.match(html, /\.items-table th \{[^}]*font-size: 13px;/);
+  assert.match(html, /\.items-table td \{[^}]*min-height: 9mm;[^}]*font-size: 14px;/);
+  assert.match(html, /\.details-column p \{[^}]*font-size: 13\.5px;/);
+  assert.match(html, /\.totals-table \{[^}]*font-size: 12\.5px;/);
   assert.match(html, /<p class="business-address">123 Laboratory Road, City Centre, Kolkata, West Bengal<\/p>/);
   assert.match(html, /\.brand-block \.business-address \{[^}]*font-weight: 700;/);
   assert.match(html, /Please collect the report only from the lab at the scheduled time \(Business hours: 9:00 AM to 6:30 PM\)\./);
-  assert.match(html, /\.receipt-notes \.collection-note \{[^}]*font-size: 10px; font-weight: 700;/);
+  assert.match(html, /\.receipt-notes \.collection-note \{[^}]*font-size: 12px; font-weight: 700;/);
+  assert.match(html, /\.portal-qr img \{[^}]*width: 24mm; height: 24mm;/);
   assert.equal((html.match(/class="bill-slip/g) || []).length, 1);
   assert.equal((html.match(/<tbody>/g) || []).length, 2, "items and totals tables remain present");
 });
 
-test("a sixth service starts a second upper-half bill instead of shrinking the first bill", () => {
+test("longer bills use the full A4 page instead of shrinking print text", () => {
   const html = buildBillHtml(sampleBill(6));
-  assert.equal((html.match(/class="bill-slip/g) || []).length, 2);
-  assert.match(html, /Continued on the next booking slip/);
-  assert.match(html, /continued \(page 2 of 2\)/);
-  assert.equal((html.match(/Please collect the report only from the lab/g) || []).length, 1, "collection notice appears on the settlement page only");
+  assert.equal((html.match(/class="bill-slip/g) || []).length, 1);
+  assert.match(html, /class="bill-slip bill-slip-full bill-slip-last"/);
+  assert.match(html, /\.bill-slip-full \{ height: 297mm;/);
+  assert.equal((html.match(/Please collect the report only from the lab/g) || []).length, 1);
 });
 
 test("collection notice omits hours when the lab has not configured both times", () => {
@@ -46,8 +47,8 @@ test("WhatsApp bill link reduces only on-screen service names, not printable bil
   const shared = buildBillHtml(fixture, { sharedLinkView: true });
   const normal = buildBillHtml(fixture);
   assert.match(shared, /<body class="shared-link-bill">/);
-  assert.match(shared, /@media screen \{[\s\S]*?\.shared-link-bill \.items-table td\.service strong \{ font-size: 9\.5px; font-weight: 600;/);
-  assert.match(shared, /\.items-table td\.service strong \{ font-size: 11\.2px; \}/);
+  assert.match(shared, /@media screen \{[\s\S]*?\.shared-link-bill \.items-table td\.service strong \{ font-size: 11px; font-weight: 600;/);
+  assert.match(shared, /\.items-table td\.service strong \{ font-size: 14px; \}/);
   assert.match(normal, /<body>\s*<main class="bill-slip/);
   assert.doesNotMatch(normal, /<body class="shared-link-bill">/);
 
@@ -76,6 +77,38 @@ test("desktop bill PDF downloads the exact styled receipt through native A4 prin
   assert.match(preload, /saveBillPdf: \(html, fileName\) => ipcRenderer\.invoke\("lab-lms:save-report-pdf", \{ html, fileName, kind: "bill" \}\)/);
   const desktopPrinter = fs.readFileSync(path.join(__dirname, "../desktop/reportPdf.js"), "utf8");
   assert.match(desktopPrinter, /payload\.kind === "bill" \? "Save laboratory bill PDF"/);
+  assert.match(desktopPrinter, /RASTERIZE_EMBEDDED_SVG_IMAGES_SCRIPT/);
+  assert.match(desktopPrinter, /canvas\.width = Math\.max\(1, Math\.ceil\(bounds\.width \* 6\)\)/);
+});
+
+test("WhatsApp bill PDF sharing saves the bill before opening the patient's WhatsApp chat", async () => {
+  const source = fs.readFileSync(path.join(__dirname, "../frontend/scripts/common.js"), "utf8");
+  const definition = source.match(/async function shareBillPdfViaWhatsApp\(visitId, billNo = ""\) \{[\s\S]*?\n\}(?=\s*async function downloadBillPdf)/)?.[0];
+  assert.ok(definition);
+  const calls = [];
+  const popup = { focus: () => calls.push(["focus"]), close: () => calls.push(["close"]) };
+  const scope = vm.createContext({
+    API: { request: async (route) => {
+      calls.push(["request", route]);
+      return { billNo: "BILL-17", patientName: "Maya", patientPhone: "9876543210", billUrl: "https://lab.example/bill" };
+    } },
+    window: { open: (url) => { calls.push(["open", url]); return popup; } },
+    downloadBillPdf: async (...args) => { calls.push(["pdf", ...args]); return { canceled: false }; },
+    alert: (message) => calls.push(["alert", message]),
+    encodeURIComponent,
+  });
+  vm.runInContext(definition, scope);
+  await scope.shareBillPdfViaWhatsApp(17, "BILL-17");
+  assert.deepEqual(calls.slice(0, 2), [
+    ["request", "/api/visits/17/bill-share"],
+    ["pdf", 17, "BILL-17"],
+  ]);
+  const whatsappUrl = calls.find(([type]) => type === "open")?.[1];
+  assert.match(whatsappUrl, /^https:\/\/wa\.me\/919876543210\?text=/);
+  const message = decodeURIComponent(whatsappUrl.split("?text=")[1]);
+  assert.match(message, /You can view or download your bill securely here:/);
+  assert.match(message, /Thank you\./);
+  assert.doesNotMatch(message, /saved to this computer|Attach it/i);
 });
 
 test("browser bill PDF fallback keeps the receipt styles and removes screen-only spacing", () => {
@@ -85,5 +118,7 @@ test("browser bill PDF fallback keeps the receipt styles and removes screen-only
   assert.match(definition, /documentFrame\.head\.querySelectorAll\("style"\)/);
   assert.match(definition, /billContent\.insertBefore\(style\.cloneNode\(true\), billContent\.firstChild\)/);
   assert.match(definition, /billContent\.insertBefore\(pdfLayoutStyle, billContent\.querySelector\("\.bill-slip, \.receipt"\)\)/);
+  assert.match(definition, /image\.src\.startsWith\("data:image\/svg\+xml"\)/);
+  assert.match(definition, /canvas\.toDataURL\("image\/png"\)/);
   assert.match(definition, /html2pdf\(\)[\s\S]*?\.from\(billContent\)[\s\S]*?\.save\(\)/);
 });

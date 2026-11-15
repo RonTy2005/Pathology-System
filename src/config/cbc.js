@@ -60,7 +60,7 @@ const CBC_ABSOLUTE_PARAMETERS = [
 
 const CBC_REPORT_TESTS = [
   {
-    name: "Complete Blood Count (CBC) with ESR",
+    name: "CBC with ESR (Complete Blood Count with ESR)",
     code: "CBCESR",
     category: "Hematology",
     sampleType: "Whole Blood",
@@ -69,7 +69,7 @@ const CBC_REPORT_TESTS = [
     parameters: [...CBC_COMMON_PARAMETERS, CBC_ESR_PARAMETER],
   },
   {
-    name: "Complete Blood Count (CBC) with Absolute Count",
+    name: "CBC with Absolute Count (Complete Blood Count with Absolute Count)",
     code: "CBCABS",
     category: "Hematology",
     sampleType: "Whole Blood",

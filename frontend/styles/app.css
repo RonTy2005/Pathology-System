@@ -743,6 +743,11 @@ html.patient-management-embed #patient-management {
   padding: 8px;
 }
 
+/* Anchor test suggestions directly below their search box rather than below
+   the entire Add tests card, so common short searches such as CBC stay visible. */
+.test-search-control { position: relative; }
+.test-search-control .autocomplete { top: calc(100% + 4px); }
+
 .autocomplete:empty {
   display: none;
 }
@@ -1311,6 +1316,61 @@ body:has(.app-shell) {
   margin-top: 10px;
 }
 
+.additional-report-mode-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.additional-report-mode-options .is-selected {
+  background: var(--primary, #0f766e);
+  color: #fff;
+  border-color: var(--primary, #0f766e);
+}
+
+.additional-test-table-wrap {
+  overflow-x: auto;
+  margin-bottom: 8px;
+}
+
+.additional-test-entry-table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+}
+
+.additional-test-entry-table th,
+.additional-test-entry-table td {
+  padding: 6px;
+  border: 1px solid #d8e3e6;
+  vertical-align: middle;
+}
+
+.additional-test-entry-table th {
+  background: #f0f8f7;
+  color: #174f4b;
+  font-size: 0.86rem;
+  text-align: left;
+}
+
+.additional-test-entry-table input {
+  width: 100%;
+  min-width: 110px;
+  box-sizing: border-box;
+}
+
+.additional-test-row-actions {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.compact-btn {
+  min-height: 32px;
+  padding: 5px 9px;
+  font-size: 0.78rem;
+}
+
 .result-additional-text label {
   display: block;
   margin-bottom: 6px;
@@ -1320,6 +1380,137 @@ body:has(.app-shell) {
   width: 100%;
   box-sizing: border-box;
   resize: vertical;
+}
+
+.catalog-parameter-editor {
+  padding: 12px;
+  border: 1px solid #cfe5e1;
+  border-radius: 12px;
+  background: #fbfffe;
+}
+
+.catalog-parameter-editor-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.catalog-parameter-editor-header small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+}
+
+.catalog-parameter-grid { overflow-x: auto; }
+
+.catalog-parameter-grid-head,
+.catalog-parameter-row-fields {
+  display: grid;
+  grid-template-columns: minmax(180px, 2fr) minmax(115px, .9fr) minmax(160px, 1.4fr) minmax(100px, .8fr) auto;
+  gap: 8px;
+  min-width: 720px;
+  align-items: center;
+}
+
+.catalog-parameter-grid-head {
+  padding: 7px 8px;
+  border-radius: 8px 8px 0 0;
+  background: #e7f4f1;
+  color: #145a52;
+  font-size: .82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+
+.catalog-parameter-row { border: 1px solid #dcebe8; border-top: 0; background: #fff; }
+
+.catalog-parameter-row-fields { padding: 8px; }
+
+.catalog-parameter-row-fields input,
+.catalog-parameter-row-fields select { width: 100%; min-width: 0; }
+
+.catalog-calculation-settings {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px;
+  gap: 10px;
+  padding: 0 8px 9px;
+  color: var(--muted);
+  font-size: .84rem;
+}
+
+.catalog-calculation-settings label { display: grid; gap: 4px; }
+
+.catalog-report-description-editor {
+  padding: 12px;
+  border: 1px solid #cfe5e1;
+  border-radius: 12px;
+  background: #fbfffe;
+}
+
+.catalog-report-description-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.catalog-report-description-header > label { color: var(--ink); font-weight: 800; }
+
+.catalog-report-toolbar { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 9px; }
+
+.catalog-report-body-input {
+  min-height: 150px;
+  padding: 11px 12px;
+  border: 1px solid #b7d9d3;
+  border-radius: 9px;
+  background: #fff;
+  color: var(--ink);
+  line-height: 1.45;
+  overflow: auto;
+  outline: none;
+}
+
+.catalog-report-body-input:focus { border-color: #138c80; box-shadow: 0 0 0 3px rgba(20, 184, 166, .13); }
+.catalog-report-body-input:empty::before { content: attr(data-placeholder); color: var(--muted); pointer-events: none; }
+.catalog-report-body-input p { margin: 0 0 8px; }
+.catalog-report-body-input ul, .catalog-report-body-input ol { margin: 0 0 8px 22px; padding: 0; }
+.catalog-report-body-input table { width: 100%; margin: 8px 0; border-collapse: collapse; }
+.catalog-report-body-input th, .catalog-report-body-input td { min-width: 90px; padding: 6px; border: 1px solid #9fc3bd; text-align: left; vertical-align: top; }
+.catalog-report-body-input th { background: #e7f4f1; font-weight: 800; }
+.catalog-report-body-input td:empty::after { content: "Type here"; color: #8aa4a0; }
+
+.catalog-standard-report-description {
+  padding: 12px;
+  border: 1px dashed #9ec9c2;
+  border-radius: 12px;
+  background: #f7fcfb;
+}
+
+.catalog-standard-report-description-content {
+  margin-bottom: 10px;
+  padding: 10px 11px;
+  border: 1px solid #d8e9e6;
+  border-radius: 9px;
+  background: #fff;
+  color: #294640;
+  font-size: .9rem;
+  line-height: 1.48;
+}
+
+.catalog-standard-report-description-content p { margin: 0 0 8px; }
+.catalog-standard-report-description-content p:last-child { margin-bottom: 0; }
+.catalog-standard-report-description-content table { width: 100%; margin: 8px 0; border-collapse: collapse; }
+.catalog-standard-report-description-content th, .catalog-standard-report-description-content td { padding: 5px 7px; border: 1px solid #c9ded9; text-align: left; vertical-align: top; }
+.catalog-standard-report-description-content th { width: 30%; background: #eef8f6; font-weight: 800; }
+
+@media (max-width: 680px) {
+  .catalog-parameter-editor-header { align-items: stretch; flex-direction: column; }
+  .catalog-calculation-settings { grid-template-columns: 1fr; }
+  .catalog-report-description-header { align-items: flex-start; flex-direction: column; }
 }
 
 .app-shell .panel {
@@ -1429,6 +1620,56 @@ body:has(.app-shell) {
   color: #405650;
   font-size: 0.80rem;
   font-weight: 750;
+}
+
+/* Patient registration is used quickly at the reception desk. Give every
+   field its own visible container so similarly sized inputs cannot blend
+   into one another while the operator is entering a new patient. */
+#visitForm > .inline-grid > .field,
+#visitForm > .field {
+  gap: 6px;
+  padding: 10px 11px 11px;
+  border: 1px solid #d5e4e1;
+  border-radius: 13px;
+  background: linear-gradient(145deg, #fbfffe, #f4fbfa);
+  box-shadow: 0 1px 2px rgba(15, 75, 68, 0.035);
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+#visitForm > .inline-grid > .field:focus-within,
+#visitForm > .field:focus-within {
+  border-color: #0f9688;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.14);
+}
+
+#visitForm > .inline-grid > .field > span,
+#visitForm > .field > span {
+  display: flex;
+  align-items: center;
+  min-height: 20px;
+  color: #0d625a;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+#visitForm > .inline-grid > .field > input,
+#visitForm > .inline-grid > .field > select,
+#visitForm > .field > input,
+#visitForm > .field > select {
+  min-height: 48px;
+  padding: 11px 12px;
+  border-color: #c4dad6;
+  border-radius: 9px;
+  background: #ffffff;
+}
+
+#visitForm > .inline-grid > .field > input::placeholder,
+#visitForm > .field > input::placeholder {
+  color: #8a9b98;
+  opacity: 1;
 }
 
 .app-shell .form-grid {
@@ -1621,6 +1862,11 @@ body:has(.app-shell) {
   object-fit: contain;
 }
 
+.app-shell .report-doctors-list { display: flex; flex-wrap: wrap; gap: 12px; }
+.app-shell .report-doctor-card { flex: 1 1 180px; max-width: 280px; padding: 12px; border: 1px solid #c9d5d1; border-radius: 12px; }
+.app-shell .report-doctor-card.is-selected { border-color: #0f766e; background: #f0fdfa; }
+.app-shell .report-doctor-card img { display: block; width: 120px; height: 50px; object-fit: contain; margin: 4px 0; }
+.app-shell .report-doctor-card .actions { margin-top: 8px; flex-wrap: wrap; }
 .app-shell .signature-editor {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(250px, 0.8fr);

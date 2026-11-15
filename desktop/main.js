@@ -10,6 +10,7 @@ const {
 } = require("./dataMigration");
 const { createReportPdfHandler } = require("./reportPdf");
 const { ensureAutomaticStartup } = require("./automaticStartup");
+const { ensureScheduledStartup } = require("./scheduledStartup");
 const { createServerAvailabilityGuard } = require("./serverAvailability");
 const { getInitialWindowBounds } = require("./windowSizing");
 
@@ -444,7 +445,7 @@ ipcMain.handle("lab-lms:save-report-pdf", (event, payload) => {
 });
 
 if (hasSingleInstanceLock) app.whenReady().then(async () => {
-  ensureAutomaticStartup({ app, shell, appMode });
+  const startupRegistration = ensureAutomaticStartup({ app, shell, appMode });
   serverAvailabilityGuard.start();
   createApplicationMenu();
   createMainWindow();
@@ -456,6 +457,18 @@ if (hasSingleInstanceLock) app.whenReady().then(async () => {
     mainWindow.focus();
   }
   startAutomaticUpdates();
+  // Register in the actual signed-in account, not the installer's elevated
+  // account. Do not hold up the visible UI, LAN retries or server startup.
+  void ensureScheduledStartup({ app, appMode }).then(async scheduledTask => {
+    if (!app.isPackaged || process.platform !== "win32") return;
+    await fs.writeFile(path.join(stableUserDataPath, "startup-status.json"), JSON.stringify({
+      checkedAt: new Date().toISOString(),
+      executablePath: process.execPath,
+      ...startupRegistration,
+      scheduledTask,
+      configured: startupRegistration.configured || scheduledTask.configured,
+    }, null, 2));
+  }).catch(error => console.warn("LabShield could not save startup diagnostics:", error.message));
 
   try {
     if (appMode === "server") {

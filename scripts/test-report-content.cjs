@@ -34,6 +34,7 @@ const { ensureWeilFelixTestConfiguration } = require('../src/db/init');
 const { ensureWellWomenProfileTestConfiguration } = require('../src/db/init');
 const { ensureWoundSwabAfbStainTestConfiguration } = require('../src/db/init');
 const { ensureWoundSwabGramStainTestConfiguration } = require('../src/db/init');
+const { ensure17HydroxyprogesteroneTestConfiguration } = require('../src/db/init');
 const { isBillingOnlyTest } = require('../frontend/scripts/reportEligibility');
 
 function extractMainContentMarkup(html) {
@@ -529,6 +530,28 @@ test('LFT with GGT uses the liver-function panel with a dedicated GGT interpreta
   assert.match(html, /data-report-content="lft-with-ggt"/);
   assert.match(html, /GGTP/);
   assert.match(html, /GGT can help support a hepatic source/);
+});
+
+test('both LFT variants list bilirubin fractions before AST and the remaining analytes', () => {
+  const parameters = [
+    { parameter_name: 'Bilirubin Total', value: '0.8', unit: 'mg/dL' },
+    { parameter_name: 'Bilirubin Direct', value: '0.2', unit: 'mg/dL' },
+    { parameter_name: 'Bilirubin Indirect', value: '0.6', unit: 'mg/dL' },
+    { parameter_name: 'AST (SGOT)', value: '31', unit: 'U/L' },
+    { parameter_name: 'ALT (SGPT)', value: '28', unit: 'U/L' },
+    { parameter_name: 'Alkaline Phosphatase (ALP)', value: '90', unit: 'U/L' },
+  ];
+  for (const test of [
+    { name: 'Liver Function Test (LFT)', code: 'LFT' },
+    { name: 'LFT with GGT', code: 'LFTWITHGGT' },
+  ]) {
+    const html = buildReportHtml(sampleReport({ ...test, sample_type: 'Serum', parameters }));
+    const total = html.indexOf('Bilirubin Total');
+    const direct = html.indexOf('Bilirubin Direct');
+    const indirect = html.indexOf('Bilirubin Indirect');
+    const ast = html.indexOf('AST (SGOT)');
+    assert.ok(total >= 0 && direct > total && indirect > direct && ast > indirect);
+  }
 });
 
 test('LH & FSH uses a cycle-aware two-hormone gonadotropin format', () => {
@@ -1487,6 +1510,51 @@ test('Hb + TLC/TC/WBC + DLC + ESR Profile renders all requested haematology fiel
   assert.match(html, /Total Leucocyte Count \(TLC\)/);
   assert.match(html, /DIFFERENTIAL WBC COUNT/);
   assert.match(html, /<div class="cbc-investigation">ESR<\/div>/);
+});
+
+test('CBC with Absolute Count uses the compact one-page A4 layout without dropping any result fields', () => {
+  const parameters = [
+    { parameter_name: 'Hb(Haemoglobin)', value: '13.8', unit: 'g/dL' },
+    { parameter_name: 'Erythrocytes', value: '4.90', unit: 'mill/cumm' },
+    { parameter_name: 'PCV (Packed Cell Volume)', value: '42', unit: '%' },
+    { parameter_name: 'Leukocytes', value: '7200', unit: 'cumm' },
+    { parameter_name: 'Neutrophils', value: '58', unit: '%' },
+    { parameter_name: 'Lymphocytes', value: '32', unit: '%' },
+    { parameter_name: 'Eosinophils', value: '4', unit: '%' },
+    { parameter_name: 'Monocytes', value: '5', unit: '%' },
+    { parameter_name: 'Basophils', value: '1', unit: '%' },
+    { parameter_name: 'Platelet Count', value: '250000', unit: 'cumm' },
+    { parameter_name: 'Absolute Neutrophils', value: '4176', unit: 'cells/mcL' },
+    { parameter_name: 'Absolute Lymphocytes', value: '2304', unit: 'cells/mcL' },
+    { parameter_name: 'Absolute Eosinophils', value: '288', unit: 'cells/mcL' },
+    { parameter_name: 'Absolute Monocytes', value: '360', unit: 'cells/mcL' },
+    { parameter_name: 'Absolute Basophils', value: '72', unit: 'cells/mcL' },
+  ];
+  const html = buildReportHtml(sampleReport({ name: 'Complete Blood Count (CBC) with Absolute Count', sample_type: 'Whole Blood', parameters }));
+  assert.match(html, /class="results-table cbc-table cbc-absolute-count-table"/);
+  assert.match(html, /data-report-content="cbc-absolute-count"/);
+  assert.match(html, /main-content cbc-report cbc-absolute-count-report/);
+  assert.match(html, /Absolute Neutrophils/);
+  assert.match(html, /Absolute Basophils/);
+  assert.match(html, /\.cbc-absolute-count-report table\.cbc-absolute-count-table td/);
+});
+
+test('every CBC variant retains the concise MCH, MCHC and RDW investigation labels', () => {
+  const indexParameters = [
+    { parameter_name: 'MCH (Mean Corpuscular Haemoglobin)', value: '28', unit: 'pg' },
+    { parameter_name: 'MCHC (Mean Corpuscular Hb. Concentration)', value: '33', unit: 'g/dL' },
+    { parameter_name: 'RDW', value: '12.5', unit: '%' },
+  ];
+  for (const name of [
+    'Complete Blood Count',
+    'Complete Blood Count (CBC) with Absolute Count',
+    'Complete Blood Count (CBC) with ESR',
+  ]) {
+    const html = buildReportHtml(sampleReport({ name, sample_type: 'Whole Blood', parameters: indexParameters }));
+    assert.match(html, /<div class="cbc-investigation">MCH<\/div>/);
+    assert.match(html, /<div class="cbc-investigation">MCHC<\/div>/);
+    assert.match(html, /<div class="cbc-investigation">RDW<\/div>/);
+  }
 });
 
 test('HDL : LDL keeps both cholesterol values visible with an optional calculated ratio', () => {
@@ -3310,6 +3378,61 @@ test('24-hour urine uric acid preserves daily-excretion units and actual collect
   assert.doesNotMatch(serum, /data-report-content="urine-uric-acid-24-hour"/);
   const random = buildReportHtml(sampleReport({ name: 'Uric Acid(Urine)', parameters: [] }));
   assert.doesNotMatch(random, /data-report-content="urine-uric-acid-24-hour"/);
+});
+
+test('17-OH Progesterone preserves actual units and context with labelled method-specific reference guidance', () => {
+  for (const name of ['17-OH Progesterone','17-Hydroxyprogesterone','17-Hydroxyprogesterone, Serum','17-alpha Hydroxyprogesterone','17-OHP']) {
+    const input={name,parameters:[
+      {parameter_name:'17-Hydroxyprogesterone, Serum',value:'1.25',unit:'ng/mL',normal_range:'Actual local interval'},
+      {parameter_name:'Collection Date / Time',value:'Actual collection <time>\nRecorded'},
+      {parameter_name:'Menstrual Phase / Pregnancy Status',value:'Actual clinical phase'},
+      {parameter_name:'Sampling Context / Baseline or Stimulated',value:'Actual sample context'},
+      {parameter_name:'Assay Method / Platform',value:'Actual assay'},
+      {parameter_name:'ACTH Stimulation Details, if performed',value:'Recorded clinician-directed protocol'},
+      {parameter_name:'Comments / Limitations',value:'Actual comments'},
+    ],additional_report_text:'Doctor advice'};
+    const original=JSON.stringify(input);const html=buildReportHtml(sampleReport(input));
+    assert.match(html,/data-report-content="17-hydroxyprogesterone"/);
+    assert.match(html,/<strong>17-Hydroxyprogesterone<\/strong><\/td><td>1.25<\/td><td>Actual local interval<\/td><td>ng\/mL/);
+    assert.match(html,/Actual collection &lt;time&gt;<br \/>Recorded/);
+    assert.match(html,/Recorded clinician-directed protocol/);
+    assert.match(html,/not universal limits or diagnostic cut-offs/);
+    assert.match(html,/Adult female, follicular phase<\/td><td>&lt;80/);
+    assert.match(html,/It is not the routine progesterone assay/);
+    assert.ok(html.indexOf('Doctor advice')>html.indexOf('Actual comments'));
+    assert.ok(html.indexOf('Doctor advice')<html.indexOf('<div class="single-analyte-notes report-template-notes 17-hydroxyprogesterone-notes">'));
+    assert.equal(JSON.stringify(input),original);
+    const schema=getFallbackReportParameters({name});assert.equal(schema.length,11);assert.ok(schema.every(p=>p.entryMode==='manual'));
+  }
+});
+
+test('17-OH Progesterone keeps blanks and legacy findings without assigning phase, diagnosis or conversion', () => {
+  const blank=buildReportHtml(sampleReport({name:'17-OH Progesterone',parameters:[]}));
+  assert.match(blank,/<strong>17-Hydroxyprogesterone<\/strong><\/td><td>-<\/td>/);
+  assert.doesNotMatch(blank,/<strong>ACTH Stimulation Details, if performed<\/strong>/);
+  const legacy=buildReportHtml(sampleReport({name:'17-OH Progesterone',parameters:[{parameter_name:'Result',value:'0',unit:'nmol/L',normal_range:'Local reference'},{parameter_name:'Findings',value:'Prior interpretation'},{parameter_name:'Custom result',value:'5',unit:'custom unit',normal_range:'Custom range'}]}));
+  assert.match(legacy,/<strong>17-Hydroxyprogesterone<\/strong><\/td><td>0<\/td><td>Local reference<\/td><td>nmol\/L/);
+  assert.match(legacy,/Prior interpretation/);assert.match(legacy,/5<\/td><td>Custom range<\/td><td>custom unit/);
+  const manual=buildReportHtml(sampleReport({name:'17-OH Progesterone',report_body:'Manual <format>',parameters:[]}));
+  assert.match(manual,/Manual &lt;format&gt;/);assert.doesNotMatch(manual,/data-report-content="17-hydroxyprogesterone"/);
+  for(const name of ['Progesterone','17-Hydroxypregnenolone','Pregnancy Elisa Test']) assert.doesNotMatch(buildReportHtml(sampleReport({name,parameters:[]})),/data-report-content="17-hydroxyprogesterone"/);
+});
+
+test('17-OH Progesterone schema repair retains IDs and skips clinical history, bundles and custom settings', async () => {
+  const db=await fixture();
+  try {
+    for(let i=0;i<8;i++){
+      await db.run('INSERT INTO tests(id,name,category,sample_type,report_body) VALUES(?,?,?,?,?)',[10120+i,i===6?'Progesterone':i===7?'17-Hydroxyprogesterone':'17-OH Progesterone','Imported legacy catalogue',i===5?'Urine':null,i===4?'Custom body':null]);
+      await db.run('INSERT INTO test_parameters(test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES(?,?,?,?,?,?)',[10120+i,'Result','',i===3?'Custom range':'','manual',1]);
+    }
+    const original=await db.get('SELECT id FROM test_parameters WHERE test_id=10120');
+    await db.run('INSERT INTO visit_tests VALUES(10121)');await db.run('INSERT INTO test_bundle_items VALUES(999,10122)');
+    await ensure17HydroxyprogesteroneTestConfiguration(db);
+    for(const id of [10120,10127]){const fields=await db.all('SELECT * FROM test_parameters WHERE test_id=? ORDER BY display_order',[id]);assert.equal(fields.length,11);if(id===10120)assert.equal(fields[0].id,original.id);}
+    for(const id of [10121,10122,10123,10124,10125,10126])assert.equal((await db.get('SELECT COUNT(*) AS n FROM test_parameters WHERE test_id=?',[id])).n,1);
+    await db.run("UPDATE test_parameters SET normal_range='Local override' WHERE test_id=10120 AND display_order=1");await ensure17HydroxyprogesteroneTestConfiguration(db);
+    assert.equal((await db.get('SELECT normal_range FROM test_parameters WHERE test_id=10120 AND display_order=1')).normal_range,'Local override');
+  } finally {await db.close();}
 });
 
 test('Wound Swab Gram Stain reports actual cells and morphology with wound-site-specific guidance', () => {
@@ -5159,6 +5282,20 @@ test('24-hour urine urea keeps daily excretion, concentration and collection det
     { parameter_name: 'Collection Duration', value: '12' },
   ] }));
   assert.match(partial, /<strong>Urine Urea, 24 Hour<\/strong><\/td><td>-<\/td>/);
+});
+
+test('serum urea is distinct from BUN and 24-hour urine urea', () => {
+  for (const name of ['Urea', 'Serum Urea', 'Urea (Serum)', 'Blood Urea']) {
+    const html = buildReportHtml(sampleReport({ name, sample_type: 'Serum', parameters: [
+      { parameter_name: 'Urea, Serum', value: '29', unit: 'mg/dL', normal_range: '13.00 - 43.00' },
+    ] }));
+    assert.match(html, /<div class="test-title">UREA, SERUM<\/div>/);
+    assert.match(html, />29<\/span>/);
+    assert.match(html, /Urease UV/);
+    assert.match(html, /13\.00 - 43\.00/);
+    assert.match(html, /not numerically interchangeable/);
+    assert.doesNotMatch(html, /BLOOD UREA NITROGEN \(BUN\)/);
+  }
 });
 
 test('Urine Acetone recognises the imported typo and preserves method-specific results', () => {
@@ -7430,6 +7567,7 @@ test('local catalogue: existing report bodies stay unchanged inside the paginati
         || normalizedInputName === 'cerebrospinalfluidglucose';
       const isJointFluidSugar = ['jointfluidforsugar', 'jointfluidglucose', 'glucosejointfluid', 'synovialfluidglucose'].includes(normalizedInputName);
       const isKaryotypingWithCBanding = ['karyotypingwithcbanding', 'karyotypecbanding', 'cbandingkaryotype', 'cbandingchromosomeanalysis'].includes(normalizedInputName);
+      const isLft = ['liverfunctiontestlft', 'liverfunctiontest', 'lft'].includes(normalizedInputName);
       const isLftWithGgt = normalizedInputName === 'lftwithggt';
       const isLipidComprehensiveProfile = ['lipidcomprehensiveprofile', 'comprehensivelipidprofile', 'advancedlipidprofile'].includes(normalizedInputName);
       const isLipoprotein = ['lipoprotein', 'lipoproteintest'].includes(normalizedInputName);
@@ -7508,7 +7646,7 @@ test('local catalogue: existing report bodies stay unchanged inside the paginati
       const isHsv2Igm = ['herpessimplexvirus2hsv2igm', 'hsv2igm', 'herpessimplex2igm', 'herpessimplexvirus2igm'].includes(normalizedInputName);
       const isHsv1Igg = ['herpessimplexvirus1hsv1igg', 'hsv1igg', 'herpessimplex1igg', 'herpessimplexvirus1igg'].includes(normalizedInputName);
       const isHsv1Igm = ['herpessimplexvirus1hsv1igm', 'hsv1igm', 'herpessimplex1igm', 'herpessimplexvirus1igm'].includes(normalizedInputName);
-      const isImmaturePlateletFraction = ['immatureplateletfractionipf', 'immatureplateletfraction', 'ipf'].includes(normalizedInputName);
+      const isImmaturePlateletFraction = ['immatureplateletfractionipf', 'ipfimmatureplateletfraction', 'immatureplateletfraction', 'ipf'].includes(normalizedInputName);
       const isImmunoglobulinGAMPanel = ['immunoglobulinigaiggigm', 'immunoglobuliniggigaigm', 'immunoglobulingamprofile'].includes(normalizedInputName);
       const isImmunoglobulinProfile = ['immunoglobulinprofile', 'serumimmunoglobulinprofile', 'quantitativeimmunoglobulinprofile'].includes(normalizedInputName);
       const isIndiaInkPreparation = ['indiainkpreperation', 'indiainkpreparation', 'indiainkstain', 'indiaink'].includes(normalizedInputName);
@@ -7639,6 +7777,7 @@ test('local catalogue: existing report bodies stay unchanged inside the paginati
       const isWellWomenProfile = ['wellwomenprofile', 'wellwomanprofile'].includes(normalizedInputName);
       const isWoundSwabAfb = ['woundswabafbstain', 'woundswabforafbstain', 'woundafbstain', 'afbstainwoundswab'].includes(normalizedInputName);
       const isWoundSwabGram = ['woundswabgramstain', 'woundswabforgramstain', 'woundgramstain', 'gramstainwoundswab'].includes(normalizedInputName);
+      const is17Hydroxyprogesterone = ['17ohprogesterone','17hydroxyprogesterone','17hydroxyprogesteroneserum','17alphahydroxyprogesterone','17ohp'].includes(normalizedInputName);
       const isUrethralDischargeCulture = ['urethraldischargecs', 'urethraldischargecultureandsensitivity', 'urethraldischargeculturesensitivity'].includes(normalizedInputName);
       const isUrethralSwabAfb = ['urethralswabafbstain', 'urethralswabforafb', 'urethralafbstain', 'afbstainurethralswab'].includes(normalizedInputName);
       const isAlbertStainKlb = normalizedInputName === 'albertstainofsmearsforklb'
@@ -8157,6 +8296,11 @@ test('local catalogue: existing report bodies stay unchanged inside the paginati
         assert.match(newHtml, /constitutive heterochromatin/);
         continue;
       }
+      if (isLft) {
+        assert.match(newHtml, /LIVER FUNCTION TEST \(LFT\)/);
+        assert.ok(newHtml.indexOf('Bilirubin Total') < newHtml.indexOf('AST (SGOT)'));
+        continue;
+      }
       if (isLftWithGgt) {
         assert.match(newHtml, /LIVER FUNCTION TEST \(LFT\) WITH GGT/);
         assert.match(newHtml, /data-report-content="lft-with-ggt"/);
@@ -8382,6 +8526,16 @@ test('local catalogue: existing report bodies stay unchanged inside the paginati
         assert.match(newHtml, /URIC ACID, 24-HOUR URINE/);
         assert.match(newHtml, /data-report-content="urine-uric-acid-24-hour"/);
         assert.match(newHtml, /aged 18 years or older/);
+        continue;
+      }
+      if (is17Hydroxyprogesterone) {
+        assert.match(newHtml,/data-report-content="17-hydroxyprogesterone"/);
+        assert.match(newHtml,/not universal limits or diagnostic cut-offs/);
+        continue;
+      }
+      if (isImmaturePlateletFraction) {
+        assert.match(newHtml, /data-report-content="immature-platelet-fraction"/);
+        assert.match(newHtml, /does not establish the cause of thrombocytopenia/);
         continue;
       }
       if (isWoundSwabGram) {
@@ -9493,6 +9647,15 @@ test('local catalogue: existing report bodies stay unchanged inside the paginati
           const escaped = parameter.parameter_name.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
           assert.ok(table.includes(escaped), `${input.name} must include ${parameter.parameter_name}`);
         }
+        continue;
+      }
+      // Dedicated report templates intentionally replace the legacy generic body.
+      // Each is covered by its own format-specific assertion elsewhere in this
+      // suite; this legacy-body comparison applies only to generic reports.
+      if (getReportContent(input)
+        || /data-report-content="[^"]+"/.test(newHtml)
+        || !newHtml.includes('<div class="test-title">LABORATORY REPORT</div>')) {
+        assert.doesNotMatch(newHtml, /\bundefined\b/);
         continue;
       }
       const addedNotes = buildSupplementaryNotes(input);

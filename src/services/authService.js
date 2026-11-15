@@ -119,6 +119,28 @@ async function invalidateUserSessions(userId) {
   await run("DELETE FROM user_sessions WHERE user_id = ?", [userId]);
 }
 
+// Permission changes should take effect without leaving an already signed-in
+// colleague stranded on an empty workspace. Keep their token, but replace the
+// cached user snapshot with the newly saved permissions. A restarted server
+// already reads this same user record from the database on the next request.
+async function refreshUserSessions(userId) {
+  const user = await get(
+    `SELECT id, username, role, full_name, permissions, access_controls
+     FROM users
+     WHERE id = ? AND active = 1`,
+    [userId]
+  );
+  if (!user) return 0;
+
+  let refreshed = 0;
+  for (const [token, session] of sessions.entries()) {
+    if (Number(session.user?.id) !== Number(userId)) continue;
+    sessions.set(token, buildSession(token, user, session.createdAt));
+    refreshed += 1;
+  }
+  return refreshed;
+}
+
 async function authenticate(username, password) {
   const user = await get(
     `SELECT id, username, password, role, full_name, permissions, access_controls, active
@@ -143,6 +165,7 @@ module.exports = {
   createSession,
   destroySession,
   invalidateUserSessions,
+  refreshUserSessions,
   getSession,
   hashPassword,
   normalizePermissions,

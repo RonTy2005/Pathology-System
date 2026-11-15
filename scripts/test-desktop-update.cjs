@@ -209,6 +209,7 @@ test("packaged Windows server and client apps enforce visible automatic startup"
     enabled: true,
     name: "LabShield",
     path: executablePath,
+    args: ["--autostart"],
   }]);
   assert.equal(shortcuts.length, 1);
   assert.equal(shortcuts[0][0], "C:\\Users\\Lab\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\LabShield.lnk");
@@ -231,7 +232,7 @@ test("packaged Windows server and client apps enforce visible automatic startup"
 
   const existingShortcut = ensureAutomaticStartup({
     app, fileSystem, pathModule: path.win32, platform: "win32", executablePath,
-    shell: { readShortcutLink: () => ({ target: executablePath, args: "--autostart" }), writeShortcutLink: () => { throw new Error("unnecessary rewrite"); } },
+    shell: { readShortcutLink: () => ({ target: executablePath, cwd: path.win32.dirname(executablePath), args: "--autostart" }), writeShortcutLink: () => { throw new Error("unnecessary rewrite"); } },
   });
   assert.equal(existingShortcut.shortcutConfigured, true);
 
@@ -260,9 +261,9 @@ test("packaged Windows server and client apps enforce visible automatic startup"
     assert.match(installerScript, /WriteRegStr HKCU/);
     assert.match(installerScript, /DeleteRegValue HKCU/);
     if (mode === "server") {
-      assert.match(installerScript, /"LabShield Server" '\"\$INSTDIR\\LabShield Server\.exe\"'/);
+      assert.match(installerScript, /"LabShield Server" '\"\$INSTDIR\\LabShield Server\.exe\" --autostart'/);
     } else {
-      assert.match(installerScript, /"LabShield" '\"\$INSTDIR\\LabShield\.exe\"'/);
+      assert.match(installerScript, /"LabShield" '\"\$INSTDIR\\LabShield\.exe\" --autostart'/);
       assert.doesNotMatch(installerScript, /LabShield Server\.exe/);
     }
   }

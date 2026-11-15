@@ -50,13 +50,29 @@ test('patient reports, sample previews and all report pages use the correct embe
   assert.doesNotMatch(plain + padded + multi, /api\.qrserver\.com/);
 });
 
-test('bill QR embeds its existing patient portal link in the receipt footer', () => {
-  const portalUrl = 'http://192.168.1.50:3000/report-status.html?token=synthetic-token';
+test('each page of a multi-test report retains the QR for its own test', () => {
+  const firstTestUrl = 'https://reports.example.invalid/api/patient-reports/token/report?visitTestId=101&testId=11';
+  const secondTestUrl = 'https://reports.example.invalid/api/patient-reports/token/report?visitTestId=102&testId=12';
+  const html = buildReportHtml({
+    ...sampleReport({ name: 'Complete Blood Count (CBC)', parameters: [] }),
+    digitalReportUrl: 'https://reports.example.invalid/api/patient-reports/token/report',
+    tests: [
+      { name: 'Complete Blood Count (CBC)', visit_test_id: 101, test_id: 11, digital_report_url: firstTestUrl, parameters: [] },
+      { name: 'Liver Function Test (LFT)', visit_test_id: 102, test_id: 12, digital_report_url: secondTestUrl, parameters: [] },
+    ],
+  });
+  const sources = Array.from(html.matchAll(/<img src="([^"]+)" class="qr-img"/g), match => match[1]);
+  assert.deepEqual(sources, [buildQrCodeDataUrl(firstTestUrl), buildQrCodeDataUrl(secondTestUrl)]);
+});
+
+test('bill QR embeds its direct bill link in the receipt footer', () => {
+  const portalUrl = 'http://192.168.1.50:3000/api/patient-reports/synthetic-token/bill';
   const bill = { ...sampleBill(6), patientPortalUrl: portalUrl };
   const html = buildBillHtml(bill);
   const sources = Array.from(html.matchAll(/<div class="portal-qr"><img src="([^"]+)"/g), match => match[1]);
   assert.equal(sources.length, 1);
   assert.ok(sources.every(src => src === buildQrCodeDataUrl(portalUrl)));
+  assert.match(html, /Scan to view this bill/);
   assert.doesNotMatch(html, /api\.qrserver\.com/);
   assert.doesNotMatch(buildBillHtml(sampleBill(1)), /<div class="portal-qr">/);
 });

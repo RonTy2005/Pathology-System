@@ -79,6 +79,9 @@ const letterheadPreviewDialog = document.getElementById("letterheadPreviewDialog
 const letterheadPreviewLarge = document.getElementById("letterheadPreviewLarge");
 const closeLetterheadPreviewBtn = document.getElementById("closeLetterheadPreviewBtn");
 const reportDoctorSignatureForm = document.getElementById("reportDoctorSignatureForm");
+const reportDoctorsList = document.getElementById("reportDoctorsList");
+const addReportDoctorBtn = document.getElementById("addReportDoctorBtn");
+const reportDoctorEditorHeading = document.getElementById("reportDoctorEditorHeading");
 const reportDoctorNameInput = document.getElementById("reportDoctorName");
 const reportDoctorQualificationInput = document.getElementById("reportDoctorQualification");
 const reportDoctorRegistrationNoInput = document.getElementById("reportDoctorRegistrationNo");
@@ -261,6 +264,9 @@ let businessLogoHasPendingChange = false;
 let reportDoctorSignatureDataUrl = null;
 let reportDoctorSignatureHasPendingChange = false;
 let reportDoctorSignatureSourceImage = null;
+let reportDoctorsDraft = [];
+let activeReportDoctorIndex = 0;
+let reportDoctorEditorBusy = false;
 let reportDoctorPdfJsPromise = null;
 let currentSubscriptionStatus = null;
 
@@ -762,19 +768,96 @@ async function convertSignaturePdfToImage(file) {
   return canvas.toDataURL("image/png");
 }
 
+function captureActiveReportDoctor() {
+  if (!reportDoctorsDraft[activeReportDoctorIndex]) return;
+  reportDoctorsDraft[activeReportDoctorIndex] = {
+    name: reportDoctorNameInput?.value.trim() || "",
+    qualification: reportDoctorQualificationInput?.value.trim() || "",
+    registrationNo: reportDoctorRegistrationNoInput?.value.trim() || "",
+    signatureDataUrl: reportDoctorSignatureDataUrl,
+  };
+}
+
+function renderReportDoctorsList() {
+  [reportDoctorNameInput, reportDoctorQualificationInput, reportDoctorRegistrationNoInput, reportDoctorSignatureFileInput].forEach(input => {
+    if (input) input.disabled = reportDoctorEditorBusy;
+  });
+  const saveButton = reportDoctorSignatureForm?.querySelector('button[type="submit"]');
+  if (saveButton) saveButton.disabled = reportDoctorEditorBusy;
+  reportDoctorSignatureControls().forEach(control => { control.disabled = reportDoctorEditorBusy || !reportDoctorSignatureSourceImage; });
+  if (removeReportDoctorSignatureBtn) removeReportDoctorSignatureBtn.disabled = reportDoctorEditorBusy || !reportDoctorSignatureSourceImage;
+  if (resetReportDoctorSignatureAdjustmentsBtn) resetReportDoctorSignatureAdjustmentsBtn.disabled = reportDoctorEditorBusy || !reportDoctorSignatureSourceImage;
+  if (addReportDoctorBtn) addReportDoctorBtn.disabled = reportDoctorEditorBusy || reportDoctorsDraft.length >= 24;
+  if (!reportDoctorsList) return;
+  reportDoctorsList.innerHTML = reportDoctorsDraft.map((doctor, index) => `
+    <div class="report-doctor-card ${index === activeReportDoctorIndex ? "is-selected" : ""}">
+      <strong>${escapeHtml(doctor.name || `Doctor ${index + 1}`)}</strong>
+      <div class="helper">${escapeHtml(doctor.qualification || "")}</div>
+      ${doctor.signatureDataUrl && /^data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/]+={0,2}$/i.test(doctor.signatureDataUrl) ? `<img src="${doctor.signatureDataUrl}" alt="Doctor signature preview" />` : '<div class="helper">No signature image</div>'}
+      <div class="actions">
+        <button type="button" class="secondary-btn" data-edit-report-doctor="${index}" aria-pressed="${index === activeReportDoctorIndex}" ${reportDoctorEditorBusy ? "disabled" : ""}>Edit doctor</button>
+        ${index > 0 ? `<button type="button" class="ghost-btn" data-remove-report-doctor="${index}" ${reportDoctorEditorBusy ? "disabled" : ""}>Remove doctor</button>` : ""}
+      </div>
+    </div>`).join("");
+}
+
+async function editReportDoctor(index, capture = true) {
+  if (reportDoctorEditorBusy || !reportDoctorsDraft[index]) return;
+  if (capture) captureActiveReportDoctor();
+  activeReportDoctorIndex = index;
+  const doctor = reportDoctorsDraft[index];
+  reportDoctorEditorBusy = true;
+  renderReportDoctorsList();
+  if (reportDoctorEditorHeading) reportDoctorEditorHeading.textContent = `Edit doctor ${index + 1}`;
+  if (reportDoctorNameInput) reportDoctorNameInput.value = doctor.name || "";
+  if (reportDoctorQualificationInput) reportDoctorQualificationInput.value = doctor.qualification || "";
+  if (reportDoctorRegistrationNoInput) reportDoctorRegistrationNoInput.value = doctor.registrationNo || "";
+  if (reportDoctorSignatureFileInput) reportDoctorSignatureFileInput.value = "";
+  reportDoctorSignatureHasPendingChange = false;
+  reportDoctorSignatureDataUrl = doctor.signatureDataUrl || null;
+  try {
+    await setReportDoctorSignatureSource(reportDoctorSignatureDataUrl);
+  } catch (error) {
+    reportDoctorSignatureSourceImage = null;
+    renderReportDoctorSignaturePreview();
+    showMessage("reportDoctorSignatureMessage", error.message || "Unable to preview this signature. The saved image has been retained.", true);
+  } finally {
+    reportDoctorEditorBusy = false;
+    renderReportDoctorsList();
+  }
+}
+
+async function addReportDoctor() {
+  if (reportDoctorEditorBusy || reportDoctorsDraft.length >= 24) return;
+  captureActiveReportDoctor();
+  reportDoctorsDraft.push({ name: "", qualification: "", registrationNo: "", signatureDataUrl: null });
+  await editReportDoctor(reportDoctorsDraft.length - 1, false);
+  reportDoctorNameInput?.focus();
+}
+
+async function removeAdditionalReportDoctor(index) {
+  if (reportDoctorEditorBusy || index <= 0 || !reportDoctorsDraft[index]) return;
+  if (!window.confirm("Remove this reporting doctor? The change takes effect only after you save all report doctors.")) return;
+  captureActiveReportDoctor();
+  reportDoctorsDraft.splice(index, 1);
+  const nextIndex = activeReportDoctorIndex === index ? 0 : activeReportDoctorIndex > index ? activeReportDoctorIndex - 1 : activeReportDoctorIndex;
+  await editReportDoctor(nextIndex, false);
+}
+
 async function loadReportDoctorSignatureSettings() {
   if (!reportDoctorSignatureForm) return;
   const settings = await API.request("/api/settings/report-doctor-signature");
-  if (reportDoctorNameInput) reportDoctorNameInput.value = settings.reportDoctorName || "";
-  if (reportDoctorQualificationInput) reportDoctorQualificationInput.value = settings.reportDoctorQualification || "";
-  if (reportDoctorRegistrationNoInput) reportDoctorRegistrationNoInput.value = settings.reportDoctorRegistrationNo || "";
-  if (reportDoctorSignatureFileInput) reportDoctorSignatureFileInput.value = "";
-  reportDoctorSignatureHasPendingChange = false;
-  reportDoctorSignatureDataUrl = settings.reportDoctorSignatureDataUrl || null;
-  await setReportDoctorSignatureSource(reportDoctorSignatureDataUrl);
+  reportDoctorsDraft = [{
+    name: settings.reportDoctorName || "",
+    qualification: settings.reportDoctorQualification || "",
+    registrationNo: settings.reportDoctorRegistrationNo || "",
+    signatureDataUrl: settings.reportDoctorSignatureDataUrl || null,
+  }, ...(settings.additionalReportDoctors || [])];
+  await editReportDoctor(0, false);
 }
 
 async function selectReportDoctorSignatureFile() {
+  if (reportDoctorEditorBusy) return;
   const file = reportDoctorSignatureFileInput?.files?.[0];
   if (!file) return;
 
@@ -790,6 +873,8 @@ async function selectReportDoctorSignatureFile() {
     return;
   }
 
+  reportDoctorEditorBusy = true;
+  renderReportDoctorsList();
   try {
     const dataUrl = isPdf ? await convertSignaturePdfToImage(file) : await readFileAsDataUrl(file);
     await setReportDoctorSignatureSource(dataUrl, { markPending: true });
@@ -799,12 +884,18 @@ async function selectReportDoctorSignatureFile() {
   } catch (error) {
     reportDoctorSignatureFileInput.value = "";
     showMessage("reportDoctorSignatureMessage", error.message || "Unable to prepare the signature file.", true);
+  } finally {
+    reportDoctorEditorBusy = false;
+    captureActiveReportDoctor();
+    renderReportDoctorsList();
   }
 }
 
 function applyReportDoctorSignatureAdjustments() {
   updateReportDoctorSignatureControlLabels();
   renderReportDoctorSignaturePreview({ markPending: true });
+  captureActiveReportDoctor();
+  renderReportDoctorsList();
 }
 
 function removeReportDoctorSignature() {
@@ -815,28 +906,42 @@ function removeReportDoctorSignature() {
   resetReportDoctorSignatureAdjustments({ render: false });
   renderReportDoctorSignaturePreview();
   showMessage("reportDoctorSignatureMessage", "Doctor signature image will be removed when you save.");
+  captureActiveReportDoctor();
+  renderReportDoctorsList();
 }
 
 async function saveReportDoctorSignature(event) {
   event.preventDefault();
+  if (reportDoctorEditorBusy) return;
+  captureActiveReportDoctor();
+  const firstDoctor = reportDoctorsDraft[0];
+  if (!firstDoctor) return;
   const payload = {
-    reportDoctorName: reportDoctorNameInput?.value.trim() || "",
-    reportDoctorQualification: reportDoctorQualificationInput?.value.trim() || "",
-    reportDoctorRegistrationNo: reportDoctorRegistrationNoInput?.value.trim() || "",
+    reportDoctorName: firstDoctor.name,
+    reportDoctorQualification: firstDoctor.qualification,
+    reportDoctorRegistrationNo: firstDoctor.registrationNo,
+    reportDoctorSignatureDataUrl: firstDoctor.signatureDataUrl,
+    additionalReportDoctors: reportDoctorsDraft.slice(1),
   };
-  if (reportDoctorSignatureHasPendingChange) {
-    payload.reportDoctorSignatureDataUrl = reportDoctorSignatureDataUrl;
+  if (payload.additionalReportDoctors.some(doctor => !doctor.name)) {
+    showMessage("reportDoctorSignatureMessage", "Enter a name for every added doctor, or remove the empty doctor before saving.", true);
+    return;
   }
 
+  reportDoctorEditorBusy = true;
+  renderReportDoctorsList();
   try {
     await API.request("/api/settings/report-doctor-signature", {
       method: "PATCH",
       body: JSON.stringify(payload),
     });
     reportDoctorSignatureHasPendingChange = false;
-    showMessage("reportDoctorSignatureMessage", "Report doctor signature saved. It will appear on new blood and pathology report prints.");
+    showMessage("reportDoctorSignatureMessage", "All report doctors saved. Their names and signatures will appear side by side on blood and pathology reports.");
   } catch (error) {
     showMessage("reportDoctorSignatureMessage", error.message, true);
+  } finally {
+    reportDoctorEditorBusy = false;
+    renderReportDoctorsList();
   }
 }
 
@@ -851,23 +956,135 @@ function canManageTests() {
   return isDefaultSystemAdministrator() || hasPermission("manage_tests");
 }
 
-function parseParameterText(text) {
-  return text
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const [parameterName, unit, normalRange, entryMode, calculationFormula, calculationPrecision] = line.split("|");
-      return {
-        parameterName: parameterName?.trim(),
-        unit: unit?.trim() || "",
-        normalRange: normalRange?.trim() || "",
-        entryMode: entryMode?.trim().toLowerCase() === "calculated" ? "calculated" : "manual",
-        calculationFormula: calculationFormula?.trim() || "",
-        calculationPrecision: calculationPrecision?.trim() || "2",
-      };
-    })
-    .filter((item) => item.parameterName);
+function syncCalculationParameterRow(row) {
+  const calculationSettings = row.querySelector("[data-calculation-settings]");
+  const calculated = row.querySelector("[data-catalog-entry-mode]")?.value === "calculated";
+  if (calculationSettings) calculationSettings.hidden = !calculated;
+}
+
+function createTestParameterRow(parameter = {}) {
+  const row = document.createElement("div");
+  row.className = "catalog-parameter-row";
+  const entryMode = parameter.entry_mode === "calculated" || parameter.entryMode === "calculated" ? "calculated" : "manual";
+  row.innerHTML = `
+    <div class="catalog-parameter-row-fields" role="row">
+      <input data-catalog-parameter-name aria-label="Investigation" placeholder="Investigation" value="${escapeHtml(parameter.parameter_name || parameter.parameterName || "")}" />
+      <select data-catalog-entry-mode aria-label="Result entry mode">
+        <option value="manual" ${entryMode === "manual" ? "selected" : ""}>Manual</option>
+        <option value="calculated" ${entryMode === "calculated" ? "selected" : ""}>Calculated</option>
+      </select>
+      <input data-catalog-normal-range aria-label="Reference Value" placeholder="Reference value" value="${escapeHtml(parameter.normal_range || parameter.normalRange || "")}" />
+      <input data-catalog-unit aria-label="Unit" placeholder="Unit" value="${escapeHtml(parameter.unit || "")}" />
+      <button type="button" class="danger-btn compact-btn" data-remove-test-parameter aria-label="Remove parameter">Remove</button>
+    </div>
+    <div class="catalog-calculation-settings" data-calculation-settings ${entryMode === "calculated" ? "" : "hidden"}>
+      <label>Formula <input data-catalog-calculation-formula placeholder="{Source parameter} * 2" value="${escapeHtml(parameter.calculation_formula || parameter.calculationFormula || "")}" /></label>
+      <label>Decimals <input data-catalog-calculation-precision type="number" min="0" max="8" value="${escapeHtml(parameter.calculation_precision ?? parameter.calculationPrecision ?? 2)}" /></label>
+    </div>`;
+  row.querySelector("[data-catalog-entry-mode]").addEventListener("change", () => syncCalculationParameterRow(row));
+  row.querySelector("[data-remove-test-parameter]").addEventListener("click", () => {
+    row.remove();
+    if (!document.querySelector("#testParameterRows [data-catalog-parameter-name]")) addTestParameterRow();
+  });
+  return row;
+}
+
+function addTestParameterRow(parameter = {}) {
+  document.getElementById("testParameterRows")?.appendChild(createTestParameterRow(parameter));
+}
+
+function setTestParameterRows(parameters = []) {
+  const rows = document.getElementById("testParameterRows");
+  if (!rows) return;
+  rows.innerHTML = "";
+  (parameters.length ? parameters : [{}]).forEach((parameter) => addTestParameterRow(parameter));
+}
+
+function getTestParametersFromEditor() {
+  return Array.from(document.querySelectorAll("#testParameterRows .catalog-parameter-row"))
+    .map((row) => ({
+      parameterName: row.querySelector("[data-catalog-parameter-name]")?.value.trim() || "",
+      entryMode: row.querySelector("[data-catalog-entry-mode]")?.value === "calculated" ? "calculated" : "manual",
+      normalRange: row.querySelector("[data-catalog-normal-range]")?.value.trim() || "",
+      unit: row.querySelector("[data-catalog-unit]")?.value.trim() || "",
+      calculationFormula: row.querySelector("[data-catalog-calculation-formula]")?.value.trim() || "",
+      calculationPrecision: row.querySelector("[data-catalog-calculation-precision]")?.value || "2",
+    }))
+    .filter((parameter) => parameter.parameterName);
+}
+
+function getReportBodyEditor() {
+  return document.getElementById("testReportBody");
+}
+
+function setReportBodyEditorValue(value = "") {
+  const editor = getReportBodyEditor();
+  if (!editor) return;
+  const body = String(value || "").trim();
+  // Values returned by the API have already been allow-list sanitized. Legacy notes
+  // stay as plain text so their existing line breaks keep the same meaning.
+  const richPrefix = "[[LABSHIELD_RICH]]";
+  if (body.startsWith(richPrefix)) {
+    editor.innerHTML = body.slice(richPrefix.length);
+  } else {
+    editor.textContent = body;
+  }
+}
+
+function getReportBodyEditorValue() {
+  const editor = getReportBodyEditor();
+  if (!editor) return "";
+  const text = (editor.innerText || "").trim();
+  if (!text) return "";
+  const hasFormatting = editor.querySelector("strong, b, em, i, u, ul, ol, li, table, thead, tbody, tr, th, td");
+  return hasFormatting ? `[[LABSHIELD_RICH]]${editor.innerHTML.trim()}` : text;
+}
+
+let activeStandardReportDescription = null;
+
+function buildStandardReportDescriptionMarkup(description = {}) {
+  const blocks = [];
+  if (description.purpose) blocks.push(`<p><strong>Purpose:</strong> ${escapeHtml(description.purpose)}</p>`);
+  const rows = Array.isArray(description.rows) ? description.rows : [];
+  if (rows.length) {
+    blocks.push(`<table><tbody>${rows.map((row) => `<tr><th>${escapeHtml(row.heading)}</th><td>${escapeHtml(row.text)}</td></tr>`).join("")}</tbody></table>`);
+  }
+  if (description.referenceNote) blocks.push(`<p><strong>Reference guidance:</strong> ${escapeHtml(description.referenceNote)}</p>`);
+  if (description.note) blocks.push(`<p><strong>Notes and limitations:</strong> ${escapeHtml(description.note)}</p>`);
+  return blocks.join("");
+}
+
+function renderStandardReportDescription(description = null) {
+  activeStandardReportDescription = description && (description.purpose || description.note || description.referenceNote || description.rows?.length)
+    ? description
+    : null;
+  const section = document.getElementById("testStandardReportDescriptionSection");
+  const content = document.getElementById("testStandardReportDescription");
+  if (!section || !content) return;
+  section.hidden = !activeStandardReportDescription;
+  content.innerHTML = activeStandardReportDescription ? buildStandardReportDescriptionMarkup(activeStandardReportDescription) : "";
+}
+
+function copyStandardReportDescriptionToEditor() {
+  if (!activeStandardReportDescription) return;
+  const markup = buildStandardReportDescriptionMarkup(activeStandardReportDescription);
+  setReportBodyEditorValue(`[[LABSHIELD_RICH]]${markup}`);
+  getReportBodyEditor()?.focus();
+}
+
+function insertReportBodyTable() {
+  const editor = getReportBodyEditor();
+  if (!editor) return;
+  editor.focus();
+  const table = "<table><thead><tr><th>Heading 1</th><th>Heading 2</th></tr></thead><tbody><tr><td>Text</td><td>Text</td></tr></tbody></table><p><br></p>";
+  document.execCommand("insertHTML", false, table);
+}
+
+function clearReportBodyFormatting() {
+  const editor = getReportBodyEditor();
+  if (!editor) return;
+  editor.focus();
+  document.execCommand("removeFormat", false, null);
 }
 
 function getSelectedPermissions() {
@@ -1384,6 +1601,9 @@ function resetTestForm() {
   document.getElementById("testForm").reset();
   document.getElementById("editingTestId").value = "";
   document.getElementById("saveTestBtn").textContent = "Add test";
+  setTestParameterRows();
+  setReportBodyEditorValue();
+  renderStandardReportDescription();
 }
 
 function setActiveNavLink(hash) {
@@ -2219,6 +2439,16 @@ function renderTestList(query = "") {
     const code = normalizeSearchText(test.code);
     const category = normalizeSearchText(test.category);
     return name.includes(normalizedQuery) || code.includes(normalizedQuery) || category.includes(normalizedQuery);
+  }).sort((left, right) => {
+    if (!normalizedQuery) return String(left.name || "").localeCompare(String(right.name || ""));
+    const rank = (test) => {
+      const name = normalizeSearchText(test.name);
+      const code = normalizeSearchText(test.code);
+      if (name === normalizedQuery || code === normalizedQuery) return 0;
+      if (name.startsWith(normalizedQuery) || code.startsWith(normalizedQuery)) return 1;
+      return 2;
+    };
+    return rank(left) - rank(right) || String(left.name || "").localeCompare(String(right.name || ""));
   });
 
   if (!filteredTests.length) {
@@ -2268,15 +2498,9 @@ function renderTestList(query = "") {
       document.getElementById("testSampleType").value = test.sample_type || "";
       document.getElementById("testPrice").value = test.price || 0;
       document.getElementById("testTurnaroundHours").value = test.turnaround_hours || 24;
-      document.getElementById("testParameters").value = (test.parameters || [])
-        .map((parameter) => {
-          const base = `${parameter.parameter_name}|${parameter.unit || ""}|${parameter.normal_range || ""}`;
-          return parameter.entry_mode === "calculated"
-            ? `${base}|calculated|${parameter.calculation_formula || ""}|${parameter.calculation_precision ?? 2}`
-            : base;
-        })
-        .join("\n");
-      document.getElementById("testReportBody").value = test.report_body || "";
+      setTestParameterRows(test.parameters || []);
+      setReportBodyEditorValue(test.report_body || "");
+      renderStandardReportDescription(test.standard_report_description);
       document.getElementById("saveTestBtn").textContent = "Update test";
       showMessage("testMessage", `Editing ${test.name}`);
       openTaskWindow("#window-test-catalog");
@@ -2365,6 +2589,24 @@ document.getElementById("resetTestBtn").addEventListener("click", () => {
   resetTestForm();
   showMessage("testMessage", "Test form cleared");
 });
+
+document.getElementById("addTestParameterBtn")?.addEventListener("click", () => {
+  addTestParameterRow();
+  document.querySelector("#testParameterRows .catalog-parameter-row:last-child [data-catalog-parameter-name]")?.focus();
+});
+
+document.querySelectorAll("[data-report-body-command]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const editor = getReportBodyEditor();
+    if (!editor) return;
+    editor.focus();
+    document.execCommand(button.dataset.reportBodyCommand, false, null);
+  });
+});
+
+document.getElementById("insertReportBodyTableBtn")?.addEventListener("click", insertReportBodyTable);
+document.getElementById("clearReportBodyFormatBtn")?.addEventListener("click", clearReportBodyFormatting);
+document.getElementById("copyStandardReportDescriptionBtn")?.addEventListener("click", copyStandardReportDescriptionToEditor);
 
 document.getElementById("userForm").addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -2507,8 +2749,8 @@ document.getElementById("testForm").addEventListener("submit", async (event) => 
     sampleType: document.getElementById("testSampleType").value.trim(),
     price: Number(document.getElementById("testPrice").value || 0),
     turnaroundHours: Number(document.getElementById("testTurnaroundHours").value || 24),
-    parameters: parseParameterText(document.getElementById("testParameters").value),
-    reportBody: document.getElementById("testReportBody").value.trim(),
+    parameters: getTestParametersFromEditor(),
+    reportBody: getReportBodyEditorValue(),
   };
 
   try {
@@ -3296,12 +3538,23 @@ document.addEventListener("hashchange", function() {
     setCardUser(null);
     setDefaultFinancialDateRange();
     setDefaultFinancialReportDates();
+    setTestParameterRows();
     initializeSectionNavigation();
 
     employeeSearch?.addEventListener("input", renderUsers);
     refreshUsersBtn?.addEventListener("click", () => loadUsers().catch(console.error));
     businessSettingsForm?.addEventListener("submit", saveBusinessSettings);
     reportDoctorSignatureForm?.addEventListener("submit", saveReportDoctorSignature);
+    addReportDoctorBtn?.addEventListener("click", () => addReportDoctor().catch(console.error));
+    reportDoctorsList?.addEventListener("click", event => {
+      const edit = event.target.closest("[data-edit-report-doctor]");
+      const remove = event.target.closest("[data-remove-report-doctor]");
+      if (edit) editReportDoctor(Number(edit.dataset.editReportDoctor)).catch(console.error);
+      if (remove) removeAdditionalReportDoctor(Number(remove.dataset.removeReportDoctor)).catch(console.error);
+    });
+    [reportDoctorNameInput, reportDoctorQualificationInput, reportDoctorRegistrationNoInput].forEach(input => {
+      input?.addEventListener("input", () => { captureActiveReportDoctor(); renderReportDoctorsList(); });
+    });
     businessLogoFileInput?.addEventListener("change", () => selectBusinessLogoFile().catch(console.error));
     letterheadFileInput?.addEventListener("change", () => selectLetterheadFile().catch(console.error));
     reportDoctorSignatureFileInput?.addEventListener("change", () => selectReportDoctorSignatureFile().catch(console.error));
@@ -3316,6 +3569,8 @@ document.addEventListener("hashchange", function() {
     removeReportDoctorSignatureBtn?.addEventListener("click", removeReportDoctorSignature);
     resetReportDoctorSignatureAdjustmentsBtn?.addEventListener("click", () => {
       resetReportDoctorSignatureAdjustments({ markPending: true });
+      captureActiveReportDoctor();
+      renderReportDoctorsList();
     });
     closeLetterheadPreviewBtn?.addEventListener("click", () => letterheadPreviewDialog?.close());
     saveSubscriptionBtn?.addEventListener("click", () => saveSubscriptionExpiry().catch(console.error));

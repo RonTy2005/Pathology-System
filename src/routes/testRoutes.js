@@ -11,7 +11,9 @@ const { getTestReportPreviewUrl } = require("../utils/patientPortal");
 const { getBundleComponentTests } = require("../services/testBundleService");
 const { getFallbackReportParameters } = require("../services/reportSchemaService");
 const { getCellReportPreviewValue } = require("../services/cellReportService");
+const { getReportContent } = require("../services/reportContentService");
 const { isBillingOnlyTest, BILLING_ONLY_MESSAGE } = require('../../frontend/scripts/reportEligibility');
+const { sanitizeRichReportBody } = require("../utils/richReportBody");
 
 function normalizeParameterDefinition(parameter = {}) {
   const entryMode = (parameter.entryMode || parameter.entry_mode) === "calculated"
@@ -34,7 +36,21 @@ function normalizeParameterDefinition(parameter = {}) {
 }
 
 function normalizeReportBody(value) {
-  return String(value || "").trim().slice(0, 8000);
+  return sanitizeRichReportBody(value);
+}
+
+function getStandardReportDescription(test) {
+  const content = getReportContent(test);
+  if (!content) return null;
+  return {
+    title: "Standard generated report description",
+    purpose: String(content.use || "").trim(),
+    rows: (Array.isArray(content.rows) ? content.rows : [])
+      .map(([heading, text]) => ({ heading: String(heading || "").trim(), text: String(text || "").trim() }))
+      .filter((row) => row.heading || row.text),
+    referenceNote: String(content.referenceNote || "").trim(),
+    note: String(content.note || "").trim(),
+  };
 }
 
 function resolveTestParameters(parameters, test = {}) {
@@ -127,6 +143,7 @@ testRouter.post(
         reportDoctorQualification: businessSettings.reportDoctorQualification,
         reportDoctorRegistrationNo: businessSettings.reportDoctorRegistrationNo,
         reportDoctorSignatureDataUrl: businessSettings.reportDoctorSignatureDataUrl,
+        additionalReportDoctors: businessSettings.additionalReportDoctors,
       }));
     } catch (error) {
       next(error);
@@ -692,6 +709,7 @@ testRouter.get("/:id/sample-report", allowPermissions(PERMISSIONS.MANAGE_TESTS),
       reportDoctorQualification: businessSettings.reportDoctorQualification,
       reportDoctorRegistrationNo: businessSettings.reportDoctorRegistrationNo,
       reportDoctorSignatureDataUrl: businessSettings.reportDoctorSignatureDataUrl,
+      additionalReportDoctors: businessSettings.additionalReportDoctors,
       showPrintControls: true,
     }));
   } catch (error) {
@@ -701,7 +719,9 @@ testRouter.get("/:id/sample-report", allowPermissions(PERMISSIONS.MANAGE_TESTS),
 
 testRouter.get("/", async (req, res, next) => {
   try {
-    const query = `%${req.query.query || ""}%`;
+    const searchText = String(req.query.query || "").trim();
+    const query = `%${searchText}%`;
+    const startsWithQuery = `${searchText}%`;
     const tests = await all(
       `
       SELECT t.*,
@@ -722,9 +742,16 @@ testRouter.get("/", async (req, res, next) => {
       FROM tests t
       WHERE t.active = 1
         AND (t.name LIKE ? OR COALESCE(t.code, '') LIKE ? OR COALESCE(t.category, '') LIKE ?)
-      ORDER BY t.name ASC
+      ORDER BY
+        CASE
+          WHEN ? = '' THEN 0
+          WHEN LOWER(COALESCE(t.code, '')) = LOWER(?) OR LOWER(t.name) = LOWER(?) THEN 0
+          WHEN LOWER(COALESCE(t.code, '')) LIKE LOWER(?) OR LOWER(t.name) LIKE LOWER(?) THEN 1
+          ELSE 2
+        END,
+        t.name ASC
       `,
-      [query, query, query]
+      [query, query, query, searchText, searchText, searchText, startsWithQuery, startsWithQuery]
     );
 
     for (const test of tests) {
@@ -736,6 +763,7 @@ testRouter.get("/", async (req, res, next) => {
          ORDER BY display_order ASC, id ASC`,
         [test.id]
       );
+      test.standard_report_description = getStandardReportDescription(test);
     }
 
     res.json({ tests });

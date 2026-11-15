@@ -168,6 +168,46 @@ function hasPermission(permission) {
   return user.permissions.includes(permission);
 }
 
+// html2pdf temporarily places full-screen capture nodes in the application
+// document. If a browser download is cancelled or interrupted, an orphaned
+// transparent layer can remain above the workspace and stop fields receiving
+// focus. Never remove it during an active export; clear it once an export has
+// finished and when a long-running desktop session returns to the foreground.
+let activeBrowserPdfExports = 0;
+function clearStaleBrowserPdfLayers() {
+  if (activeBrowserPdfExports > 0) return;
+  document.querySelectorAll(".html2pdf__overlay, .html2pdf__container").forEach((element) => element.remove());
+}
+
+function beginBrowserPdfExport() {
+  activeBrowserPdfExports += 1;
+  return () => {
+    activeBrowserPdfExports = Math.max(0, activeBrowserPdfExports - 1);
+    clearStaleBrowserPdfLayers();
+  };
+}
+
+function recoverInputFocusFromStalePdfLayer(event) {
+  if (activeBrowserPdfExports > 0) return;
+  const clickedLayer = event.target?.closest?.(".html2pdf__overlay, .html2pdf__container");
+  if (!clickedLayer) return;
+
+  const clientX = event.clientX;
+  const clientY = event.clientY;
+  clearStaleBrowserPdfLayers();
+  const intendedField = document.elementFromPoint(clientX, clientY);
+  if (intendedField?.matches?.('input:not([disabled]):not([readonly]), textarea:not([disabled]):not([readonly]), [contenteditable="true"]')) {
+    event.preventDefault();
+    intendedField.focus({ preventScroll: true });
+  }
+}
+
+window.addEventListener("focus", clearStaleBrowserPdfLayers);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) clearStaleBrowserPdfLayers();
+});
+document.addEventListener("pointerdown", recoverInputFocusFromStalePdfLayer, true);
+
 function initializeTestCatalogueModal() {
   if (document.getElementById("testCatalogueModal")) return;
 
@@ -363,20 +403,22 @@ function protectPage(allowedRoles) {
 function initPage(role) { return protectPage(role ? [role] : []); }
 
 function getRoleHome(role, user) {
+  const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
+  const hasPermission = (permission) => permissions.includes(permission);
   switch (role) {
     case "superadmin":
     case "admin": return "admin.html";
     case "manager": return "admin.html";
     case "receptionist": return "reception.html";
-    case "na": return Array.isArray(user?.permissions) && user.permissions.includes("collect_due_payments")
-      ? "reception.html#due-collection"
-      : Array.isArray(user?.permissions) && user.permissions.includes("manage_billing")
-        ? "reception.html#patient-management"
-      : user?.accessControls?.edit_patient_details
-        ? "reception.html#patient-management"
-      : Array.isArray(user?.permissions) && user.permissions.includes("manage_tests")
-        ? "admin.html#window-test-catalog"
-        : "login.html";
+    case "na":
+      if (hasPermission("manage_patients")) return "reception.html#new-visit";
+      if (hasPermission("manage_billing")) return "reception.html#billing";
+      if (hasPermission("collect_due_payments")) return "reception.html#due-collection";
+      if (hasPermission("enter_results") || hasPermission("finalize_reports")) return "reception.html#results-entry";
+      if (hasPermission("view_reports") || hasPermission("print_reports") || hasPermission("download_reports") || hasPermission("share_whatsapp_pdf")) return "reception.html#reports";
+      if (hasPermission("manage_tests")) return "reception.html#test-catalog";
+      if (user?.accessControls?.edit_patient_details) return "reception.html#patient-management";
+      return "login.html";
     case "blood_sample_technician": return "reception.html#results-entry";
     case "ct_technician": return "ct_technician.html";
     case "mri_technician": return "mri_technician.html";
@@ -545,7 +587,8 @@ async function shareBillViaWhatsApp(visitId) {
     const message = [
       `Dear ${bill.patientName || "Patient"},`,
       `Your bill receipt for ${bill.billNo || "your visit"} is ready.`,
-      `Open or download it securely here: ${bill.billUrl}`,
+      `You can view or download your bill securely here: ${bill.billUrl}`,
+      "Thank you.",
     ].join("\n");
 
     const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(message)}`;
@@ -557,6 +600,51 @@ async function shareBillViaWhatsApp(visitId) {
   } catch (error) {
     whatsappWindow?.close();
     alert(error.message || "Unable to prepare the bill for WhatsApp.");
+  }
+}
+
+async function shareBillPdfViaWhatsApp(visitId, billNo = "") {
+  let whatsappWindow = null;
+  try {
+    const bill = await API.request(`/api/visits/${visitId}/bill-share`);
+    const rawPhone = String(bill.patientPhone || "").replace(/\D/g, "");
+    if (!rawPhone) {
+      throw new Error("Add the patient's phone number before sharing the bill PDF.");
+    }
+
+    const whatsappPhone = rawPhone.length === 10
+      ? `91${rawPhone}`
+      : rawPhone.length === 11 && rawPhone.startsWith("0")
+        ? `91${rawPhone.slice(1)}`
+        : rawPhone;
+    if (whatsappPhone.length < 7 || whatsappPhone.length > 15) {
+      throw new Error("Enter a valid patient WhatsApp number.");
+    }
+
+    const saved = await downloadBillPdf(visitId, billNo || bill.billNo || "");
+    if (saved?.canceled) {
+      return;
+    }
+
+    const message = [
+      `Dear ${bill.patientName || "Patient"},`,
+      `Your bill receipt for ${bill.billNo || "your visit"} is ready.`,
+      `You can view or download your bill securely here: ${bill.billUrl}`,
+      "Thank you.",
+    ].join("\n");
+    const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(message)}`;
+    // Show the native/browser PDF save action first. Opening WhatsApp before
+    // it can steal focus from Electron's Windows save dialog.
+    whatsappWindow = window.open(whatsappUrl, "_blank");
+    if (whatsappWindow) {
+      whatsappWindow.opener = null;
+      whatsappWindow.focus?.();
+    } else {
+      alert("The bill PDF was saved. Please allow popups to open the patient's WhatsApp chat.");
+    }
+  } catch (error) {
+    whatsappWindow?.close();
+    alert(error.message || "Unable to prepare the bill PDF for WhatsApp.");
   }
 }
 
@@ -572,6 +660,7 @@ async function downloadBillPdf(visitId, billNo = "") {
     throw new Error("The PDF generator is not available. Refresh the page and try again.");
   }
 
+  const finishBrowserPdfExport = beginBrowserPdfExport();
   const iframe = document.createElement("iframe");
   iframe.style.cssText = "position:fixed;left:-10000px;top:0;width:210mm;height:297mm;border:0;visibility:hidden;";
   document.body.appendChild(iframe);
@@ -595,6 +684,23 @@ async function downloadBillPdf(visitId, billNo = "") {
       ]),
       new Promise((resolve) => setTimeout(resolve, 5000)),
     ]);
+    // SVG data URLs can be omitted or softened by some browser PDF engines.
+    // Rasterize them at print resolution first, keeping the bill QR crisp.
+    for (const image of Array.from(documentFrame.images || [])) {
+      if (!image.src.startsWith("data:image/svg+xml")) continue;
+      await image.decode().catch(() => {});
+      const bounds = image.getBoundingClientRect();
+      if (!bounds.width || !bounds.height) continue;
+      const canvas = documentFrame.createElement("canvas");
+      canvas.width = Math.max(1, Math.ceil(bounds.width * 6));
+      canvas.height = Math.max(1, Math.ceil(bounds.height * 6));
+      const context = canvas.getContext("2d");
+      context.fillStyle = "#fff";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      image.src = canvas.toDataURL("image/png");
+      await image.decode().catch(() => {});
+    }
     const billContent = documentFrame.body;
     if (!billContent?.querySelector(".bill-slip, .receipt")) throw new Error("The bill layout could not be prepared.");
 
@@ -619,7 +725,8 @@ async function downloadBillPdf(visitId, billNo = "") {
       .from(billContent)
       .save();
   } finally {
-    document.body.removeChild(iframe);
+    iframe.remove();
+    finishBrowserPdfExport();
   }
 }
 
@@ -811,6 +918,7 @@ async function shareAndDownloadReport(visitId, includeLetterhead = null, shareVi
       pagebreak: { mode: ['css', 'legacy'] },
     };
 
+    const finishBrowserPdfExport = beginBrowserPdfExport();
     const iframe = document.createElement('iframe');
     iframe.style.cssText = 'position:fixed;left:-10000px;top:0;width:210mm;height:297mm;border:none;';
     document.body.appendChild(iframe);
@@ -841,7 +949,8 @@ async function shareAndDownloadReport(visitId, includeLetterhead = null, shareVi
 
       await saveBrowserReportPdf(iframeDoc, opt);
     } finally {
-      document.body.removeChild(iframe);
+      iframe.remove();
+      finishBrowserPdfExport();
     }
 
     if (whatsappShare) {
@@ -891,34 +1000,125 @@ function escapeResultFieldHtml(value = "") {
     .replaceAll("'", "&#39;");
 }
 
+function normalizeAdditionalResultRows(value) {
+  let rows = value;
+  if (typeof rows === "string") {
+    try {
+      rows = JSON.parse(rows);
+    } catch {
+      rows = [];
+    }
+  }
+  if (!Array.isArray(rows)) return [];
+  return rows.slice(0, 50).map((row) => ({
+    investigation: String(row?.investigation ?? ""),
+    result: String(row?.result ?? ""),
+    referenceValue: String(row?.referenceValue ?? ""),
+    unit: String(row?.unit ?? ""),
+  })).filter((row) => Object.values(row).some((value) => value.trim()));
+}
+
+function renderAdditionalResultRow(row = {}, disabled = false) {
+  const value = (name) => escapeResultFieldHtml(row[name] || "");
+  return `<tr data-additional-test-row>
+    <td><input type="text" data-additional-investigation value="${value("investigation")}" maxlength="2000" aria-label="Investigation" ${disabled ? "disabled" : ""}></td>
+    <td><input type="text" data-additional-result value="${value("result")}" maxlength="2000" aria-label="Result" ${disabled ? "disabled" : ""}></td>
+    <td><input type="text" data-additional-reference-value value="${value("referenceValue")}" maxlength="2000" aria-label="Reference Value" ${disabled ? "disabled" : ""}></td>
+    <td><input type="text" data-additional-unit value="${value("unit")}" maxlength="2000" aria-label="Unit" ${disabled ? "disabled" : ""}></td>
+    <td class="additional-test-row-actions"><button type="button" class="danger-btn compact-btn" data-remove-additional-test-row aria-label="Remove additional test row" ${disabled ? "disabled" : ""}>Remove</button></td>
+  </tr>`;
+}
+
 function renderResultAdditionalText(test, disabled = false) {
   const text = String(test.additional_report_text || "");
-  const expanded = text.trim().length > 0;
+  const rows = normalizeAdditionalResultRows(test.additional_report_rows_json);
+  const expanded = text.trim().length > 0 || rows.length > 0;
+  const selectedMode = rows.length ? "test" : (text.trim() ? "text" : "");
   const holderId = `additional-report-text-${test.id}`;
+  const savedRows = escapeResultFieldHtml(JSON.stringify(rows));
   return `<div class="result-additional-text">
-    <button type="button" class="secondary-btn result-additional-text-toggle" data-additional-text-toggle aria-label="Add additional report text" aria-controls="${holderId}" aria-expanded="${expanded}" ${disabled ? "disabled" : ""}>+</button>
-    <div id="${holderId}" data-additional-text-holder ${expanded ? "" : "hidden"}>
-      <label for="${holderId}-input">Additional report text (optional)</label>
-      <textarea id="${holderId}-input" data-additional-report-text data-saved-additional-text="${escapeResultFieldHtml(text)}" rows="4" maxlength="20000" placeholder="Enter advice, instructions, or additional text for this report." ${disabled ? "disabled" : ""}>${escapeResultFieldHtml(text)}</textarea>
+    <button type="button" class="secondary-btn result-additional-text-toggle" data-additional-text-toggle aria-label="Add optional report content" aria-controls="${holderId}" aria-expanded="${expanded}" ${disabled ? "disabled" : ""}>+</button>
+    <div id="${holderId}" data-additional-text-holder data-saved-additional-rows="${savedRows}" ${expanded ? "" : "hidden"}>
+      <div class="additional-report-mode-options" role="group" aria-label="Optional report content type">
+        <button type="button" class="secondary-btn ${selectedMode === "text" ? "is-selected" : ""}" data-additional-mode="text" aria-pressed="${selectedMode === "text"}" ${disabled ? "disabled" : ""}>Text box</button>
+        <button type="button" class="secondary-btn ${selectedMode === "test" ? "is-selected" : ""}" data-additional-mode="test" aria-pressed="${selectedMode === "test"}" ${disabled ? "disabled" : ""}>Test addition</button>
+      </div>
+      <div data-additional-mode-panel="text" ${selectedMode === "text" ? "" : "hidden"}>
+        <label for="${holderId}-input">Additional report text (optional)</label>
+        <textarea id="${holderId}-input" data-additional-report-text data-saved-additional-text="${escapeResultFieldHtml(text)}" rows="4" maxlength="20000" placeholder="Enter advice, instructions, or additional text for this report." ${disabled ? "disabled" : ""}>${escapeResultFieldHtml(text)}</textarea>
+      </div>
+      <div data-additional-mode-panel="test" ${selectedMode === "test" ? "" : "hidden"}>
+        <div class="additional-test-table-wrap"><table class="additional-test-entry-table"><thead><tr><th>Investigation</th><th>Result</th><th>Reference Value</th><th>Unit</th><th aria-label="Row actions"></th></tr></thead><tbody data-additional-test-rows>${(rows.length ? rows : [{}]).map((row) => renderAdditionalResultRow(row, disabled)).join("")}</tbody></table></div>
+        <button type="button" class="secondary-btn" data-additional-test-row-add ${disabled ? "disabled" : ""}>Add row</button>
+      </div>
     </div>
   </div>`;
+}
+
+function getAdditionalReportRowsFromForm(form) {
+  return normalizeAdditionalResultRows(Array.from(form.querySelectorAll("[data-additional-test-row]")).map((row) => ({
+    investigation: row.querySelector("[data-additional-investigation]")?.value || "",
+    result: row.querySelector("[data-additional-result]")?.value || "",
+    referenceValue: row.querySelector("[data-additional-reference-value]")?.value || "",
+    unit: row.querySelector("[data-additional-unit]")?.value || "",
+  })));
+}
+
+function markAdditionalReportDataSaved(form) {
+  const input = form.querySelector("[data-additional-report-text]");
+  const holder = form.querySelector("[data-additional-text-holder]");
+  if (input) input.dataset.savedAdditionalText = input.value;
+  if (holder) holder.dataset.savedAdditionalRows = JSON.stringify(getAdditionalReportRowsFromForm(form));
 }
 
 function attachResultAdditionalText(form) {
   const button = form.querySelector("[data-additional-text-toggle]");
   const holder = form.querySelector("[data-additional-text-holder]");
   if (!button || !holder) return;
+  const setMode = (mode, focus = false) => {
+    holder.querySelectorAll("[data-additional-mode-panel]").forEach((panel) => {
+      panel.hidden = panel.dataset.additionalModePanel !== mode;
+    });
+    holder.querySelectorAll("[data-additional-mode]").forEach((modeButton) => {
+      const selected = modeButton.dataset.additionalMode === mode;
+      modeButton.classList.toggle("is-selected", selected);
+      modeButton.setAttribute("aria-pressed", String(selected));
+    });
+    if (focus) holder.querySelector(mode === "test" ? "[data-additional-investigation]" : "[data-additional-report-text]")?.focus();
+  };
   button.addEventListener("click", () => {
     holder.hidden = !holder.hidden;
     button.setAttribute("aria-expanded", String(!holder.hidden));
-    if (!holder.hidden) holder.querySelector("textarea")?.focus();
+    if (!holder.hidden && holder.querySelector("[data-additional-mode-panel]:not([hidden])")) {
+      const selected = holder.querySelector("[data-additional-mode][aria-pressed=\"true\"]")?.dataset.additionalMode;
+      if (selected) setMode(selected, true);
+    }
+  });
+  holder.querySelectorAll("[data-additional-mode]").forEach((modeButton) => {
+    modeButton.addEventListener("click", () => setMode(modeButton.dataset.additionalMode, true));
+  });
+  holder.querySelector("[data-additional-test-row-add]")?.addEventListener("click", () => {
+    const rows = holder.querySelector("[data-additional-test-rows]");
+    if (!rows) return;
+    rows.insertAdjacentHTML("beforeend", renderAdditionalResultRow());
+    rows.lastElementChild?.querySelector("[data-additional-investigation]")?.focus();
+  });
+  holder.addEventListener("click", (event) => {
+    const removeButton = event.target.closest("[data-remove-additional-test-row]");
+    if (!removeButton) return;
+    const row = removeButton.closest("[data-additional-test-row]");
+    const rows = holder.querySelector("[data-additional-test-rows]");
+    row?.remove();
+    if (rows && !rows.children.length) rows.insertAdjacentHTML("beforeend", renderAdditionalResultRow());
   });
 }
 
 async function savePendingResultAdditionalText(container, saveForm) {
   for (const form of container.querySelectorAll("[data-result-form]")) {
     const input = form.querySelector("[data-additional-report-text]");
-    if (input && !input.disabled && input.value !== input.dataset.savedAdditionalText) {
+    const holder = form.querySelector("[data-additional-text-holder]");
+    const rowsChanged = holder && JSON.stringify(getAdditionalReportRowsFromForm(form)) !== (holder.dataset.savedAdditionalRows || "[]");
+    if ((input && !input.disabled && input.value !== input.dataset.savedAdditionalText) || rowsChanged) {
       await saveForm(form);
     }
   }

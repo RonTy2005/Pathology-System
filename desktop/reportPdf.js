@@ -1,6 +1,30 @@
 const MAX_REPORT_HTML_BYTES = 50 * 1024 * 1024;
 const { REPORT_PAGINATION_SCRIPT } = require("../src/utils/reportPagination");
 
+// Chromium can print SVG data URLs inconsistently on some Windows PDF paths.
+// Convert them in the isolated PDF document to high-resolution PNGs before
+// printing, so QR codes and other embedded vector artwork remain scan-ready.
+const RASTERIZE_EMBEDDED_SVG_IMAGES_SCRIPT = `
+  (async () => {
+    const images = Array.from(document.images).filter((image) => image.src.startsWith("data:image/svg+xml"));
+    for (const image of images) {
+      await image.decode().catch(() => {});
+      const bounds = image.getBoundingClientRect();
+      if (!bounds.width || !bounds.height) continue;
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.ceil(bounds.width * 6));
+      canvas.height = Math.max(1, Math.ceil(bounds.height * 6));
+      const context = canvas.getContext("2d");
+      context.fillStyle = "#fff";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      image.src = canvas.toDataURL("image/png");
+      await image.decode().catch(() => {});
+    }
+    return true;
+  })()
+`;
+
 function normalizePdfFileName(value) {
   const name = String(value || "LabShield_Report.pdf")
     .replace(/[<>:"/\\|?*\u0000-\u001f]/g, "_")
@@ -81,6 +105,7 @@ function createReportPdfHandler({ BrowserWindow, dialog, fs, path, app, getParen
         ]).then(() => true)
       `);
       await pdfWindow.webContents.executeJavaScript(REPORT_PAGINATION_SCRIPT);
+      await pdfWindow.webContents.executeJavaScript(RASTERIZE_EMBEDDED_SVG_IMAGES_SCRIPT);
       const pdf = await pdfWindow.webContents.printToPDF(getPrintToPdfOptions());
       await fs.writeFile(choice.filePath, pdf);
       return { canceled: false, filePath: choice.filePath };
@@ -93,6 +118,7 @@ function createReportPdfHandler({ BrowserWindow, dialog, fs, path, app, getParen
 
 module.exports = {
   MAX_REPORT_HTML_BYTES,
+  RASTERIZE_EMBEDDED_SVG_IMAGES_SCRIPT,
   createReportPdfHandler,
   getPrintToPdfOptions,
   normalizePdfFileName,

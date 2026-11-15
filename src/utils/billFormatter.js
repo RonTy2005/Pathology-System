@@ -77,10 +77,15 @@ function buildBillHtml(billData, { sharedLinkView = false } = {}) {
   const portalQrUrl = portalUrl ? getPatientPortalQrUrl(portalUrl) : "";
   const tests = billData.tests || [];
 
-  // Every receipt stays in the upper half of an A4 sheet. Five services leave
-  // enough vertical room for a clearly readable patient copy instead of
-  // compressing the type to fit a sixth line item.
-  const testsPerPage = 5;
+  // Keep ordinary receipts in the upper half of A4.  When there are more
+  // services, use the complete sheet rather than reducing the QR code or
+  // print size to force the content into a half-page receipt.
+  // Two services fit comfortably in a half-page receipt at a genuinely
+  // readable type size. Three or more services receive a full A4 page.
+  const testsPerHalfPage = 2;
+  const testsPerFullPage = 8;
+  const useFullPage = tests.length > testsPerHalfPage;
+  const testsPerPage = useFullPage ? testsPerFullPage : testsPerHalfPage;
   const totalPages = Math.max(1, Math.ceil(tests.length / testsPerPage));
   const doctorName = billData.doctor ? escapeHtml(billData.doctor.name) : "Not specified";
   const associateName = escapeHtml(billData.visit.associate_label || "Direct at facility");
@@ -109,7 +114,7 @@ function buildBillHtml(billData, { sharedLinkView = false } = {}) {
     `).join("");
 
     return `
-      <main class="bill-slip${lastPage ? " bill-slip-last" : ""}">
+      <main class="bill-slip${useFullPage ? " bill-slip-full" : ""}${lastPage ? " bill-slip-last" : ""}">
         <div class="accent-rule"></div>
         <header class="slip-header">
           <div class="brand-block">
@@ -175,7 +180,7 @@ function buildBillHtml(billData, { sharedLinkView = false } = {}) {
               <strong>${payment.label}</strong>
               <p>Prepared by ${escapeHtml(billData.visit.creator_name || billData.visit.creator_username || "Admin")}</p>
             </div>
-            ${portalQrUrl ? `<div class="portal-qr"><img src="${escapeHtml(portalQrUrl)}" alt="Scan for report status" /><span>Scan for report status</span></div>` : ""}
+            ${portalQrUrl ? `<div class="portal-qr"><img src="${escapeHtml(portalQrUrl)}" alt="Scan to view this bill" /><span>Scan to view this bill</span></div>` : ""}
             <div class="signatory"><span>For ${businessName}</span><strong>Authorised signatory</strong></div>
           </footer>
         ` : `<p class="next-page">Continued on the next booking slip (page ${pageIndex + 1} of ${totalPages})</p>`}
@@ -194,59 +199,60 @@ function buildBillHtml(billData, { sharedLinkView = false } = {}) {
         * { box-sizing: border-box; }
         @page { size: A4 portrait; margin: 0 !important; }
         html, body { margin: 0; padding: 0; background: #edf3f1; }
-        body { color: var(--ink); font-family: Arial, Helvetica, sans-serif; font-size: 11.5px; line-height: 1.3; }
+        body { color: var(--ink); font-family: Arial, Helvetica, sans-serif; font-size: 15px; line-height: 1.4; }
         .bill-slip { width: 210mm; height: 148.5mm; padding: 5mm 8mm 4mm; background: #fff; position: relative; overflow: hidden; page-break-after: always; break-after: page; }
+        .bill-slip-full { height: 297mm; padding-bottom: 8mm; }
         .bill-slip-last { page-break-after: auto; break-after: auto; }
         .accent-rule { position: absolute; top: 0; left: 0; right: 0; height: 4mm; background: var(--accent); }
-        .slip-header { min-height: 26mm; display: flex; align-items: center; justify-content: space-between; gap: 7mm; padding: 1.5mm 0 3mm; border-bottom: 1px solid var(--ink); }
+        .slip-header { min-height: 31mm; display: flex; align-items: center; justify-content: space-between; gap: 7mm; padding: 1.5mm 0 3mm; border-bottom: 1px solid var(--ink); }
         .brand-block { min-width: 0; display: flex; align-items: center; gap: 3mm; }
-        .brand-mark { width: 16mm; height: 16mm; overflow: hidden; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-size: 21px; font-weight: 800; }
+        .brand-mark { width: 20mm; height: 20mm; overflow: hidden; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-size: 25px; font-weight: 800; }
         .brand-mark img { width: 100%; height: 100%; object-fit: contain; }
-        .brand-block h1 { margin: 0; color: var(--accent); font-size: 19px; line-height: 1.05; letter-spacing: -.01em; }
-        .brand-block p { margin: 1px 0 0; color: var(--muted); font-size: 9px; }
-        .brand-block .business-address { color: var(--ink); font-size: 10px; font-weight: 700; line-height: 1.2; }
+        .brand-block h1 { margin: 0; color: var(--accent); font-size: 23px; line-height: 1.05; letter-spacing: -.01em; }
+        .brand-block p { margin: 1px 0 0; color: var(--muted); font-size: 11px; }
+        .brand-block .business-address { color: var(--ink); font-size: 12px; font-weight: 700; line-height: 1.2; }
         .slip-title { min-width: 62mm; display: flex; flex-direction: column; align-items: flex-end; text-align: right; gap: 1px; }
-        .slip-title span { color: var(--accent); font-size: 8.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
-        .slip-title strong { font-size: 14px; line-height: 1.15; text-decoration: underline; }
-        .slip-title small { color: var(--muted); font-size: 8px; }
+        .slip-title span { color: var(--accent); font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+        .slip-title strong { font-size: 17px; line-height: 1.15; text-decoration: underline; }
+        .slip-title small { color: var(--muted); font-size: 10px; }
         .booking-details { display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; padding: 2.5mm 0; border-bottom: 1px solid var(--line); }
         .details-column { min-width: 0; }
-        .details-column p { display: grid; grid-template-columns: 29mm 1fr; gap: 1.5mm; margin: 0 0 1px; font-size: 10.5px; }
+        .details-column p { display: grid; grid-template-columns: 30mm 1fr; gap: 1.5mm; margin: 0 0 1px; font-size: 13.5px; }
         .details-column b { font-weight: 700; }
         .details-column b::after { content: ":"; float: right; }
         .details-column span { overflow-wrap: anywhere; }
-        .continued, .next-page { margin: 1.5mm 0; color: var(--muted); font-size: 8.5px; text-align: center; }
+        .continued, .next-page { margin: 1.5mm 0; color: var(--muted); font-size: 9.5px; text-align: center; }
         .items-table { width: 100%; border-collapse: collapse; margin-top: 2mm; table-layout: fixed; }
-        .items-table th { padding: 1.35mm 1.5mm; border: 1px solid var(--line); background: #f0f0f0; color: var(--ink); font-size: 10px; font-weight: 700; text-align: left; }
+        .items-table th { padding: 1.7mm 1.9mm; border: 1px solid var(--line); background: #f0f0f0; color: var(--ink); font-size: 13px; font-weight: 700; text-align: left; }
         .items-table th.serial, .items-table td.serial { width: 10mm; text-align: center; }
         .items-table th.test-code, .items-table td.test-code { width: 25mm; }
         .items-table th.amount, .items-table td.amount { width: 29mm; text-align: right; white-space: nowrap; }
-        .items-table td { min-height: 7mm; padding: 1.3mm 1.5mm; border: 1px solid var(--line); vertical-align: middle; font-size: 11.2px; }
-        .items-table td.service strong { font-size: 11.2px; }
-        .items-table td.test-code { color: var(--muted); font-size: 9px; }
+        .items-table td { min-height: 9mm; padding: 1.7mm 1.9mm; border: 1px solid var(--line); vertical-align: middle; font-size: 14px; }
+        .items-table td.service strong { font-size: 14px; }
+        .items-table td.test-code { color: var(--muted); font-size: 11.5px; }
         .settlement { display: grid; grid-template-columns: 1fr 57mm; gap: 5mm; align-items: start; margin-top: 2.5mm; }
         .receipt-notes { padding-top: 1mm; }
-        .receipt-notes p { margin: 0 0 1.5mm; font-size: 9.5px; }
+        .receipt-notes p { margin: 0 0 1.5mm; font-size: 11.5px; }
         .receipt-notes .report-note { margin-top: 2.5mm; color: var(--muted); }
-        .receipt-notes .collection-note { margin-top: 1.5mm; color: var(--ink); font-size: 10px; font-weight: 700; line-height: 1.2; }
-        .totals-table { width: 100%; border-collapse: collapse; font-size: 10px; }
-        .totals-table th, .totals-table td { padding: 1.1mm 1.5mm; border: 1px solid var(--line); text-align: left; }
+        .receipt-notes .collection-note { margin-top: 1.5mm; color: var(--ink); font-size: 12px; font-weight: 700; line-height: 1.25; }
+        .totals-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+        .totals-table th, .totals-table td { padding: 1.3mm 1.7mm; border: 1px solid var(--line); text-align: left; }
         .totals-table td { text-align: right; white-space: nowrap; }
         .totals-table .total-row { background: var(--accent-soft); font-weight: 700; }
         .totals-table .balance.due { color: var(--danger); font-weight: 700; }
         .totals-table .balance.partial { color: var(--warn); font-weight: 700; }
-        .slip-footer { display: grid; grid-template-columns: 1fr auto 46mm; gap: 5mm; align-items: end; margin-top: 2.5mm; padding-top: 2mm; border-top: 1px solid var(--ink); color: var(--muted); font-size: 8.5px; }
+        .slip-footer { display: grid; grid-template-columns: 1fr auto 46mm; gap: 5mm; align-items: end; margin-top: 2.5mm; padding-top: 2mm; border-top: 1px solid var(--ink); color: var(--muted); font-size: 10.5px; }
         .slip-footer p { margin: 1px 0 0; }
-        .slip-footer strong { color: var(--accent); font-size: 9.5px; }
-        .portal-qr { display: flex; align-items: center; gap: 1.5mm; max-width: 33mm; color: var(--muted); font-size: 7.5px; line-height: 1.1; }
-        .portal-qr img { width: 11mm; height: 11mm; padding: .5mm; background: #fff; border: 1px solid var(--line); }
-        .signatory { min-height: 10mm; padding-top: 4mm; border-bottom: 1px solid var(--ink); text-align: center; display: flex; flex-direction: column; gap: 1px; }
-        .signatory span { color: var(--muted); font-size: 8px; }
-        .signatory strong { color: var(--ink); font-size: 9.5px; }
+        .slip-footer strong { color: var(--accent); font-size: 11.5px; }
+        .portal-qr { display: flex; align-items: center; gap: 2mm; max-width: 50mm; color: var(--muted); font-size: 10px; line-height: 1.15; }
+        .portal-qr img { width: 24mm; height: 24mm; padding: .7mm; background: #fff; border: 1px solid var(--line); }
+        .signatory { min-height: 14mm; padding-top: 6mm; border-bottom: 1px solid var(--ink); text-align: center; display: flex; flex-direction: column; gap: 1px; }
+        .signatory span { color: var(--muted); font-size: 10px; }
+        .signatory strong { color: var(--ink); font-size: 11.5px; }
         @media screen {
           .bill-slip { margin: 10mm auto; box-shadow: 0 7px 28px rgba(30, 30, 30, .16); }
           .shared-link-bill { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
-          .shared-link-bill .items-table td.service strong { font-size: 9.5px; font-weight: 600; line-height: 1.2; }
+          .shared-link-bill .items-table td.service strong { font-size: 11px; font-weight: 600; line-height: 1.2; }
         }
         @media print { html, body { background: #fff; } .bill-slip { margin: 0; box-shadow: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
       </style>

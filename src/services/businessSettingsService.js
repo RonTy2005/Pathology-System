@@ -1,5 +1,6 @@
 const { get, run } = require("../db/helpers");
 const { DEFAULT_BUSINESS_NAME } = require("../config/constants");
+const { parseAdditionalReportDoctors } = require("./reportDoctorService");
 
 const DEFAULT_LETTERHEAD_HEADER_SPACE_MM = 50;
 
@@ -43,6 +44,7 @@ async function getBusinessSettings({ includeLetterhead = false, includeReportDoc
             report_doctor_name,
             report_doctor_qualification,
             report_doctor_registration_no,
+            additional_report_doctors_json,
             setup_completed,
             ${includeLetterhead ? "letterhead_data_url," : ""}
             default_report_includes_letterhead,
@@ -58,6 +60,7 @@ async function getBusinessSettings({ includeLetterhead = false, includeReportDoc
   );
 
   const facilityTypes = normalizeFacilityTypes(settings?.facility_type);
+  const additionalReportDoctors = parseAdditionalReportDoctors(settings?.additional_report_doctors_json);
 
   const hasLetterhead = Boolean(settings?.has_letterhead);
   // A full-page letterhead needs a protected header area. Existing installations
@@ -83,7 +86,8 @@ async function getBusinessSettings({ includeLetterhead = false, includeReportDoc
     reportDoctorName: normalizeText(settings?.report_doctor_name),
     reportDoctorQualification: normalizeText(settings?.report_doctor_qualification),
     reportDoctorRegistrationNo: normalizeText(settings?.report_doctor_registration_no),
-    hasReportDoctorSignature: Boolean(settings?.has_report_doctor_signature),
+    hasReportDoctorSignature: Boolean(settings?.has_report_doctor_signature) || additionalReportDoctors.some(doctor => doctor.signatureDataUrl),
+    additionalReportDoctors: includeReportDoctorSignature ? additionalReportDoctors : additionalReportDoctors.map(({ signatureDataUrl, ...doctor }) => ({ ...doctor, hasSignature: Boolean(signatureDataUrl) })),
     setupCompleted: Number(settings?.setup_completed) === 1,
     hasLetterhead,
     defaultReportIncludesLetterhead: Number(settings?.default_report_includes_letterhead) !== 0,
@@ -133,6 +137,8 @@ async function updateBusinessSettings(businessName, {
   updateReportDoctorDetails = false,
   reportDoctorSignatureDataUrl,
   updateReportDoctorSignature = false,
+  additionalReportDoctors,
+  updateAdditionalReportDoctors = false,
   businessLogoDataUrl,
   updateBusinessLogo = false,
 } = {}) {
@@ -197,6 +203,11 @@ async function updateBusinessSettings(businessName, {
   if (updateReportDoctorSignature) {
     assignments.push("report_doctor_signature_data_url = ?");
     params.push(reportDoctorSignatureDataUrl);
+  }
+
+  if (updateAdditionalReportDoctors) {
+    assignments.push("additional_report_doctors_json = ?");
+    params.push(JSON.stringify(additionalReportDoctors));
   }
 
   assignments.push("updated_at = CURRENT_TIMESTAMP");

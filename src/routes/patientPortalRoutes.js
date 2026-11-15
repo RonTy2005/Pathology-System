@@ -8,7 +8,7 @@ const { buildReportHtml } = require("../utils/reportFormatter");
 const { buildBillHtml } = require("../utils/billFormatter");
 const {
   getPatientPortalReportUrl,
-  getPatientPortalUrl,
+  getPatientPortalBillUrl,
   getTestReportPreviewUrl,
   shouldIncludePortalLetterhead,
 } = require("../utils/patientPortal");
@@ -255,6 +255,7 @@ patientPortalRouter.get("/sample/test/:testId/report", async (req, res, next) =>
       reportDoctorQualification: businessSettings.reportDoctorQualification,
       reportDoctorRegistrationNo: businessSettings.reportDoctorRegistrationNo,
       reportDoctorSignatureDataUrl: businessSettings.reportDoctorSignatureDataUrl,
+      additionalReportDoctors: businessSettings.additionalReportDoctors,
     }));
   } catch (error) {
     next(error);
@@ -313,7 +314,7 @@ patientPortalRouter.get("/:token/bill", async (req, res, next) => {
     res.type("html").send(buildBillHtml({
       ...bill,
       businessSettings,
-      patientPortalUrl: getPatientPortalUrl(req, visit.patient_portal_token, businessSettings.patientPortalBaseUrl),
+      patientPortalUrl: getPatientPortalBillUrl(req, visit.patient_portal_token, businessSettings.patientPortalBaseUrl),
     }, { sharedLinkView: true }));
   } catch (error) {
     next(error);
@@ -372,8 +373,18 @@ patientPortalRouter.get("/:token/report", async (req, res, next) => {
     });
 
     setPrivateHeaders(res);
+    const reportTests = report.tests.map((test) => ({
+      ...test,
+      digital_report_url: getPatientPortalReportUrl(
+        req,
+        visit.patient_portal_token,
+        businessSettings.patientPortalBaseUrl,
+        test
+      ),
+    }));
     res.type("html").send(buildReportHtml({
       ...report,
+      tests: reportTests,
       businessName: businessSettings.businessName,
       facilityType: businessSettings.facilityType,
       address: businessSettings.address,
@@ -389,6 +400,7 @@ patientPortalRouter.get("/:token/report", async (req, res, next) => {
       reportDoctorQualification: businessSettings.reportDoctorQualification,
       reportDoctorRegistrationNo: businessSettings.reportDoctorRegistrationNo,
       reportDoctorSignatureDataUrl: businessSettings.reportDoctorSignatureDataUrl,
+      additionalReportDoctors: businessSettings.additionalReportDoctors,
     }));
   } catch (error) {
     next(error);

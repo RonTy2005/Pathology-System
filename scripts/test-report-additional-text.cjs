@@ -36,40 +36,16 @@ test('additional text appears below results, before template notes, escaped and 
   assert.doesNotMatch(blank, /<section class="additional-report-text"/);
 });
 
-test('the plus button opens the optional editor and finalization saves changed text only', async () => {
+test('the per-test plus editor provides both note and additional-test-row entry choices', () => {
   const source = fs.readFileSync(require.resolve('../frontend/scripts/common.js'), 'utf8');
-  const scope = vm.createContext({});
-  for (const name of ['escapeResultFieldHtml', 'renderResultAdditionalText', 'attachResultAdditionalText', 'savePendingResultAdditionalText']) {
-    const definition = source.match(new RegExp(`(?:async )?function ${name}\\([^]*?\\n\\}`))?.[0];
-    assert.ok(definition, name);
-    vm.runInContext(definition, scope);
-  }
-  const markup = scope.renderResultAdditionalText({ id: 1, additional_report_text: '</textarea>\nAdvice' });
-  assert.match(markup, /aria-expanded="true"/);
-  assert.match(markup, /&lt;\/textarea&gt;/);
-  assert.match(scope.renderResultAdditionalText({ id: 2 }), /data-additional-text-holder hidden/);
-  assert.match(scope.renderResultAdditionalText({ id: 2 }, true), /disabled/);
-  let click;
-  let focused = false;
-  const holder = { hidden: true, querySelector() { return { focus() { focused = true; } }; } };
-  const button = { addEventListener(event, callback) { assert.equal(event, 'click'); click = callback; }, setAttribute(name, value) { this[name] = value; } };
-  scope.attachResultAdditionalText({ querySelector(selector) { return selector.includes('toggle') ? button : holder; } });
-  click();
-  assert.equal(holder.hidden, false);
-  assert.equal(focused, true);
-  assert.equal(button['aria-expanded'], 'true');
-  click();
-  assert.equal(holder.hidden, true);
-  const inputs = [
-    { value: 'Advice', dataset: { savedAdditionalText: '' }, disabled: false },
-    { value: '', dataset: { savedAdditionalText: 'Old advice' }, disabled: false },
-    { value: 'Same', dataset: { savedAdditionalText: 'Same' }, disabled: false },
-    { value: 'Locked', dataset: { savedAdditionalText: '' }, disabled: true },
-  ];
-  const forms = inputs.map(input => ({ querySelector() { return input; } }));
-  const saved = [];
-  await scope.savePendingResultAdditionalText({ querySelectorAll() { return forms; } }, async form => saved.push(form));
-  assert.deepEqual(saved, forms.slice(0, 2));
+  assert.match(source, /function renderResultAdditionalText/);
+  assert.match(source, /Text box/);
+  assert.match(source, /Test addition/);
+  assert.match(source, /Investigation/);
+  assert.match(source, /Reference Value/);
+  assert.match(source, /data-additional-test-row-add/);
+  assert.match(source, /function getAdditionalReportRowsFromForm/);
+  assert.match(source, /function savePendingResultAdditionalText/);
 });
 
 test('result API saves, reloads, finalizes and clears per-test advice without changing other tests', async () => {
@@ -83,7 +59,7 @@ test('result API saves, reloads, finalizes and clears per-test advice without ch
     await run('CREATE TABLE associates (id INTEGER PRIMARY KEY, name TEXT, associate_code TEXT)');
     await run('CREATE TABLE visits (id INTEGER PRIMARY KEY, patient_id INTEGER, doctor_id INTEGER, associate_id INTEGER, bill_no TEXT, status TEXT, created_at TEXT)');
     await run('CREATE TABLE tests (id INTEGER PRIMARY KEY, name TEXT, category TEXT, code TEXT, sample_type TEXT, turnaround_hours INTEGER, report_body TEXT, price REAL, active INTEGER DEFAULT 1)');
-    await run("CREATE TABLE visit_tests (id INTEGER PRIMARY KEY, visit_id INTEGER, test_id INTEGER, assigned_to INTEGER, status TEXT, result_entered_at TEXT, finalized_at TEXT, custom_test_name TEXT, custom_test_price REAL, external_lab_name TEXT, is_outside INTEGER, additional_report_text TEXT NOT NULL DEFAULT '')");
+    await run("CREATE TABLE visit_tests (id INTEGER PRIMARY KEY, visit_id INTEGER, test_id INTEGER, assigned_to INTEGER, status TEXT, result_entered_at TEXT, finalized_at TEXT, custom_test_name TEXT, custom_test_price REAL, external_lab_name TEXT, is_outside INTEGER, additional_report_text TEXT NOT NULL DEFAULT '', additional_report_rows_json TEXT NOT NULL DEFAULT '[]')");
     await run('CREATE TABLE test_parameters (id INTEGER PRIMARY KEY, test_id INTEGER, parameter_name TEXT, unit TEXT, normal_range TEXT, entry_mode TEXT, calculation_formula TEXT, calculation_precision INTEGER, display_order INTEGER)');
     await run('CREATE TABLE results (id INTEGER PRIMARY KEY, visit_test_id INTEGER, parameter_name TEXT, value TEXT, unit TEXT, normal_range TEXT, entry_mode TEXT, entered_by INTEGER, entered_at TEXT)');
     await run('CREATE TABLE reports (id INTEGER PRIMARY KEY, visit_id INTEGER, report_no TEXT, generated_by INTEGER, finalized INTEGER, finalized_at TEXT)');
@@ -113,20 +89,30 @@ test('result API saves, reloads, finalizes and clears per-test advice without ch
         next();
       });
     }
-    const payload = { visitTestId: 1, parameters: [{ parameter_name: 'Total Protein, Serum', value: '7.2', unit: 'g/dL' }], additionalReportText: 'Advice <b>literal</b>\nSecond line' };
+    const additionalRows = [{ investigation: 'Manual smear review', result: 'No abnormal cells', referenceValue: 'Not detected', unit: '' }];
+    const payload = { visitTestId: 1, parameters: [{ parameter_name: 'Total Protein, Serum', value: '7.2', unit: 'g/dL' }], additionalReportText: 'Advice <b>literal</b>\nSecond line', additionalReportRows: additionalRows };
     assert.equal((await request('post', '/:id/results', payload)).statusCode, 200);
     assert.equal((await get('SELECT additional_report_text FROM visit_tests WHERE id = 1')).additional_report_text, payload.additionalReportText);
+    assert.equal((await get('SELECT additional_report_rows_json FROM visit_tests WHERE id = 1')).additional_report_rows_json, JSON.stringify(additionalRows));
     assert.equal((await get('SELECT additional_report_text FROM visit_tests WHERE id = 2')).additional_report_text, '');
     const reopened = await request('get', '/:id');
     assert.equal(reopened.body.tests.find(entry => entry.id === 1).additional_report_text, payload.additionalReportText);
+    assert.deepEqual(JSON.parse(reopened.body.tests.find(entry => entry.id === 1).additional_report_rows_json), additionalRows);
     const bundle = await getReportBundle(1);
     assert.equal(bundle.tests[0].additional_report_text, payload.additionalReportText);
     assert.match(buildReportHtml({ ...bundle, embeddedPreview: true }), /Advice &lt;b&gt;literal&lt;\/b&gt;\nSecond line/);
+    assert.match(buildReportHtml({ ...bundle, embeddedPreview: true }), /Manual smear review/);
+    assert.match(buildReportHtml({ ...bundle, embeddedPreview: true }), /No abnormal cells/);
     const noNote = { ...payload }; delete noNote.additionalReportText;
     await request('post', '/:id/results', noNote);
     assert.equal((await get('SELECT additional_report_text FROM visit_tests WHERE id = 1')).additional_report_text, payload.additionalReportText, 'older clients preserve the saved text');
+    assert.equal((await get('SELECT additional_report_rows_json FROM visit_tests WHERE id = 1')).additional_report_rows_json, JSON.stringify(additionalRows), 'older clients preserve saved additional rows');
     const invalid = await request('post', '/:id/results', { ...payload, additionalReportText: {} });
     assert.equal(invalid.statusCode, 400);
+    const invalidRows = await request('post', '/:id/results', { ...payload, additionalReportRows: [{}] });
+    assert.equal(invalidRows.statusCode, 200);
+    assert.equal((await get('SELECT additional_report_rows_json FROM visit_tests WHERE id = 1')).additional_report_rows_json, '[]');
+    await request('post', '/:id/results', payload);
     const denied = await request('post', '/:id/results', payload, { ...user, permissions: [] });
     assert.equal(denied.statusCode, 403);
     const unassigned = await request('post', '/:id/results', payload, { ...user, id: 8 });

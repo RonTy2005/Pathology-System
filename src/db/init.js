@@ -91,6 +91,7 @@ async function createTables() {
       report_doctor_qualification TEXT,
       report_doctor_registration_no TEXT,
       report_doctor_signature_data_url TEXT,
+      additional_report_doctors_json TEXT NOT NULL DEFAULT '[]',
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -115,6 +116,7 @@ async function createTables() {
   await ensureColumn("business_settings", "report_doctor_qualification", "TEXT");
   await ensureColumn("business_settings", "report_doctor_registration_no", "TEXT");
   await ensureColumn("business_settings", "report_doctor_signature_data_url", "TEXT");
+  await ensureColumn("business_settings", "additional_report_doctors_json", "TEXT NOT NULL DEFAULT '[]'");
   await run(
     "INSERT OR IGNORE INTO business_settings (id, business_name) VALUES (1, ?)",
     [DEFAULT_BUSINESS_NAME]
@@ -324,6 +326,7 @@ async function createTables() {
   await ensureColumn("visit_tests", "custom_test_name", "TEXT");
   await ensureColumn("visit_tests", "custom_test_price", "REAL");
   await ensureColumn("visit_tests", "additional_report_text", "TEXT NOT NULL DEFAULT ''");
+  await ensureColumn("visit_tests", "additional_report_rows_json", "TEXT NOT NULL DEFAULT '[]'");
 
   await run(`
     CREATE TABLE IF NOT EXISTS reports (
@@ -583,7 +586,7 @@ async function seedTests() {
 
   const tests = [
     {
-      name: "Complete Blood Count",
+      name: "CBC (Complete Blood Count)",
       code: "CBC",
       category: "Hematology",
       sampleType: "Whole Blood",
@@ -4731,6 +4734,16 @@ async function ensureUlcerSmearPapTestConfiguration(db = { all, get, run, transa
   });
 }
 
+async function ensure17HydroxyprogesteroneTestConfiguration(db = { all, get, run, transaction }) {
+  return ensureBlankReportFormatConfiguration(db, {
+    names: ["17-oh progesterone", "17-hydroxyprogesterone", "17 hydroxyprogesterone", "17-hydroxyprogesterone, serum", "17-alpha hydroxyprogesterone", "17-ohp"],
+    schemaName: "17-OH Progesterone",
+    sampleType: "Serum",
+    sampleTypePattern: /^(serum|blood)/i,
+    placeholderNames: ["result", "findings", "impression", "comments", "comment", "remarks"],
+  });
+}
+
 async function ensureWoundSwabGramStainTestConfiguration(db = { all, get, run, transaction }) {
   return ensureBlankReportFormatConfiguration(db, {
     names: ["wound swab gram stain", "wound swab for gram stain", "wound gram stain", "gram stain wound swab"],
@@ -6210,8 +6223,8 @@ async function ensureAdditionalClinicalPathologyReportTestConfigurations() {
   });
 
   await ensureReportTableTestConfiguration({
-    names: ["Thyroid Stimulating Hormone (TSH)", "TSH (Thyroid Stimulating Hormone)", "TSH", "TSH, Serum"],
-    createName: "Thyroid Stimulating Hormone (TSH)",
+    names: ["TSH (Thyroid Stimulating Hormone)", "Thyroid Stimulating Hormone (TSH)", "TSH", "TSH, Serum"],
+    createName: "TSH (Thyroid Stimulating Hormone)",
     createCode: "TSH001",
     category: "Endocrinology",
     sampleType: "Serum",
@@ -9963,6 +9976,49 @@ async function ensureBunTestConfiguration() {
   });
 }
 
+async function ensureSerumUreaTestConfiguration() {
+  await ensureSingleParameterTestConfiguration({
+    names: ["Urea", "Urea (Serum)", "Serum Urea", "Blood Urea"],
+    createName: "Urea",
+    createCode: "UREA",
+    category: "Biochemistry",
+    sampleType: "Serum",
+    turnaroundHours: 24,
+    parameterName: "Urea, Serum",
+    parameterAliases: ["Urea", "Serum Urea", "Blood Urea"],
+    unit: "mg/dL",
+    normalRange: "13.00 - 43.00",
+  });
+}
+
+async function ensureCtScanBrainBillingService() {
+  const canonicalName = "CT Scan of Brain";
+  const aliases = [canonicalName, "CT Scan Brain"];
+  const placeholders = aliases.map(() => "LOWER(?)").join(", ");
+  const matches = await all(
+    `SELECT id, name FROM tests WHERE LOWER(name) IN (${placeholders}) ORDER BY id ASC`,
+    aliases
+  );
+
+  if (!matches.length) {
+    await run(
+      `INSERT INTO tests (name, code, category, sample_type, price, turnaround_hours, active, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, 1, ?)`,
+      [canonicalName, "CT-BRAIN", "CT Scan", "Imaging", 1600, 24, buildNow()]
+    );
+    return;
+  }
+
+  // Earlier imports used “CT Scan Brain”. Keep that same catalogue record,
+  // price, and history, but present it under the requested standard name.
+  await run(
+    `UPDATE tests
+     SET name = ?, category = ?, sample_type = ?, active = 1
+     WHERE id = ?`,
+    [canonicalName, "CT Scan", "Imaging", matches[0].id]
+  );
+}
+
 async function ensureSodiumTestConfiguration() {
   await ensureSingleParameterTestConfiguration({
     names: ["Sodium (Serum)", "Sodium, Serum", "Serum Sodium", "Sodium"],
@@ -10440,6 +10496,21 @@ function normalizeCatalogueDisplayName(value) {
   return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
+function abbreviationFirstCatalogueName(name) {
+  const value = String(name || "").trim();
+  const match = value.match(/^(.+?)\s*\(([A-Za-z0-9 .+\-/]+)\)\s*(.*)$/);
+  if (!match) return value;
+  const [, leadingName, abbreviation, trailingName] = match;
+  const upperOrNumeric = (abbreviation.match(/[A-Z0-9]/g) || []).length;
+  const isShortAbbreviation = abbreviation.length <= 14 && !/\s/.test(abbreviation) && upperOrNumeric >= 2;
+  const fullName = `${leadingName.trim()} ${trailingName.trim()}`
+    .replace(/\s+([,.;:])/g, "$1")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  if (!isShortAbbreviation || !fullName) return value;
+  return `${abbreviation.trim()} (${fullName})`;
+}
+
 // The original catalogue was imported from a manually transcribed list.  Its
 // display labels occasionally lost spaces or had an obvious transcription
 // error (for example, "Coppe" instead of "Copper").  This is deliberately a
@@ -10521,10 +10592,12 @@ async function normalizeImportedCatalogueDisplayNames() {
 
   for (const test of importedTests) {
     const normalized = normalizeCatalogueDisplayName(test.name);
-    const replacement = CATALOGUE_DISPLAY_NAME_OVERRIDES.get(normalized)
-      || canonicalByNormalizedName.get(normalized);
+    const canonicalName = CATALOGUE_DISPLAY_NAME_OVERRIDES.get(normalized)
+      || canonicalByNormalizedName.get(normalized)
+      || test.name;
+    const replacement = abbreviationFirstCatalogueName(canonicalName);
 
-    if (!replacement || replacement === test.name) continue;
+    if (replacement === test.name) continue;
 
     // Never create a second catalogue row with the same visible name.  A
     // duplicate needs a deliberate merge, which this display-only repair does
@@ -10536,6 +10609,41 @@ async function normalizeImportedCatalogueDisplayNames() {
     if (conflictingTest) continue;
 
     await run("UPDATE tests SET name = ? WHERE id = ?", [replacement, test.id]);
+  }
+}
+
+async function normalizeAbbreviationFirstCatalogueNames() {
+  const exactNamesByCode = new Map([
+    ["CBC", "CBC (Complete Blood Count)"],
+    ["CBCESR", "CBC with ESR (Complete Blood Count with ESR)"],
+    ["CBCABS", "CBC with Absolute Count (Complete Blood Count with Absolute Count)"],
+    ["TSH001", "TSH (Thyroid Stimulating Hormone)"],
+    ["SODIUM", "NA (Sodium, Serum)"],
+    ["POTASSIUM", "K (Potassium, Serum)"],
+    ["UREA", "Ur (Urea, Serum)"],
+    ["CREATININE", "Cr (Creatinine, Serum)"],
+  ]);
+  const exactNamesByLegacyName = new Map([
+    [normalizeCatalogueDisplayName("Complete Blood Count"), "CBC (Complete Blood Count)"],
+    [normalizeCatalogueDisplayName("Complete Blood Count (CBC) with ESR"), "CBC with ESR (Complete Blood Count with ESR)"],
+    [normalizeCatalogueDisplayName("Complete Blood Count (CBC) with Absolute Count"), "CBC with Absolute Count (Complete Blood Count with Absolute Count)"],
+    [normalizeCatalogueDisplayName("Thyroid Stimulating Hormone (TSH)"), "TSH (Thyroid Stimulating Hormone)"],
+    [normalizeCatalogueDisplayName("Sodium (Serum)"), "NA (Sodium, Serum)"],
+    [normalizeCatalogueDisplayName("Potassium (Serum)"), "K (Potassium, Serum)"],
+    [normalizeCatalogueDisplayName("Urea"), "Ur (Urea, Serum)"],
+    [normalizeCatalogueDisplayName("Creatinine (Serum)"), "Cr (Creatinine, Serum)"],
+  ]);
+  const tests = await all("SELECT id, name, code FROM tests ORDER BY id ASC");
+  for (const test of tests) {
+    const replacement = exactNamesByCode.get(String(test.code || "").trim().toUpperCase())
+      || exactNamesByLegacyName.get(normalizeCatalogueDisplayName(test.name))
+      || abbreviationFirstCatalogueName(test.name);
+    if (!replacement || replacement === test.name) continue;
+    const conflictingTest = await get(
+      "SELECT id FROM tests WHERE LOWER(TRIM(name)) = LOWER(TRIM(?)) AND id <> ? LIMIT 1",
+      [replacement, test.id]
+    );
+    if (!conflictingTest) await run("UPDATE tests SET name = ? WHERE id = ?", [replacement, test.id]);
   }
 }
 
@@ -10855,21 +10963,27 @@ async function normalizeCbcCatalogParameters() {
 
 async function seedCbcReportTests() {
   let standardCbc = await get(
-    "SELECT id FROM tests WHERE LOWER(name) = LOWER(?) OR LOWER(code) = LOWER(?) ORDER BY id ASC LIMIT 1",
-    ["Complete Blood Count", "CBC"]
+    "SELECT id FROM tests WHERE LOWER(name) IN (LOWER(?), LOWER(?)) OR LOWER(code) = LOWER(?) ORDER BY id ASC LIMIT 1",
+    ["CBC (Complete Blood Count)", "Complete Blood Count", "CBC"]
   );
   if (!standardCbc) {
     const created = await run(
       `INSERT INTO tests (name, code, category, sample_type, price, turnaround_hours, active, created_at)
        VALUES (?, ?, ?, ?, 0, ?, 1, ?)`,
-      ["Complete Blood Count", "CBC", "Hematology", "Whole Blood", 8, buildNow()]
+      ["CBC (Complete Blood Count)", "CBC", "Hematology", "Whole Blood", 8, buildNow()]
     );
     standardCbc = { id: created.id };
   }
   await ensureCbcParameters(standardCbc.id, CBC_COMMON_PARAMETERS);
 
   for (const test of CBC_REPORT_TESTS) {
-    let existing = await get("SELECT id FROM tests WHERE LOWER(name) = LOWER(?)", [test.name]);
+    const legacyName = test.variant === "esr"
+      ? "Complete Blood Count (CBC) with ESR"
+      : "Complete Blood Count (CBC) with Absolute Count";
+    let existing = await get(
+      "SELECT id FROM tests WHERE LOWER(name) IN (LOWER(?), LOWER(?)) OR LOWER(code) = LOWER(?) ORDER BY id ASC LIMIT 1",
+      [test.name, legacyName, test.code]
+    );
     if (!existing) {
       const created = await run(
         `INSERT INTO tests (name, code, category, sample_type, price, turnaround_hours, active, created_at)
@@ -12418,6 +12532,7 @@ async function initializeDatabase() {
     await ensureWellWomenProfileTestConfiguration();
     await ensureWoundSwabAfbStainTestConfiguration();
     await ensureWoundSwabGramStainTestConfiguration();
+    await ensure17HydroxyprogesteroneTestConfiguration();
     await ensureRandomUrineUricAcidTestConfiguration();
     await ensureUrethralDischargeCultureSensitivityTestConfiguration();
     await ensureCervicalSwabGramStainTestConfiguration();
@@ -12767,6 +12882,8 @@ async function initializeDatabase() {
     await ensureGlobulinTestConfiguration();
     await ensureAlbuminTestConfiguration();
     await ensureBunTestConfiguration();
+    await ensureSerumUreaTestConfiguration();
+    await ensureCtScanBrainBillingService();
     await ensureSodiumTestConfiguration();
     await ensureIronTestConfiguration();
     await ensureLacticAcidTestConfiguration();
@@ -12817,6 +12934,9 @@ async function initializeDatabase() {
     await applyOneTimeMigration("blank-test-code-normalization-v1", normalizeBlankTestCodes);
     await applyOneTimeMigration("catalogue-display-name-normalization-v1", normalizeImportedCatalogueDisplayNames);
     await applyOneTimeMigration("catalogue-display-name-normalization-v2", normalizeImportedCatalogueDisplayNames);
+    await applyOneTimeMigration("catalogue-abbreviation-first-v1", normalizeAbbreviationFirstCatalogueNames);
+    await applyOneTimeMigration("catalogue-abbreviation-first-v2", normalizeAbbreviationFirstCatalogueNames);
+    await applyOneTimeMigration("catalogue-abbreviation-first-v3", normalizeAbbreviationFirstCatalogueNames);
     await retireDuplicateCatalogueTests();
     await ensureUserDefaults();
   } catch (error) {
@@ -12911,6 +13031,7 @@ async function initializeDatabase() {
     await ensureWellWomenProfileTestConfiguration();
     await ensureWoundSwabAfbStainTestConfiguration();
     await ensureWoundSwabGramStainTestConfiguration();
+    await ensure17HydroxyprogesteroneTestConfiguration();
     await ensureRandomUrineUricAcidTestConfiguration();
     await ensureUrethralDischargeCultureSensitivityTestConfiguration();
     await ensureCervicalSwabGramStainTestConfiguration();
@@ -13260,6 +13381,8 @@ async function initializeDatabase() {
     await ensureGlobulinTestConfiguration();
     await ensureAlbuminTestConfiguration();
     await ensureBunTestConfiguration();
+    await ensureSerumUreaTestConfiguration();
+    await ensureCtScanBrainBillingService();
     await ensureSodiumTestConfiguration();
     await ensureIronTestConfiguration();
     await ensureLacticAcidTestConfiguration();
@@ -13310,6 +13433,9 @@ async function initializeDatabase() {
     await applyOneTimeMigration("blank-test-code-normalization-v1", normalizeBlankTestCodes);
     await applyOneTimeMigration("catalogue-display-name-normalization-v1", normalizeImportedCatalogueDisplayNames);
     await applyOneTimeMigration("catalogue-display-name-normalization-v2", normalizeImportedCatalogueDisplayNames);
+    await applyOneTimeMigration("catalogue-abbreviation-first-v1", normalizeAbbreviationFirstCatalogueNames);
+    await applyOneTimeMigration("catalogue-abbreviation-first-v2", normalizeAbbreviationFirstCatalogueNames);
+    await applyOneTimeMigration("catalogue-abbreviation-first-v3", normalizeAbbreviationFirstCatalogueNames);
     await retireDuplicateCatalogueTests();
     await ensureUserDefaults();
     await applyOneTimeMigration("bill-collection-permission-v1", grantLegacyDueCollectionPermission);
@@ -13339,7 +13465,7 @@ if (require.main === module) {
     });
 }
 
-module.exports = { initializeDatabase, ensureUserDefaults, normalizeImportedCatalogueDisplayNames, ensureDiabeticProfileTestConfiguration, ensureExtendedDiabeticProfileTestConfiguration, ensureDiabeticRenalProfileTestConfiguration, ensureEarSwabGramStainTestConfiguration, ensureEarSwabAfbStainTestConfiguration, ensureFshPrlTestConfiguration, ensureFshLhPrlTestConfiguration, ensureFactorIiMutationTestConfiguration, ensureFactorViiiImmunodepletedTestConfiguration, ensureFemaleInfertilityProfileTestConfiguration, ensureFernTestConfiguration, ensureWuchereriaBancroftiAntigenTestConfiguration, ensureFilariaAntigenTestConfiguration, ensureFluidAspirationCytologyTestConfiguration, ensureFoetalHaemoglobinTestConfiguration, ensureFoetalHaemoglobinByHplcTestConfiguration, ensureFreeBetaHcgTestConfiguration, ensureFreeCholesterolTestConfiguration, ensureFreeEstradiolTestConfiguration, ensureFreePsaTestConfiguration, ensureFreeTestosteroneTestConfiguration, ensureFungusCultureTestConfiguration, ensureFungusCultureSensitivityTestConfiguration, ensureAntiInsulinAntibodyTestConfiguration, ensureAntiLeptospiraAntibodyTestConfiguration, ensureAntiMicrosomalAntibodyTestConfiguration, ensureAntiDsDnaAntibodyTestConfiguration, ensureAntiSsDnaAntibodyTestConfiguration, ensureAntiHistoneAntibodyTestConfiguration, ensureAntiRibosomalPAntibodyTestConfiguration, ensureAntiCcpAbTestConfiguration, ensureAntiSpermAntibodyTestConfiguration, ensureApolipoproteinA1TestConfiguration, ensureUrineArsenicTestConfiguration, ensureArthritisProfileTestConfiguration, ensureAsciticFluidGramStainTestConfiguration, ensureAsciticFluidTotalProteinTestConfiguration, ensureBodyFluidBiochemistryTestConfiguration, ensureBodyFluidSpecificGravityTestConfiguration, ensureCsfFluidChlorideTestConfiguration, ensureCsfFluidProteinTestConfiguration, ensureCsfFluidSpecificGravityTestConfiguration, ensureCsfFluidGlucoseTestConfiguration, ensureUrineCalcium24HourTestConfiguration, ensureCapillaryFragilityTestConfiguration, ensureCardiacProfileTestConfiguration, ensureColorectalCancerMonitorProfileTestConfiguration, ensureComplementFixationTestConfiguration, ensureBilateralConjunctivalSwabTestConfiguration, ensureRightConjunctivalSwabCultureTestConfiguration, ensureConjunctivalSwabCultureTestConfiguration, ensureCeruloplasminTestConfiguration, ensureUrineCopper24HourTestConfiguration, ensureRandomUrineCopperTestConfiguration, ensureEveningCortisolTestConfiguration, ensureMidnightCortisolTestConfiguration, ensureMorningEveningCortisolTestConfiguration, ensureCryoglobulinsScreeningTestConfiguration, ensureGndCultureTestConfiguration, ensureCysticFibrosisGeneMutationTestConfiguration, ensureCmvIggTestConfiguration, ensureCervicalPapSmearTestConfiguration, ensureCervicalSwabGramStainTestConfiguration, ensureCervicalSwabAfbStainTestConfiguration, ensureChikungunyaIggTestConfiguration, ensureChikungunyaIgmTestConfiguration, ensureChlamydiaAntibodyIggIgmTestConfiguration, ensureRandomUrineChlorideTestConfiguration, ensureSerumChlorideTestConfiguration, ensure24HourUrineChlorideTestConfiguration, ensureCsfFluidAfbStainTestConfiguration, ensureCsfFluidGramStainTestConfiguration, ensureCpkWithCkMbTestConfiguration, ensureCmvIgmIggTestConfiguration, ensureComplementC3TestConfiguration, ensureComplementC4TestConfiguration, ensureCancaAntiPr3TestConfiguration, ensureCreatinineClearanceTestConfiguration, ensureCd3LymphocyteTestConfiguration, ensureCd4LymphocyteTestConfiguration, ensureBronchialWashingCultureSensitivityTestConfiguration, ensureBactecAerobicCultureTestConfiguration, ensureBactecAnaerobicCultureTestConfiguration, ensureBronchialPapCytologyTestConfigurations };
+module.exports = { initializeDatabase, ensureUserDefaults, normalizeImportedCatalogueDisplayNames, normalizeAbbreviationFirstCatalogueNames, ensureDiabeticProfileTestConfiguration, ensureExtendedDiabeticProfileTestConfiguration, ensureDiabeticRenalProfileTestConfiguration, ensureEarSwabGramStainTestConfiguration, ensureEarSwabAfbStainTestConfiguration, ensureFshPrlTestConfiguration, ensureFshLhPrlTestConfiguration, ensureFactorIiMutationTestConfiguration, ensureFactorViiiImmunodepletedTestConfiguration, ensureFemaleInfertilityProfileTestConfiguration, ensureFernTestConfiguration, ensureWuchereriaBancroftiAntigenTestConfiguration, ensureFilariaAntigenTestConfiguration, ensureFoetalHaemoglobinTestConfiguration, ensureFoetalHaemoglobinByHplcTestConfiguration, ensureFreeBetaHcgTestConfiguration, ensureFreeCholesterolTestConfiguration, ensureFreeEstradiolTestConfiguration, ensureFreePsaTestConfiguration, ensureFreeTestosteroneTestConfiguration, ensureFungusCultureTestConfiguration, ensureFungusCultureSensitivityTestConfiguration, ensureAntiInsulinAntibodyTestConfiguration, ensureAntiLeptospiraAntibodyTestConfiguration, ensureAntiMicrosomalAntibodyTestConfiguration, ensureAntiDsDnaAntibodyTestConfiguration, ensureAntiSsDnaAntibodyTestConfiguration, ensureAntiHistoneAntibodyTestConfiguration, ensureAntiRibosomalPAntibodyTestConfiguration, ensureAntiCcpAbTestConfiguration, ensureAntiSpermAntibodyTestConfiguration, ensureApolipoproteinA1TestConfiguration, ensureUrineArsenicTestConfiguration, ensureArthritisProfileTestConfiguration, ensureAsciticFluidGramStainTestConfiguration, ensureAsciticFluidTotalProteinTestConfiguration, ensureBodyFluidBiochemistryTestConfiguration, ensureBodyFluidSpecificGravityTestConfiguration, ensureCsfFluidChlorideTestConfiguration, ensureCsfFluidProteinTestConfiguration, ensureCsfFluidSpecificGravityTestConfiguration, ensureCsfFluidGlucoseTestConfiguration, ensureUrineCalcium24HourTestConfiguration, ensureCapillaryFragilityTestConfiguration, ensureCardiacProfileTestConfiguration, ensureColorectalCancerMonitorProfileTestConfiguration, ensureComplementFixationTestConfiguration, ensureBilateralConjunctivalSwabTestConfiguration, ensureRightConjunctivalSwabCultureTestConfiguration, ensureConjunctivalSwabCultureTestConfiguration, ensureCeruloplasminTestConfiguration, ensureUrineCopper24HourTestConfiguration, ensureRandomUrineCopperTestConfiguration, ensureEveningCortisolTestConfiguration, ensureMidnightCortisolTestConfiguration, ensureMorningEveningCortisolTestConfiguration, ensureCryoglobulinsScreeningTestConfiguration, ensureGndCultureTestConfiguration, ensureCysticFibrosisGeneMutationTestConfiguration, ensureCmvIggTestConfiguration, ensureCervicalPapSmearTestConfiguration, ensureCervicalSwabGramStainTestConfiguration, ensureChikungunyaIggTestConfiguration, ensureChikungunyaIgmTestConfiguration, ensureChlamydiaAntibodyIggIgmTestConfiguration, ensureRandomUrineChlorideTestConfiguration, ensureSerumChlorideTestConfiguration, ensure24HourUrineChlorideTestConfiguration, ensureCsfFluidAfbStainTestConfiguration, ensureCsfFluidGramStainTestConfiguration, ensureCpkWithCkMbTestConfiguration, ensureCmvIgmIggTestConfiguration, ensureComplementC3TestConfiguration, ensureComplementC4TestConfiguration, ensureCancaAntiPr3TestConfiguration, ensureCreatinineClearanceTestConfiguration, ensureCd3LymphocyteTestConfiguration, ensureCd4LymphocyteTestConfiguration, ensureBronchialWashingCultureSensitivityTestConfiguration, ensureBactecAerobicCultureTestConfiguration, ensureBactecAnaerobicCultureTestConfiguration, ensureBronchialPapCytologyTestConfigurations };
 module.exports.ensureUrinary17KetosteroidTestConfiguration = ensureUrinary17KetosteroidTestConfiguration;
 module.exports.ensureUrinaryVmaTestConfiguration = ensureUrinaryVmaTestConfiguration;
 module.exports.ensureUrineObtThreeDayTestConfiguration = ensureUrineObtThreeDayTestConfiguration;
@@ -13362,3 +13488,5 @@ module.exports.ensureWeilFelixTestConfiguration = ensureWeilFelixTestConfigurati
 module.exports.ensureWellWomenProfileTestConfiguration = ensureWellWomenProfileTestConfiguration;
 module.exports.ensureWoundSwabAfbStainTestConfiguration = ensureWoundSwabAfbStainTestConfiguration;
 module.exports.ensureWoundSwabGramStainTestConfiguration = ensureWoundSwabGramStainTestConfiguration;
+module.exports.ensure17HydroxyprogesteroneTestConfiguration = ensure17HydroxyprogesteroneTestConfiguration;
+module.exports.ensureCtScanBrainBillingService = ensureCtScanBrainBillingService;

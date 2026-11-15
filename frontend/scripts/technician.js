@@ -129,6 +129,7 @@ async function saveResultForm(form) {
   const payload = {
     visitTestId: Number(form.dataset.visitTestId),
     additionalReportText: form.querySelector("[data-additional-report-text]")?.value || "",
+    additionalReportRows: getAdditionalReportRowsFromForm(form),
     parameters: Array.from(form.querySelectorAll("[data-parameter-row]")).map((row) => {
       const input = row.querySelector("input, textarea");
       return {
@@ -144,8 +145,7 @@ async function saveResultForm(form) {
     method: "POST",
     body: JSON.stringify(payload),
   });
-  const additionalTextInput = form.querySelector("[data-additional-report-text]");
-  if (additionalTextInput) additionalTextInput.dataset.savedAdditionalText = additionalTextInput.value;
+  markAdditionalReportDataSaved(form);
 }
 
 async function loadVisit(visitId) {

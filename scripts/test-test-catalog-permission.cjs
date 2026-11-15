@@ -23,7 +23,7 @@ test('a user assigned Test Catalogue access opens the catalogue in their existin
   assert.ok(definition);
   const scope = vm.createContext({});
   vm.runInContext(definition, scope);
-  assert.equal(scope.getRoleHome(ROLES.NA, { permissions: [PERMISSIONS.MANAGE_TESTS] }), 'admin.html#window-test-catalog');
+  assert.equal(scope.getRoleHome(ROLES.NA, { permissions: [PERMISSIONS.MANAGE_TESTS] }), 'reception.html#test-catalog');
   assert.equal(scope.getRoleHome(ROLES.NA, { permissions: [] }), 'login.html');
   assert.match(legacyCatalogue, /window\.location\.replace\("admin\.html#window-test-catalog"\)/);
   assert.match(common, /link\.href = "#test-catalog"/);

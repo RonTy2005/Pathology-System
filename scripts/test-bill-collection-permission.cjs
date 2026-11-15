@@ -53,7 +53,7 @@ test("Due Collection and Reports are separate workspaces with their own permissi
   assert.match(reception, /const canCollectPayments = hasPermission\("collect_due_payments"\);/);
   assert.match(reception, /const canIssueRefunds = \(isAdministrativeRole\(getUser\(\)\?\.role\).*canManageBilling;/);
   assert.match(reception, /"#due-collection": \["collect_due_payments"\]/);
-  assert.match(reception, /"#reports": \["view_reports", "print_reports", "download_reports"\]/);
+  assert.match(reception, /"#reports": \["view_reports", "print_reports", "download_reports", "share_whatsapp_pdf"\]/);
   assert.match(reception, /const relevantVisits = data\.visits\.filter\(\(visit\) => Number\(visit\.amount_due \|\| 0\) > 0\);/);
   assert.match(reception, /const finalizedVisits = \(data\.visits \|\| \[\]\)\.filter\(\(visit\) => visit\.status === "reported"\);/);
   assert.match(visits, /"\/:id\/payment",\s*allowPermissions\(PERMISSIONS\.COLLECT_DUE_PAYMENTS\)/s);

@@ -32,6 +32,7 @@ function renderHistory(canBill) {
     currency: (value) => `Rs. ${Number(value).toFixed(2)}`,
     openHtmlBill: (id, print) => actions.push({ operation: print ? "print" : "preview", id }),
     shareBillViaWhatsApp: (id) => actions.push({ operation: "share", id }),
+    shareBillPdfViaWhatsApp: async (id, billNo) => actions.push({ operation: "sharePdf", id, billNo }),
     downloadBillPdf: async (id, billNo) => actions.push({ operation: "download", id, billNo }),
     alert: () => {},
   });
@@ -43,31 +44,34 @@ function renderHistory(canBill) {
   return { container, actions };
 }
 
-test("every previous visit exposes all four bill actions only with billing permission", async () => {
+test("every previous visit exposes all five bill actions only with billing permission", async () => {
   const permitted = renderHistory(true);
   assert.match(permitted.container.innerHTML, /OLD-1/);
   assert.match(permitted.container.innerHTML, /OLD-2/);
-  for (const key of ["data-bill-preview", "data-bill-print", "data-download-bill", "data-share-bill"]) {
+  for (const key of ["data-bill-preview", "data-bill-print", "data-download-bill", "data-share-bill", "data-share-bill-pdf"]) {
     assert.equal(permitted.actions.filter((item) => item.key === key).length, 2, key);
   }
   permitted.actions.find((item) => item.key === "data-bill-preview").button.click();
   permitted.actions.find((item) => item.key === "data-bill-print").button.click();
   permitted.actions.find((item) => item.key === "data-share-bill").button.click();
+  await permitted.actions.find((item) => item.key === "data-share-bill-pdf").button.click();
   await permitted.actions.find((item) => item.key === "data-download-bill").button.click();
-  assert.deepEqual(permitted.actions.filter((item) => item.operation).map((item) => item.operation), ["preview", "print", "share", "download"]);
-  assert.deepEqual(permitted.actions.filter((item) => item.operation).map((item) => item.id), ["1", "1", "1", 1]);
+  assert.deepEqual(permitted.actions.filter((item) => item.operation).map((item) => item.operation), ["preview", "print", "share", "sharePdf", "download"]);
+  assert.deepEqual(permitted.actions.filter((item) => item.operation).map((item) => item.id), ["1", "1", "1", 1, 1]);
 
   const forbidden = renderHistory(false);
-  assert.doesNotMatch(forbidden.container.innerHTML, /data-(bill-preview|bill-print|download-bill|share-bill)/);
+  assert.doesNotMatch(forbidden.container.innerHTML, /data-(bill-preview|bill-print|download-bill|share-bill|share-bill-pdf)/);
   assert.equal(forbidden.actions.length, 0);
 });
 
-test("billing-only accounts land on read-only history and bill endpoints require billing permission", () => {
+test("billing-only accounts land on the Billing workspace and bill endpoints require billing permission", () => {
   const definition = common.match(/function getRoleHome\(role, user\) \{[\s\S]*?\n\}(?=\s*function currency)/)?.[0];
   assert.ok(definition);
   const scope = vm.createContext({});
   vm.runInContext(definition, scope);
-  assert.equal(scope.getRoleHome(ROLES.NA, { permissions: [PERMISSIONS.MANAGE_BILLING] }), "reception.html#patient-management");
+  assert.equal(scope.getRoleHome(ROLES.NA, { permissions: [PERMISSIONS.MANAGE_BILLING] }), "reception.html#billing");
+  assert.match(reception, /"#billing": \["manage_billing"\]/);
+  assert.match(reception, /document\.getElementById\("billingVisits"\)/);
   assert.match(reception, /if \(!canManagePatientVisits && !canEditPatientDetails\) \{\s*if \(!hasPermission\("manage_billing"\)\) return;/);
   assert.match(reception, /patientEditForm\.hidden = true;/);
   assert.match(visitRoutes, /"\/:id\/bill-share",\s*allowRoles\([^)]*ROLES\.MANAGER[^)]*ROLES\.NA[^)]*\),\s*allowPermissions\(PERMISSIONS\.MANAGE_BILLING\)/s);

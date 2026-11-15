@@ -8,6 +8,8 @@ const { WELL_WOMEN_FIELDS, isWellWomenProfileName } = require("../services/wellW
 const bwipjs = require("bwip-js");
 const { isBillingOnlyTest, BILLING_ONLY_MESSAGE } = require('../../frontend/scripts/reportEligibility');
 const { REPORT_PAGINATION_SCRIPT } = require("./reportPagination");
+const { parseAdditionalReportDoctors } = require("../services/reportDoctorService");
+const { isRichReportBody, sanitizeRichReportBody, RICH_REPORT_BODY_PREFIX } = require("./richReportBody");
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -2030,6 +2032,10 @@ function isTotalProteinTest(test) {
     || name === "proteintotal";
 }
 
+function is17HydroxyprogesteroneTest(test) {
+  return ["17ohprogesterone", "17hydroxyprogesterone", "17hydroxyprogesteroneserum", "17alphahydroxyprogesterone", "17ohp"].includes(normalizeParameterName(test?.name));
+}
+
 function isWoundSwabGramStainTest(test) {
   return ["woundswabgramstain", "woundswabforgramstain", "woundgramstain", "gramstainwoundswab"].includes(normalizeParameterName(test?.name));
 }
@@ -2163,10 +2169,18 @@ function isUrineAcetoneTest(test) {
     || ["urineacetone", "unineacetone"].includes(code);
 }
 
+function isSerumUreaTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return ["urea", "serumurea", "ureaserum", "bloodurea"].includes(name)
+    || ["urea", "serumurea"].includes(code);
+}
+
 function isBunTest(test) {
   const name = normalizeParameterName(test?.name);
   const code = normalizeParameterName(test?.code);
   return isTotalProteinTest(test)
+    || (is17HydroxyprogesteroneTest(test) && !String(test.report_body || "").trim())
     || (isWoundSwabGramStainTest(test) && !String(test.report_body || "").trim())
     || (isWoundSwabAfbStainTest(test) && !String(test.report_body || "").trim())
     || (isWellWomenProfileName(test?.name) && !String(test.report_body || "").trim())
@@ -8571,14 +8585,14 @@ function buildLftReportBody(test) {
   const reportContentAttribute = lftWithGgt ? ' data-report-content="lft-with-ggt"' : "";
   const ggtNote = lftWithGgt ? "<li>GGT can help support a hepatic source when alkaline phosphatase is elevated, but it is not specific for liver disease and must be interpreted with the full panel and clinical context.</li>" : "";
   const parameters = [
+    { name: "Bilirubin Total", aliases: ["Bilirubin Total", "Total Bilirubin"], method: "DPD", range: "0.30 - 1.20", unit: "mg/dL" },
+    { name: "Bilirubin Direct", aliases: ["Bilirubin Direct", "Direct Bilirubin"], method: "DPD", range: "< 0.30", unit: "mg/dL" },
+    { name: "Bilirubin Indirect", aliases: ["Bilirubin Indirect", "Indirect Bilirubin"], method: "Calculated", range: "< 1.10", unit: "mg/dL" },
     { name: "AST (SGOT)", aliases: ["AST (SGOT)", "SGOT / AST"], method: "IFCC without P5P", range: "15.00 - 40.00", unit: "U/L" },
     { name: "ALT (SGPT)", aliases: ["ALT (SGPT)", "SGPT / ALT"], method: "IFCC without P5P", range: "10.00 - 49.00", unit: "U/L" },
     { name: "AST : ALT Ratio", aliases: ["AST : ALT Ratio", "AST:ALT Ratio", "AST ALT Ratio"], method: "Calculated", range: "< 1.00", unit: "" },
     { name: "GGTP", aliases: ["GGTP", "GGT", "Gamma Glutamyl Transferase"], method: "IFCC", range: "0.00 - 73.00", unit: "U/L" },
     { name: "Alkaline Phosphatase (ALP)", aliases: ["Alkaline Phosphatase (ALP)", "ALP (Alkaline Phosphatase)", "Alkaline Phosphatase"], method: "IFCC-AMP", range: "30.00 - 120.00", unit: "U/L" },
-    { name: "Bilirubin Total", aliases: ["Bilirubin Total", "Total Bilirubin"], method: "DPD", range: "0.30 - 1.20", unit: "mg/dL" },
-    { name: "Bilirubin Direct", aliases: ["Bilirubin Direct", "Direct Bilirubin"], method: "DPD", range: "< 0.30", unit: "mg/dL" },
-    { name: "Bilirubin Indirect", aliases: ["Bilirubin Indirect", "Indirect Bilirubin"], method: "Calculated", range: "< 1.10", unit: "mg/dL" },
     { name: "Total Protein", aliases: ["Total Protein"], method: "Biuret", range: "5.70 - 8.20", unit: "g/dL" },
     { name: "Albumin", aliases: ["Albumin"], method: "BCG", range: "3.20 - 4.80", unit: "g/dL" },
     { name: "Globulin", aliases: ["Globulin"], method: "Calculated", range: "2.00 - 3.50", unit: "g/dL" },
@@ -19898,6 +19912,57 @@ function buildWellWomenProfileReportBody(test) {
 // Wound-site AFB microscopy and swab limitations; no inferred species or resistance.
 // https://www.mayocliniclabs.com/test-catalog/overview/8213
 // https://www.cdc.gov/tb/hcp/testing-diagnosis/clinical-and-laboratory-diagnosis.html
+function build17HydroxyprogesteroneReportBody(test) {
+  const used = new Set();
+  const field = aliases => {
+    const parameter = (test?.parameters || []).find(p => aliases.map(normalizeParameterName).includes(normalizeParameterName(p.parameter_name)));
+    if (parameter) used.add(parameter);
+    return parameter || {};
+  };
+  const text = p => escapeHtml(String(p?.value ?? "").trim() || "-").replace(/\r?\n/g, "<br />");
+  const measurement = (label, p, range = "") => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${text(p)}</td><td>${escapeHtml(String(p.normal_range || "").trim() || range)}</td><td>${escapeHtml(String(p.unit || "").trim())}</td></tr>`;
+  const textRow = (label, aliases, optional = false) => {
+    const p = field([label, ...aliases]);
+    return optional && !String(p.value ?? "").trim() ? "" : `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${text(p)}</td></tr>`;
+  };
+  const result = field(["17-Hydroxyprogesterone, Serum", "17-Hydroxyprogesterone", "17-OH Progesterone", "17-OHP", "Result"]);
+  const specimen = field(["Specimen", "Sample Type"]);
+  const rows = [
+    `<tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td colspan="3">${text({value: String(specimen.value ?? "").trim() || test?.sample_type || "Serum"})}</td></tr>`,
+    measurement("17-Hydroxyprogesterone", result, "Age-, sex- and method-specific laboratory interval"),
+    textRow("Collection Date / Time", ["Collection Date", "Collection Time"]),
+    textRow("Age / Pubertal or Gestational Context", ["Age / Pubertal Context", "Pubertal Status", "Gestational Context"]),
+    textRow("Menstrual Phase / Pregnancy Status", ["Menstrual Phase", "Pregnancy Status", "Cycle Phase"]),
+    textRow("Sampling Context / Baseline or Stimulated", ["Sampling Context", "Baseline or Stimulated"]),
+    textRow("ACTH Stimulation Details, if performed", ["ACTH Stimulation Details", "Stimulation Details"], true),
+    textRow("Relevant Treatment / Dose Timing", ["Relevant Treatment", "Dose Timing", "Medication History"]),
+    textRow("Assay Method / Platform", ["Assay Method", "Method", "Platform"]),
+    textRow("Laboratory Interpretation", ["Interpretation", "Impression", "Findings"]),
+    textRow("Comments / Limitations", ["Comments", "Comment", "Limitations", "Advice"]),
+  ];
+  const extra = (test?.parameters || []).filter(p => !used.has(p) && String(p.value ?? "").trim());
+  if (extra.length) rows.push(`<tr class="thyroid-antibodies-section"><td colspan="4"><strong>OTHER RECORDED RESULTS</strong></td></tr>`, ...extra.map(p => measurement(p.parameter_name, p)));
+  return `<div class="17-hydroxyprogesterone-report" data-report-content="17-hydroxyprogesterone">
+    <table class="results-table single-analyte-table"><thead><tr><th style="width:34%">Investigation / Context</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead><tbody>${rows.join("\n")}</tbody></table>
+    <div class="single-analyte-notes report-template-notes 17-hydroxyprogesterone-notes">
+      <div class="report-note-heading">Clinical use :</div>
+      <p>17-hydroxyprogesterone is a steroid precursor used in the assessment of congenital adrenal hyperplasia and selected hyperandrogenism investigations. It is not the routine progesterone assay.</p>
+      <div class="report-note-heading">Reference values :</div>
+      <p>The performing laboratory&rsquo;s validated interval and stated unit take precedence. The following Mayo Clinic Laboratories serum LC-MS/MS examples are for context only, not universal limits or diagnostic cut-offs:</p>
+      <table class="notes-table"><thead><tr><th>Population / phase</th><th>Example reference limit (ng/dL)</th></tr></thead><tbody>
+        <tr><td>Adult male</td><td>&lt;220</td></tr><tr><td>Adult female, follicular phase</td><td>&lt;80</td></tr><tr><td>Adult female, luteal phase</td><td>&lt;285</td></tr><tr><td>Postmenopausal female</td><td>&lt;51</td></tr><tr><td>Prepubertal male</td><td>&lt;110</td></tr><tr><td>Prepubertal female</td><td>&lt;100</td></tr>
+      </tbody></table>
+      <p>Neonatal values vary with gestational age, illness and postnatal age. Pregnancy also requires appropriate intervals. Do not apply these examples to newborn screening, stimulated samples or a result in another unit.</p>
+      <div class="report-note-heading">Collection and interpretation :</div>
+      <ul>
+        <li>For suspected nonclassic CAH after infancy, the Endocrine Society recommends an early-morning baseline serum sample (before 8 AM) using LC-MS/MS. In menstruating patients, follicular-phase sampling is preferred. Record the actual timing and phase; do not assume them.</li>
+        <li>Borderline findings may require clinician-directed cosyntropin stimulation and a broader adrenal steroid assessment. An isolated result does not establish the enzyme defect or a diagnosis.</li>
+        <li>Record relevant therapy and sampling relative to dosing. Immunoassay cross-reactivity can affect specificity; interpret with the actual method and clinical context.</li>
+        <li>Baseline and stimulated results are not interchangeable. No phase, diagnosis, stimulation result or unit conversion is assigned automatically. A dash means no entered result.</li>
+      </ul>
+    </div></div>`;
+}
+
 function buildWoundSwabGramStainReportBody(test) {
   const used = new Set();
   const field = aliases => {
@@ -20026,6 +20091,8 @@ function buildWoundSwabAfbStainReportBody(test) {
 }
 
 function buildBunReportBody(test) {
+  if (isSerumUreaTest(test)) return buildSerumUreaReportBody(test);
+  if (is17HydroxyprogesteroneTest(test) && !String(test.report_body || "").trim()) return build17HydroxyprogesteroneReportBody(test);
   if (isWoundSwabGramStainTest(test) && !String(test.report_body || "").trim()) return buildWoundSwabGramStainReportBody(test);
   if (isWoundSwabAfbStainTest(test) && !String(test.report_body || "").trim()) return buildWoundSwabAfbStainReportBody(test);
   if (isWellWomenProfileName(test?.name) && !String(test.report_body || "").trim()) return buildWellWomenProfileReportBody(test);
@@ -20267,6 +20334,41 @@ function buildBunReportBody(test) {
         <li>Overhydration - Excessive fluid intake or fluid retention.</li>
         <li>Pregnancy - Normal physiological changes during pregnancy.</li>
         <li>Certain medications - Some medicines can affect BUN results.</li>
+      </ul>
+    </div>
+  `;
+}
+
+function buildSerumUreaReportBody(test) {
+  const statusForUrea = (value, range) => {
+    const status = getReferenceStatus(value, range);
+    const bounds = getRangeBounds(range);
+    const numericValue = Number(String(value || "").replace(/,/g, ""));
+    if (status?.className === "high-val" && bounds && Number.isFinite(numericValue) && numericValue > bounds[1] * 2) {
+      return { label: "Very High", className: "high-val" };
+    }
+    return status;
+  };
+
+  return `
+    ${buildSingleAnalyteResultTable(test, {
+      tableClass: "single-analyte-table serum-urea-table",
+      investigation: "UREA, SERUM",
+      aliases: ["Urea, Serum", "Serum Urea", "Blood Urea", "Urea", "Result"],
+      method: "Urease UV",
+      defaultRange: "13.00 - 43.00",
+      defaultUnit: "mg/dL",
+      statusForValue: statusForUrea,
+    })}
+    <div class="single-analyte-notes serum-urea-notes">
+      <div class="report-note-heading">Clinical context :</div>
+      <p>Serum urea is a waste product of protein metabolism. It is commonly interpreted with creatinine, estimated GFR, hydration status, diet, liver function and the clinical presentation when assessing renal or metabolic status.</p>
+      <div class="report-note-heading">Interpretive guidance :</div>
+      <ul>
+        <li>An increased serum urea may occur with reduced kidney perfusion or function, dehydration, increased protein breakdown, gastrointestinal bleeding, a high-protein intake, or medication effects. Interpret with the complete clinical picture.</li>
+        <li>A decreased serum urea may occur with low protein intake, overhydration, reduced hepatic urea production, pregnancy, or other clinical conditions. It is not diagnostic in isolation.</li>
+        <li>Serum urea and blood urea nitrogen (BUN) are related but are not numerically interchangeable. This report is for serum urea; use the performing laboratory&rsquo;s validated units and reference interval.</li>
+        <li>The supplied result and reference interval take precedence. A result outside the interval should be clinically correlated and, where appropriate, reviewed with other renal and metabolic investigations.</li>
       </ul>
     </div>
   `;
@@ -21780,7 +21882,9 @@ function buildConjunctivalSwabCultureReportBody(test) {
 
 function buildCbcReportBody(test, variant) {
   const contentMarker = variant === "hb-dlc-esr" ? ' data-report-content="hb-dlc-esr"'
-    : variant === "hb-tlc-dlc-esr" ? ' data-report-content="hb-tlc-dlc-esr-profile"' : "";
+    : variant === "hb-tlc-dlc-esr" ? ' data-report-content="hb-tlc-dlc-esr-profile"'
+      : variant === "absolute" ? ' data-report-content="cbc-absolute-count"' : "";
+  const tableClass = variant === "absolute" ? "results-table cbc-table cbc-absolute-count-table" : "results-table cbc-table";
   let currentSection = null;
   const rows = getCbcParameters(variant).map(definition => {
     const result = findCbcResult(test, definition);
@@ -21815,7 +21919,7 @@ function buildCbcReportBody(test, variant) {
 
   const sampleType = test.sample_type || "Whole Blood";
   return `
-    <table class="results-table cbc-table"${contentMarker}>
+    <table class="${tableClass}"${contentMarker}>
       <thead>
         <tr>
           <th style="width: 31%">Investigation</th>
@@ -21857,12 +21961,14 @@ function buildCustomReportNarratives(tests) {
       const body = String(test.report_body || "").trim();
       if (!body) return "";
 
-      const paragraphs = body
-        .split(/\r?\n\s*\r?\n/)
-        .map((paragraph) => paragraph.trim())
-        .filter(Boolean)
-        .map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\r?\n/g, "<br />")}</p>`)
-        .join("");
+      const paragraphs = isRichReportBody(body)
+        ? sanitizeRichReportBody(body).slice(RICH_REPORT_BODY_PREFIX.length)
+        : body
+          .split(/\r?\n\s*\r?\n/)
+          .map((paragraph) => paragraph.trim())
+          .filter(Boolean)
+          .map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\r?\n/g, "<br />")}</p>`)
+          .join("");
       const title = hasMultipleTests ? `${escapeHtml(test.name)} - Notes` : "Report Notes";
 
       return `
@@ -21927,23 +22033,27 @@ function buildReportHtml(reportData) {
   const letterheadDataUrl = /^data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/]+={0,2}$/i.test(String(reportData.letterheadDataUrl || ""))
     ? String(reportData.letterheadDataUrl)
     : "";
-  const reportDoctorSignatureDataUrl = /^data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/]+={0,2}$/i.test(String(reportData.reportDoctorSignatureDataUrl || ""))
-    ? String(reportData.reportDoctorSignatureDataUrl)
-    : "";
-  const reportDoctorName = escapeHtml(reportData.reportDoctorName || "");
-  const reportDoctorQualification = escapeHtml(reportData.reportDoctorQualification || "");
-  const reportDoctorRegistrationNo = escapeHtml(reportData.reportDoctorRegistrationNo || "");
-  const reportDoctorSignatureMarkup = reportDoctorSignatureDataUrl || reportDoctorName || reportDoctorQualification || reportDoctorRegistrationNo
-    ? `
-        <div class="signature-wrapper report-doctor-signature">
-          <div class="signature-section">
-            ${reportDoctorSignatureDataUrl ? `<img src="${reportDoctorSignatureDataUrl}" class="sig-image" alt="Reporting doctor signature" />` : ""}
-            ${reportDoctorName ? `<p class="doc-name">${reportDoctorName}</p>` : ""}
-            ${reportDoctorQualification ? `<p class="doc-detail">${reportDoctorQualification}</p>` : ""}
-            ${reportDoctorRegistrationNo ? `<p class="doc-detail">Regd. No. ${reportDoctorRegistrationNo}</p>` : ""}
-          </div>
-        </div>`
-    : "";
+  const reportingDoctors = [{
+    name: reportData.reportDoctorName,
+    qualification: reportData.reportDoctorQualification,
+    registrationNo: reportData.reportDoctorRegistrationNo,
+    signatureDataUrl: reportData.reportDoctorSignatureDataUrl,
+  }, ...parseAdditionalReportDoctors(reportData.additionalReportDoctors)];
+  const doctorSections = reportingDoctors.map(doctor => {
+    const signature = /^data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/]+={0,2}$/i.test(String(doctor.signatureDataUrl || "")) ? String(doctor.signatureDataUrl) : "";
+    const name = escapeHtml(doctor.name || "");
+    const qualification = escapeHtml(doctor.qualification || "");
+    const registrationNo = escapeHtml(doctor.registrationNo || "");
+    if (!signature && !name && !qualification && !registrationNo) return "";
+    return `<div class="signature-section">
+      ${signature ? `<img src="${signature}" class="sig-image" alt="Reporting doctor signature" />` : ""}
+      ${name ? `<p class="doc-name">${name}</p>` : ""}
+      ${qualification ? `<p class="doc-detail">${qualification}</p>` : ""}
+      ${registrationNo ? `<p class="doc-detail">Regd. No. ${registrationNo}</p>` : ""}
+    </div>`;
+  }).filter(Boolean);
+  const reportDoctorSignatureMarkup = doctorSections.length
+    ? `<div class="signature-wrapper report-doctor-signature">${doctorSections.join("\n")}</div>` : "";
   const reportHeaderSpaceMm = Number.isInteger(Number(reportData.reportHeaderSpaceMm))
     && Number(reportData.reportHeaderSpaceMm) >= 0
     && Number(reportData.reportHeaderSpaceMm) <= 140
@@ -21973,12 +22083,15 @@ function buildReportHtml(reportData) {
       ? associateName
       : businessName;
 
-  const digitalReportUrl = String(reportData.digitalReportUrl || "").trim();
+  // Multi-test reports are split into one printable page per test. The route
+  // supplies a test-specific URL for each page so its QR never reopens a
+  // different report from the same visit.
+  const singleTest = reportData.tests.length === 1 ? reportData.tests[0] : null;
+  const digitalReportUrl = String(singleTest?.digital_report_url || reportData.digitalReportUrl || "").trim();
   const qrPayload = digitalReportUrl || `${billNo}-${patientName}`;
   const qrUrl = buildQrCodeDataUrl(qrPayload);
   const barcodeUrl = buildBarcodeDataUrl(reportData.visit.bill_no);
 
-  const singleTest = reportData.tests.length === 1 ? reportData.tests[0] : null;
   const customReportNarratives = buildCustomReportNarratives(reportData.tests);
   const beta2GlycoproteinPanelTest = singleTest && (
     isBeta2GlycoproteinPanelTest(singleTest)
@@ -22095,7 +22208,7 @@ function buildReportHtml(reportData) {
   const bronchialPapTest = singleTest && getBronchialPapSpecimen(singleTest)
     && !String(singleTest.report_body || "").trim() ? singleTest : null;
   const digoxinTest = singleTest && (isConjunctivalSwabCultureTest(singleTest) || isRightConjunctivalSwabCultureTest(singleTest) || isBilateralConjunctivalSwabTest(singleTest) || isColorectalCancerMonitorProfileTest(singleTest) || isAnticardiolipinIggIgmPanelTest(singleTest) || isAnticardiolipinIgaIggPanelTest(singleTest) || isAnticardiolipinIgaIgmPanelTest(singleTest) || isAnticardiolipinIgaTest(singleTest) || isAntenatalProfileTest(singleTest) || isTotalAcidPhosphataseTest(singleTest) || isProstaticAcidPhosphataseTest(singleTest) || isAgRatioTest(singleTest) || isDigoxinTest(singleTest)) ? singleTest : null;
-  const bunTest = singleTest && (isBunTest(singleTest) || isUrineCopper24HourTest(singleTest) || isUrineCalcium24HourTest(singleTest) || isCapillaryFragilityTest(singleTest) || isCardiacProfileTest(singleTest) || isCeruloplasminTest(singleTest) || isCeaTest(singleTest) || isCd8LymphocyteTest(singleTest) || isCd4LymphocyteTest(singleTest) || isCd3LymphocyteTest(singleTest) || isCreatinineClearanceTest(singleTest) || isComplementC3Test(singleTest) || isComplementC4Test(singleTest) || isCancaAntiPr3Test(singleTest) || isBilirubinFractionationTest(singleTest) || isSerumBicarbonateTest(singleTest) || isAsciticFluidAnalysisTest(singleTest) || isApolipoproteinBTest(singleTest) || isAnticardiolipinIgmTest(singleTest) || isAnticardiolipinIggTest(singleTest) || isAntiTgTest(singleTest) || isAntiTpoTest(singleTest) || isAnemiaScreeningProfileTest(singleTest) || isComprehensiveAnemiaProfileTest(singleTest) || isAndrostenedioneTest(singleTest) || isGroupBStrepTest(singleTest) || isFungusKohPreparationTest(singleTest) || isSputumAfbTest(singleTest) || isBaccalSmearBrrBodyTest(singleTest) || isAutoimmuneProfileTest(singleTest) || isCsfFluidAfbStainTest(singleTest) || isThroatSwabAfbTest(singleTest) || isCsfFluidGramStainTest(singleTest) || isJointFluidGramStainTest(singleTest) || isAfbZiehlNeelsenStainTest(singleTest) || isBloodCultureSensitivityTest(singleTest) || isBodyFluidCultureSensitivityTest(singleTest) || isBodyFluidTotalProteinTest(singleTest) || isJointFluidChlorideTest(singleTest) || isCsfFluidChlorideTest(singleTest) || isCsfFluidProteinTest(singleTest) || isCsfFluidSpecificGravityTest(singleTest) || isCsfFluidGlucoseTest(singleTest) || isBodyFluidChlorideTest(singleTest) || isBodyFluidBiochemistryTest(singleTest) || isBodyFluidSpecificGravityTest(singleTest) || isBronchialWashingCultureSensitivityTest(singleTest) || isAfbCultureSensitivityTest(singleTest) || isStoolCultureTest(singleTest) || isUrineCultureTest(singleTest) || isMalariaParasiteIdentificationTest(singleTest) || isMycobacteriumCombinedPanelTest(singleTest) || isOvaAndParasiteTest(singleTest) || isTripleMarkerTest(singleTest) || isDoubleMarkerTest(singleTest) || isPax8Test(singleTest) || isGalectin3Test(singleTest) || isHer2Test(singleTest) || isDcpTest(singleTest) || isAfpTumorMarkerTest(singleTest) || isCa199Test(singleTest) || isCa153Test(singleTest) || isCa125Test(singleTest) || isTroponinITest(singleTest) || isTroponinTTest(singleTest) || isDengueNs1Test(singleTest) || isDengueIggTest(singleTest) || isDengueIgmTest(singleTest) || isRastTest(singleTest) || isWidalTest(singleTest) || isCrpTest(singleTest) || isSodiumTest(singleTest) || isIronTest(singleTest) || isLacticAcidTest(singleTest) || isMagnesiumTest(singleTest) || isLipaseTest(singleTest) || isAmylaseTest(singleTest) || isGgtTest(singleTest) || isChlorideTest(singleTest) || isCreatinine24HourUrineTest(singleTest) || isSemenAnalysisTest(singleTest) || isUrineCotinineTest(singleTest) || isUrineGlucoseTest(singleTest) || isUrineCotinineTest(singleTest) || isUrineGlucoseTest(singleTest) || isPorphyrinsTest(singleTest) || isOccultBloodStoolTest(singleTest) || isCsfAnalysisTest(singleTest) || isTshTest(singleTest) || isThyroidProfileTest(singleTest) || isThyroidAntibodiesTest(singleTest) || isTriiodothyronineTotalTest(singleTest) || isTestosteroneTotalTest(singleTest) || isProgesteroneTest(singleTest) || isCortisoneTest(singleTest) || isActhTest(singleTest) || isAdaTest(singleTest) || isBetaHcgPregnancyTest(singleTest) || isProlactinTest(singleTest) || isDheaTest(singleTest) || isEstradiolTest(singleTest) || isLuteinizingHormoneTest(singleTest) || isFollicleStimulatingHormoneTest(singleTest) || isThyroxineTotalTest(singleTest) || isCalcitoninTest(singleTest) || isInhibinATest(singleTest) || isInhibinBTest(singleTest) || isPappATest(singleTest) || isDheasTest(singleTest) || isBoneMarrowAspirationCytologyTest(singleTest) || isBoneMarrowCytologyTest(singleTest) || isHistopathologyReportTest(singleTest) || isLiverCancerMonitorProfileTest(singleTest) || isCreatinineTest(singleTest) || isIonizedCalciumTest(singleTest) || isFlecainideTest(singleTest) || isPhenobarbitalTest(singleTest) || isKetoneBodyTest(singleTest) || isUricAcidTest(singleTest) || isTibcTest(singleTest) || isSerumOsmolalityTest(singleTest) || isArterialBloodGasTest(singleTest) || isManganeseBloodTest(singleTest) || isSeleniumSerumTest(singleTest))
+  const bunTest = singleTest && (isSerumUreaTest(singleTest) || isBunTest(singleTest) || isUrineCopper24HourTest(singleTest) || isUrineCalcium24HourTest(singleTest) || isCapillaryFragilityTest(singleTest) || isCardiacProfileTest(singleTest) || isCeruloplasminTest(singleTest) || isCeaTest(singleTest) || isCd8LymphocyteTest(singleTest) || isCd4LymphocyteTest(singleTest) || isCd3LymphocyteTest(singleTest) || isCreatinineClearanceTest(singleTest) || isComplementC3Test(singleTest) || isComplementC4Test(singleTest) || isCancaAntiPr3Test(singleTest) || isBilirubinFractionationTest(singleTest) || isSerumBicarbonateTest(singleTest) || isAsciticFluidAnalysisTest(singleTest) || isApolipoproteinBTest(singleTest) || isAnticardiolipinIgmTest(singleTest) || isAnticardiolipinIggTest(singleTest) || isAntiTgTest(singleTest) || isAntiTpoTest(singleTest) || isAnemiaScreeningProfileTest(singleTest) || isComprehensiveAnemiaProfileTest(singleTest) || isAndrostenedioneTest(singleTest) || isGroupBStrepTest(singleTest) || isFungusKohPreparationTest(singleTest) || isSputumAfbTest(singleTest) || isBaccalSmearBrrBodyTest(singleTest) || isAutoimmuneProfileTest(singleTest) || isCsfFluidAfbStainTest(singleTest) || isThroatSwabAfbTest(singleTest) || isCsfFluidGramStainTest(singleTest) || isJointFluidGramStainTest(singleTest) || isAfbZiehlNeelsenStainTest(singleTest) || isBloodCultureSensitivityTest(singleTest) || isBodyFluidCultureSensitivityTest(singleTest) || isJointFluidProteinTest(singleTest) || isBodyFluidTotalProteinTest(singleTest) || isJointFluidChlorideTest(singleTest) || isCsfFluidChlorideTest(singleTest) || isCsfFluidProteinTest(singleTest) || isCsfFluidSpecificGravityTest(singleTest) || isCsfFluidGlucoseTest(singleTest) || isBodyFluidChlorideTest(singleTest) || isBodyFluidBiochemistryTest(singleTest) || isBodyFluidSpecificGravityTest(singleTest) || isBronchialWashingCultureSensitivityTest(singleTest) || isAfbCultureSensitivityTest(singleTest) || isStoolCultureTest(singleTest) || isUrineCultureTest(singleTest) || isMalariaParasiteIdentificationTest(singleTest) || isMycobacteriumCombinedPanelTest(singleTest) || isOvaAndParasiteTest(singleTest) || isTripleMarkerTest(singleTest) || isDoubleMarkerTest(singleTest) || isPax8Test(singleTest) || isGalectin3Test(singleTest) || isHer2Test(singleTest) || isDcpTest(singleTest) || isAfpTumorMarkerTest(singleTest) || isCa199Test(singleTest) || isCa153Test(singleTest) || isCa125Test(singleTest) || isTroponinITest(singleTest) || isTroponinTTest(singleTest) || isDengueNs1Test(singleTest) || isDengueIggTest(singleTest) || isDengueIgmTest(singleTest) || isRastTest(singleTest) || isWidalTest(singleTest) || isCrpTest(singleTest) || isSodiumTest(singleTest) || isIronTest(singleTest) || isLacticAcidTest(singleTest) || isMagnesiumTest(singleTest) || isLipaseTest(singleTest) || isAmylaseTest(singleTest) || isGgtTest(singleTest) || isChlorideTest(singleTest) || isCreatinine24HourUrineTest(singleTest) || isSemenAnalysisTest(singleTest) || isUrineCotinineTest(singleTest) || isUrineGlucoseTest(singleTest) || isUrineCotinineTest(singleTest) || isUrineGlucoseTest(singleTest) || isPorphyrinsTest(singleTest) || isOccultBloodStoolTest(singleTest) || isCsfAnalysisTest(singleTest) || isTshTest(singleTest) || isThyroidProfileTest(singleTest) || isThyroidAntibodiesTest(singleTest) || isTriiodothyronineTotalTest(singleTest) || isTestosteroneTotalTest(singleTest) || isProgesteroneTest(singleTest) || isCortisoneTest(singleTest) || isActhTest(singleTest) || isAdaTest(singleTest) || isBetaHcgPregnancyTest(singleTest) || isProlactinTest(singleTest) || isDheaTest(singleTest) || isEstradiolTest(singleTest) || isLuteinizingHormoneTest(singleTest) || isFollicleStimulatingHormoneTest(singleTest) || isThyroxineTotalTest(singleTest) || isCalcitoninTest(singleTest) || isInhibinATest(singleTest) || isInhibinBTest(singleTest) || isPappATest(singleTest) || isDheasTest(singleTest) || isBoneMarrowAspirationCytologyTest(singleTest) || isBoneMarrowCytologyTest(singleTest) || isHistopathologyReportTest(singleTest) || isLiverCancerMonitorProfileTest(singleTest) || isCreatinineTest(singleTest) || isIonizedCalciumTest(singleTest) || isFlecainideTest(singleTest) || isPhenobarbitalTest(singleTest) || isKetoneBodyTest(singleTest) || isUricAcidTest(singleTest) || isTibcTest(singleTest) || isSerumOsmolalityTest(singleTest) || isArterialBloodGasTest(singleTest) || isManganeseBloodTest(singleTest) || isSeleniumSerumTest(singleTest))
     ? singleTest
     : null;
   const randomUrineCopperTest = singleTest && (isRandomUrineCopperTest(singleTest) || isEveningCortisolTest(singleTest) || isMidnightCortisolTest(singleTest) || isMorningEveningCortisolTest(singleTest) || isMorningCortisolTest(singleTest) || isMorningEveningMidnightCortisolTest(singleTest) || isCryoglobulinsScreeningTest(singleTest)) ? singleTest : null;
@@ -22569,6 +22682,7 @@ function buildReportHtml(reportData) {
         if (reportData.tests.length === 1 && isDigoxinTest(t)) return "DIGOXIN";
         if (reportData.tests.length === 1 && isUrethralSwabAfbTest(t) && !String(t.report_body || "").trim()) return "URETHRAL SWAB - AFB STAIN";
         if (reportData.tests.length === 1 && isUrethralDischargeCultureSensitivityTest(t) && !String(t.report_body || "").trim()) return "URETHRAL DISCHARGE - CULTURE & SENSITIVITY";
+        if (reportData.tests.length === 1 && is17HydroxyprogesteroneTest(t) && !String(t.report_body || "").trim()) return "17-OH PROGESTERONE";
         if (reportData.tests.length === 1 && isWoundSwabGramStainTest(t) && !String(t.report_body || "").trim()) return "WOUND SWAB - GRAM STAIN";
         if (reportData.tests.length === 1 && isWoundSwabAfbStainTest(t) && !String(t.report_body || "").trim()) return "WOUND SWAB - AFB STAIN";
         if (reportData.tests.length === 1 && isWellWomenProfileName(t?.name) && !String(t.report_body || "").trim()) return "WELL WOMEN PROFILE";
@@ -22596,6 +22710,7 @@ function buildReportHtml(reportData) {
         if (reportData.tests.length === 1 && is24HourUrineUreaTest(t) && !String(t.report_body || "").trim()) return "UREA, 24-HOUR URINE";
         if (reportData.tests.length === 1 && isUrineAcetoneTest(t) && !String(t.report_body || "").trim()) return "URINE ACETONE";
         if (reportData.tests.length === 1 && isTotalProteinTest(t)) return "TOTAL PROTEIN, SERUM";
+        if (reportData.tests.length === 1 && isSerumUreaTest(t)) return "UREA, SERUM";
         if (reportData.tests.length === 1 && isBunTest(t)) return "BLOOD UREA NITROGEN (BUN)";
         if (reportData.tests.length === 1 && isSodiumTest(t)) return "SODIUM";
         if (reportData.tests.length === 1 && isIronTest(t)) return "IRON";
@@ -23125,6 +23240,31 @@ function buildReportHtml(reportData) {
         .cbc-status { font-size: 9.5px; margin-left: 5px; }
         .cbc-clinical-note { font-size: 9.5px; line-height: 1.2; margin: 3px 3px 4px; }
         .cbc-report .report-footer { margin-top: 3px; padding-top: 3px; font-size: 10px; }
+        /* Absolute-count CBC has nineteen measured/calculated rows. Keep the
+           complete result set on one A4 page without reducing other CBC forms. */
+        .cbc-absolute-count-report .test-title { font-size: 16px; margin: 3px 0; }
+        .cbc-absolute-count-report table.cbc-absolute-count-table { margin-bottom: 2px; }
+        .cbc-absolute-count-report table.cbc-absolute-count-table th {
+          font-size: 9.5px;
+          line-height: 1.05;
+          padding: 2px;
+        }
+        .cbc-absolute-count-report table.cbc-absolute-count-table td {
+          font-size: 9.25px;
+          line-height: 1.04;
+          padding: 1px 2px;
+        }
+        .cbc-absolute-count-report .cbc-absolute-count-table .cbc-sample-row td { padding-top: 2px; padding-bottom: 2px; }
+        .cbc-absolute-count-report .cbc-absolute-count-table .cbc-section td {
+          font-size: 9px;
+          line-height: 1;
+          padding-top: 3px;
+          padding-bottom: 1px;
+        }
+        .cbc-absolute-count-report .cbc-method { font-size: 7px; margin-top: 1px; }
+        .cbc-absolute-count-report .cbc-status { font-size: 8px; margin-left: 3px; }
+        .cbc-absolute-count-report .cbc-clinical-note { font-size: 8.5px; line-height: 1.1; margin: 2px 2px 3px; }
+        .cbc-absolute-count-report .report-footer { margin-top: 2px; padding-top: 2px; font-size: 9px; }
         .rbc-table { margin-bottom: 8px; }
         .rbc-table .rbc-sample-row td { padding-top: 5px; padding-bottom: 5px; }
         .rbc-table .rbc-section td { font-weight: bold; text-transform: uppercase; padding-top: 8px; padding-bottom: 2px; }
@@ -23740,6 +23880,9 @@ function buildReportHtml(reportData) {
           justify-content: flex-end;
         }
         .legacy-signature { display: none; }
+        .report-doctor-signature { flex-wrap: wrap; gap: 8px; }
+        .report-doctor-signature .signature-section { flex: 0 1 180px; overflow-wrap: anywhere; }
+        .report-doctor-signature .sig-image { max-height: 65px; object-fit: contain; }
         .signature-section {
           text-align: center;
           width: 180px;
@@ -23755,6 +23898,11 @@ function buildReportHtml(reportData) {
 
         .additional-report-text { margin: 8px 5px; font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
         .additional-report-text p { margin: 0; white-space: pre-wrap; }
+        .additional-report-rows { margin: 8px 5px; page-break-inside: avoid; }
+        .additional-report-rows-title { margin-bottom: 3px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
+        .additional-report-rows table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .additional-report-rows th, .additional-report-rows td { padding: 4px 5px; border: 1px solid #778; text-align: left; vertical-align: top; overflow-wrap: anywhere; white-space: pre-wrap; }
+        .additional-report-rows th { background: #eef5f4; font-weight: bold; }
         .custom-report-body {
           margin: 14px 0 8px;
           padding: 10px 12px;
@@ -23774,6 +23922,11 @@ function buildReportHtml(reportData) {
         }
         .custom-report-body p { margin: 0 0 7px; }
         .custom-report-body p:last-child { margin-bottom: 0; }
+        .custom-report-body ul, .custom-report-body ol { margin: 0 0 7px 20px; padding: 0; }
+        .custom-report-body li { margin: 0 0 3px; }
+        .custom-report-body table { width: 100%; margin: 7px 0; border-collapse: collapse; font-size: inherit; }
+        .custom-report-body th, .custom-report-body td { padding: 4px 6px; border: 1px solid #9caaa7; text-align: left; vertical-align: top; }
+        .custom-report-body th { background: #edf5f3; font-weight: bold; }
  
         tr { page-break-inside: avoid; }
       </style>
@@ -23796,7 +23949,7 @@ function buildReportHtml(reportData) {
         <tbody>
           <tr class="report-pagination-content-row">
             <td class="report-pagination-content-cell">
-      <div class="main-content${rtPcrTest ? " rt-pcr-report" : tpmtTest ? " tpmt-report" : cysticFibrosisNewbornTest ? " cystic-fibrosis-newborn-report" : kftTest ? " kft-report" : factorIiTest ? " factor-ii-report" : karyotypeTest ? " karyotype-report" : lipidProfileTest ? " lipid-profile-report" : lftTest ? " lft-report" : hba1cTest ? " hba1c-report" : vitaminDTest ? " vitamin-d-report" : vitaminCTest ? " vitamin-c-report" : vitaminB12Test ? " vitamin-b12-report" : randomBloodSugarTest ? " rbs-report" : fastingBloodSugarTest ? " fbs-report" : bTypeNatriureticPeptideTest ? " bnp-report" : creatineKinaseTest ? " creatine-kinase-report" : beta2MicroglobulinTest ? " beta2-microglobulin-report" : altSgptTest ? " alt-sgpt-report" : dnphTest ? " dnph-report" : diabeticProfileTest ? " diabetic-profile-report" : extendedDiabeticProfileTest ? " diabetic-profile-extended-report" : diabeticRenalProfileTest ? " diabetic-renal-profile-report" : earSwabGramStainTest ? " ear-swab-gram-stain-report" : earSwabAfbStainTest ? " ear-swab-afb-stain-report" : fshPrlTest ? " fsh-prl-report" : fshLhPrlTest ? " fsh-lh-prl-report" : factorIiMutationTest ? " factor-ii-mutation-report" : factorViiiImmunodepletedTest ? " factor-viii-immunodepleted-report" : femaleInfertilityProfileTest ? " female-infertility-profile-report" : fernTest ? " fern-test-report" : wuchereriaBancroftiAntigenTest ? " wuchereria-bancrofti-antigen-report" : filariaAntigenTest ? " filaria-antigen-report" : fluidAspirationCytologyTest ? " fluid-aspiration-cytology-report" : hbElectrophoresisTest ? " hb-electrophoresis-report" : foetalHaemoglobinByHplcTest ? " foetal-haemoglobin-hplc-report" : foetalHaemoglobinTest ? " foetal-haemoglobin-report" : freeBetaHcgTest ? " free-beta-hcg-report" : freeCholesterolTest ? " free-cholesterol-report" : freeEstradiolTest ? " free-estradiol-report" : freePsaTest ? " free-psa-report" : freeTestosteroneTest ? " free-testosterone-report" : fungusCultureTest ? " fungus-culture-report" : fungusCultureSensitivityTest ? " fungus-culture-sensitivity-report" : prealbuminTest ? " prealbumin-report" : haptoglobinTest ? " haptoglobin-report" : gramStainBacterialVaginosisTest ? " gram-bv-report" : aldolaseTest ? " aldolase-report" : urineProteinCreatinineRatioTest ? " upcr-report" : albuminCreatinineRatioTest ? " acr-report" : postPrandialBloodSugarTest ? " ppbs-report" : tacrolimusTest ? " tacrolimus-report" : phosphorusTest ? " phosphorus-report" : alkalinePhosphataseTest ? " alkaline-phosphatase-report" : clotRetractionTest ? " clot-retraction-report" : vitaminETest ? " vitamin-e-report" : vitaminB9Test ? " vitamin-b9-report" : vitaminKTest ? " vitamin-k-report" : ldlCholesterolTest ? " ldl-cholesterol-report" : hdlCholesterolTest ? " hdl-cholesterol-report" : indirectBilirubinTest ? " indirect-bilirubin-report" : calciumTest ? " calcium-report" : ferritinTest ? " ferritin-report" : cPeptideTest ? " c-peptide-report" : vldlCholesterolTest ? " vldl-cholesterol-report" : comprehensiveMetabolicPanelTest ? " cmp-report" : electrolyteProfileTest ? " electrolytes-report" : potassiumTest ? " potassium-report" : astSgotTest ? " ast-sgot-report" : globulinTest ? " globulin-report" : albuminTest ? " albumin-report" : digoxinTest ? " digoxin-report" : bunTest ? " bun-report" : cbcTest ? " cbc-report" : bloodGroupTest ? " blood-group-report" : dDimerTest ? " d-dimer-report" : sickleCellMutationTest ? " sickle-cell-mutation-report" : rbcTest ? " rbc-report" : ipfTest ? " immature-platelet-fraction-report" : plateletTest ? " platelet-report" : tlcTest ? " tlc-report" : absoluteCountTest ? " absolute-count-report" : mchcTest ? " mchc-report" : mchTest ? " mch-report" : mcvTest ? " mcv-report" : mpvTest ? " mpv-report" : hctPcvTest ? " hct-pcv-report" : esrTest ? " esr-report" : pdwTest ? " pdw-report" : hemoglobinTest ? " hemoglobin-report" : ptTest ? " pt-report" : apttTest ? " aptt-report" : dlcTest ? " dlc-report" : indirectCoombsTest ? " indirect-coombs-report" : directCoombsTest ? " direct-coombs-report" : fibrinogenTest ? " fibrinogen-report" : reticulocyteTest ? " reticulocyte-report" : clottingTimeTest ? " clotting-time-report" : bleedingTimeTest ? " bleeding-time-report" : coagulationProfileTest ? " coagulation-profile-report" : factorVTest ? " factor-v-report" : factorViiTest ? " factor-vii-report" : factorIxTest ? " factor-ix-report" : factorXTest ? " factor-x-report" : factorXiTest ? " factor-xi-report" : factorViiiTest ? " factor-viii-report" : peripheralSmearTest ? " peripheral-smear-report" : factorXiiTest ? " factor-xii-report" : factorXiiiTest ? " factor-xiii-report" : ""}">
+      <div class="main-content${rtPcrTest ? " rt-pcr-report" : tpmtTest ? " tpmt-report" : cysticFibrosisNewbornTest ? " cystic-fibrosis-newborn-report" : kftTest ? " kft-report" : factorIiTest ? " factor-ii-report" : karyotypeTest ? " karyotype-report" : lipidProfileTest ? " lipid-profile-report" : lftTest ? " lft-report" : hba1cTest ? " hba1c-report" : vitaminDTest ? " vitamin-d-report" : vitaminCTest ? " vitamin-c-report" : vitaminB12Test ? " vitamin-b12-report" : randomBloodSugarTest ? " rbs-report" : fastingBloodSugarTest ? " fbs-report" : bTypeNatriureticPeptideTest ? " bnp-report" : creatineKinaseTest ? " creatine-kinase-report" : beta2MicroglobulinTest ? " beta2-microglobulin-report" : altSgptTest ? " alt-sgpt-report" : dnphTest ? " dnph-report" : diabeticProfileTest ? " diabetic-profile-report" : extendedDiabeticProfileTest ? " diabetic-profile-extended-report" : diabeticRenalProfileTest ? " diabetic-renal-profile-report" : earSwabGramStainTest ? " ear-swab-gram-stain-report" : earSwabAfbStainTest ? " ear-swab-afb-stain-report" : fshPrlTest ? " fsh-prl-report" : fshLhPrlTest ? " fsh-lh-prl-report" : factorIiMutationTest ? " factor-ii-mutation-report" : factorViiiImmunodepletedTest ? " factor-viii-immunodepleted-report" : femaleInfertilityProfileTest ? " female-infertility-profile-report" : fernTest ? " fern-test-report" : wuchereriaBancroftiAntigenTest ? " wuchereria-bancrofti-antigen-report" : filariaAntigenTest ? " filaria-antigen-report" : fluidAspirationCytologyTest ? " fluid-aspiration-cytology-report" : hbElectrophoresisTest ? " hb-electrophoresis-report" : foetalHaemoglobinByHplcTest ? " foetal-haemoglobin-hplc-report" : foetalHaemoglobinTest ? " foetal-haemoglobin-report" : freeBetaHcgTest ? " free-beta-hcg-report" : freeCholesterolTest ? " free-cholesterol-report" : freeEstradiolTest ? " free-estradiol-report" : freePsaTest ? " free-psa-report" : freeTestosteroneTest ? " free-testosterone-report" : fungusCultureTest ? " fungus-culture-report" : fungusCultureSensitivityTest ? " fungus-culture-sensitivity-report" : prealbuminTest ? " prealbumin-report" : haptoglobinTest ? " haptoglobin-report" : gramStainBacterialVaginosisTest ? " gram-bv-report" : aldolaseTest ? " aldolase-report" : urineProteinCreatinineRatioTest ? " upcr-report" : albuminCreatinineRatioTest ? " acr-report" : postPrandialBloodSugarTest ? " ppbs-report" : tacrolimusTest ? " tacrolimus-report" : phosphorusTest ? " phosphorus-report" : alkalinePhosphataseTest ? " alkaline-phosphatase-report" : clotRetractionTest ? " clot-retraction-report" : vitaminETest ? " vitamin-e-report" : vitaminB9Test ? " vitamin-b9-report" : vitaminKTest ? " vitamin-k-report" : ldlCholesterolTest ? " ldl-cholesterol-report" : hdlCholesterolTest ? " hdl-cholesterol-report" : indirectBilirubinTest ? " indirect-bilirubin-report" : calciumTest ? " calcium-report" : ferritinTest ? " ferritin-report" : cPeptideTest ? " c-peptide-report" : vldlCholesterolTest ? " vldl-cholesterol-report" : comprehensiveMetabolicPanelTest ? " cmp-report" : electrolyteProfileTest ? " electrolytes-report" : potassiumTest ? " potassium-report" : astSgotTest ? " ast-sgot-report" : globulinTest ? " globulin-report" : albuminTest ? " albumin-report" : digoxinTest ? " digoxin-report" : bunTest ? " bun-report" : cbcTest ? ` cbc-report${cbcVariant === "absolute" ? " cbc-absolute-count-report" : ""}` : bloodGroupTest ? " blood-group-report" : dDimerTest ? " d-dimer-report" : sickleCellMutationTest ? " sickle-cell-mutation-report" : rbcTest ? " rbc-report" : ipfTest ? " immature-platelet-fraction-report" : plateletTest ? " platelet-report" : tlcTest ? " tlc-report" : absoluteCountTest ? " absolute-count-report" : mchcTest ? " mchc-report" : mchTest ? " mch-report" : mcvTest ? " mcv-report" : mpvTest ? " mpv-report" : hctPcvTest ? " hct-pcv-report" : esrTest ? " esr-report" : pdwTest ? " pdw-report" : hemoglobinTest ? " hemoglobin-report" : ptTest ? " pt-report" : apttTest ? " aptt-report" : dlcTest ? " dlc-report" : indirectCoombsTest ? " indirect-coombs-report" : directCoombsTest ? " direct-coombs-report" : fibrinogenTest ? " fibrinogen-report" : reticulocyteTest ? " reticulocyte-report" : clottingTimeTest ? " clotting-time-report" : bleedingTimeTest ? " bleeding-time-report" : coagulationProfileTest ? " coagulation-profile-report" : factorVTest ? " factor-v-report" : factorViiTest ? " factor-vii-report" : factorIxTest ? " factor-ix-report" : factorXTest ? " factor-x-report" : factorXiTest ? " factor-xi-report" : factorViiiTest ? " factor-viii-report" : peripheralSmearTest ? " peripheral-smear-report" : factorXiiTest ? " factor-xii-report" : factorXiiiTest ? " factor-xiii-report" : ""}">
         <table class="header-table">
           <tr>
             <td style="width: 39%;">
@@ -24160,6 +24313,7 @@ function buildReportActionControls({ show, visitId, patientPhone = "", canDownlo
 function buildMultiTestReportHtml(reportData, tests) {
   const singleTestPages = tests.map((test) => buildReportHtml({
     ...reportData,
+    digitalReportUrl: test.digital_report_url || reportData.digitalReportUrl,
     tests: [test],
     _singleTestPage: true,
     readOnlyView: false,

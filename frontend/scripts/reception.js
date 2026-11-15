@@ -4,9 +4,20 @@ const embeddedPatientManagement = new URLSearchParams(window.location.search).ge
   && ["admin", "superadmin", "manager"].includes(getUser()?.role);
 if (embeddedPatientManagement) document.documentElement.classList.add("patient-management-embed");
 
+const receptionWorkspacePermissions = [
+  "manage_patients",
+  "manage_billing",
+  "collect_due_payments",
+  "manage_tests",
+  "enter_results",
+  "finalize_reports",
+  "view_reports",
+  "print_reports",
+  "download_reports",
+  "share_whatsapp_pdf",
+];
 const receptionAccessPending = getUser()?.role === "na"
-  && !hasPermission("collect_due_payments")
-  && !hasPermission("manage_billing")
+  && !receptionWorkspacePermissions.some((permission) => hasPermission(permission))
   && !hasAccessControl("edit_patient_details");
 if (receptionAccessPending) {
   document.documentElement.style.visibility = "hidden";
@@ -24,6 +35,8 @@ const editAssociateSelect = document.getElementById("editAssociateSelect");
 let selectedDoctor = null;
 let selectedTests = [];
 let associates = [];
+let testSearchRequestId = 0;
+let editTestSearchRequestId = 0;
 
 const doctorSearch = document.getElementById("doctorSearch");
 const doctorResults = document.getElementById("doctorResults");
@@ -32,6 +45,10 @@ const testSearch = document.getElementById("testSearch");
 const testResults = document.getElementById("testResults");
 const selectedTestsView = document.getElementById("selectedTests");
 const recentVisits = document.getElementById("recentVisits");
+const billingSearchInput = document.getElementById("billingSearchInput");
+const billingDateFrom = document.getElementById("billingDateFrom");
+const billingDateTo = document.getElementById("billingDateTo");
+const billingVisits = document.getElementById("billingVisits");
 const generatedBillActions = document.getElementById("generatedBillActions");
 const generatedBillNumber = document.getElementById("generatedBillNumber");
 const selectedAssociateView = document.getElementById("selectedAssociate");
@@ -45,6 +62,7 @@ const patientNameResults = document.getElementById("patientNameResults");
 const newPatientBillingHistoryCard = document.getElementById("newPatientBillingHistoryCard");
 const newPatientBillingHistory = document.getElementById("newPatientBillingHistory");
 let newPatientHistoryTimer = null;
+let newPatientHistoryDismissed = false;
 let recentVisitsUsesTodayFilter = true;
 let recentVisitsBusinessDate = "";
 let recentVisitsBusinessDayWatcher = null;
@@ -509,6 +527,7 @@ function renderPatientHistory(visits, container = document.getElementById("patie
         <button class="ghost-btn" data-bill-print="${v.id}" type="button">Print Bill</button>
         <button class="ghost-btn" data-download-bill="${v.id}" type="button">Download PDF</button>
         <button class="ghost-btn" data-share-bill="${v.id}" type="button">Share on WhatsApp</button>
+        <button class="ghost-btn" data-share-bill-pdf="${v.id}" type="button">WhatsApp Bill PDF</button>
       </div>` : ""}
     </div>
   `).join("");
@@ -522,6 +541,21 @@ function renderPatientHistory(visits, container = document.getElementById("patie
   });
   container.querySelectorAll("[data-share-bill]").forEach((button) => {
     button.addEventListener("click", () => shareBillViaWhatsApp(button.dataset.shareBill));
+  });
+  container.querySelectorAll("[data-share-bill-pdf]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const visit = visits.find((item) => Number(item.id) === Number(button.dataset.shareBillPdf));
+      if (!visit) return;
+      const originalText = button.textContent;
+      button.disabled = true;
+      button.textContent = "Preparing PDF...";
+      try {
+        await shareBillPdfViaWhatsApp(visit.id, visit.bill_no);
+      } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+      }
+    });
   });
   container.querySelectorAll("[data-download-bill]").forEach((button) => {
     button.addEventListener("click", async () => {
@@ -649,11 +683,13 @@ function promptForNewRegistrationTest(name, targetTests, onChange) {
 
 async function searchTests(term) {
   const requestedName = String(term || "").trim().replace(/\s+/g, " ");
+  const requestId = ++testSearchRequestId;
   if (!requestedName) {
     testResults.innerHTML = "";
     return;
   }
   const data = await API.request(`/api/tests?query=${encodeURIComponent(term)}`);
+  if (requestId !== testSearchRequestId || testSearch.value.trim() !== String(term || "").trim()) return;
   const tests = data.tests || [];
   const hasExactMatch = tests.some((test) => normaliseTestName(test.name) === normaliseTestName(requestedName));
   const addNewTestOption = !hasExactMatch
@@ -701,12 +737,14 @@ async function searchTests(term) {
 
 async function searchEditTests(term) {
   const requestedName = String(term || "").trim().replace(/\s+/g, " ");
+  const requestId = ++editTestSearchRequestId;
   if (!requestedName) {
     editTestResults.innerHTML = "";
     return;
   }
 
   const data = await API.request(`/api/tests?query=${encodeURIComponent(term)}`);
+  if (requestId !== editTestSearchRequestId || editTestSearch.value.trim() !== String(term || "").trim()) return;
   const tests = data.tests || [];
   const hasExactMatch = tests.some((test) => normaliseTestName(test.name) === normaliseTestName(requestedName));
   const addNewTestOption = !hasExactMatch
@@ -815,6 +853,135 @@ async function loadRecentVisits(search = "", dateFrom = "", dateTo = "") {
   bindQuickBillEditActions(recentVisits, data.visits);
 }
 
+function openDueCollectionForVisit(visit) {
+  if (!hasPermission("collect_due_payments")) return;
+  const dueCollectionLink = navLinks.find((link) => link.getAttribute("href") === "#due-collection");
+  if (!dueCollectionLink) return;
+  collectionSearchInput.value = visit.bill_no || "";
+  collectionDateFrom.value = "";
+  collectionDateTo.value = "";
+  dueCollectionLink.click();
+}
+
+function renderBillingVisits(visits) {
+  if (!billingVisits) return;
+  if (!visits.length) {
+    billingVisits.innerHTML = `<div class="empty-state">No bills match this search.</div>`;
+    return;
+  }
+
+  const canManageBilling = hasPermission("manage_billing");
+  const canCollectPayments = hasPermission("collect_due_payments");
+  const canEditBill = getUser()?.role === "receptionist"
+    && canManageBilling
+    && hasPermission("manage_patients");
+  const canViewReports = hasPermission("view_reports");
+
+  billingVisits.innerHTML = visits.map((visit) => `
+    <div class="list-item">
+      <div style="display:flex; justify-content:space-between; gap:12px; align-items:start;">
+        <div>
+          <strong style="font-size:1.05rem; color:var(--primary-dark);">${escapeHtml(visit.bill_no)} &bull; ${escapeHtml(visit.patient_name)}</strong>
+          <div style="margin-top:5px; color:var(--muted); font-size:.9rem;">${escapeHtml(visit.tests || "No tests")}</div>
+          <div style="margin-top:5px; font-size:.85rem; color:var(--muted);">Phone: ${escapeHtml(visit.phone || "Not provided")} &bull; ${formatDate(visit.created_at)}</div>
+        </div>
+        <div style="text-align:right; white-space:nowrap; font-size:.88rem;">
+          <strong>${currency(visit.total)}</strong><br />
+          <span style="color:${Number(visit.amount_due || 0) > 0 ? "var(--danger)" : "var(--primary)"};">Due ${currency(visit.amount_due)}</span>
+        </div>
+      </div>
+      <div class="actions-row" style="margin-top:12px;">
+        ${canManageBilling ? `<button class="secondary-btn" data-billing-preview="${visit.id}" type="button">View Bill</button>` : ""}
+        ${canManageBilling ? `<button class="ghost-btn" data-billing-print="${visit.id}" type="button">Print Bill</button>` : ""}
+        ${canManageBilling ? `<button class="ghost-btn" data-billing-download="${visit.id}" type="button">Download PDF</button>` : ""}
+        ${canManageBilling ? `<button class="ghost-btn" data-billing-share="${visit.id}" type="button">WhatsApp Bill</button>` : ""}
+        ${canManageBilling ? `<button class="ghost-btn" data-billing-share-pdf="${visit.id}" type="button">WhatsApp Bill PDF</button>` : ""}
+        ${canEditBill ? `<button class="ghost-btn" data-billing-edit="${visit.id}" type="button">Edit Bill</button>` : ""}
+        ${canCollectPayments && Number(visit.amount_due || 0) > 0 ? `<button class="primary-btn" data-billing-collect="${visit.id}" type="button">Collect Due</button>` : ""}
+        ${canViewReports && visit.status === "reported" ? `<button class="ghost-btn" data-billing-report="${visit.id}" type="button">View Report</button>` : ""}
+      </div>
+    </div>
+  `).join("");
+
+  billingVisits.querySelectorAll("[data-billing-preview]").forEach((button) => {
+    button.addEventListener("click", () => openHtmlBill(button.dataset.billingPreview, false));
+  });
+  billingVisits.querySelectorAll("[data-billing-print]").forEach((button) => {
+    button.addEventListener("click", () => openHtmlBill(button.dataset.billingPrint, true));
+  });
+  billingVisits.querySelectorAll("[data-billing-share]").forEach((button) => {
+    button.addEventListener("click", () => shareBillViaWhatsApp(button.dataset.billingShare));
+  });
+  billingVisits.querySelectorAll("[data-billing-share-pdf]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const visit = visits.find((item) => Number(item.id) === Number(button.dataset.billingSharePdf));
+      if (!visit) return;
+      const originalText = button.textContent;
+      button.disabled = true;
+      button.textContent = "Preparing PDF...";
+      try {
+        await shareBillPdfViaWhatsApp(visit.id, visit.bill_no);
+      } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+      }
+    });
+  });
+  billingVisits.querySelectorAll("[data-billing-download]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const visit = visits.find((item) => Number(item.id) === Number(button.dataset.billingDownload));
+      if (!visit) return;
+      const originalText = button.textContent;
+      button.disabled = true;
+      button.textContent = "Preparing PDF...";
+      try {
+        await downloadBillPdf(visit.id, visit.bill_no);
+      } catch (error) {
+        alert(error.message || "Unable to download the bill PDF.");
+      } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+      }
+    });
+  });
+  billingVisits.querySelectorAll("[data-billing-edit]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const visit = visits.find((item) => Number(item.id) === Number(button.dataset.billingEdit));
+      if (visit) openQuickBillEdit(visit);
+    });
+  });
+  billingVisits.querySelectorAll("[data-billing-collect]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const visit = visits.find((item) => Number(item.id) === Number(button.dataset.billingCollect));
+      if (visit) openDueCollectionForVisit(visit);
+    });
+  });
+  billingVisits.querySelectorAll("[data-billing-report]").forEach((button) => {
+    button.addEventListener("click", () => openHtmlReport(button.dataset.billingReport, false));
+  });
+}
+
+async function loadBillingVisits(search = "", dateFrom = "", dateTo = "") {
+  if (!billingVisits || !hasPermission("manage_billing")) return;
+  let url = `/api/visits?all=1&query=${encodeURIComponent(search)}`;
+  if (dateFrom) url += `&dateFrom=${encodeURIComponent(dateFrom)}`;
+  if (dateTo) url += `&dateTo=${encodeURIComponent(dateTo)}`;
+  const data = await API.request(url);
+  renderBillingVisits(data.visits || []);
+}
+
+function reloadBillingVisits() {
+  return loadBillingVisits(
+    billingSearchInput?.value.trim() || "",
+    billingDateFrom?.value || "",
+    billingDateTo?.value || ""
+  );
+}
+
+billingSearchInput?.addEventListener("input", () => reloadBillingVisits().catch((error) => console.error("Billing search failed", error)));
+billingDateFrom?.addEventListener("change", () => reloadBillingVisits().catch((error) => console.error("Billing date filter failed", error)));
+billingDateTo?.addEventListener("change", () => reloadBillingVisits().catch((error) => console.error("Billing date filter failed", error)));
+
 function patientFromVisit(visit) {
   return {
     id: Number(visit.patient_id),
@@ -880,6 +1047,7 @@ function renderNewPatientBillingHistory(visits, patientName = "") {
           ${canManageBilling ? `<button class="ghost-btn" data-bill-print="${visit.id}" type="button">Print Bill</button>` : ""}
           ${canManageBilling ? `<button class="ghost-btn" data-share-bill="${visit.id}" type="button">WhatsApp Bill</button>` : ""}
           ${canManageBilling ? `<button class="ghost-btn" data-download-bill="${visit.id}" type="button">Download Bill PDF</button>` : ""}
+          ${canManageBilling ? `<button class="ghost-btn" data-share-bill-pdf="${visit.id}" type="button">WhatsApp Bill PDF</button>` : ""}
           ${canViewReports && visit.status === "reported" ? `<button class="ghost-btn" data-view="${visit.id}" type="button">View Report</button>` : ""}
         </div>
       ` : ""}
@@ -897,6 +1065,21 @@ function renderNewPatientBillingHistory(visits, patientName = "") {
   });
   newPatientBillingHistory.querySelectorAll("[data-share-bill]").forEach((button) => {
     button.addEventListener("click", () => shareBillViaWhatsApp(button.dataset.shareBill));
+  });
+  newPatientBillingHistory.querySelectorAll("[data-share-bill-pdf]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const visit = visits.find((item) => Number(item.id) === Number(button.dataset.shareBillPdf));
+      if (!visit) return;
+      const originalText = button.textContent;
+      button.disabled = true;
+      button.textContent = "Preparing PDF...";
+      try {
+        await shareBillPdfViaWhatsApp(visit.id, visit.bill_no);
+      } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+      }
+    });
   });
   newPatientBillingHistory.querySelectorAll("[data-download-bill]").forEach((button) => {
     button.addEventListener("click", async () => {
@@ -919,7 +1102,7 @@ function renderNewPatientBillingHistory(visits, patientName = "") {
 }
 
 async function loadNewPatientBillingHistory(patient) {
-  if (!newPatientBillingHistory || getUser()?.role !== "receptionist") return;
+  if (!newPatientBillingHistory || newPatientHistoryDismissed || getUser()?.role !== "receptionist") return;
   const patientName = String(patient?.name || "").trim();
   const phone = String(patient?.phone || "").trim();
   const query = phone || patientName;
@@ -935,9 +1118,30 @@ async function loadNewPatientBillingHistory(patient) {
       return (phone && visit.phone === phone)
         || String(visit.patient_name || "").trim().toLowerCase() === patientName.toLowerCase();
     });
+    if (newPatientHistoryDismissed) return;
     renderNewPatientBillingHistory(visits, patientName);
   } catch (error) {
+    if (newPatientHistoryDismissed) return;
     newPatientBillingHistory.innerHTML = `<div class="empty-state">Could not load billing history.</div>`;
+  }
+}
+
+function dismissNewPatientBillingHistory() {
+  newPatientHistoryDismissed = true;
+  clearTimeout(newPatientHistoryTimer);
+  patientNameResults.innerHTML = "";
+  if (newPatientBillingHistoryCard && getUser()?.role === "receptionist") {
+    newPatientBillingHistoryCard.hidden = true;
+  }
+}
+
+function reopenNewPatientBillingHistory() {
+  if (!newPatientHistoryDismissed || getUser()?.role !== "receptionist") return;
+  newPatientHistoryDismissed = false;
+  if (newPatientBillingHistoryCard) newPatientBillingHistoryCard.hidden = false;
+  const name = patientNameInput.value.trim();
+  if (name || patientPhoneInput.value.trim()) {
+    loadNewPatientBillingHistory({ name, phone: patientPhoneInput.value.trim() });
   }
 }
 
@@ -974,6 +1178,22 @@ patientNameInput.addEventListener("input", (event) => {
   newPatientHistoryTimer = setTimeout(() => {
     loadNewPatientBillingHistory({ name: query, phone: patientPhoneInput.value.trim() });
   }, 300);
+});
+
+patientNameInput.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter") return;
+  event.preventDefault();
+  dismissNewPatientBillingHistory();
+  // Keep keyboard-only registration fast: Enter accepts the entered name,
+  // closes its history, and advances to the next patient-detail field.
+  patientPhoneInput.focus();
+});
+
+patientNameInput.addEventListener("click", reopenNewPatientBillingHistory);
+
+document.getElementById("visitForm")?.addEventListener("reset", () => {
+  newPatientHistoryDismissed = false;
+  if (newPatientBillingHistoryCard && getUser()?.role === "receptionist") newPatientBillingHistoryCard.hidden = false;
 });
 
 patientPhoneInput.addEventListener("input", () => {
@@ -1311,7 +1531,7 @@ function initializeNavigation() {
   const technicianRoles = ["blood_sample_technician", "usg_technician", "mri_technician", "ct_technician"];
   const isTechnician = technicianRoles.includes(user?.role);
   const canEditPatients = hasAccessControl("edit_patient_details");
-  const canManagePatientVisits = hasPermission("manage_patients") && !isTechnician && user?.role !== "na";
+  const canManagePatientVisits = hasPermission("manage_patients") && !isTechnician;
   const patientManagementDescription = document.getElementById("patientManagementDescription");
   if (patientManagementDescription) {
     patientManagementDescription.textContent = canEditPatients && canManagePatientVisits
@@ -1332,6 +1552,7 @@ function initializeNavigation() {
   const sections = {
     "#reception-summary": document.getElementById("reception-summary"),
     "#new-visit": document.getElementById("new-visit"),
+    "#billing": document.getElementById("billing"),
     "#patient-management": document.getElementById("patient-management"),
     "#test-catalog": document.getElementById("test-catalog"),
     "#results-entry": document.getElementById("results-entry"),
@@ -1344,6 +1565,7 @@ function initializeNavigation() {
   const sectionTitles = {
     "#reception-summary": "Daily Overview",
     "#new-visit": "Register a new patient",
+    "#billing": "Billing",
     "#patient-management": "Patient Management",
     "#test-catalog": "Test Catalogue",
     "#results-entry": "Enter Test Results",
@@ -1354,13 +1576,14 @@ function initializeNavigation() {
   };
   const sectionPermissions = {
     "#new-visit": ["manage_patients"],
+    "#billing": ["manage_billing"],
     "#test-catalog": ["manage_tests"],
-    "#results-entry": ["enter_results"],
     "#price-inquiry": ["manage_billing"],
   };
   const sectionAnyPermissions = {
     "#patient-management": ["manage_patients", "manage_billing"],
-    "#reports": ["view_reports", "print_reports", "download_reports"],
+    "#results-entry": ["enter_results", "finalize_reports"],
+    "#reports": ["view_reports", "print_reports", "download_reports", "share_whatsapp_pdf"],
     "#due-collection": ["collect_due_payments"],
   };
 
@@ -1368,9 +1591,13 @@ function initializeNavigation() {
     if (embeddedPatientManagement) return href === "#patient-management"
       && (hasPermission("manage_patients") || hasPermission("manage_billing") || canEditPatients);
     if (user?.role === "na") {
-      return (href === "#test-catalog" && hasPermission("manage_tests"))
+      return (href === "#new-visit" && hasPermission("manage_patients"))
+        || (href === "#test-catalog" && hasPermission("manage_tests"))
+        || (href === "#billing" && hasPermission("manage_billing"))
         || (href === "#due-collection" && hasPermission("collect_due_payments"))
-        || (href === "#patient-management" && (hasPermission("manage_billing") || canEditPatients));
+        || (href === "#results-entry" && (hasPermission("enter_results") || hasPermission("finalize_reports")))
+        || (href === "#reports" && ["view_reports", "print_reports", "download_reports", "share_whatsapp_pdf"].some((permission) => hasPermission(permission)))
+        || (href === "#patient-management" && (hasPermission("manage_patients") || hasPermission("manage_billing") || canEditPatients));
     }
     // Technicians with billing access can view bill history, not edit patient records.
     if (href === "#patient-management" && isTechnician && !hasPermission("manage_billing") && !canEditPatients) return false;
@@ -1391,7 +1618,13 @@ function initializeNavigation() {
 
   function activateSection(href) {
     const fallbackHref = embeddedPatientManagement ? "#patient-management" : user?.role === "na"
-      ? (hasPermission("collect_due_payments") ? "#due-collection" : "#patient-management")
+      ? (hasPermission("manage_patients") ? "#new-visit"
+        : hasPermission("manage_billing") ? "#billing"
+          : hasPermission("collect_due_payments") ? "#due-collection"
+            : (hasPermission("enter_results") || hasPermission("finalize_reports")) ? "#results-entry"
+              : ["view_reports", "print_reports", "download_reports", "share_whatsapp_pdf"].some((permission) => hasPermission(permission)) ? "#reports"
+                : hasPermission("manage_tests") ? "#test-catalog"
+                  : "#patient-management")
       : hasRegistrationOnlyAccess ? "#new-visit" : "#reception-summary";
     const normalizedHref = normalizeHref(href);
     let targetHref = (sections[normalizedHref] && sections[normalizedHref] !== null) ? normalizedHref : fallbackHref;
@@ -1431,6 +1664,9 @@ function initializeNavigation() {
         const dateTo = document.getElementById("collectionDateTo")?.value || "";
         loadCollectionVisits(searchInput?.value?.trim() || "", dateFrom, dateTo);
       }, 0);
+    }
+    if (targetHref === "#billing" && typeof reloadBillingVisits === "function") {
+      reloadBillingVisits().catch((error) => console.error("Billing load failed", error));
     }
     if (targetHref === "#reports" && typeof loadReportVisits === 'function') {
       setTimeout(() => {
@@ -1474,7 +1710,13 @@ function initializeNavigation() {
     }
   });
   const initialSection = embeddedPatientManagement ? "#patient-management" : window.location.hash || (user?.role === "na"
-    ? (hasPermission("collect_due_payments") ? "#due-collection" : "#patient-management")
+    ? (hasPermission("manage_patients") ? "#new-visit"
+      : hasPermission("manage_billing") ? "#billing"
+        : hasPermission("collect_due_payments") ? "#due-collection"
+          : (hasPermission("enter_results") || hasPermission("finalize_reports")) ? "#results-entry"
+            : ["view_reports", "print_reports", "download_reports", "share_whatsapp_pdf"].some((permission) => hasPermission(permission)) ? "#reports"
+              : hasPermission("manage_tests") ? "#test-catalog"
+                : "#patient-management")
     : (hasRegistrationOnlyAccess ? "#new-visit" : "#reception-summary"));
   activateSection(initialSection);
 
@@ -1546,7 +1788,7 @@ function renderPatientSearchResults(patients) {
 
 function selectPatientForEdit(patient, preferredVisitId = null) {
   const canManagePatientVisits = hasPermission("manage_patients")
-    && !["na", "blood_sample_technician", "usg_technician", "mri_technician", "ct_technician"].includes(getUser()?.role);
+    && !["blood_sample_technician", "usg_technician", "mri_technician", "ct_technician"].includes(getUser()?.role);
   const canEditPatientDetails = hasAccessControl("edit_patient_details");
   const billHistoryOnly = document.getElementById("patientBillHistoryOnly");
   if (!canManagePatientVisits && !canEditPatientDetails) {
@@ -1725,7 +1967,7 @@ document.getElementById("patientEditForm").addEventListener("submit", async (eve
   if (!selectedPatient) return;
 
   const canManagePatientVisits = hasPermission("manage_patients")
-    && !["na", "blood_sample_technician", "usg_technician", "mri_technician", "ct_technician"].includes(getUser()?.role);
+    && !["blood_sample_technician", "usg_technician", "mri_technician", "ct_technician"].includes(getUser()?.role);
   if (!canManagePatientVisits) {
     if (!hasAccessControl("edit_patient_details")) return;
     try {
@@ -2106,6 +2348,7 @@ async function saveResultsForm(form) {
   const payload = {
     visitTestId: Number(form.dataset.visitTestId),
     additionalReportText: form.querySelector("[data-additional-report-text]")?.value || "",
+    additionalReportRows: getAdditionalReportRowsFromForm(form),
     parameters: Array.from(form.querySelectorAll("[data-parameter-row]")).map((row) => {
       const input = row.querySelector("input, textarea");
       return {
@@ -2121,8 +2364,7 @@ async function saveResultsForm(form) {
     method: "POST",
     body: JSON.stringify(payload),
   });
-  const additionalTextInput = form.querySelector("[data-additional-report-text]");
-  if (additionalTextInput) additionalTextInput.dataset.savedAdditionalText = additionalTextInput.value;
+  markAdditionalReportDataSaved(form);
 }
 
 async function reloadResultsVisits() {
@@ -2190,8 +2432,11 @@ resultsSaveAllBtn.addEventListener("click", async () => {
 
       // Only save if there are values entered
       const additionalTextInput = form.querySelector("[data-additional-report-text]");
+      const additionalRowsChanged = JSON.stringify(getAdditionalReportRowsFromForm(form))
+        !== (form.querySelector("[data-additional-text-holder]")?.dataset.savedAdditionalRows || "[]");
       if (parameters.some(p => p.value) || additionalTextInput?.value.trim()
-        || (additionalTextInput && additionalTextInput.value !== additionalTextInput.dataset.savedAdditionalText)) {
+        || (additionalTextInput && additionalTextInput.value !== additionalTextInput.dataset.savedAdditionalText)
+        || additionalRowsChanged) {
         await saveResultsForm(form);
         saved++;
       }
@@ -2964,11 +3209,13 @@ function copyQuoteToClipboard() {
   try {
     if (receptionAccessPending) return;
     if (window.location.hash === "" || window.location.hash === "#") {
-      window.location.hash = getUser()?.role === "na" && hasPermission("collect_due_payments")
-        ? "#due-collection"
-        : getUser()?.role === "na" && (hasPermission("manage_billing") || hasAccessControl("edit_patient_details"))
-          ? "#patient-management"
-        : "#new-visit";
+      window.location.hash = getUser()?.role === "na" && hasPermission("manage_billing")
+        ? "#billing"
+        : getUser()?.role === "na" && hasPermission("collect_due_payments")
+          ? "#due-collection"
+          : getUser()?.role === "na" && hasAccessControl("edit_patient_details")
+            ? "#patient-management"
+            : "#new-visit";
     }
 
     initializeNavigation();

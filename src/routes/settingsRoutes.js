@@ -4,6 +4,7 @@ const { ROLES } = require("../config/constants");
 const { getBusinessSettings, normalizeBusinessTime, updateBusinessSettings } = require("../services/businessSettingsService");
 const { getSubscriptionStatus, updateSubscriptionExpiry } = require("../services/subscriptionService");
 const { logAction } = require("../services/logService");
+const { validateAdditionalReportDoctors, validateReportDoctorSignatureImage } = require("../services/reportDoctorService");
 
 const settingsRouter = express.Router();
 
@@ -60,22 +61,8 @@ function reportDoctorSignatureResponse(settings) {
     reportDoctorRegistrationNo: settings.reportDoctorRegistrationNo,
     hasReportDoctorSignature: settings.hasReportDoctorSignature,
     reportDoctorSignatureDataUrl: settings.reportDoctorSignatureDataUrl || null,
+    additionalReportDoctors: settings.additionalReportDoctors || [],
   };
-}
-
-function validateReportDoctorSignatureImage(value) {
-  if (value === null) return null;
-
-  const imageDataUrl = String(value || "");
-  const isImageDataUrl = /^data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/]+={0,2}$/i.test(imageDataUrl);
-  const estimatedBytes = Math.floor((imageDataUrl.length - imageDataUrl.indexOf(",") - 1) * 0.75);
-  if (!isImageDataUrl || estimatedBytes > 2 * 1024 * 1024) {
-    const error = new Error("Upload a valid doctor signature image no larger than 2 MB.");
-    error.statusCode = 400;
-    throw error;
-  }
-
-  return imageDataUrl;
 }
 
 function validateBusinessLogoImage(value) {
@@ -141,7 +128,14 @@ settingsRouter.get("/report-doctor-signature", authRequired, allowRoles(ROLES.AD
 
 settingsRouter.patch("/report-doctor-signature", authRequired, allowRoles(ROLES.ADMIN), async (req, res, next) => {
   try {
+    if (Buffer.byteLength(JSON.stringify(req.body), "utf8") > 9 * 1024 * 1024) {
+      const error = new Error("Combined doctor signature images are too large. Please use smaller images.");
+      error.statusCode = 400;
+      throw error;
+    }
     const previous = await getBusinessSettings({ includeReportDoctorSignature: true });
+    const updateAdditionalReportDoctors = Object.prototype.hasOwnProperty.call(req.body, "additionalReportDoctors");
+    const additionalReportDoctors = updateAdditionalReportDoctors ? validateAdditionalReportDoctors(req.body.additionalReportDoctors) : previous.additionalReportDoctors;
     const updateReportDoctorSignature = Object.prototype.hasOwnProperty.call(req.body, "reportDoctorSignatureDataUrl");
     const reportDoctorSignatureDataUrl = updateReportDoctorSignature
       ? validateReportDoctorSignatureImage(req.body.reportDoctorSignatureDataUrl)
@@ -150,13 +144,15 @@ settingsRouter.patch("/report-doctor-signature", authRequired, allowRoles(ROLES.
     const reportDoctorQualification = cleanText(req.body.reportDoctorQualification ?? previous.reportDoctorQualification, 160);
     const reportDoctorRegistrationNo = cleanText(req.body.reportDoctorRegistrationNo ?? previous.reportDoctorRegistrationNo, 80);
 
-    const settings = await updateBusinessSettings(previous.businessName, {
+    await updateBusinessSettings(previous.businessName, {
       reportDoctorName,
       reportDoctorQualification,
       reportDoctorRegistrationNo,
       updateReportDoctorDetails: true,
       reportDoctorSignatureDataUrl,
       updateReportDoctorSignature,
+      additionalReportDoctors,
+      updateAdditionalReportDoctors,
     });
 
     await logAction({
@@ -167,15 +163,11 @@ settingsRouter.patch("/report-doctor-signature", authRequired, allowRoles(ROLES.
       meta: {
         doctorName: reportDoctorName,
         signatureImageChanged: updateReportDoctorSignature,
+        additionalDoctorCount: additionalReportDoctors.length,
       },
     });
 
-    res.json(reportDoctorSignatureResponse({
-      ...settings,
-      reportDoctorSignatureDataUrl: updateReportDoctorSignature
-        ? reportDoctorSignatureDataUrl
-        : previous.reportDoctorSignatureDataUrl,
-    }));
+    res.json(reportDoctorSignatureResponse(await getBusinessSettings({ includeReportDoctorSignature: true })));
   } catch (error) {
     next(error);
   }

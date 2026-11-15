@@ -1,7 +1,7 @@
 const express = require("express");
 const { all, get, run } = require("../db/helpers");
 const { allowPermissions, allowRoles } = require("../middleware/auth");
-const { hashPassword, invalidateUserSessions, normalizeAccessControls, normalizePermissions } = require("../services/authService");
+const { hashPassword, refreshUserSessions, normalizeAccessControls, normalizePermissions } = require("../services/authService");
 const { logAction } = require("../services/logService");
 const { DEFAULT_SUPERADMIN_USERNAME, PERMISSIONS, ROLES } = require("../config/constants");
 
@@ -199,7 +199,7 @@ userRouter.patch("/:id", async (req, res, next) => {
       meta: { ...req.body, password: req.body.password ? "[REDACTED]" : undefined },
     });
 
-    await invalidateUserSessions(req.params.id);
+    await refreshUserSessions(req.params.id);
 
     res.json({ ok: true });
   } catch (error) {

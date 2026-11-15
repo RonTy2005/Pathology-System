@@ -17,9 +17,10 @@ test("patient-detail access reveals the patient-management workspace", () => {
   const scope = vm.createContext({});
   vm.runInContext(definition, scope);
   assert.equal(scope.getRoleHome("na", { permissions: [], accessControls: { edit_patient_details: true } }), "reception.html#patient-management");
-  assert.match(reception, /href === "#patient-management" && \(hasPermission\("manage_billing"\) \|\| canEditPatients\)/);
+  assert.match(reception, /href === "#patient-management" && \(hasPermission\("manage_patients"\) \|\| hasPermission\("manage_billing"\) \|\| canEditPatients\)/);
   assert.match(reception, /"#patient-management" && canEditPatients/);
   assert.match(reception, /if \(!canManagePatientVisits\) \{/);
+  assert.doesNotMatch(reception, /hasPermission\("manage_patients"\)[\s\S]{0,180}\["na", "blood_sample_technician"/);
   assert.match(technician, /hasAccessControl\("edit_patient_details"\)/);
   assert.match(admin, /href="#window-patient-management" id="adminPatientManagementLink"/);
   assert.match(admin, /id="window-patient-management"/);
