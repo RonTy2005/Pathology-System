@@ -59,12 +59,21 @@ test('startup task is interactive, per-user and independent of batteries, networ
   assert.match(script,/\$action\.Type -eq 0 -and \[IO.Path\]::GetFullPath\(\$action\.Path\) -eq \$expectedPath/);
   assert.doesNotMatch(script,/RunLevel = 1|Principal\.UserId = ['"]SYSTEM|Register-ScheduledTask/);
   const main=fs.readFileSync(path.resolve(__dirname,'../desktop/main.js'),'utf8');
+  assert.ok(main.includes('process.platform === "win32" && /^6\\.1'));
+  assert.match(main,/app\.disableHardwareAcceleration\(\)/);
+  assert.match(main,/disable-gpu-compositing/);
   assert.ok(main.indexOf('void ensureScheduledStartup({ app, appMode })') > main.indexOf('await mainWindow.loadFile(path.join(__dirname, appMode'));
   assert.match(main,/startup-status\.json/);
   for(const file of ['client-startup.nsh','server-firewall.nsh']){
     const installer=fs.readFileSync(path.resolve(__dirname,'../desktop/installer',file),'utf8');
     assert.match(installer,/CreateShortCut "\$SMSTARTUP\\LabShield/);assert.match(installer,/-Mode Remove -ExecutablePath/);
   }
+});
+
+test('desktop CSS avoids paint containment for the installed app', () => {
+  const css = fs.readFileSync(path.resolve(__dirname, '../frontend/styles/app.css'), 'utf8');
+  assert.match(css, /\.labshield-desktop \.panel,[\s\S]*?backdrop-filter: none;[\s\S]*?contain: none;/);
+  assert.match(css, /\.labshield-desktop \.autocomplete \.result-btn,[\s\S]*?contain: none;/);
 });
 
 test('Windows validates the actual scheduled task definition without registering or launching anything', {skip:process.platform!=='win32'}, () => {

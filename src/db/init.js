@@ -217,6 +217,7 @@ async function createTables() {
       parameter_name TEXT NOT NULL,
       unit TEXT,
       normal_range TEXT,
+      reference_value_customized INTEGER NOT NULL DEFAULT 0,
       entry_mode TEXT NOT NULL DEFAULT 'manual',
       calculation_formula TEXT,
       calculation_precision INTEGER DEFAULT 2,
@@ -228,6 +229,7 @@ async function createTables() {
   await ensureColumn("test_parameters", "entry_mode", "TEXT NOT NULL DEFAULT 'manual'");
   await ensureColumn("test_parameters", "calculation_formula", "TEXT");
   await ensureColumn("test_parameters", "calculation_precision", "INTEGER DEFAULT 2");
+  await ensureColumn("test_parameters", "reference_value_customized", "INTEGER NOT NULL DEFAULT 0");
 
   await run(`
     CREATE TABLE IF NOT EXISTS test_bundle_items (
@@ -413,6 +415,7 @@ async function createTables() {
       value TEXT,
       unit TEXT,
       normal_range TEXT,
+      reference_value_customized INTEGER NOT NULL DEFAULT 0,
       entry_mode TEXT NOT NULL DEFAULT 'manual',
       entered_by INTEGER NOT NULL,
       entered_at TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -421,6 +424,7 @@ async function createTables() {
     )
   `);
   await ensureColumn("results", "entry_mode", "TEXT NOT NULL DEFAULT 'manual'");
+  await ensureColumn("results", "reference_value_customized", "INTEGER NOT NULL DEFAULT 0");
 
   // One current uploaded document per CT/USG/MRI study. Keeping the file with
   // its visit test prevents reports from being mixed between patients.
@@ -647,6 +651,7 @@ async function seedTests() {
         ["Total Cholesterol", "mg/dL", "< 200", 1],
         ["Triglycerides", "mg/dL", "< 150", 2],
         ["HDL Cholesterol", "mg/dL", "> 40", 3],
+        ["HDL : VLDL Ratio", "Ratio", "Calculated: HDL Cholesterol / VLDL Cholesterol", 4],
       ],
     },
   ];
@@ -1135,6 +1140,14 @@ async function ensureLipidProfileTestConfiguration() {
     { name: "LDL Cholesterol", unit: "mg/dL", range: "< 100.00" },
     { name: "VLDL Cholesterol", unit: "mg/dL", range: "< 30.00" },
     { name: "Non-HDL Cholesterol", unit: "mg/dL", range: "< 130.00" },
+    {
+      name: "HDL : VLDL Ratio",
+      unit: "Ratio",
+      range: "Calculated: HDL Cholesterol / VLDL Cholesterol",
+      entryMode: "calculated",
+      calculationFormula: "{HDL Cholesterol} / {VLDL Cholesterol}",
+      calculationPrecision: 2,
+    },
   ];
 
   for (const lipidProfile of lipidProfiles) {
@@ -1163,17 +1176,36 @@ async function ensureLipidProfileTestConfiguration() {
       if (parameter) {
         await run(
           `UPDATE test_parameters
-           SET parameter_name = ?, unit = ?, normal_range = ?, display_order = ?
+           SET parameter_name = ?, unit = ?, normal_range = ?, entry_mode = ?, calculation_formula = ?, calculation_precision = ?, display_order = ?
            WHERE id = ?`,
-          [definition.name, definition.unit, definition.range, index + 1, parameter.id]
+          [
+            definition.name,
+            definition.unit,
+            definition.range,
+            definition.entryMode || "manual",
+            definition.calculationFormula || null,
+            definition.calculationPrecision ?? 2,
+            index + 1,
+            parameter.id,
+          ]
         );
         continue;
       }
 
       await run(
-        `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, display_order)
-         VALUES (?, ?, ?, ?, ?)`,
-        [lipidProfile.id, definition.name, definition.unit, definition.range, index + 1]
+        `INSERT INTO test_parameters
+         (test_id, parameter_name, unit, normal_range, entry_mode, calculation_formula, calculation_precision, display_order)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          lipidProfile.id,
+          definition.name,
+          definition.unit,
+          definition.range,
+          definition.entryMode || "manual",
+          definition.calculationFormula || null,
+          definition.calculationPrecision ?? 2,
+          index + 1,
+        ]
       );
     }
   }
@@ -6777,6 +6809,41 @@ async function ensureFastingBloodSugarTestConfiguration() {
     parameterAliases: ["Fasting Glucose", "Glucose"],
     unit: "mg/dL",
     normalRange: "70.00 - 100.00",
+  });
+}
+
+async function ensureFastingPostPrandialBloodSugarTestConfiguration(db = { all, get, run, transaction }) {
+  const names = [
+    "FBS & PPBS (Fasting & Postprandial Blood Sugar)",
+    "Fasting and Postprandial Blood Sugar",
+    "Fasting & Postprandial Blood Sugar",
+    "Fasting Postprandial Blood Sugar",
+    "Glucose Fasting & PP",
+    "FBS & PPBS",
+  ];
+  const placeholders = names.map(() => "LOWER(?)").join(", ");
+  let test = await db.get(
+    `SELECT id FROM tests
+     WHERE LOWER(name) IN (${placeholders}) OR UPPER(COALESCE(code, '')) = 'FBS_PPBS'
+     ORDER BY id ASC LIMIT 1`,
+    names,
+  );
+
+  if (!test) {
+    const created = await db.run(
+      `INSERT INTO tests (name, code, category, sample_type, price, turnaround_hours, active, created_at)
+       VALUES (?, ?, ?, ?, 0, ?, 1, ?)`,
+      ["FBS & PPBS (Fasting & Postprandial Blood Sugar)", "FBS_PPBS", "Biochemistry", "Plasma", 24, buildNow()],
+    );
+    test = { id: created.id };
+  }
+
+  return ensureBlankReportFormatConfiguration(db, {
+    names,
+    schemaName: "FBS & PPBS (Fasting & Postprandial Blood Sugar)",
+    sampleType: "Plasma",
+    sampleTypePattern: /^(plasma|serum|blood)/i,
+    placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
   });
 }
 
@@ -12759,6 +12826,7 @@ async function initializeDatabase() {
     await ensureVitaminB12TestConfiguration();
     await ensureRandomBloodSugarTestConfiguration();
     await ensureFastingBloodSugarTestConfiguration();
+    await ensureFastingPostPrandialBloodSugarTestConfiguration();
     await ensureBTypeNatriureticPeptideTestConfiguration();
     await ensureDigoxinTestConfiguration();
     await ensureCreatineKinaseTestConfiguration();
@@ -13258,6 +13326,7 @@ async function initializeDatabase() {
     await ensureVitaminB12TestConfiguration();
     await ensureRandomBloodSugarTestConfiguration();
     await ensureFastingBloodSugarTestConfiguration();
+    await ensureFastingPostPrandialBloodSugarTestConfiguration();
     await ensureBTypeNatriureticPeptideTestConfiguration();
     await ensureDigoxinTestConfiguration();
     await ensureCreatineKinaseTestConfiguration();
@@ -13547,3 +13616,4 @@ module.exports.ensureWoundSwabAfbStainTestConfiguration = ensureWoundSwabAfbStai
 module.exports.ensureWoundSwabGramStainTestConfiguration = ensureWoundSwabGramStainTestConfiguration;
 module.exports.ensure17HydroxyprogesteroneTestConfiguration = ensure17HydroxyprogesteroneTestConfiguration;
 module.exports.ensureCtScanBrainBillingService = ensureCtScanBrainBillingService;
+module.exports.ensureFastingPostPrandialBloodSugarTestConfiguration = ensureFastingPostPrandialBloodSugarTestConfiguration;

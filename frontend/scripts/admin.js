@@ -967,6 +967,13 @@ function createTestParameterRow(parameter = {}) {
   row.className = "catalog-parameter-row";
   const entryMode = parameter.entry_mode === "calculated" || parameter.entryMode === "calculated" ? "calculated" : "manual";
   const referenceValue = parameter.normal_range || parameter.normalRange || "";
+  const referenceValueCustomized = parameter.reference_value_customized === 1
+    || parameter.reference_value_customized === true
+    || parameter.referenceValueCustomized === true
+    || parameter.referenceValueCustomized === 1;
+  row.dataset.referenceValueOriginal = String(referenceValue).trim();
+  row.dataset.referenceValueCustomized = referenceValueCustomized ? "true" : "false";
+  row.dataset.referenceValueWasCustomized = referenceValueCustomized ? "true" : "false";
   const hasMultipleReferenceLines = /\r?\n/.test(referenceValue);
   row.innerHTML = `
     <div class="catalog-parameter-row-fields" role="row">
@@ -992,6 +999,10 @@ function createTestParameterRow(parameter = {}) {
   });
   referenceValueInput?.addEventListener("input", () => {
     referenceValueInput.classList.toggle("is-expanded", /\r?\n/.test(referenceValueInput.value));
+    const changedFromLoadedValue = referenceValueInput.value.trim() !== row.dataset.referenceValueOriginal;
+    row.dataset.referenceValueCustomized = row.dataset.referenceValueWasCustomized === "true" || changedFromLoadedValue
+      ? "true"
+      : "false";
   });
   row.querySelector("[data-remove-test-parameter]").addEventListener("click", () => {
     row.remove();
@@ -1017,6 +1028,7 @@ function getTestParametersFromEditor() {
       parameterName: row.querySelector("[data-catalog-parameter-name]")?.value.trim() || "",
       entryMode: row.querySelector("[data-catalog-entry-mode]")?.value === "calculated" ? "calculated" : "manual",
       normalRange: row.querySelector("[data-catalog-normal-range]")?.value.trim() || "",
+      referenceValueCustomized: row.dataset.referenceValueCustomized === "true",
       unit: row.querySelector("[data-catalog-unit]")?.value.trim() || "",
       calculationFormula: row.querySelector("[data-catalog-calculation-formula]")?.value.trim() || "",
       calculationPrecision: row.querySelector("[data-catalog-calculation-precision]")?.value || "2",

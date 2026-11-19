@@ -128,7 +128,7 @@ test('route guards reject imaging previews and result entry while catalogue bill
     await run(`CREATE TABLE tests (id INTEGER PRIMARY KEY, name TEXT, code TEXT, category TEXT,
       sample_type TEXT, turnaround_hours INTEGER, report_body TEXT, price REAL, active INTEGER DEFAULT 1)`);
     await run(`CREATE TABLE test_parameters (id INTEGER PRIMARY KEY, test_id INTEGER, parameter_name TEXT,
-      unit TEXT, normal_range TEXT, entry_mode TEXT, calculation_formula TEXT, calculation_precision INTEGER, display_order INTEGER)`);
+      unit TEXT, normal_range TEXT, reference_value_customized INTEGER NOT NULL DEFAULT 0, entry_mode TEXT, calculation_formula TEXT, calculation_precision INTEGER, display_order INTEGER)`);
     await run('CREATE TABLE test_bundle_items (bundle_test_id INTEGER, component_test_id INTEGER, display_order INTEGER)');
     await run(`CREATE TABLE visit_tests (id INTEGER PRIMARY KEY, visit_id INTEGER, test_id INTEGER,
       custom_test_name TEXT, custom_test_price REAL, external_lab_name TEXT)`);

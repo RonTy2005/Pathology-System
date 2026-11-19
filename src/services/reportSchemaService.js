@@ -6,14 +6,14 @@ function normalizeSchemaName(value) {
   return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-function createParameter(parameterName, { unit = "", normalRange = "" } = {}) {
+function createParameter(parameterName, { unit = "", normalRange = "", entryMode = "manual", calculationFormula = null, calculationPrecision = 2 } = {}) {
   return {
     parameterName,
     unit,
     normalRange,
-    entryMode: "manual",
-    calculationFormula: null,
-    calculationPrecision: 2,
+    entryMode,
+    calculationFormula,
+    calculationPrecision,
   };
 }
 
@@ -28,6 +28,32 @@ function getFallbackReportParameters(test = {}) {
   const cellParameters = getCellReportParameters(test);
   if (cellParameters) return cellParameters;
   const normalizedName = normalizeSchemaName(test.name);
+  const normalizedCode = normalizeSchemaName(test.code);
+
+  if (normalizedCode === "fbsppbs" || ["fbsppbs", "fbsppbsfastingpostprandialbloodsugar", "fastingandpostprandialbloodsugar", "fastingpostprandialbloodsugar", "glucosefastingandpostprandial", "glucosefastingpp"].includes(normalizedName)) {
+    return [
+      createParameter("Glucose, Fasting, Plasma", { unit: "mg/dL", normalRange: "70.00 - 100.00" }),
+      createParameter("Glucose, Post Prandial, 2 Hours, Plasma", { unit: "mg/dL", normalRange: "100.00 - 140.00" }),
+    ];
+  }
+
+  if (normalizedName === "lipidprofile") {
+    return [
+      createParameter("Total Cholesterol", { unit: "mg/dL", normalRange: "< 200.00" }),
+      createParameter("Triglycerides", { unit: "mg/dL", normalRange: "< 150.00" }),
+      createParameter("HDL Cholesterol", { unit: "mg/dL", normalRange: "> 40.00" }),
+      createParameter("LDL Cholesterol", { unit: "mg/dL", normalRange: "< 100.00" }),
+      createParameter("VLDL Cholesterol", { unit: "mg/dL", normalRange: "< 30.00" }),
+      createParameter("Non-HDL Cholesterol", { unit: "mg/dL", normalRange: "< 130.00" }),
+      createParameter("HDL : VLDL Ratio", {
+        unit: "Ratio",
+        normalRange: "Calculated: HDL Cholesterol / VLDL Cholesterol",
+        entryMode: "calculated",
+        calculationFormula: "{HDL Cholesterol} / {VLDL Cholesterol}",
+        calculationPrecision: 2,
+      }),
+    ];
+  }
 
   if (["karyotype", "karyotypingchromosomalanalysis", "chromosomeanalysis"].includes(normalizedName)) {
     return [

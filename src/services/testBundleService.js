@@ -34,6 +34,8 @@ function mergeComponentParameters(componentParameters, recordedParameters) {
       parameter_name: parameter.parameter_name,
       unit: recorded?.unit || parameter.unit || "",
       normal_range: recorded?.normal_range || parameter.normal_range || "",
+      reference_value_customized: recorded?.reference_value_customized === 1 || recorded?.reference_value_customized === true
+        || parameter.reference_value_customized === 1 || parameter.reference_value_customized === true,
       entry_mode: recorded?.entry_mode || parameter.entry_mode || "manual",
       value: recorded?.value || "",
     };
@@ -58,7 +60,7 @@ async function expandBundleReportTests(tests = []) {
 
     for (const component of components) {
       const componentParameters = await all(
-        `SELECT parameter_name, unit, normal_range, entry_mode
+        `SELECT parameter_name, unit, normal_range, reference_value_customized, entry_mode
          FROM test_parameters
          WHERE test_id = ?
          ORDER BY display_order ASC, id ASC`,

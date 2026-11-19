@@ -495,7 +495,7 @@ async function getVisitDetails(visitId, user = null) {
 
   for (const test of tests) {
     test.results = await all(
-      `SELECT parameter_name, value, unit, normal_range, entry_mode
+      `SELECT parameter_name, value, unit, normal_range, reference_value_customized, entry_mode
        FROM results
        WHERE visit_test_id = ?
        ORDER BY id ASC`,
@@ -547,7 +547,7 @@ async function getReportBundle(visitId) {
   for (const test of tests) {
     test.parameters = await all(
       `
-      SELECT parameter_name, value, unit, normal_range, entry_mode
+      SELECT parameter_name, value, unit, normal_range, reference_value_customized, entry_mode
       FROM results
       WHERE visit_test_id = ?
       ORDER BY id ASC
@@ -1373,7 +1373,7 @@ visitRouter.post(
 
     const catalogParameters = visitTest.test_id
       ? await all(
-        `SELECT parameter_name, unit, normal_range, entry_mode, calculation_formula, calculation_precision
+        `SELECT parameter_name, unit, normal_range, reference_value_customized, entry_mode, calculation_formula, calculation_precision
          FROM test_parameters
          WHERE test_id = ?
          ORDER BY display_order ASC, id ASC`,
@@ -1389,9 +1389,9 @@ visitRouter.post(
       await run(
         `
         INSERT INTO results (
-          visit_test_id, parameter_name, value, unit, normal_range, entry_mode, entered_by, entered_at
+          visit_test_id, parameter_name, value, unit, normal_range, reference_value_customized, entry_mode, entered_by, entered_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         `,
         [
           visitTestId,
@@ -1399,6 +1399,7 @@ visitRouter.post(
           parameter.value,
           parameter.unit,
           parameter.normal_range,
+          parameter.reference_value_customized ? 1 : 0,
           parameter.entry_mode,
           req.user.id,
         ]

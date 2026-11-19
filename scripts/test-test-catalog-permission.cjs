@@ -70,7 +70,7 @@ test('a manage_tests-only user can change a catalogue price without other permis
   const { run, get } = require('../src/db/helpers');
   try {
     await run('CREATE TABLE tests (id INTEGER PRIMARY KEY, name TEXT UNIQUE, code TEXT UNIQUE, category TEXT, sample_type TEXT, price REAL, turnaround_hours INTEGER, report_body TEXT, active INTEGER)');
-    await run('CREATE TABLE test_parameters (test_id INTEGER, parameter_name TEXT, unit TEXT, normal_range TEXT, entry_mode TEXT, calculation_formula TEXT, calculation_precision INTEGER, display_order INTEGER)');
+    await run('CREATE TABLE test_parameters (test_id INTEGER, parameter_name TEXT, unit TEXT, normal_range TEXT, reference_value_customized INTEGER NOT NULL DEFAULT 0, entry_mode TEXT, calculation_formula TEXT, calculation_precision INTEGER, display_order INTEGER)');
     await run('CREATE TABLE logs (user_id INTEGER, action TEXT, entity_type TEXT, entity_id TEXT, meta TEXT, created_at TEXT)');
     await run("INSERT INTO tests (id,name,price,active) VALUES (1,'Sample Test',100,1)");
     await run("INSERT INTO tests (id,name,price,active) VALUES (2,'Another uncoded test',100,1)");

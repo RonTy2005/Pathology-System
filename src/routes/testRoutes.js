@@ -25,6 +25,10 @@ function normalizeParameterDefinition(parameter = {}) {
     parameterName: String(parameter.parameterName || parameter.parameter_name || "").trim(),
     unit: String(parameter.unit || "").trim(),
     normalRange: String(parameter.normalRange || parameter.normal_range || "").trim(),
+    referenceValueCustomized: parameter.referenceValueCustomized === true
+      || parameter.referenceValueCustomized === 1
+      || parameter.reference_value_customized === true
+      || parameter.reference_value_customized === 1,
     entryMode,
     calculationFormula: entryMode === "calculated"
       ? String(parameter.calculationFormula || parameter.calculation_formula || "").trim() || null
@@ -131,6 +135,7 @@ function buildUnsavedTestPreview(testInput = {}) {
       parameter_name: parameter.parameterName,
       unit: parameter.unit,
       normal_range: parameter.normalRange,
+      reference_value_customized: parameter.referenceValueCustomized ? 1 : 0,
       value: getCellReportPreviewValue(testInput, parameter) ?? getBundlePreviewValue({ normal_range: parameter.normalRange }),
     }));
 
@@ -210,7 +215,7 @@ testRouter.get("/:id/standard-report-description", allowPermissions(PERMISSIONS.
     if (!test) return res.status(404).json({ message: "Test not found" });
     if (isBillingOnlyTest(test)) return res.json({ description: null });
     test.parameters = await all(
-      `SELECT parameter_name, unit, normal_range, entry_mode, calculation_formula, calculation_precision
+      `SELECT parameter_name, unit, normal_range, reference_value_customized, entry_mode, calculation_formula, calculation_precision
        FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC`,
       [test.id]
     );
@@ -232,7 +237,7 @@ testRouter.get("/:id/sample-report", allowPermissions(PERMISSIONS.MANAGE_TESTS),
     if (isBillingOnlyTest(test)) return res.status(400).json({ message: BILLING_ONLY_MESSAGE });
 
     const parameters = await all(
-      `SELECT parameter_name, unit, normal_range FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC`,
+      `SELECT parameter_name, unit, normal_range, reference_value_customized FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC`,
       [test.id]
     );
     const bundleComponents = await getBundleComponentTests(test.id);
@@ -739,7 +744,7 @@ testRouter.get("/:id/sample-report", allowPermissions(PERMISSIONS.MANAGE_TESTS),
     if (bundleComponents.length) {
       mockReportData.tests = await Promise.all(bundleComponents.map(async (component) => {
         const componentParameters = await all(
-          `SELECT parameter_name, unit, normal_range, entry_mode
+          `SELECT parameter_name, unit, normal_range, reference_value_customized, entry_mode
            FROM test_parameters
            WHERE test_id = ?
            ORDER BY display_order ASC, id ASC`,
@@ -829,7 +834,7 @@ testRouter.get("/", async (req, res, next) => {
     for (const test of tests) {
       test.billing_only = isBillingOnlyTest(test);
       test.parameters = await all(
-        `SELECT id, parameter_name, unit, normal_range, entry_mode, calculation_formula, calculation_precision, display_order
+        `SELECT id, parameter_name, unit, normal_range, reference_value_customized, entry_mode, calculation_formula, calculation_precision, display_order
          FROM test_parameters
          WHERE test_id = ?
          ORDER BY display_order ASC, id ASC`,
@@ -869,13 +874,14 @@ testRouter.post("/", allowPermissions(PERMISSIONS.MANAGE_TESTS), async (req, res
     for (let index = 0; index < parameters.length; index += 1) {
       const parameter = parameters[index];
       await run(
-        `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, calculation_formula, calculation_precision, display_order)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, reference_value_customized, entry_mode, calculation_formula, calculation_precision, display_order)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           created.id,
           parameter.parameterName,
           parameter.unit,
           parameter.normalRange,
+          parameter.referenceValueCustomized ? 1 : 0,
           parameter.entryMode,
           parameter.calculationFormula,
           parameter.calculationPrecision,
@@ -950,9 +956,9 @@ testRouter.post(
         for (let index = 0; index < parameters.length; index += 1) {
           const parameter = parameters[index];
           await run(
-            `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, calculation_formula, calculation_precision, display_order)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [testId, parameter.parameterName, parameter.unit, parameter.normalRange, parameter.entryMode, parameter.calculationFormula, parameter.calculationPrecision, index + 1]
+            `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, reference_value_customized, entry_mode, calculation_formula, calculation_precision, display_order)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [testId, parameter.parameterName, parameter.unit, parameter.normalRange, parameter.referenceValueCustomized ? 1 : 0, parameter.entryMode, parameter.calculationFormula, parameter.calculationPrecision, index + 1]
           );
         }
 
@@ -1006,9 +1012,9 @@ testRouter.put("/:id", allowPermissions(PERMISSIONS.MANAGE_TESTS), async (req, r
       for (let index = 0; index < parameters.length; index += 1) {
         const parameter = parameters[index];
         await run(
-          `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, entry_mode, calculation_formula, calculation_precision, display_order)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [req.params.id, parameter.parameterName, parameter.unit, parameter.normalRange, parameter.entryMode, parameter.calculationFormula, parameter.calculationPrecision, index + 1]
+          `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, reference_value_customized, entry_mode, calculation_formula, calculation_precision, display_order)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [req.params.id, parameter.parameterName, parameter.unit, parameter.normalRange, parameter.referenceValueCustomized ? 1 : 0, parameter.entryMode, parameter.calculationFormula, parameter.calculationPrecision, index + 1]
         );
       }
     });

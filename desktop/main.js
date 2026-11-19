@@ -1,5 +1,6 @@
 const { app, BrowserWindow, dialog, ipcMain, Menu, net, powerMonitor, powerSaveBlocker, screen, shell } = require("electron");
 const { autoUpdater } = require("electron-updater");
+const os = require("os");
 const fs = require("fs/promises");
 const path = require("path");
 const { createMandatoryUpdateController } = require("./mandatoryUpdateController");
@@ -13,6 +14,15 @@ const { ensureAutomaticStartup } = require("./automaticStartup");
 const { ensureScheduledStartup } = require("./scheduledStartup");
 const { createServerAvailabilityGuard } = require("./serverAvailability");
 const { getInitialWindowBounds } = require("./windowSizing");
+
+// Windows 7 (NT 6.1) graphics drivers commonly lose Chromium composited
+// layers after a long scroll.  Let Chromium use its software renderer there:
+// the app remains responsive and previously painted sections do not return as
+// blank areas when the user scrolls back up.
+if (process.platform === "win32" && /^6\.1(?:\.|$)/.test(os.release())) {
+  app.disableHardwareAcceleration();
+  app.commandLine.appendSwitch("disable-gpu-compositing");
+}
 
 const INITIAL_UPDATE_CHECK_DELAY_MS = 20 * 1000;
 const UPDATE_CHECK_INTERVAL_MS = 30 * 60 * 1000;

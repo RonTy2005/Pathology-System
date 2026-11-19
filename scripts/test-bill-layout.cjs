@@ -6,21 +6,21 @@ const vm = require("node:vm");
 const { buildBillHtml } = require("../src/utils/billFormatter");
 const { sampleBill } = require("./bill-layout-fixture.cjs");
 
-test("one- and two-service bills remain in the upper half of A4 with large readable typography", () => {
+test("one- and two-service bills remain in the upper half of A4 with compact readable typography", () => {
   const html = buildBillHtml(sampleBill(2));
   assert.match(html, /<h1>LabShield Diagnostic Centre<\/h1>/);
   assert.doesNotMatch(html, /Diagnostic Laboratory/, "business category is not printed below the name");
   assert.match(html, /@page \{ size: A4 portrait; margin: 0 !important; \}/);
   assert.match(html, /\.bill-slip \{ width: 210mm; height: 148\.5mm; padding: 5mm 8mm 4mm;/);
-  assert.match(html, /body \{[^}]*font-size: 15px; line-height: 1\.4;/);
-  assert.match(html, /\.items-table th \{[^}]*font-size: 13px;/);
-  assert.match(html, /\.items-table td \{[^}]*min-height: 9mm;[^}]*font-size: 14px;/);
-  assert.match(html, /\.details-column p \{[^}]*font-size: 13\.5px;/);
-  assert.match(html, /\.totals-table \{[^}]*font-size: 12\.5px;/);
+  assert.match(html, /body \{[^}]*font-size: 14px; line-height: 1\.35;/);
+  assert.match(html, /\.items-table th \{[^}]*font-size: 12px;/);
+  assert.match(html, /\.items-table td \{[^}]*min-height: 8mm;[^}]*font-size: 13px;/);
+  assert.match(html, /\.details-column p \{[^}]*font-size: 12\.5px;/);
+  assert.match(html, /\.totals-table \{[^}]*font-size: 12px;/);
   assert.match(html, /<p class="business-address">123 Laboratory Road, City Centre, Kolkata, West Bengal<\/p>/);
   assert.match(html, /\.brand-block \.business-address \{[^}]*font-weight: 700;/);
   assert.match(html, /Please collect the report only from the lab at the scheduled time \(Business hours: 9:00 AM to 6:30 PM\)\./);
-  assert.match(html, /\.receipt-notes \.collection-note \{[^}]*font-size: 12px; font-weight: 700;/);
+  assert.match(html, /\.receipt-notes \.collection-note \{[^}]*font-size: 11\.5px; font-weight: 700;/);
   assert.match(html, /\.portal-qr img \{[^}]*width: 24mm; height: 24mm;/);
   assert.equal((html.match(/class="bill-slip/g) || []).length, 1);
   assert.equal((html.match(/<tbody>/g) || []).length, 2, "items and totals tables remain present");
@@ -47,8 +47,11 @@ test("WhatsApp bill link reduces only on-screen service names, not printable bil
   const shared = buildBillHtml(fixture, { sharedLinkView: true });
   const normal = buildBillHtml(fixture);
   assert.match(shared, /<body class="shared-link-bill">/);
+  assert.match(shared, /class="bill-slip bill-slip-full bill-slip-last"/);
   assert.match(shared, /@media screen \{[\s\S]*?\.shared-link-bill \.items-table td\.service strong \{ font-size: 11px; font-weight: 600;/);
-  assert.match(shared, /\.items-table td\.service strong \{ font-size: 14px; \}/);
+  assert.match(shared, /\.shared-link-bill \.bill-slip \{ display: flex; flex-direction: column; \}/);
+  assert.match(shared, /\.shared-link-bill \.slip-footer \{ margin-top: auto; \}/);
+  assert.match(shared, /\.items-table td\.service strong \{ font-size: 13px; \}/);
   assert.match(normal, /<body>\s*<main class="bill-slip/);
   assert.doesNotMatch(normal, /<body class="shared-link-bill">/);
 

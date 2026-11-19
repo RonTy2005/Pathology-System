@@ -78,6 +78,7 @@ function applyCalculatedParameters(catalogParameters = [], submittedParameters =
       value: parameter.value,
       unit: parameter.unit,
       normal_range: parameter.normalRange,
+      reference_value_customized: false,
       entry_mode: "manual",
     }));
   }
@@ -91,6 +92,7 @@ function applyCalculatedParameters(catalogParameters = [], submittedParameters =
       value: entryMode === "manual" ? (submitted?.value || "") : "",
       unit: String(parameter.unit || submitted?.unit || "").trim(),
       normal_range: String(parameter.normal_range || submitted?.normalRange || "").trim(),
+      reference_value_customized: parameter.reference_value_customized === 1 || parameter.reference_value_customized === true,
       entry_mode: entryMode,
       calculation_formula: entryMode === "calculated" ? String(parameter.calculation_formula || "").trim() : "",
       calculation_precision: clampPrecision(parameter.calculation_precision),

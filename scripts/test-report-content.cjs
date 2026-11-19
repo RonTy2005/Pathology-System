@@ -10,6 +10,7 @@ const { REPORT_CONTENT, getReportContent, buildSupplementaryNotes, supplementRep
 const { COMBINATIONS, getCombinationDefinition, repairKnownCombinationSchemas } = require('../src/services/reportCombinationRepair');
 const { CELL_REPORT_DEFINITIONS, getCellReportDefinition, getCellReportParameters, getCellReportPreviewValue, repairCellReportSchemas } = require('../src/services/cellReportService');
 const { getFallbackReportParameters } = require('../src/services/reportSchemaService');
+const { applyCalculatedParameters } = require('../src/utils/resultCalculations');
 const { ensureAntiInsulinAntibodyTestConfiguration, ensureAntiLeptospiraAntibodyTestConfiguration, ensureAntiMicrosomalAntibodyTestConfiguration, ensureAntiDsDnaAntibodyTestConfiguration, ensureAntiSsDnaAntibodyTestConfiguration, ensureAntiHistoneAntibodyTestConfiguration, ensureAntiRibosomalPAntibodyTestConfiguration, ensureAntiCcpAbTestConfiguration, ensureAntiSpermAntibodyTestConfiguration, ensureApolipoproteinA1TestConfiguration, ensureUrineArsenicTestConfiguration, ensureArthritisProfileTestConfiguration, ensureAsciticFluidGramStainTestConfiguration, ensureAsciticFluidTotalProteinTestConfiguration, ensureBodyFluidBiochemistryTestConfiguration, ensureBodyFluidSpecificGravityTestConfiguration, ensureCsfFluidChlorideTestConfiguration, ensureCsfFluidProteinTestConfiguration, ensureCsfFluidAfbStainTestConfiguration, ensureCsfFluidGramStainTestConfiguration, ensureComplementC3TestConfiguration, ensureComplementC4TestConfiguration, ensureCancaAntiPr3TestConfiguration, ensureBronchialWashingCultureSensitivityTestConfiguration, ensureBactecAerobicCultureTestConfiguration, ensureBactecAnaerobicCultureTestConfiguration, ensureBronchialPapCytologyTestConfigurations, ensureCryoglobulinsScreeningTestConfiguration } = require('../src/db/init');
 const { sampleReport } = require('./audit-report-content.cjs');
 const { ensureUrinary17KetosteroidTestConfiguration } = require('../src/db/init');
@@ -768,6 +769,30 @@ test('DiabeticProfile renders glucose, HbA1c, calculated eAG, and urine-screen f
     ['Fasting Plasma Glucose', 'Postprandial Plasma Glucose (2 Hours)', 'HbA1c', 'Estimated Average Glucose (eAG)', 'Urine Glucose', 'Urine Ketones'],
   );
   assert.equal(getFallbackReportParameters({ name: 'DiabeticProfile' })[3].calculationFormula, '{HbA1c} * 28.7 - 46.7');
+});
+
+test('FBS and PPBS keeps fasting and two-hour post-meal glucose as separate entries', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'FBS & PPBS (Fasting & Postprandial Blood Sugar)',
+    code: 'FBS_PPBS',
+    sample_type: 'Plasma',
+    parameters: [
+      { parameter_name: 'Glucose, Fasting, Plasma', value: '92', unit: 'mg/dL', normal_range: '70.00 - 100.00' },
+      { parameter_name: 'Glucose, Post Prandial, 2 Hours, Plasma', value: '132', unit: 'mg/dL', normal_range: '100.00 - 140.00' },
+    ],
+  }));
+  assert.match(html, /<div class="test-title">FBS & PPBS \(FASTING & POSTPRANDIAL BLOOD SUGAR\)<\/div>/);
+  assert.match(html, /data-report-content="fasting-postprandial-glucose"/);
+  assert.match(html, /Glucose, Fasting, Plasma/);
+  assert.match(html, /Glucose, Post Prandial, 2 Hours, Plasma/);
+  assert.match(html, />92</);
+  assert.match(html, />132</);
+  assert.match(html, /at least 8 hours without caloric intake/);
+  assert.match(html, /not interchangeable with a formal oral glucose tolerance test/);
+  assert.deepEqual(
+    getFallbackReportParameters({ name: 'FBS & PPBS (Fasting & Postprandial Blood Sugar)', code: 'FBS_PPBS' }).map(parameter => parameter.parameterName),
+    ['Glucose, Fasting, Plasma', 'Glucose, Post Prandial, 2 Hours, Plasma'],
+  );
 });
 
 test('DiabeticProfile Extended keeps glycaemic and lipid measurements in separate report sections', () => {
@@ -3175,6 +3200,48 @@ test('Leptospira Antibody IgM reports a screening result with early-disease and 
     getFallbackReportParameters({ name: 'Leptospira Antibody IgM' }).slice(0, 4).map(parameter => parameter.parameterName),
     ['Leptospira Antibody IgM, Serum', 'Antibody Index / Titre, if applicable', 'Assay / Method', 'Symptom Onset / Days of Illness, if provided'],
   );
+});
+
+test('Lipid Profile automatically calculates and prints HDL : VLDL ratio before its notes', () => {
+  const schema = getFallbackReportParameters({ name: 'Lipid Profile' });
+  const ratio = schema.find(parameter => parameter.parameterName === 'HDL : VLDL Ratio');
+  assert.deepEqual(
+    ratio && {
+      entryMode: ratio.entryMode,
+      calculationFormula: ratio.calculationFormula,
+      calculationPrecision: ratio.calculationPrecision,
+    },
+    {
+      entryMode: 'calculated',
+      calculationFormula: '{HDL Cholesterol} / {VLDL Cholesterol}',
+      calculationPrecision: 2,
+    },
+  );
+
+  const calculated = applyCalculatedParameters(
+    schema.map(parameter => ({
+      parameter_name: parameter.parameterName,
+      unit: parameter.unit,
+      normal_range: parameter.normalRange,
+      entry_mode: parameter.entryMode,
+      calculation_formula: parameter.calculationFormula,
+      calculation_precision: parameter.calculationPrecision,
+    })),
+    [
+      { parameter_name: 'HDL Cholesterol', value: '50' },
+      { parameter_name: 'VLDL Cholesterol', value: '20' },
+    ],
+  );
+  assert.equal(calculated.find(parameter => parameter.parameter_name === 'HDL : VLDL Ratio').value, '2.50');
+
+  const html = buildReportHtml(sampleReport({
+    name: 'Lipid Profile',
+    sample_type: 'Serum',
+    parameters: calculated,
+  }));
+  assert.match(html, /HDL : VLDL Ratio/);
+  assert.match(html, />2\.50</);
+  assert.ok(html.indexOf('HDL : VLDL Ratio') < html.indexOf('NLA - 2014'));
 });
 
 test('Lipid Comprehensive Profile separates standard lipids from optional advanced measures', () => {

@@ -191,6 +191,15 @@ body {
 .labshield-desktop .panel,
 .labshield-desktop .sidebar {
   backdrop-filter: none;
+  /* CSS paint containment can leave stale blank tiles on older Windows GPUs
+     after scrolling a large workspace.  Desktop windows favour reliable
+     repainting over that micro-optimisation. */
+  contain: none;
+}
+
+.labshield-desktop .autocomplete .result-btn,
+.labshield-desktop .list-item {
+  contain: none;
 }
 
 .login-panel,

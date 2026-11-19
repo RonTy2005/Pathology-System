@@ -175,7 +175,7 @@ patientPortalRouter.get("/sample/test/:testId/report", async (req, res, next) =>
     if (isBillingOnlyTest(test)) return res.status(400).send(BILLING_ONLY_MESSAGE);
 
     const parameters = await all(
-      `SELECT parameter_name, unit, normal_range
+      `SELECT parameter_name, unit, normal_range, reference_value_customized
        FROM test_parameters
        WHERE test_id = ?
        ORDER BY display_order ASC, id ASC`,
@@ -185,7 +185,7 @@ patientPortalRouter.get("/sample/test/:testId/report", async (req, res, next) =>
     const previewTests = bundleComponents.length
       ? await Promise.all(bundleComponents.map(async (component) => {
           const componentParameters = await all(
-            `SELECT parameter_name, unit, normal_range, entry_mode
+            `SELECT parameter_name, unit, normal_range, reference_value_customized, entry_mode
              FROM test_parameters
              WHERE test_id = ?
              ORDER BY display_order ASC, id ASC`,

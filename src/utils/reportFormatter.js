@@ -33,7 +33,28 @@ function formatDateStr(date) {
   });
 }
 
-function checkResultRange(value, rangeStr) {
+let activeCustomizedReferenceResultKeys = new Set();
+
+function isCustomizedReferenceValue(parameter) {
+  return parameter?.reference_value_customized === 1
+    || parameter?.reference_value_customized === true
+    || parameter?.referenceValueCustomized === 1
+    || parameter?.referenceValueCustomized === true;
+}
+
+function referenceResultKey(value, rangeStr) {
+  return `${String(value ?? "").trim()}\u0000${String(rangeStr ?? "").trim()}`;
+}
+
+function suppressesAutomaticReferenceStatus(value, rangeStr, parameter) {
+  return isCustomizedReferenceValue(parameter)
+    || activeCustomizedReferenceResultKeys.has(referenceResultKey(value, rangeStr));
+}
+
+function checkResultRange(value, rangeStr, parameter) {
+  if (suppressesAutomaticReferenceStatus(value, rangeStr, parameter)) {
+    return { isAbnormal: false, colorClass: "" };
+  }
   if (!value || !rangeStr) return { isAbnormal: false, colorClass: "" };
   const val = parseFloat(value.replace(/,/g, ""));
   if (isNaN(val)) return { isAbnormal: false, colorClass: "" };
@@ -66,7 +87,8 @@ function findCbcResult(test, definition) {
   );
 }
 
-function getCbcStatus(value, normalRange) {
+function getCbcStatus(value, normalRange, parameter) {
+  if (suppressesAutomaticReferenceStatus(value, normalRange, parameter)) return null;
   const numericValue = Number(String(value || "").replace(/,/g, ""));
   const range = getRangeBounds(normalRange);
   if (!Number.isFinite(numericValue) || !range) return null;
@@ -414,6 +436,20 @@ function isFastingBloodSugarTest(test) {
     || name.includes("fastingbloodsugar")
     || name.includes("fastingplasmaglucose")
     || name === "glucosefasting";
+}
+
+function isFastingPostPrandialBloodSugarTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "fbsppbs"
+    || [
+      "fbsppbs",
+      "fbsppbsfastingpostprandialbloodsugar",
+      "fastingandpostprandialbloodsugar",
+      "fastingpostprandialbloodsugar",
+      "glucosefastingandpostprandial",
+      "glucosefastingpp",
+    ].includes(name);
 }
 
 function isBTypeNatriureticPeptideTest(test) {
@@ -3357,7 +3393,8 @@ function isSeleniumSerumTest(test) {
     || name === "selenium" || name === "seleniumserum" || name === "serumselenium";
 }
 
-function getReferenceStatus(value, referenceRange) {
+function getReferenceStatus(value, referenceRange, parameter) {
+  if (suppressesAutomaticReferenceStatus(value, referenceRange, parameter)) return null;
   const numericValue = Number(String(value || "").replace(/,/g, ""));
   if (!Number.isFinite(numericValue)) return null;
 
@@ -6226,6 +6263,18 @@ function buildLipidProfileReportBody(test) {
     `;
   }).join("");
 
+  const hdl = findReportParameter(test, ["HDL Cholesterol", "HDL-C", "HDL"]) || {};
+  const vldl = findReportParameter(test, ["VLDL Cholesterol", "VLDL-C", "VLDL"]) || {};
+  const storedRatio = findReportParameter(test, ["HDL : VLDL Ratio", "HDL/VLDL Ratio", "HDL VLDL Ratio"]) || {};
+  const hdlValue = getNumericValue(hdl.value);
+  const vldlValue = getNumericValue(vldl.value);
+  const calculatedHdlVldlRatio = Number.isFinite(hdlValue) && Number.isFinite(vldlValue) && vldlValue !== 0
+    ? (hdlValue / vldlValue).toFixed(2)
+    : "";
+  const hdlVldlRatioValue = calculatedHdlVldlRatio || String(storedRatio.value || "").trim() || "-";
+  const hdlVldlRatioRange = String(storedRatio.normal_range || "").trim()
+    || "Calculated: HDL Cholesterol / VLDL Cholesterol";
+
   return `
     <table class="results-table lipid-profile-table">
       <thead>
@@ -6239,6 +6288,12 @@ function buildLipidProfileReportBody(test) {
       <tbody>
         <tr class="lipid-sample-row"><td><strong>Sample Type</strong></td><td>Serum (2 ml)</td><td colspan="2"><strong>TAT :</strong> 1 day (Normal: 1 - 3 days)</td></tr>
         ${rows}
+        <tr>
+          <td><strong>HDL : VLDL Ratio</strong><div class="lipid-method">Calculated</div></td>
+          <td>${escapeHtml(hdlVldlRatioValue)}</td>
+          <td>${escapeHtml(hdlVldlRatioRange)}</td>
+          <td>Ratio</td>
+        </tr>
       </tbody>
     </table>
     <table class="lipid-recommendation-table">
@@ -8881,6 +8936,10 @@ function buildRandomBloodSugarReportBody(test) {
 }
 
 function buildFastingBloodSugarReportBody(test) {
+  if (isFastingPostPrandialBloodSugarTest(test)) {
+    return buildFastingPostPrandialBloodSugarReportBody(test);
+  }
+
   return `
     ${buildDrlogyStyleAnalyteResultTable(test, {
       tableClass: "single-analyte-table glucose-table fasting-plasma-glucose-table",
@@ -10195,6 +10254,19 @@ function buildPostPrandialBloodSugarReportBody(test) {
       </ul>
     </div>
   `;
+}
+
+function buildFastingPostPrandialBloodSugarReportBody(test) {
+  const fasting = findReportParameter(test, ["Glucose, Fasting, Plasma", "Fasting Blood Sugar", "Fasting Glucose", "FBS"]) || {};
+  const postPrandial = findReportParameter(test, ["Glucose, Post Prandial, 2 Hours, Plasma", "Post Prandial Blood Sugar", "Postprandial Blood Sugar", "PPBS"]) || {};
+  const value = parameter => String(parameter?.value ?? "").trim() || "-";
+  const row = (label, parameter, defaultRange, statusForValue) => {
+    const result = value(parameter);
+    const status = result === "-" ? null : statusForValue(result, parameter);
+    return `<tr><td><strong>${escapeHtml(label)}</strong><div class="lipid-method">Hexokinase / laboratory-validated glucose method</div></td><td><span class="${status?.className || ""}">${escapeHtml(result)}</span>${status ? ` <span class="single-analyte-status ${status.className}">${escapeHtml(status.label)}</span>` : ""}</td><td>${escapeHtml(String(parameter?.normal_range || "").trim() || defaultRange)}</td><td>${escapeHtml(String(parameter?.unit || "").trim() || "mg/dL")}</td></tr>`;
+  };
+
+  return `<table class="results-table fasting-postprandial-glucose-table" data-report-content="fasting-postprandial-glucose"><thead><tr><th style="width:38%">Investigation</th><th style="width:22%">Result</th><th style="width:28%">Reference interval</th><th style="width:12%">Unit</th></tr></thead><tbody><tr class="thyroid-antibodies-section"><td colspan="4"><strong>FASTING &amp; POSTPRANDIAL BLOOD GLUCOSE</strong></td></tr><tr class="single-analyte-sample-row"><td><strong>Specimen</strong></td><td>${escapeHtml(String(test?.sample_type || "").trim() || "Plasma")}</td><td colspan="2">Fasting sample and 2-hour post-meal sample</td></tr>${row("Glucose, Fasting, Plasma", fasting, "70.00 - 100.00", getFastingPlasmaGlucoseStatus)}${row("Glucose, Post Prandial, 2 Hours, Plasma", postPrandial, "100.00 - 140.00", getPostPrandialGlucoseStatus)}</tbody></table><div class="single-analyte-notes report-template-notes fasting-postprandial-glucose-notes"><div class="report-note-heading">Collection and interpretation note :</div><ul><li>For the fasting result, document at least 8 hours without caloric intake unless the laboratory&rsquo;s validated protocol specifies otherwise.</li><li>Collect the postprandial specimen at the documented interval, commonly 2 hours after the start of the meal. Clearly label both collection times.</li><li>Interpret the two values with the laboratory&rsquo;s validated intervals and the clinical context. A routine post-meal glucose result is not interchangeable with a formal oral glucose tolerance test, and diagnosis requires appropriate clinical confirmation.</li></ul></div>`;
 }
 
 function buildTacrolimusReportBody(test) {
@@ -21992,6 +22064,11 @@ const buildFactorXiiiTest = buildFactorXiiiReportBody;
 
 function buildReportHtml(reportData) {
   const suppliedTests = Array.isArray(reportData.tests) ? reportData.tests : [];
+  activeCustomizedReferenceResultKeys = new Set(
+    suppliedTests.flatMap((test) => Array.isArray(test?.parameters) ? test.parameters : [])
+      .filter(isCustomizedReferenceValue)
+      .map((parameter) => referenceResultKey(parameter.value, parameter.normal_range))
+  );
   const reportTests = suppliedTests.filter(test => !isBillingOnlyTest(test));
   if (!reportTests.length) {
     const error = new Error(suppliedTests.length ? BILLING_ONLY_MESSAGE : 'No laboratory tests are available for this report.');
@@ -22132,7 +22209,8 @@ function buildReportHtml(reportData) {
   const vitaminCTest = singleTest && isVitaminCTest(singleTest) ? singleTest : null;
   const vitaminB12Test = singleTest && isVitaminB12Test(singleTest) ? singleTest : null;
   const randomBloodSugarTest = singleTest && isRandomBloodSugarTest(singleTest) ? singleTest : null;
-  const fastingBloodSugarTest = singleTest && isFastingBloodSugarTest(singleTest) ? singleTest : null;
+  const fastingPostPrandialBloodSugarTest = singleTest && isFastingPostPrandialBloodSugarTest(singleTest) ? singleTest : null;
+  const fastingBloodSugarTest = singleTest && (fastingPostPrandialBloodSugarTest || isFastingBloodSugarTest(singleTest)) ? singleTest : null;
   const bTypeNatriureticPeptideTest = singleTest && isBTypeNatriureticPeptideTest(singleTest) ? singleTest : null;
   const creatineKinaseTest = singleTest && isCreatineKinaseTest(singleTest) ? singleTest : null;
   const beta2MicroglobulinTest = singleTest && isBeta2MicroglobulinTest(singleTest) ? singleTest : null;
@@ -22174,7 +22252,7 @@ function buildReportHtml(reportData) {
   const aldolaseTest = singleTest && isAldolaseTest(singleTest) ? singleTest : null;
   const urineProteinCreatinineRatioTest = singleTest && isUrineProteinCreatinineRatioTest(singleTest) ? singleTest : null;
   const albuminCreatinineRatioTest = singleTest && isAlbuminCreatinineRatioTest(singleTest) ? singleTest : null;
-  const postPrandialBloodSugarTest = singleTest && isPostPrandialBloodSugarTest(singleTest) ? singleTest : null;
+  const postPrandialBloodSugarTest = singleTest && !fastingPostPrandialBloodSugarTest && isPostPrandialBloodSugarTest(singleTest) ? singleTest : null;
   const tacrolimusTest = singleTest && isTacrolimusTest(singleTest) ? singleTest : null;
   const phosphorusTest = singleTest && isPhosphorusTest(singleTest) ? singleTest : null;
   const alkalinePhosphataseTest = singleTest && isAlkalinePhosphataseTest(singleTest) ? singleTest : null;
@@ -22466,6 +22544,7 @@ function buildReportHtml(reportData) {
         if (reportData.tests.length === 1 && isVitaminCTest(t)) return "VITAMIN C (ASCORBIC ACID)";
         if (reportData.tests.length === 1 && isVitaminB12Test(t)) return "VITAMIN B12 (CYANOCOBALAMIN)";
         if (reportData.tests.length === 1 && isRandomBloodSugarTest(t)) return "RANDOM BLOOD SUGAR (RBS)";
+        if (reportData.tests.length === 1 && isFastingPostPrandialBloodSugarTest(t)) return "FBS & PPBS (FASTING & POSTPRANDIAL BLOOD SUGAR)";
         if (reportData.tests.length === 1 && isFastingBloodSugarTest(t)) return "FASTING PLASMA GLUCOSE (FPG)";
         if (reportData.tests.length === 1 && isBTypeNatriureticPeptideTest(t)) return "B-TYPE NATRIURETIC PEPTIDE (BNP)";
         if (reportData.tests.length === 1 && isCreatineKinaseTest(t)) return isCpkWithCkMbTest(t) ? "CPK WITH CK-MB" : normalizeParameterName(t.name) === "ckmb" || normalizeParameterName(t.name) === "creatinekinasemb" ? "CREATINE KINASE-MB (CK-MB)" : ["cpk", "cpkcreatinephosphokinase", "creatinephosphokinase"].includes(normalizeParameterName(t.name)) ? "CREATINE PHOSPHOKINASE (CPK), TOTAL" : "CREATINE KINASE (CK)";
@@ -24035,7 +24114,7 @@ function buildReportHtml(reportData) {
                   return;
                 }
 
-                const { isAbnormal, colorClass } = checkResultRange(param.value, param.normal_range);
+                const { isAbnormal, colorClass } = checkResultRange(param.value, param.normal_range, param);
                 let valDisplay = escapeHtml(param.value || "-");
                 if (getCellReportDefinition(test)) valDisplay = valDisplay.replace(/\r?\n/g, "<br />");
                 if (isAbnormal) {
