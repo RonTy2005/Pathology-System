@@ -36,5 +36,5 @@ test("the normal automatic range behavior remains for unchanged reference values
   });
 
   assert.match(html, /<span class="high-val">20<\/span>/);
-  assert.match(html, />High<\/span>/);
+  assert.doesNotMatch(html, />High<\/span>/);
 });

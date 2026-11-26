@@ -104,6 +104,7 @@ async function createTables() {
       email TEXT,
       registration_no TEXT,
       patient_portal_base_url TEXT,
+      diagnostic_website_available INTEGER NOT NULL DEFAULT 1,
       business_opening_time TEXT,
       business_closing_time TEXT,
       business_logo_data_url TEXT,
@@ -129,6 +130,9 @@ async function createTables() {
   await ensureColumn("business_settings", "email", "TEXT");
   await ensureColumn("business_settings", "registration_no", "TEXT");
   await ensureColumn("business_settings", "patient_portal_base_url", "TEXT");
+  // Existing installations use their saved public website/tunnel URL. Default
+  // this migration to "available" so an app update never changes QR routing.
+  await ensureColumn("business_settings", "diagnostic_website_available", "INTEGER NOT NULL DEFAULT 1");
   await ensureColumn("business_settings", "business_opening_time", "TEXT");
   await ensureColumn("business_settings", "business_closing_time", "TEXT");
   await ensureColumn("business_settings", "business_logo_data_url", "TEXT");
@@ -359,6 +363,26 @@ async function createTables() {
   await ensureColumn("visit_tests", "additional_report_text", "TEXT NOT NULL DEFAULT ''");
   await ensureColumn("visit_tests", "additional_report_rows_json", "TEXT NOT NULL DEFAULT '[]'");
 
+  // Reusable, test-specific phrases and optional investigation rows entered
+  // during result entry.  They are intentionally separate from a patient's
+  // report, so a technician can reuse an approved phrase on the next CBC (or
+  // another matching test) while still editing it for the current patient.
+  await run(`
+    CREATE TABLE IF NOT EXISTS report_addition_templates (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      test_id INTEGER NOT NULL,
+      content_type TEXT NOT NULL CHECK(content_type IN ('text', 'row')),
+      content TEXT NOT NULL,
+      usage_count INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(test_id, content_type, content),
+      FOREIGN KEY (test_id) REFERENCES tests(id) ON DELETE CASCADE
+    )
+  `);
+  await run("CREATE INDEX IF NOT EXISTS idx_report_addition_templates_test ON report_addition_templates(test_id, content_type, usage_count DESC, updated_at DESC)");
+  await seedReportAdditionTemplatesFromExistingResults();
+
   await run(`
     CREATE TABLE IF NOT EXISTS reports (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -502,6 +526,45 @@ async function createTables() {
       FOREIGN KEY (created_by) REFERENCES users(id)
     )
   `);
+}
+
+async function seedReportAdditionTemplatesFromExistingResults() {
+  const historicalEntries = await all(`
+    SELECT test_id, additional_report_text, additional_report_rows_json
+    FROM visit_tests
+    WHERE test_id IS NOT NULL
+      AND (TRIM(COALESCE(additional_report_text, '')) <> ''
+           OR TRIM(COALESCE(additional_report_rows_json, '')) NOT IN ('', '[]'))
+  `);
+
+  for (const entry of historicalEntries) {
+    const templates = new Map();
+    const text = String(entry.additional_report_text || "").trim();
+    if (text) templates.set(`text:${text}`, ["text", text]);
+
+    let rows = [];
+    try { rows = JSON.parse(entry.additional_report_rows_json || "[]"); } catch { rows = []; }
+    for (const row of Array.isArray(rows) ? rows : []) {
+      const normalized = {
+        investigation: String(row?.investigation || "").trim(),
+        result: String(row?.result || "").trim(),
+        referenceValue: String(row?.referenceValue || "").trim(),
+        unit: String(row?.unit || "").trim(),
+      };
+      if (Object.values(normalized).some(Boolean)) {
+        const content = JSON.stringify(normalized);
+        templates.set(`row:${content}`, ["row", content]);
+      }
+    }
+
+    for (const [contentType, content] of templates.values()) {
+      await run(
+        `INSERT OR IGNORE INTO report_addition_templates (test_id, content_type, content)
+         VALUES (?, ?, ?)`,
+        [entry.test_id, contentType, content],
+      );
+    }
+  }
 }
 
 async function seedAdmin() {
@@ -1277,28 +1340,39 @@ async function ensureLithiumTestConfiguration(db = { all, get, run, transaction 
   });
 }
 
-async function ensureLftTestConfiguration() {
-  let lftTests = await all(
-    `SELECT id FROM tests
-     WHERE LOWER(name) IN (LOWER(?), LOWER(?), LOWER(?))
+async function ensureLftTestConfiguration(db = { all, get, run }) {
+  const normalNames = ["Liver Function Test (LFT)", "LFT (Liver Function Test)"];
+  const ggtNames = ["LFT with GGT", "Liver Function Test (LFT) with GGT"];
+  const placeholders = [...normalNames, ...ggtNames].map(() => "LOWER(?)").join(", ");
+  let lftTests = await db.all(
+    `SELECT id, name, code FROM tests
+     WHERE LOWER(name) IN (${placeholders})
+        OR UPPER(COALESCE(code, '')) IN ('LFT001', 'LFT', 'LFTWITHGGT')
      ORDER BY id ASC`,
-    ["Liver Function Test (LFT)", "LFT (Liver Function Test)", "LFT with GGT"]
+    [...normalNames, ...ggtNames],
   );
 
-  if (!lftTests.length) {
-    const created = await run(
+  let normalLftTests = lftTests.filter((test) => {
+    const name = String(test.name || "").toLowerCase();
+    const code = String(test.code || "").toUpperCase();
+    return !name.includes("with ggt") && code !== "LFTWITHGGT";
+  });
+  const lftWithGgtTests = lftTests.filter((test) => !normalLftTests.includes(test));
+
+  if (!normalLftTests.length) {
+    const created = await db.run(
       `INSERT INTO tests (name, code, category, sample_type, price, turnaround_hours, active, created_at)
        VALUES (?, ?, ?, ?, 0, ?, 1, ?)`,
       ["Liver Function Test (LFT)", "LFT001", "Biochemistry", "Serum", 24, buildNow()]
     );
-    lftTests = [{ id: created.id }];
+    normalLftTests = [{ id: created.id, name: "Liver Function Test (LFT)", code: "LFT001" }];
+    lftTests = [...lftTests, ...normalLftTests];
   }
 
-  const parameters = [
+  const normalParameters = [
     { name: "AST (SGOT)", aliases: ["SGOT / AST"], unit: "U/L", range: "15.00 - 40.00" },
     { name: "ALT (SGPT)", aliases: ["SGPT / ALT"], unit: "U/L", range: "10.00 - 49.00" },
     { name: "AST : ALT Ratio", aliases: ["AST:ALT Ratio", "AST ALT Ratio"], unit: "", range: "< 1.00" },
-    { name: "GGTP", aliases: ["GGT", "Gamma Glutamyl Transferase"], unit: "U/L", range: "0.00 - 73.00" },
     { name: "Alkaline Phosphatase (ALP)", aliases: ["ALP (Alkaline Phosphatase)", "Alkaline Phosphatase"], unit: "U/L", range: "30.00 - 120.00" },
     { name: "Bilirubin Total", aliases: ["Total Bilirubin"], unit: "mg/dL", range: "0.30 - 1.20" },
     { name: "Bilirubin Direct", aliases: ["Direct Bilirubin"], unit: "mg/dL", range: "< 0.30" },
@@ -1308,33 +1382,46 @@ async function ensureLftTestConfiguration() {
     { name: "Globulin", aliases: [], unit: "g/dL", range: "2.00 - 3.50" },
     { name: "A : G Ratio", aliases: ["A G Ratio", "A:G Ratio"], unit: "", range: "0.90 - 2.00" },
   ];
+  const lftWithGgtParameters = [
+    ...normalParameters.slice(0, 3),
+    { name: "GGTP", aliases: ["GGT", "Gamma Glutamyl Transferase"], unit: "U/L", range: "0.00 - 73.00" },
+    ...normalParameters.slice(3),
+  ];
 
-  for (const lftTest of lftTests) {
-    await run("UPDATE tests SET sample_type = ?, active = 1 WHERE id = ?", ["Serum", lftTest.id]);
+  async function configureLft(test, parameters, { removeGgt = false } = {}) {
+    await db.run("UPDATE tests SET sample_type = ?, active = 1 WHERE id = ?", ["Serum", test.id]);
+    if (removeGgt) {
+      await db.run(
+        `DELETE FROM test_parameters
+         WHERE test_id = ?
+           AND LOWER(parameter_name) IN ('ggtp', 'ggt', 'gamma glutamyl transferase', 'gamma-glutamyl transferase (ggt), serum')`,
+        [test.id],
+      );
+    }
 
     for (const [index, definition] of parameters.entries()) {
       let parameter = null;
       for (const parameterName of [definition.name, ...definition.aliases]) {
-        parameter = await get(
+        parameter = await db.get(
           `SELECT id FROM test_parameters
            WHERE test_id = ? AND LOWER(parameter_name) = LOWER(?)
            ORDER BY display_order ASC, id ASC LIMIT 1`,
-          [lftTest.id, parameterName]
+          [test.id, parameterName]
         );
         if (parameter) break;
       }
 
       if (!parameter && index === 0) {
-        parameter = await get(
+        parameter = await db.get(
           `SELECT id FROM test_parameters
            WHERE test_id = ? AND LOWER(parameter_name) = LOWER(?)
            ORDER BY display_order ASC, id ASC LIMIT 1`,
-          [lftTest.id, "Result"]
+          [test.id, "Result"]
         );
       }
 
       if (parameter) {
-        await run(
+        await db.run(
           `UPDATE test_parameters
            SET parameter_name = ?, unit = ?, normal_range = ?, display_order = ?
            WHERE id = ?`,
@@ -1343,12 +1430,21 @@ async function ensureLftTestConfiguration() {
         continue;
       }
 
-      await run(
+      await db.run(
         `INSERT INTO test_parameters (test_id, parameter_name, unit, normal_range, display_order)
          VALUES (?, ?, ?, ?, ?)`,
-        [lftTest.id, definition.name, definition.unit, definition.range, index + 1]
+        [test.id, definition.name, definition.unit, definition.range, index + 1]
       );
     }
+  }
+
+  // The regular LFT deliberately omits GGT/GGTP. It belongs only to the
+  // separately ordered "LFT with GGT" panel.
+  for (const test of normalLftTests) {
+    await configureLft(test, normalParameters, { removeGgt: true });
+  }
+  for (const test of lftWithGgtTests) {
+    await configureLft(test, lftWithGgtParameters);
   }
 }
 
@@ -6838,13 +6934,59 @@ async function ensureFastingPostPrandialBloodSugarTestConfiguration(db = { all, 
     test = { id: created.id };
   }
 
-  return ensureBlankReportFormatConfiguration(db, {
+  await ensureBlankReportFormatConfiguration(db, {
     names,
     schemaName: "FBS & PPBS (Fasting & Postprandial Blood Sugar)",
     sampleType: "Plasma",
     sampleTypePattern: /^(plasma|serum|blood)/i,
     placeholderNames: ["result", "findings", "result / findings", "comments", "comment", "remarks"],
   });
+
+  /* A combined FBS/PPBS test may already have been added to a visit before
+     this format was introduced.  Those pending visits still need result-entry
+     boxes.  It is safe to add the two canonical rows only when the catalogue
+     test has no parameters at all; an existing lab-authored schema is left
+     untouched. */
+  const configuredTests = await db.all(
+    `SELECT id, sample_type FROM tests
+     WHERE LOWER(name) IN (${placeholders}) OR UPPER(COALESCE(code, '')) = 'FBS_PPBS'`,
+    names,
+  );
+  const fields = getFallbackReportParameters({
+    name: "FBS & PPBS (Fasting & Postprandial Blood Sugar)",
+    code: "FBS_PPBS",
+  });
+
+  for (const configuredTest of configuredTests) {
+    const parameters = await db.all(
+      "SELECT id FROM test_parameters WHERE test_id = ? LIMIT 1",
+      [configuredTest.id],
+    );
+    if (parameters.length) continue;
+
+    await db.transaction(async () => {
+      if (!String(configuredTest.sample_type || "").trim()) {
+        await db.run("UPDATE tests SET sample_type = ? WHERE id = ?", ["Plasma", configuredTest.id]);
+      }
+      for (const [index, field] of fields.entries()) {
+        await db.run(
+          `INSERT INTO test_parameters
+             (test_id, parameter_name, unit, normal_range, entry_mode, calculation_formula, calculation_precision, display_order)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            configuredTest.id,
+            field.parameterName,
+            field.unit,
+            field.normalRange,
+            field.entryMode,
+            field.calculationFormula,
+            field.calculationPrecision,
+            index + 1,
+          ],
+        );
+      }
+    });
+  }
 }
 
 async function ensureBTypeNatriureticPeptideTestConfiguration() {
@@ -8497,6 +8639,51 @@ async function ensureSputumAfbTestConfiguration() {
   });
 }
 
+// The catalogue specimen is only a default. AFB work can be performed on a
+// wide range of submitted material, so every AFB report also needs a manual
+// result-entry field recording what was actually received (for example cough
+// specimen, stool, aspirate, or a site-specific swab).
+async function ensureAfbReportSpecimenEntryConfiguration(db = { all, get, run, transaction }) {
+  const tests = await db.all("SELECT id, name, code FROM tests WHERE COALESCE(active, 1) = 1");
+  const normalized = value => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const isAfbReport = test => {
+    const name = normalized(test.name);
+    const code = normalized(test.code);
+    return !name.includes("nonafb")
+      && !code.includes("nonafb")
+      && (name.includes("afb") || code.includes("afb") || name.includes("acidfastbacilli"));
+  };
+  const specimenFieldNames = new Set([
+    "specimen",
+    "specimentype",
+    "typeofspecimen",
+    "specimensampletype",
+    "specimencollectionsite",
+    "specimenaspirationsite",
+    "specimenwoundsite",
+  ]);
+
+  for (const test of tests.filter(isAfbReport)) {
+    const parameters = await db.all(
+      "SELECT parameter_name FROM test_parameters WHERE test_id = ? ORDER BY display_order ASC, id ASC",
+      [test.id],
+    );
+    if (parameters.some(parameter => specimenFieldNames.has(normalized(parameter.parameter_name)))) continue;
+
+    await db.transaction(async () => {
+      // Put the manually typed specimen first in result entry without changing
+      // any stored historical result values.
+      await db.run("UPDATE test_parameters SET display_order = display_order + 1 WHERE test_id = ?", [test.id]);
+      await db.run(
+        `INSERT INTO test_parameters
+         (test_id, parameter_name, unit, normal_range, entry_mode, calculation_formula, calculation_precision, display_order)
+         VALUES (?, ?, '', '', 'manual', NULL, NULL, 1)`,
+        [test.id, "Specimen / Sample Type"],
+      );
+    });
+  }
+}
+
 async function ensureStoolCultureTestConfiguration() {
   const names = ["Stool Culture", "Stool Culture & Sensitivity", "Enteric Stool Culture"];
   const existing = await all(
@@ -8573,6 +8760,49 @@ async function ensureUrineCultureTestConfiguration() {
     parameters: [
       { name: "Culture, Urine", aliases: ["Culture Result", "Urine Culture"], normalRange: "Absent" },
       { name: "Comments" },
+    ],
+  });
+}
+
+// A combined routine examination and culture/susceptibility request. Keep this
+// separate from the existing Urine RE and Urine Culture catalogue entries so a
+// laboratory can continue to offer each investigation independently.
+async function ensureUrineReCultureSensitivityTestConfiguration() {
+  await ensureReportTableTestConfiguration({
+    names: [
+      "Urine RE/CS (Routine Examination, Culture & Sensitivity)",
+      "Urine RE/CS",
+      "Urine R/E C/S",
+      "Urine RE C/S",
+      "Urine Routine Examination, Culture & Sensitivity",
+      "Urine Culture and Sensitivity with Routine Examination",
+    ],
+    createName: "Urine RE/CS (Routine Examination, Culture & Sensitivity)",
+    createCode: "URINERECS",
+    category: "Microbiology",
+    sampleType: "Urine (preferably clean-catch midstream)",
+    turnaroundHours: 72,
+    parameters: [
+      { name: "Specimen / Collection Type", aliases: ["Specimen", "Sample Type"], normalRange: "Fresh clean-catch midstream urine preferred" },
+      { name: "Colour / Appearance", aliases: ["Colour", "Color", "Appearance", "Clarity"], normalRange: "Report actual finding" },
+      { name: "Specific Gravity", aliases: ["Urine Specific Gravity", "Sp Gravity"], normalRange: "1.005 - 1.030 (guide; lab-specific)" },
+      { name: "pH", aliases: ["Urine pH", "Reaction"], normalRange: "4.6 - 8.0 (guide; lab-specific)" },
+      { name: "Protein / Albumin", aliases: ["Protein", "Albumin"], normalRange: "Negative (method-specific)" },
+      { name: "Glucose / Sugar", aliases: ["Glucose", "Sugar"], normalRange: "Negative (method-specific)" },
+      { name: "Ketones", aliases: ["Ketone", "Acetone"], normalRange: "Negative (method-specific)" },
+      { name: "Blood / Haemoglobin", aliases: ["Blood", "Haemoglobin", "Hemoglobin", "Occult Blood"], normalRange: "Negative (method-specific)" },
+      { name: "Nitrite", aliases: ["Nitrites"], normalRange: "Negative (method-specific)" },
+      { name: "Leukocyte Esterase", aliases: ["Leucocyte Esterase"], normalRange: "Negative (method-specific)" },
+      { name: "WBC / Pus Cells", aliases: ["WBC", "Pus Cells", "White Blood Cells", "Leucocytes", "Leukocytes"], normalRange: "Laboratory-validated microscopy interval", unit: "/HPF" },
+      { name: "RBC", aliases: ["Red Blood Cells", "Erythrocytes"], normalRange: "Laboratory-validated microscopy interval", unit: "/HPF" },
+      { name: "Epithelial Cells", aliases: ["Epithelial Cell"], normalRange: "Report type and quantity" },
+      { name: "Casts / Crystals / Yeast, if seen", aliases: ["Casts", "Crystals", "Yeast", "Fungal Elements"], normalRange: "Report actual finding" },
+      { name: "Culture Result", aliases: ["Culture, Urine", "Urine Culture", "Result"], normalRange: "No significant growth" },
+      { name: "Organism Isolated, if any", aliases: ["Organism", "Isolate"], normalRange: "Report only if isolated" },
+      { name: "Colony Count / Quantitation, if reported", aliases: ["Colony Count", "CFU/mL"], normalRange: "Report actual count and unit" },
+      { name: "Antimicrobial Susceptibility", aliases: ["Drug Sensitivity", "Sensitivity", "Susceptibility"], normalRange: "Report only for a significant isolate" },
+      { name: "Method / Incubation", aliases: ["Culture Method", "Method"], normalRange: "Laboratory-validated method" },
+      { name: "Comments / Interpretation", aliases: ["Comments", "Comment", "Remarks", "Interpretation"], normalRange: "" },
     ],
   });
 }
@@ -10454,6 +10684,7 @@ async function ensureCreatinine24HourUrineTestConfiguration() {
       );
     }
   }
+
 }
 
 async function ensureArterialBloodGasTestConfiguration() {
@@ -12906,8 +13137,10 @@ async function initializeDatabase() {
     await ensureBaccalSmearBrrBodyTestConfiguration();
     await ensureAutoimmuneProfileTestConfiguration();
     await ensureSputumAfbTestConfiguration();
+    await ensureAfbReportSpecimenEntryConfiguration();
     await ensureStoolCultureTestConfiguration();
     await ensureUrineCultureTestConfiguration();
+    await ensureUrineReCultureSensitivityTestConfiguration();
     await ensureMalariaParasiteIdentificationTestConfiguration();
     await ensureMycobacteriumCombinedPanelTestConfiguration();
     await ensureOvaAndParasiteTestConfiguration();
@@ -13406,8 +13639,10 @@ async function initializeDatabase() {
     await ensureBaccalSmearBrrBodyTestConfiguration();
     await ensureAutoimmuneProfileTestConfiguration();
     await ensureSputumAfbTestConfiguration();
+    await ensureAfbReportSpecimenEntryConfiguration();
     await ensureStoolCultureTestConfiguration();
     await ensureUrineCultureTestConfiguration();
+    await ensureUrineReCultureSensitivityTestConfiguration();
     await ensureMalariaParasiteIdentificationTestConfiguration();
     await ensureMycobacteriumCombinedPanelTestConfiguration();
     await ensureOvaAndParasiteTestConfiguration();
@@ -13591,7 +13826,7 @@ if (require.main === module) {
     });
 }
 
-module.exports = { initializeDatabase, ensureUserDefaults, normalizeImportedCatalogueDisplayNames, normalizeAbbreviationFirstCatalogueNames, ensureDiabeticProfileTestConfiguration, ensureExtendedDiabeticProfileTestConfiguration, ensureDiabeticRenalProfileTestConfiguration, ensureEarSwabGramStainTestConfiguration, ensureEarSwabAfbStainTestConfiguration, ensureFshPrlTestConfiguration, ensureFshLhPrlTestConfiguration, ensureFactorIiMutationTestConfiguration, ensureFactorViiiImmunodepletedTestConfiguration, ensureFemaleInfertilityProfileTestConfiguration, ensureFernTestConfiguration, ensureWuchereriaBancroftiAntigenTestConfiguration, ensureFilariaAntigenTestConfiguration, ensureFoetalHaemoglobinTestConfiguration, ensureFoetalHaemoglobinByHplcTestConfiguration, ensureFreeBetaHcgTestConfiguration, ensureFreeCholesterolTestConfiguration, ensureFreeEstradiolTestConfiguration, ensureFreePsaTestConfiguration, ensureFreeTestosteroneTestConfiguration, ensureFungusCultureTestConfiguration, ensureFungusCultureSensitivityTestConfiguration, ensureAntiInsulinAntibodyTestConfiguration, ensureAntiLeptospiraAntibodyTestConfiguration, ensureAntiMicrosomalAntibodyTestConfiguration, ensureAntiDsDnaAntibodyTestConfiguration, ensureAntiSsDnaAntibodyTestConfiguration, ensureAntiHistoneAntibodyTestConfiguration, ensureAntiRibosomalPAntibodyTestConfiguration, ensureAntiCcpAbTestConfiguration, ensureAntiSpermAntibodyTestConfiguration, ensureApolipoproteinA1TestConfiguration, ensureUrineArsenicTestConfiguration, ensureArthritisProfileTestConfiguration, ensureAsciticFluidGramStainTestConfiguration, ensureAsciticFluidTotalProteinTestConfiguration, ensureBodyFluidBiochemistryTestConfiguration, ensureBodyFluidSpecificGravityTestConfiguration, ensureCsfFluidChlorideTestConfiguration, ensureCsfFluidProteinTestConfiguration, ensureCsfFluidSpecificGravityTestConfiguration, ensureCsfFluidGlucoseTestConfiguration, ensureUrineCalcium24HourTestConfiguration, ensureCapillaryFragilityTestConfiguration, ensureCardiacProfileTestConfiguration, ensureColorectalCancerMonitorProfileTestConfiguration, ensureComplementFixationTestConfiguration, ensureBilateralConjunctivalSwabTestConfiguration, ensureRightConjunctivalSwabCultureTestConfiguration, ensureConjunctivalSwabCultureTestConfiguration, ensureCeruloplasminTestConfiguration, ensureUrineCopper24HourTestConfiguration, ensureRandomUrineCopperTestConfiguration, ensureEveningCortisolTestConfiguration, ensureMidnightCortisolTestConfiguration, ensureMorningEveningCortisolTestConfiguration, ensureCryoglobulinsScreeningTestConfiguration, ensureGndCultureTestConfiguration, ensureCysticFibrosisGeneMutationTestConfiguration, ensureCmvIggTestConfiguration, ensureCervicalPapSmearTestConfiguration, ensureCervicalSwabGramStainTestConfiguration, ensureChikungunyaIggTestConfiguration, ensureChikungunyaIgmTestConfiguration, ensureChlamydiaAntibodyIggIgmTestConfiguration, ensureRandomUrineChlorideTestConfiguration, ensureSerumChlorideTestConfiguration, ensure24HourUrineChlorideTestConfiguration, ensureCsfFluidAfbStainTestConfiguration, ensureCsfFluidGramStainTestConfiguration, ensureCpkWithCkMbTestConfiguration, ensureCmvIgmIggTestConfiguration, ensureComplementC3TestConfiguration, ensureComplementC4TestConfiguration, ensureCancaAntiPr3TestConfiguration, ensureCreatinineClearanceTestConfiguration, ensureCd3LymphocyteTestConfiguration, ensureCd4LymphocyteTestConfiguration, ensureBronchialWashingCultureSensitivityTestConfiguration, ensureBactecAerobicCultureTestConfiguration, ensureBactecAnaerobicCultureTestConfiguration, ensureBronchialPapCytologyTestConfigurations };
+module.exports = { initializeDatabase, ensureUserDefaults, normalizeImportedCatalogueDisplayNames, normalizeAbbreviationFirstCatalogueNames, ensureDiabeticProfileTestConfiguration, ensureExtendedDiabeticProfileTestConfiguration, ensureDiabeticRenalProfileTestConfiguration, ensureEarSwabGramStainTestConfiguration, ensureEarSwabAfbStainTestConfiguration, ensureFshPrlTestConfiguration, ensureFshLhPrlTestConfiguration, ensureFactorIiMutationTestConfiguration, ensureFactorViiiImmunodepletedTestConfiguration, ensureFemaleInfertilityProfileTestConfiguration, ensureFernTestConfiguration, ensureWuchereriaBancroftiAntigenTestConfiguration, ensureFilariaAntigenTestConfiguration, ensureFoetalHaemoglobinTestConfiguration, ensureFoetalHaemoglobinByHplcTestConfiguration, ensureFreeBetaHcgTestConfiguration, ensureFreeCholesterolTestConfiguration, ensureFreeEstradiolTestConfiguration, ensureFreePsaTestConfiguration, ensureFreeTestosteroneTestConfiguration, ensureFungusCultureTestConfiguration, ensureFungusCultureSensitivityTestConfiguration, ensureAntiInsulinAntibodyTestConfiguration, ensureAntiLeptospiraAntibodyTestConfiguration, ensureAntiMicrosomalAntibodyTestConfiguration, ensureAntiDsDnaAntibodyTestConfiguration, ensureAntiSsDnaAntibodyTestConfiguration, ensureAntiHistoneAntibodyTestConfiguration, ensureAntiRibosomalPAntibodyTestConfiguration, ensureAntiCcpAbTestConfiguration, ensureAntiSpermAntibodyTestConfiguration, ensureApolipoproteinA1TestConfiguration, ensureUrineArsenicTestConfiguration, ensureArthritisProfileTestConfiguration, ensureAsciticFluidGramStainTestConfiguration, ensureAsciticFluidTotalProteinTestConfiguration, ensureBodyFluidBiochemistryTestConfiguration, ensureBodyFluidSpecificGravityTestConfiguration, ensureCsfFluidChlorideTestConfiguration, ensureCsfFluidProteinTestConfiguration, ensureCsfFluidSpecificGravityTestConfiguration, ensureCsfFluidGlucoseTestConfiguration, ensureUrineCalcium24HourTestConfiguration, ensureCapillaryFragilityTestConfiguration, ensureCardiacProfileTestConfiguration, ensureColorectalCancerMonitorProfileTestConfiguration, ensureComplementFixationTestConfiguration, ensureBilateralConjunctivalSwabTestConfiguration, ensureRightConjunctivalSwabCultureTestConfiguration, ensureConjunctivalSwabCultureTestConfiguration, ensureCeruloplasminTestConfiguration, ensureUrineCopper24HourTestConfiguration, ensureRandomUrineCopperTestConfiguration, ensureEveningCortisolTestConfiguration, ensureMidnightCortisolTestConfiguration, ensureMorningEveningCortisolTestConfiguration, ensureCryoglobulinsScreeningTestConfiguration, ensureGndCultureTestConfiguration, ensureCysticFibrosisGeneMutationTestConfiguration, ensureCmvIggTestConfiguration, ensureCervicalPapSmearTestConfiguration, ensureCervicalSwabGramStainTestConfiguration, ensureChikungunyaIggTestConfiguration, ensureChikungunyaIgmTestConfiguration, ensureChlamydiaAntibodyIggIgmTestConfiguration, ensureRandomUrineChlorideTestConfiguration, ensureSerumChlorideTestConfiguration, ensure24HourUrineChlorideTestConfiguration, ensureCsfFluidAfbStainTestConfiguration, ensureCsfFluidGramStainTestConfiguration, ensureCpkWithCkMbTestConfiguration, ensureCmvIgmIggTestConfiguration, ensureComplementC3TestConfiguration, ensureComplementC4TestConfiguration, ensureCancaAntiPr3TestConfiguration, ensureCreatinineClearanceTestConfiguration, ensureCd3LymphocyteTestConfiguration, ensureCd4LymphocyteTestConfiguration, ensureBronchialWashingCultureSensitivityTestConfiguration, ensureBactecAerobicCultureTestConfiguration, ensureBactecAnaerobicCultureTestConfiguration, ensureBronchialPapCytologyTestConfigurations, ensureLftTestConfiguration };
 module.exports.ensureUrinary17KetosteroidTestConfiguration = ensureUrinary17KetosteroidTestConfiguration;
 module.exports.ensureUrinaryVmaTestConfiguration = ensureUrinaryVmaTestConfiguration;
 module.exports.ensureUrineObtThreeDayTestConfiguration = ensureUrineObtThreeDayTestConfiguration;
@@ -13600,6 +13835,7 @@ module.exports.ensureUrinePregnancyTestConfiguration = ensureUrinePregnancyTestC
 module.exports.ensureUrineProteinAlbuminTestConfiguration = ensureUrineProteinAlbuminTestConfiguration;
 module.exports.ensure24HourUrineProteinTestConfiguration = ensure24HourUrineProteinTestConfiguration;
 module.exports.ensureUrineRoutineTestConfiguration = ensureUrineRoutineTestConfiguration;
+module.exports.ensureUrineReCultureSensitivityTestConfiguration = ensureUrineReCultureSensitivityTestConfiguration;
 module.exports.ensureUrineReducingSubstancesTestConfiguration = ensureUrineReducingSubstancesTestConfiguration;
 module.exports.ensureUrineSugarTestConfiguration = ensureUrineSugarTestConfiguration;
 module.exports.ensureUrineUrobilinogenTestConfiguration = ensureUrineUrobilinogenTestConfiguration;
@@ -13617,3 +13853,4 @@ module.exports.ensureWoundSwabGramStainTestConfiguration = ensureWoundSwabGramSt
 module.exports.ensure17HydroxyprogesteroneTestConfiguration = ensure17HydroxyprogesteroneTestConfiguration;
 module.exports.ensureCtScanBrainBillingService = ensureCtScanBrainBillingService;
 module.exports.ensureFastingPostPrandialBloodSugarTestConfiguration = ensureFastingPostPrandialBloodSugarTestConfiguration;
+module.exports.ensureAfbReportSpecimenEntryConfiguration = ensureAfbReportSpecimenEntryConfiguration;

@@ -38,6 +38,7 @@ async function getBusinessSettings({ includeLetterhead = false, includeReportDoc
             email,
             registration_no,
             patient_portal_base_url,
+            diagnostic_website_available,
             business_opening_time,
             business_closing_time,
             ${includeBusinessLogo ? "business_logo_data_url," : ""}
@@ -80,6 +81,9 @@ async function getBusinessSettings({ includeLetterhead = false, includeReportDoc
     email: normalizeText(settings?.email),
     registrationNo: normalizeText(settings?.registration_no),
     patientPortalBaseUrl: normalizeText(settings?.patient_portal_base_url),
+    // Keep existing installations on their current website/tunnel route until
+    // the Super Admin deliberately selects a future cloud portal option.
+    diagnosticWebsiteAvailable: Number(settings?.diagnostic_website_available) !== 0,
     businessOpeningTime: normalizeBusinessTime(settings?.business_opening_time) || "",
     businessClosingTime: normalizeBusinessTime(settings?.business_closing_time) || "",
     hasBusinessLogo: Boolean(settings?.has_business_logo),
@@ -119,6 +123,8 @@ async function updateBusinessSettings(businessName, {
   updateFacilityProfile = false,
   patientPortalBaseUrl,
   updatePatientPortalBaseUrl = false,
+  diagnosticWebsiteAvailable,
+  updateDiagnosticWebsiteAvailable = false,
   businessOpeningTime,
   businessClosingTime,
   updateBusinessHours = false,
@@ -164,6 +170,11 @@ async function updateBusinessSettings(businessName, {
   if (updatePatientPortalBaseUrl) {
     assignments.push("patient_portal_base_url = ?");
     params.push(patientPortalBaseUrl);
+  }
+
+  if (updateDiagnosticWebsiteAvailable) {
+    assignments.push("diagnostic_website_available = ?");
+    params.push(diagnosticWebsiteAvailable ? 1 : 0);
   }
 
   if (updateBusinessHours) {

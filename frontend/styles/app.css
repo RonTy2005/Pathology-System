@@ -202,6 +202,24 @@ body {
   contain: none;
 }
 
+/* Keep packaged desktop windows paint-simple.  This is especially important
+   on Windows 7, where Chromium can lose large translucent/blurred tiles after
+   scrolling down a long work area and then returning to the top. */
+html.labshield-desktop body,
+html.labshield-desktop body:has(.app-shell) {
+  background: #f6f8fb;
+}
+
+.labshield-desktop .app-shell .sidebar {
+  background: #123e38;
+  box-shadow: none;
+}
+
+.labshield-desktop .app-shell :is(.panel, .metric-card, .selection-card, .totals-card, .billing-box, .selected-tests, .empty-state, .result-card, .list-item) {
+  background: #ffffff;
+  box-shadow: none;
+}
+
 .login-panel,
 .login-aside,
 .panel {
@@ -778,6 +796,13 @@ html.patient-management-embed #patient-management {
   background: var(--bg-muted);
 }
 
+.autocomplete .result-btn.keyboard-active,
+.autocomplete-item.keyboard-active {
+  outline: 2px solid var(--primary, #0f766e);
+  outline-offset: -2px;
+  background: #e9f8f5;
+}
+
 .list {
   display: grid;
   gap: 12px;
@@ -988,7 +1013,13 @@ html.patient-management-embed #patient-management {
   background: #eef6ff;
   border-color: #93c5fd;
   color: #1e3a5f;
-  cursor: not-allowed;
+  cursor: text;
+}
+
+.result-parameter .manual-calculation-override {
+  background: #fffbeb;
+  border-color: #fbbf24;
+  color: #713f12;
 }
 
 .auto-calculated-note {
@@ -1389,6 +1420,55 @@ body:has(.app-shell) {
   width: 100%;
   box-sizing: border-box;
   resize: vertical;
+}
+
+.report-addition-suggestion-menu {
+  max-height: 210px;
+  overflow: auto;
+  margin-top: 8px;
+  padding: 7px;
+  border: 1px solid #b9dcd5;
+  border-radius: 9px;
+  background: #f8fffd;
+  box-shadow: 0 8px 18px rgba(13, 73, 68, 0.08);
+}
+
+.report-addition-suggestion-heading {
+  margin: 1px 3px 5px;
+  color: #47716c;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.report-addition-suggestion {
+  display: block;
+  width: 100%;
+  margin: 3px 0;
+  padding: 7px 9px;
+  overflow: hidden;
+  color: #163f3a;
+  font: inherit;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: pre-wrap;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+}
+
+.report-addition-suggestion:hover,
+.report-addition-suggestion:focus-visible {
+  outline: none;
+  border-color: #88cfc2;
+  background: #e8f7f3;
+}
+
+.report-addition-suggestion span {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.8rem;
 }
 
 .catalog-parameter-editor {

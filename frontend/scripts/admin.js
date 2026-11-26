@@ -58,6 +58,7 @@ const businessPhoneInput = document.getElementById("businessPhone");
 const businessEmailInput = document.getElementById("businessEmail");
 const registrationNoInput = document.getElementById("registrationNo");
 const patientPortalBaseUrlInput = document.getElementById("patientPortalBaseUrl");
+const diagnosticWebsiteAvailableInputs = document.querySelectorAll('input[name="diagnosticWebsiteAvailable"]');
 const businessOpeningTimeInput = document.getElementById("businessOpeningTime");
 const businessClosingTimeInput = document.getElementById("businessClosingTime");
 const businessLogoFileInput = document.getElementById("businessLogoFile");
@@ -412,6 +413,10 @@ async function loadBusinessSettings() {
   if (businessEmailInput) businessEmailInput.value = settings.email || "";
   if (registrationNoInput) registrationNoInput.value = settings.registrationNo || "";
   if (patientPortalBaseUrlInput) patientPortalBaseUrlInput.value = settings.patientPortalBaseUrl || "";
+  const websiteAvailabilityValue = settings.diagnosticWebsiteAvailable === false ? "no" : "yes";
+  diagnosticWebsiteAvailableInputs.forEach((input) => {
+    input.checked = input.value === websiteAvailabilityValue;
+  });
   if (businessOpeningTimeInput) businessOpeningTimeInput.value = settings.businessOpeningTime || "";
   if (businessClosingTimeInput) businessClosingTimeInput.value = settings.businessClosingTime || "";
   ID_CARD_ADDRESS = settings.address || "";
@@ -449,6 +454,8 @@ async function saveBusinessSettings(event) {
     email: businessEmailInput?.value.trim() || "",
     registrationNo: registrationNoInput?.value.trim() || "",
     patientPortalBaseUrl: patientPortalBaseUrlInput?.value.trim() || "",
+    diagnosticWebsiteAvailable: Array.from(diagnosticWebsiteAvailableInputs)
+      .find((input) => input.checked)?.value !== "no",
     businessOpeningTime: businessOpeningTimeInput?.value || "",
     businessClosingTime: businessClosingTimeInput?.value || "",
     defaultReportIncludesLetterhead: defaultReportOutputStyle?.value !== "plain",

@@ -137,6 +137,7 @@ async function saveResultForm(form) {
         value: input ? input.value : "",
         unit: row.dataset.unit,
         normal_range: row.dataset.range,
+        manualOverride: row.dataset.manualOverride === "true",
       };
     }),
   };
@@ -164,7 +165,7 @@ async function loadVisit(visitId) {
   visitDetails.innerHTML = pathologyTests
     .map(
       (test) => `
-        <form class="result-card" data-result-form data-visit-id="${visitId}" data-visit-test-id="${test.id}">
+        <form class="result-card" data-result-form data-visit-id="${visitId}" data-visit-test-id="${test.id}" data-test-id="${Number(test.test_id) || ""}">
           <div>
             <strong>${test.name}</strong><br />
             <span>Status: ${test.status} • Technician: ${test.technician_name || "Unassigned"}</span>
@@ -236,7 +237,7 @@ async function loadPatientVisit(visitId) {
   patientVisitDetails.innerHTML = pathologyTests
     .map(
       (test) => `
-        <form class="result-card" data-result-form data-visit-id="${visitId}" data-visit-test-id="${test.id}">
+        <form class="result-card" data-result-form data-visit-id="${visitId}" data-visit-test-id="${test.id}" data-test-id="${Number(test.test_id) || ""}">
           <div>
             <strong>${test.name}</strong><br />
             <span>Status: ${test.status} • Technician: ${test.technician_name || "Unassigned"}</span>

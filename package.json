@@ -4,7 +4,7 @@
   "main": "desktop/main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "test:report-content": "node --test scripts/test-report-content.cjs scripts/test-billing-only.cjs scripts/test-patient-portal-letterhead.cjs scripts/test-bill-collection-permission.cjs scripts/test-bill-history-permission.cjs scripts/test-patient-code.cjs scripts/test-test-catalog-permission.cjs scripts/test-report-permission-revocation.cjs scripts/test-patient-edit-access.cjs scripts/test-report-additional-text.cjs scripts/test-reference-value-customization.cjs",
+    "test:report-content": "node --test scripts/test-report-content.cjs scripts/test-billing-only.cjs scripts/test-patient-portal-letterhead.cjs scripts/test-bill-collection-permission.cjs scripts/test-bill-history-permission.cjs scripts/test-patient-code.cjs scripts/test-test-catalog-permission.cjs scripts/test-report-permission-revocation.cjs scripts/test-patient-edit-access.cjs scripts/test-report-additional-text.cjs scripts/test-reference-value-customization.cjs scripts/test-autocomplete-keyboard.cjs",
     "test:desktop-update": "node --test scripts/test-desktop-update.cjs scripts/test-desktop-data-migration.cjs scripts/test-report-pdf.cjs scripts/test-desktop-startup.cjs",
     "test:report-doctors": "node --test scripts/test-report-doctors.cjs",
     "test:bill-layout": "node --test scripts/test-bill-layout.cjs",

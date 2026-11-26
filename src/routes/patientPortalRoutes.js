@@ -9,6 +9,7 @@ const { buildBillHtml } = require("../utils/billFormatter");
 const {
   getPatientPortalReportUrl,
   getPatientPortalBillUrl,
+  getPatientPortalUrl,
   getTestReportPreviewUrl,
   shouldIncludePortalLetterhead,
 } = require("../utils/patientPortal");
@@ -303,6 +304,8 @@ patientPortalRouter.get("/:token/bill", async (req, res, next) => {
     }
 
     const businessSettings = await getBusinessSettings({ includeBusinessLogo: true });
+    const reports = await getPortalReports(visit);
+    const reportAccess = getPortalAccess(visit, reports);
     await logAction({
       action: "patient_portal_bill_viewed",
       entityType: "visit",
@@ -315,6 +318,9 @@ patientPortalRouter.get("/:token/bill", async (req, res, next) => {
       ...bill,
       businessSettings,
       patientPortalUrl: getPatientPortalBillUrl(req, visit.patient_portal_token, businessSettings.patientPortalBaseUrl),
+      patientPortalStatusUrl: getPatientPortalUrl(req, visit.patient_portal_token, businessSettings.patientPortalBaseUrl),
+      reportAvailable: reportAccess.available,
+      paymentComplete: reportAccess.paymentComplete,
     }, { sharedLinkView: true }));
   } catch (error) {
     next(error);

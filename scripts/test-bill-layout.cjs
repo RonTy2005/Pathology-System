@@ -44,6 +44,9 @@ test("collection notice omits hours when the lab has not configured both times",
 
 test("WhatsApp bill link reduces only on-screen service names, not printable bills", () => {
   const fixture = sampleBill(2);
+  fixture.patientPortalStatusUrl = "https://reports.example.test/report-status.html?token=patient-token";
+  fixture.paymentComplete = true;
+  fixture.reportAvailable = true;
   const shared = buildBillHtml(fixture, { sharedLinkView: true });
   const normal = buildBillHtml(fixture);
   assert.match(shared, /<body class="shared-link-bill">/);
@@ -51,12 +54,29 @@ test("WhatsApp bill link reduces only on-screen service names, not printable bil
   assert.match(shared, /@media screen \{[\s\S]*?\.shared-link-bill \.items-table td\.service strong \{ font-size: 11px; font-weight: 600;/);
   assert.match(shared, /\.shared-link-bill \.bill-slip \{ display: flex; flex-direction: column; \}/);
   assert.match(shared, /\.shared-link-bill \.slip-footer \{ margin-top: auto; \}/);
+  assert.match(shared, /class="patient-portal-actions"/);
+  assert.match(shared, /View report status/);
+  assert.match(shared, /View available reports/);
+  assert.match(shared, /https:\/\/reports\.example\.test\/report-status\.html\?token=patient-token/);
+  assert.match(shared, /@media print \{[\s\S]*?\.patient-portal-actions \{ display: none !important; \}/);
   assert.match(shared, /\.items-table td\.service strong \{ font-size: 13px; \}/);
   assert.match(normal, /<body>\s*<main class="bill-slip/);
   assert.doesNotMatch(normal, /<body class="shared-link-bill">/);
 
   const portalRoute = fs.readFileSync(path.join(__dirname, "../src/routes/patientPortalRoutes.js"), "utf8");
   assert.match(portalRoute, /patientPortalRouter\.get\("\/:token\/bill"[\s\S]*?buildBillHtml\(\{[\s\S]*?\}, \{ sharedLinkView: true \}\)/);
+  assert.match(portalRoute, /patientPortalStatusUrl: getPatientPortalUrl\(/);
+  assert.match(portalRoute, /reportAvailable: reportAccess\.available/);
+});
+
+test("digital bills keep report access unavailable until payment and verification are complete", () => {
+  const fixture = sampleBill(1);
+  fixture.patientPortalStatusUrl = "https://reports.example.test/report-status.html?token=patient-token";
+  const html = buildBillHtml(fixture, { sharedLinkView: true });
+
+  assert.match(html, /View report status/);
+  assert.match(html, /Reports will be available here after the bill is paid in full\./);
+  assert.doesNotMatch(html, /View available reports/);
 });
 
 test("desktop bill PDF downloads the exact styled receipt through native A4 printing", async () => {

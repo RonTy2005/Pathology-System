@@ -36,6 +36,26 @@ test('additional text appears below results, before template notes, escaped and 
   assert.doesNotMatch(blank, /<section class="additional-report-text"/);
 });
 
+test('additional test entries join the existing results table without a second titled table', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Total Protein',
+    parameters: [{ parameter_name: 'Total Protein, Serum', value: '7.2', unit: 'g/dL' }],
+    additional_report_rows_json: JSON.stringify([{
+      investigation: 'Manual smear review',
+      result: 'No abnormal cells',
+      referenceValue: 'Not detected',
+      unit: '',
+    }]),
+  }));
+  const addedRow = '<tr data-additional-report-row><td>Manual smear review</td><td>No abnormal cells</td><td>Not detected</td><td></td></tr>';
+  assert.ok(html.includes(addedRow));
+  assert.doesNotMatch(html, /Additional Test Details|<section class="additional-report-rows"/);
+  const rowPosition = html.indexOf(addedRow);
+  const precedingTable = html.lastIndexOf('<table class="results-table', rowPosition);
+  const endOfTable = html.indexOf('</table>', rowPosition);
+  assert.ok(precedingTable >= 0 && rowPosition < endOfTable, 'the added row remains in the results table');
+});
+
 test('the per-test plus editor provides both note and additional-test-row entry choices', () => {
   const source = fs.readFileSync(require.resolve('../frontend/scripts/common.js'), 'utf8');
   assert.match(source, /function renderResultAdditionalText/);
@@ -44,14 +64,21 @@ test('the per-test plus editor provides both note and additional-test-row entry 
   assert.match(source, /Investigation/);
   assert.match(source, /Reference Value/);
   assert.match(source, /data-additional-test-row-add/);
+  assert.match(source, /data-additional-text-suggestions/);
+  assert.match(source, /data-additional-row-suggestions/);
+  assert.match(source, /test-addition-suggestions/);
+  assert.match(source, /Previously used text/);
+  assert.match(source, /Previously used test additions/);
   assert.match(source, /function getAdditionalReportRowsFromForm/);
   assert.match(source, /function savePendingResultAdditionalText/);
+  assert.match(source, /event\.preventDefault\(\);\s*event\.stopPropagation\(\);\s*const row = removeButton\.closest\("\[data-additional-test-row\]"\);\s*row\?\.remove\(\);/);
+  assert.doesNotMatch(source, /row\?\.remove\(\);\s*if \(rows && !rows\.children\.length\) rows\.insertAdjacentHTML/);
 });
 
 test('result API saves, reloads, finalizes and clears per-test advice without changing other tests', async () => {
   const connection = require('../src/db/connection');
   await connection.switchDatabasePath(':memory:');
-  const { run, get } = require('../src/db/helpers');
+    const { run, get } = require('../src/db/helpers');
   try {
     await run('CREATE TABLE users (id INTEGER PRIMARY KEY, full_name TEXT)');
     await run('CREATE TABLE patients (id INTEGER PRIMARY KEY, patient_code TEXT, name TEXT, age INTEGER, gender TEXT, phone TEXT)');
@@ -60,6 +87,7 @@ test('result API saves, reloads, finalizes and clears per-test advice without ch
     await run('CREATE TABLE visits (id INTEGER PRIMARY KEY, patient_id INTEGER, doctor_id INTEGER, associate_id INTEGER, bill_no TEXT, status TEXT, created_at TEXT)');
     await run('CREATE TABLE tests (id INTEGER PRIMARY KEY, name TEXT, category TEXT, code TEXT, sample_type TEXT, turnaround_hours INTEGER, report_body TEXT, price REAL, active INTEGER DEFAULT 1)');
     await run("CREATE TABLE visit_tests (id INTEGER PRIMARY KEY, visit_id INTEGER, test_id INTEGER, assigned_to INTEGER, status TEXT, result_entered_at TEXT, finalized_at TEXT, custom_test_name TEXT, custom_test_price REAL, external_lab_name TEXT, is_outside INTEGER, additional_report_text TEXT NOT NULL DEFAULT '', additional_report_rows_json TEXT NOT NULL DEFAULT '[]')");
+    await run("CREATE TABLE report_addition_templates (id INTEGER PRIMARY KEY, test_id INTEGER NOT NULL, content_type TEXT NOT NULL, content TEXT NOT NULL, usage_count INTEGER NOT NULL DEFAULT 1, created_at TEXT, updated_at TEXT, UNIQUE(test_id, content_type, content))");
     await run('CREATE TABLE test_parameters (id INTEGER PRIMARY KEY, test_id INTEGER, parameter_name TEXT, unit TEXT, normal_range TEXT, reference_value_customized INTEGER NOT NULL DEFAULT 0, entry_mode TEXT, calculation_formula TEXT, calculation_precision INTEGER, display_order INTEGER)');
     await run('CREATE TABLE results (id INTEGER PRIMARY KEY, visit_test_id INTEGER, parameter_name TEXT, value TEXT, unit TEXT, normal_range TEXT, reference_value_customized INTEGER NOT NULL DEFAULT 0, entry_mode TEXT, entered_by INTEGER, entered_at TEXT)');
     await run('CREATE TABLE reports (id INTEGER PRIMARY KEY, visit_id INTEGER, report_no TEXT, generated_by INTEGER, finalized INTEGER, finalized_at TEXT)');
@@ -74,12 +102,12 @@ test('result API saves, reloads, finalizes and clears per-test advice without ch
     await run("INSERT INTO reports VALUES (1, 1, 'SAMPLE-RPT', 7, 0, NULL)");
     const { visitRouter, getReportBundle } = require('../src/routes/visitRoutes');
     const user = { id: 7, role: ROLES.BLOOD_SAMPLE_TECHNICIAN, permissions: [PERMISSIONS.ENTER_RESULTS, PERMISSIONS.FINALIZE_REPORTS], access_controls: ['multiple_report_edit'] };
-    function request(method, path, body = {}, requestUser = user) {
+    function request(method, path, body = {}, requestUser = user, params = { id: '1' }) {
       const route = visitRouter.stack.find(layer => layer.route?.path === path && layer.route.methods[method]).route;
       return new Promise((resolve, reject) => {
         let index = 0;
         const res = { statusCode: 200, status(code) { this.statusCode = code; return this; }, json(data) { this.body = data; resolve(this); return this; } };
-        const req = { user: requestUser, params: { id: '1' }, body, query: {} };
+        const req = { user: requestUser, params, body, query: {} };
         function next(error) {
           if (error) return reject(error);
           const layer = route.stack[index++];
@@ -94,6 +122,10 @@ test('result API saves, reloads, finalizes and clears per-test advice without ch
     assert.equal((await request('post', '/:id/results', payload)).statusCode, 200);
     assert.equal((await get('SELECT additional_report_text FROM visit_tests WHERE id = 1')).additional_report_text, payload.additionalReportText);
     assert.equal((await get('SELECT additional_report_rows_json FROM visit_tests WHERE id = 1')).additional_report_rows_json, JSON.stringify(additionalRows));
+    assert.equal((await get("SELECT COUNT(*) AS count FROM report_addition_templates WHERE test_id = 1")).count, 2);
+    const suggestions = await request('get', '/test-addition-suggestions/:testId', {}, user, { testId: '1' });
+    assert.deepEqual(suggestions.body.textSuggestions, [payload.additionalReportText]);
+    assert.deepEqual(suggestions.body.rowSuggestions, additionalRows);
     assert.equal((await get('SELECT additional_report_text FROM visit_tests WHERE id = 2')).additional_report_text, '');
     const reopened = await request('get', '/:id');
     assert.equal(reopened.body.tests.find(entry => entry.id === 1).additional_report_text, payload.additionalReportText);

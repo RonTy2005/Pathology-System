@@ -75,6 +75,9 @@ function buildBillHtml(billData, { sharedLinkView = false } = {}) {
   const contactDetails = [phone && `+91 ${phone}`, email].filter(Boolean).join(" | ");
   const portalUrl = String(billData.patientPortalUrl || "");
   const portalQrUrl = portalUrl ? getPatientPortalQrUrl(portalUrl) : "";
+  const portalStatusUrl = String(billData.patientPortalStatusUrl || "");
+  const reportAvailable = billData.reportAvailable === true;
+  const paymentComplete = billData.paymentComplete === true;
   const tests = billData.tests || [];
 
   // Keep ordinary receipts in the upper half of A4.  When there are more
@@ -191,6 +194,27 @@ function buildBillHtml(billData, { sharedLinkView = false } = {}) {
     `;
   }).join("");
 
+  // This panel belongs only to the public digital copy opened through the
+  // bill QR code. It is deliberately outside the printable receipt and uses
+  // the existing token-protected patient portal for every report action.
+  const portalActionsHtml = sharedLinkView && portalStatusUrl ? `
+    <section class="patient-portal-actions" aria-label="Patient report options">
+      <div>
+        <span class="portal-actions-eyebrow">Patient report access</span>
+        <h2>Need an update on your reports?</h2>
+        <p>Check the current report status here. Completed reports are available only after full payment and laboratory verification.</p>
+      </div>
+      <div class="patient-portal-action-buttons">
+        <a class="portal-status-button" href="${escapeHtml(portalStatusUrl)}">View report status</a>
+        ${reportAvailable
+          ? `<a class="portal-reports-button" href="${escapeHtml(portalStatusUrl)}">View available reports</a>`
+          : paymentComplete
+            ? `<span class="portal-action-note">Payment received. Your reports will appear here once they are ready.</span>`
+            : `<span class="portal-action-note">Reports will be available here after the bill is paid in full.</span>`}
+      </div>
+    </section>
+  ` : "";
+
   return `<!DOCTYPE html>
     <html lang="en">
     <head>
@@ -254,15 +278,25 @@ function buildBillHtml(billData, { sharedLinkView = false } = {}) {
         .signatory strong { color: var(--ink); font-size: 11px; }
         .shared-link-bill .bill-slip { display: flex; flex-direction: column; }
         .shared-link-bill .slip-footer { margin-top: auto; }
+        .patient-portal-actions { width: min(194mm, calc(100% - 28px)); margin: 0 auto 14mm; padding: 18px 20px; border: 1px solid #b7d9e8; border-radius: 14px; background: #fff; box-shadow: 0 7px 28px rgba(30, 30, 30, .12); display: flex; align-items: center; justify-content: space-between; gap: 20px; color: var(--ink); }
+        .portal-actions-eyebrow { color: var(--accent); font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+        .patient-portal-actions h2 { margin: 3px 0 5px; font-size: 20px; line-height: 1.15; }
+        .patient-portal-actions p { max-width: 710px; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
+        .patient-portal-action-buttons { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 9px; min-width: 255px; }
+        .portal-status-button, .portal-reports-button { display: inline-flex; justify-content: center; align-items: center; min-height: 42px; padding: 10px 14px; border-radius: 9px; font-size: 13px; font-weight: 700; text-decoration: none; white-space: nowrap; }
+        .portal-status-button { border: 1px solid #9fc5d8; background: #fff; color: #075985; }
+        .portal-reports-button { border: 1px solid #0284c7; background: #0284c7; color: #fff; }
+        .portal-action-note { max-width: 260px; color: var(--muted); font-size: 12px; line-height: 1.4; text-align: right; }
         @media screen {
           .bill-slip { margin: 10mm auto; box-shadow: 0 7px 28px rgba(30, 30, 30, .16); }
           .shared-link-bill { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
           .shared-link-bill .items-table td.service strong { font-size: 11px; font-weight: 600; line-height: 1.2; }
         }
-        @media print { html, body { background: #fff; } .bill-slip { margin: 0; box-shadow: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+        @media (max-width: 700px) { .patient-portal-actions { width: calc(100% - 22px); margin-bottom: 24px; align-items: flex-start; flex-direction: column; } .patient-portal-action-buttons { justify-content: flex-start; min-width: 0; } .portal-action-note { max-width: none; text-align: left; } }
+        @media print { html, body { background: #fff; } .bill-slip { margin: 0; box-shadow: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; } .patient-portal-actions { display: none !important; } }
       </style>
     </head>
-    <body${sharedLinkView ? ' class="shared-link-bill"' : ""}>${pagesHtml}</body>
+    <body${sharedLinkView ? ' class="shared-link-bill"' : ""}>${pagesHtml}${portalActionsHtml}</body>
     </html>`;
 }
 

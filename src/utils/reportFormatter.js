@@ -97,6 +97,16 @@ function getCbcStatus(value, normalRange, parameter) {
   return { label: "Normal", className: "normal-val" };
 }
 
+// Keep colour emphasis for out-of-range values, but do not print redundant
+// High / Low / Normal badges beside a result. The reference interval already
+// provides the context and the report remains easier to read without it.
+function removeInlineRangeStatusLabels(html) {
+  return String(html || "").replace(/\s*<span\b[^>]*\bclass="[^"]*status[^"]*"[^>]*>([\s\S]*?)<\/span>/gi, (match, content) => {
+    const label = String(content).replace(/<[^>]*>/g, "").replace(/&nbsp;/gi, " ").trim().toLowerCase();
+    return ["high", "low", "normal"].includes(label) ? "" : match;
+  });
+}
+
 const ABSOLUTE_COUNT_TEMPLATES = [
   {
     title: "ABSOLUTE POLYMORPHS COUNT (APC)",
@@ -1021,6 +1031,25 @@ function isAfbCultureSensitivityTest(test) {
     || name === "afbculturesensitivitybactecmethod" || name === "afbcultureandsensitivitybactecmethod";
 }
 
+function isAfbReportForSpecimenEntry(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return !name.includes("nonafb")
+    && !code.includes("nonafb")
+    && (name.includes("afb") || code.includes("afb") || name.includes("acidfastbacilli"));
+}
+
+function getEnteredAfbSpecimen(test) {
+  const parameter = findReportParameter(test, [
+    "Specimen / Sample Type",
+    "Type of Specimen",
+    "Specimen Type",
+    "Specimen / Collection Site",
+    "Specimen",
+  ]);
+  return String(parameter?.value ?? "").trim();
+}
+
 function isBloodCultureSensitivityTest(test) {
   const name = normalizeParameterName(test?.name);
   const code = normalizeParameterName(test?.code);
@@ -1241,6 +1270,17 @@ function isUrineCultureTest(test) {
   const name = normalizeParameterName(test?.name);
   const code = normalizeParameterName(test?.code);
   return code === "urineculture" || name === "urineculture" || name.includes("urineculture");
+}
+
+function isUrineReCultureSensitivityTest(test) {
+  const name = normalizeParameterName(test?.name);
+  const code = normalizeParameterName(test?.code);
+  return code === "urinerecs" || [
+    "urinerecs",
+    "urinerecsroutineexaminationcultureandsensitivity",
+    "urineroutineexaminationcultureandsensitivity",
+    "urinecultureandsensitivitywithroutineexamination",
+  ].includes(name);
 }
 
 function isMalariaParasiteIdentificationTest(test) {
@@ -8646,7 +8686,7 @@ function buildLftReportBody(test) {
     { name: "AST (SGOT)", aliases: ["AST (SGOT)", "SGOT / AST"], method: "IFCC without P5P", range: "15.00 - 40.00", unit: "U/L" },
     { name: "ALT (SGPT)", aliases: ["ALT (SGPT)", "SGPT / ALT"], method: "IFCC without P5P", range: "10.00 - 49.00", unit: "U/L" },
     { name: "AST : ALT Ratio", aliases: ["AST : ALT Ratio", "AST:ALT Ratio", "AST ALT Ratio"], method: "Calculated", range: "< 1.00", unit: "" },
-    { name: "GGTP", aliases: ["GGTP", "GGT", "Gamma Glutamyl Transferase"], method: "IFCC", range: "0.00 - 73.00", unit: "U/L" },
+    ...(lftWithGgt ? [{ name: "GGTP", aliases: ["GGTP", "GGT", "Gamma Glutamyl Transferase"], method: "IFCC", range: "0.00 - 73.00", unit: "U/L" }] : []),
     { name: "Alkaline Phosphatase (ALP)", aliases: ["Alkaline Phosphatase (ALP)", "ALP (Alkaline Phosphatase)", "Alkaline Phosphatase"], method: "IFCC-AMP", range: "30.00 - 120.00", unit: "U/L" },
     { name: "Total Protein", aliases: ["Total Protein"], method: "Biuret", range: "5.70 - 8.20", unit: "g/dL" },
     { name: "Albumin", aliases: ["Albumin"], method: "BCG", range: "3.20 - 4.80", unit: "g/dL" },
@@ -19175,6 +19215,68 @@ function buildUrineRoutineReportBody(test) {
     </div>`;
 }
 
+function buildUrineReCultureSensitivityReportBody(test) {
+  const used = new Set();
+  const field = aliases => {
+    const parameter = (test?.parameters || []).find(p => aliases.map(normalizeParameterName).includes(normalizeParameterName(p.parameter_name)));
+    if (parameter) used.add(parameter);
+    return parameter || {};
+  };
+  const text = p => escapeHtml(String(p?.value ?? "").trim() || "-").replace(/\r?\n/g, "<br />");
+  const measurement = (label, p, range = "", unit = "") => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${text(p)}</td><td>${escapeHtml(String(p.normal_range || "").trim() || range)}</td><td>${escapeHtml(String(p.unit || "").trim() || unit)}</td></tr>`;
+  const row = (label, aliases, range = "", unit = "", optional = false) => {
+    const parameter = field([label, ...aliases]);
+    return optional && !String(parameter.value ?? "").trim() ? "" : measurement(label, parameter, range, unit);
+  };
+  const textRow = (label, aliases, optional = false) => {
+    const parameter = field([label, ...aliases]);
+    return optional && !String(parameter.value ?? "").trim() ? "" : `<tr><td><strong>${escapeHtml(label)}</strong></td><td colspan="3">${text(parameter)}</td></tr>`;
+  };
+  const section = label => `<tr class="thyroid-antibodies-section"><td colspan="4"><strong>${escapeHtml(label)}</strong></td></tr>`;
+  const specimen = field(["Specimen / Collection Type", "Specimen", "Sample Type"]);
+  const rows = [
+    `<tr class="single-analyte-sample-row"><td><strong>Specimen / Collection Type</strong></td><td colspan="3">${escapeHtml(String(specimen.value || test?.sample_type || "").trim() || "Urine (record actual collection type)")}</td></tr>`,
+    section("ROUTINE EXAMINATION"),
+    row("Colour / Appearance", ["Colour", "Color", "Appearance", "Clarity"], "Report actual finding"),
+    row("Specific Gravity", ["Urine Specific Gravity", "Sp Gravity"], "1.005 - 1.030 (guide; lab-specific)"),
+    row("pH", ["Urine pH", "Reaction"], "4.6 - 8.0 (guide; lab-specific)"),
+    row("Protein / Albumin", ["Protein", "Albumin"], "Negative (method-specific)"),
+    row("Glucose / Sugar", ["Glucose", "Sugar"], "Negative (method-specific)"),
+    row("Ketones", ["Ketone", "Acetone"], "Negative (method-specific)"),
+    row("Blood / Haemoglobin", ["Blood", "Haemoglobin", "Hemoglobin", "Occult Blood"], "Negative (method-specific)"),
+    row("Nitrite", ["Nitrites"], "Negative (method-specific)"),
+    row("Leukocyte Esterase", ["Leucocyte Esterase"], "Negative (method-specific)"),
+    row("WBC / Pus Cells", ["WBC", "Pus Cells", "White Blood Cells", "Leucocytes", "Leukocytes"], "Laboratory-validated microscopy interval", "/HPF"),
+    row("RBC", ["Red Blood Cells", "Erythrocytes"], "Laboratory-validated microscopy interval", "/HPF"),
+    row("Epithelial Cells", ["Epithelial Cell"], "Report type and quantity"),
+    row("Casts / Crystals / Yeast, if seen", ["Casts", "Crystals", "Yeast", "Fungal Elements"], "Report actual finding"),
+    section("CULTURE & SENSITIVITY"),
+    row("Culture Result", ["Culture, Urine", "Urine Culture", "Result"], "No significant growth"),
+    row("Organism Isolated, if any", ["Organism", "Isolate"], "Report only if isolated"),
+    row("Colony Count / Quantitation, if reported", ["Colony Count", "CFU/mL"], "Report actual count and unit"),
+    textRow("Antimicrobial Susceptibility", ["Drug Sensitivity", "Sensitivity", "Susceptibility"], true),
+    textRow("Method / Incubation", ["Culture Method", "Method"]),
+    textRow("Comments / Interpretation", ["Comments", "Comment", "Remarks", "Interpretation"]),
+  ];
+  const extra = (test?.parameters || []).filter(p => !used.has(p) && String(p.value ?? "").trim());
+  if (extra.length) rows.push(section("OTHER RECORDED FINDINGS"), ...extra.map(p => measurement(p.parameter_name, p)));
+  return `
+    <div class="urine-re-culture-sensitivity-report" data-report-content="urine-re-culture-sensitivity">
+      <table class="results-table single-analyte-table urine-re-culture-sensitivity-table">
+        <thead><tr><th style="width:34%">Investigation</th><th style="width:22%">Result</th><th style="width:30%">Reference / Interpretation</th><th style="width:14%">Unit</th></tr></thead>
+        <tbody>${rows.join("\n")}</tbody>
+      </table>
+      <div class="single-analyte-notes report-template-notes urine-re-culture-sensitivity-notes">
+        <div class="report-note-heading">Reporting guidance :</div>
+        <ul>
+          <li>Record the actual collection type and laboratory findings. A dash means that no result was entered; it does not mean a negative result.</li>
+          <li>Culture interpretation, colony count and susceptibility should be reported only from the work actually performed and according to the laboratory&rsquo;s validated criteria.</li>
+          <li>Routine urinalysis findings and culture results should be interpreted with symptoms, specimen quality and clinical context.</li>
+        </ul>
+      </div>
+    </div>`;
+}
+
 // Non-specific urine reducing-substance screen; not a glucose-specific assay.
 // https://www.nwlpathology.nhs.uk/test/reducing-substances-urine/
 // https://www.southtees.nhs.uk/services/pathology/tests/reducing-substances-urine-and-faecal/
@@ -22069,7 +22171,16 @@ function buildReportHtml(reportData) {
       .filter(isCustomizedReferenceValue)
       .map((parameter) => referenceResultKey(parameter.value, parameter.normal_range))
   );
-  const reportTests = suppliedTests.filter(test => !isBillingOnlyTest(test));
+  const reportTests = suppliedTests
+    .filter(test => !isBillingOnlyTest(test))
+    .map(test => {
+      if (!isAfbReportForSpecimenEntry(test)) return test;
+      const enteredSpecimen = getEnteredAfbSpecimen(test);
+      // Existing AFB layouts read their displayed specimen from sample_type.
+      // Preserve that default unless the technician has entered the actual
+      // received material in the new manual result-entry field.
+      return enteredSpecimen ? { ...test, sample_type: enteredSpecimen } : test;
+    });
   if (!reportTests.length) {
     const error = new Error(suppliedTests.length ? BILLING_ONLY_MESSAGE : 'No laboratory tests are available for this report.');
     error.statusCode = 400;
@@ -22261,6 +22372,7 @@ function buildReportHtml(reportData) {
   const fungusKohPreparationTest = singleTest && isFungusKohPreparationTest(singleTest) ? singleTest : null;
   const sputumAfbTest = singleTest && isSputumAfbTest(singleTest) ? singleTest : null;
   const stoolCultureTest = singleTest && isStoolCultureTest(singleTest) ? singleTest : null;
+  const urineReCultureSensitivityTest = singleTest && isUrineReCultureSensitivityTest(singleTest) && !String(singleTest.report_body || "").trim() ? singleTest : null;
   const urineCultureTest = singleTest && isUrineCultureTest(singleTest) ? singleTest : null;
   const malariaParasiteIdentificationTest = singleTest && isMalariaParasiteIdentificationTest(singleTest) ? singleTest : null;
   const mycobacteriumCombinedPanelTest = singleTest && isMycobacteriumCombinedPanelTest(singleTest) ? singleTest : null;
@@ -22643,6 +22755,7 @@ function buildReportHtml(reportData) {
         if (reportData.tests.length === 1 && isBronchialWashingCultureSensitivityTest(t)) return "BRONCHIAL WASHING CULTURE & SENSITIVITY";
         if (reportData.tests.length === 1 && isAfbCultureSensitivityTest(t)) return "AFB CULTURE & SENSITIVITY";
         if (reportData.tests.length === 1 && isStoolCultureTest(t)) return "STOOL CULTURE";
+        if (reportData.tests.length === 1 && isUrineReCultureSensitivityTest(t)) return "URINE ROUTINE EXAMINATION, CULTURE & SENSITIVITY (RE/CS)";
         if (reportData.tests.length === 1 && isUrineCultureTest(t)) return "URINE CULTURE";
         if (reportData.tests.length === 1 && isMalariaParasiteIdentificationTest(t)) return "MALARIA PARASITE IDENTIFICATION";
         if (reportData.tests.length === 1 && isMycobacteriumCombinedPanelTest(t)) return "MYCOBACTERIUM COMBINED PANEL - TB (COMBINE)";
@@ -22944,7 +23057,7 @@ function buildReportHtml(reportData) {
       }).filter((v, i, a) => a.indexOf(v) === i).join(", ")
     : "LABORATORY REPORT";
 
-  return supplementReportHtml(appendAdditionalReportText(`
+  return removeInlineRangeStatusLabels(supplementReportHtml(appendAdditionalReportText(`
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -24064,7 +24177,7 @@ function buildReportHtml(reportData) {
 
         <div class="test-title">${testTitle}</div>
 
-        ${gndCultureTest ? buildGndCultureReportBody(gndCultureTest) : cDiffToxinTest ? buildClostridioidesDifficileToxinReportBody(cDiffToxinTest) : totalCholesterolTest ? buildTotalCholesterolReportBody(totalCholesterolTest) : urineChloride24HourTest ? build24HourUrineChlorideReportBody(urineChloride24HourTest) : serumChlorideTest ? buildSerumChlorideReportBody(serumChlorideTest) : randomUrineChlorideTest ? buildRandomUrineChlorideReportBody(randomUrineChlorideTest) : chlamydiaAntigenTest ? buildChlamydiaAntigenReportBody(chlamydiaAntigenTest) : chlamydiaAntibodyIggIgmTest ? buildChlamydiaAntibodyIggIgmReportBody(chlamydiaAntibodyIggIgmTest) : chikungunyaIgmTest ? buildChikungunyaIgmReportBody(chikungunyaIgmTest) : chikungunyaIggTest ? buildChikungunyaIggReportBody(chikungunyaIggTest) : cervicalSwabAfbStainTest ? buildCervicalSwabAfbStainReportBody(cervicalSwabAfbStainTest) : cervicalSwabGramStainTest ? buildCervicalSwabGramStainReportBody(cervicalSwabGramStainTest) : cervicalPapSmearTest ? buildCervicalPapSmearReportBody(cervicalPapSmearTest) : bronchialPapTest ? buildBronchialPapCytologyReportBody(bronchialPapTest) : beta2GlycoproteinPanelTest ? buildBeta2GlycoproteinPanelReportBody(beta2GlycoproteinPanelTest) : toxoplasmaAntibodiesPanelTest ? buildToxoplasmaAntibodiesPanelReportBody(toxoplasmaAntibodiesPanelTest) : torchProfileTest ? buildTorchProfileReportBody(torchProfileTest) : tnfAlphaTest ? buildTnfAlphaReportBody(tnfAlphaTest) : rheumatoidFactorTest ? buildRheumatoidFactorReportBody(rheumatoidFactorTest) : asoTiterTest ? buildAsoTiterReportBody(asoTiterTest) : hsCrpTest ? buildHsCrpReportBody(hsCrpTest) : typhidotTest ? buildTyphidotReportBody(typhidotTest) : vdrlTest ? buildVdrlReportBody(vdrlTest) : havIggTest ? buildHavIggReportBody(havIggTest) : havIgmTest ? buildHavIgmReportBody(havIgmTest) : hcvRapidScreeningTest ? buildHcvRapidScreeningReportBody(hcvRapidScreeningTest) : rtPcrTest ? buildRtPcrReportBody(rtPcrTest) : tpmtTest ? buildTpmtGenotypingReportBody(tpmtTest) : cysticFibrosisNewbornTest ? buildCysticFibrosisNewbornScreenReportBody(cysticFibrosisNewbornTest) : kftTest ? buildKftReportBody(kftTest) : factorIiTest ? buildFactorIiReportBody(factorIiTest) : karyotypeTest ? buildKaryotypeReportBody(karyotypeTest) : lipidProfileTest ? buildLipidProfileReportBody(lipidProfileTest) : lftTest ? buildLftReportBody(lftTest) : hba1cTest ? buildHba1cReportBody(hba1cTest) : vitaminDTest ? buildVitaminDReportBody(vitaminDTest) : vitaminCTest ? buildVitaminCReportBody(vitaminCTest) : vitaminB12Test ? buildVitaminB12ReportBody(vitaminB12Test) : randomBloodSugarTest ? buildRandomBloodSugarReportBody(randomBloodSugarTest) : fastingBloodSugarTest ? buildFastingBloodSugarTest(fastingBloodSugarTest) : bTypeNatriureticPeptideTest ? buildBTypeNatriureticPeptideReportBody(bTypeNatriureticPeptideTest) : creatineKinaseTest ? buildCreatineKinaseReportBody(creatineKinaseTest) : beta2MicroglobulinTest ? buildBeta2MicroglobulinReportBody(beta2MicroglobulinTest) : altSgptTest ? buildAltSgptReportBody(altSgptTest) : dnphTest ? buildDnphReportBody(dnphTest) : diabeticProfileTest ? buildDiabeticProfileReportBody(diabeticProfileTest) : extendedDiabeticProfileTest ? buildDiabeticProfileReportBody(extendedDiabeticProfileTest, { extended: true }) : diabeticRenalProfileTest ? buildDiabeticRenalProfileReportBody(diabeticRenalProfileTest) : earSwabGramStainTest ? buildEarSwabGramStainReportBody(earSwabGramStainTest) : earSwabAfbStainTest ? buildEarSwabAfbStainReportBody(earSwabAfbStainTest) : fshPrlTest ? buildFshPrlReportBody(fshPrlTest) : fshLhPrlTest ? buildFshPrlReportBody(fshLhPrlTest, { includeLh: true }) : factorIiMutationTest ? buildFactorIiMutationReportBody(factorIiMutationTest) : factorViiiImmunodepletedTest ? buildFactorViiiImmunodepletedReportBody(factorViiiImmunodepletedTest) : femaleInfertilityProfileTest ? buildFemaleInfertilityProfileReportBody(femaleInfertilityProfileTest) : fernTest ? buildFernTestReportBody(fernTest) : wuchereriaBancroftiAntigenTest ? buildWuchereriaBancroftiAntigenReportBody(wuchereriaBancroftiAntigenTest) : filariaAntigenTest ? buildFilariaAntigenReportBody(filariaAntigenTest) : fluidAspirationCytologyTest ? buildFluidAspirationCytologyReportBody(fluidAspirationCytologyTest) : foetalHaemoglobinByHplcTest ? buildFoetalHaemoglobinByHplcReportBody(foetalHaemoglobinByHplcTest) : foetalHaemoglobinTest ? buildFoetalHaemoglobinReportBody(foetalHaemoglobinTest) : freeBetaHcgTest ? buildFreeBetaHcgReportBody(freeBetaHcgTest) : freeCholesterolTest ? buildFreeCholesterolReportBody(freeCholesterolTest) : freeEstradiolTest ? buildFreeEstradiolReportBody(freeEstradiolTest) : freePsaTest ? buildFreePsaReportBody(freePsaTest) : freeTestosteroneTest ? buildFreeTestosteroneReportBody(freeTestosteroneTest) : gad65AntibodyTest ? buildGad65AntibodyReportBody(gad65AntibodyTest) : gh90MinutesAfterGlucoseTest ? buildGh90MinutesAfterGlucoseReportBody(gh90MinutesAfterGlucoseTest) : ghFastingGlucoseTest ? buildGhFastingGlucoseReportBody(ghFastingGlucoseTest) : growthHormoneTest ? buildGrowthHormoneReportBody(growthHormoneTest) : glucoseToleranceTest ? buildGlucoseToleranceTestReportBody(glucoseToleranceTest) : gastrinLevelTest ? buildGastrinLevelReportBody(gastrinLevelTest) : fungusCultureTest ? buildFungusCultureReportBody(fungusCultureTest) : fungusCultureSensitivityTest ? buildFungusCultureSensitivityReportBody(fungusCultureSensitivityTest) : prealbuminTest ? buildPrealbuminReportBody(prealbuminTest) : haptoglobinTest ? buildHaptoglobinReportBody(haptoglobinTest) : gramStainBacterialVaginosisTest ? buildGramStainBacterialVaginosisReportBody(gramStainBacterialVaginosisTest) : aldolaseTest ? buildAldolaseReportBody(aldolaseTest) : urineProteinCreatinineRatioTest ? buildUrineProteinCreatinineRatioReportBody(urineProteinCreatinineRatioTest) : albuminCreatinineRatioTest ? buildAlbuminCreatinineRatioReportBody(albuminCreatinineRatioTest) : postPrandialBloodSugarTest ? buildPostPrandialBloodSugarReportBody(postPrandialBloodSugarTest) : tacrolimusTest ? buildTacrolimusReportBody(tacrolimusTest) : phosphorusTest ? buildPhosphorusReportBody(phosphorusTest) : alkalinePhosphataseTest ? buildAlkalinePhosphataseReportBody(alkalinePhosphataseTest) : clotRetractionTest ? buildClotRetractionReportBody(clotRetractionTest) : vitaminETest ? buildVitaminETest(vitaminETest) : vitaminB9Test ? buildVitaminB9ReportBody(vitaminB9Test) : vitaminKTest ? buildVitaminKReportBody(vitaminKTest) : ldlCholesterolTest ? buildLdlCholesterolReportBody(ldlCholesterolTest) : hdlCholesterolTest ? buildHdlCholesterolReportBody(hdlCholesterolTest) : indirectBilirubinTest ? buildIndirectBilirubinReportBody(indirectBilirubinTest) : calciumTest ? buildCalciumReportBody(calciumTest) : ferritinTest ? buildFerritinReportBody(ferritinTest) : cPeptideTest ? buildCPeptideReportBody(cPeptideTest) : vldlCholesterolTest ? buildVldlCholesterolReportBody(vldlCholesterolTest) : comprehensiveMetabolicPanelTest ? buildComprehensiveMetabolicPanelReportBody(comprehensiveMetabolicPanelTest) : electrolyteProfileTest ? buildElectrolyteProfileTest(electrolyteProfileTest) : potassiumTest ? buildPotassiumReportBody(potassiumTest) : astSgotTest ? buildAstSgotReportBody(astSgotTest) : globulinTest ? buildGlobulinReportBody(globulinTest) : albuminTest ? buildAlbuminReportBody(albuminTest) : digoxinTest ? buildDigoxinReportBody(digoxinTest) : randomUrineCopperTest ? buildRandomUrineCopperReportBody(randomUrineCopperTest) : bunTest ? buildBunReportBody(bunTest) : cbcTest ? buildCbcReportBody(cbcTest, cbcVariant) : bloodGroupTest ? buildBloodGroupReportBody(bloodGroupTest) : dDimerTest ? buildDDimerReportBody(dDimerTest) : sickleCellMutationTest ? buildSickleCellMutationAnalysisReportBody(sickleCellMutationTest) : rbcTest ? buildRbcReportBody(rbcTest) : plateletTest ? buildPlateletReportBody(plateletTest) : tlcTest ? buildTlcReportBody(tlcTest) : absoluteCountTest ? buildAbsoluteCountReportBody(absoluteCountTest, absoluteCountTemplate) : mchcTest ? buildMchcReportBody(mchcTest) : mchTest ? buildMchReportBody(mchTest) : mcvTest ? buildMcvReportBody(mcvTest) : mpvTest ? buildMpvReportBody(mpvTest) : hctPcvTest ? buildHctPcvReportBody(hctPcvTest) : esrTest ? buildEsrReportBody(esrTest) : pdwTest ? buildPdwReportBody(pdwTest) : hemoglobinTest ? buildHemoglobinReportBody(hemoglobinTest, reportData.patient.gender) : ptTest ? buildProthrombinTimeReportBody(ptTest) : apttTest ? buildApttReportBody(apttTest) : dlcTest ? buildDlcReportBody(dlcTest) : indirectCoombsTest ? buildIndirectCoombsReportBody(indirectCoombsTest) : directCoombsTest ? buildDirectCoombsReportBody(directCoombsTest) : fibrinogenTest ? buildFibrinogenReportBody(fibrinogenTest) : reticulocyteTest ? buildReticulocyteReportBody(reticulocyteTest) : clottingTimeTest ? buildClottingTimeReportBody(clottingTimeTest) : bleedingTimeTest ? buildBleedingTimeReportBody(bleedingTimeTest) : coagulationProfileTest ? buildCoagulationProfileReportBody(coagulationProfileTest) : factorVTest ? buildFactorVReportBody(factorVTest) : factorViiTest ? buildFactorViiReportBody(factorViiTest) : factorIxTest ? buildFactorIxTest(factorIxTest) : factorXTest ? buildFactorXTest(factorXTest) : factorXiTest ? buildFactorXiReportBody(factorXiTest) : factorViiiTest ? buildFactorViiiReportBody(factorViiiTest) : peripheralSmearTest ? buildPeripheralBloodSmearReportBody(peripheralSmearTest) : factorXiiTest ? buildFactorXiiReportBody(factorXiiTest) : factorXiiiTest ? buildFactorXiiiTest(factorXiiiTest) : `
+        ${urineReCultureSensitivityTest ? buildUrineReCultureSensitivityReportBody(urineReCultureSensitivityTest) : gndCultureTest ? buildGndCultureReportBody(gndCultureTest) : cDiffToxinTest ? buildClostridioidesDifficileToxinReportBody(cDiffToxinTest) : totalCholesterolTest ? buildTotalCholesterolReportBody(totalCholesterolTest) : urineChloride24HourTest ? build24HourUrineChlorideReportBody(urineChloride24HourTest) : serumChlorideTest ? buildSerumChlorideReportBody(serumChlorideTest) : randomUrineChlorideTest ? buildRandomUrineChlorideReportBody(randomUrineChlorideTest) : chlamydiaAntigenTest ? buildChlamydiaAntigenReportBody(chlamydiaAntigenTest) : chlamydiaAntibodyIggIgmTest ? buildChlamydiaAntibodyIggIgmReportBody(chlamydiaAntibodyIggIgmTest) : chikungunyaIgmTest ? buildChikungunyaIgmReportBody(chikungunyaIgmTest) : chikungunyaIggTest ? buildChikungunyaIggReportBody(chikungunyaIggTest) : cervicalSwabAfbStainTest ? buildCervicalSwabAfbStainReportBody(cervicalSwabAfbStainTest) : cervicalSwabGramStainTest ? buildCervicalSwabGramStainReportBody(cervicalSwabGramStainTest) : cervicalPapSmearTest ? buildCervicalPapSmearReportBody(cervicalPapSmearTest) : bronchialPapTest ? buildBronchialPapCytologyReportBody(bronchialPapTest) : beta2GlycoproteinPanelTest ? buildBeta2GlycoproteinPanelReportBody(beta2GlycoproteinPanelTest) : toxoplasmaAntibodiesPanelTest ? buildToxoplasmaAntibodiesPanelReportBody(toxoplasmaAntibodiesPanelTest) : torchProfileTest ? buildTorchProfileReportBody(torchProfileTest) : tnfAlphaTest ? buildTnfAlphaReportBody(tnfAlphaTest) : rheumatoidFactorTest ? buildRheumatoidFactorReportBody(rheumatoidFactorTest) : asoTiterTest ? buildAsoTiterReportBody(asoTiterTest) : hsCrpTest ? buildHsCrpReportBody(hsCrpTest) : typhidotTest ? buildTyphidotReportBody(typhidotTest) : vdrlTest ? buildVdrlReportBody(vdrlTest) : havIggTest ? buildHavIggReportBody(havIggTest) : havIgmTest ? buildHavIgmReportBody(havIgmTest) : hcvRapidScreeningTest ? buildHcvRapidScreeningReportBody(hcvRapidScreeningTest) : rtPcrTest ? buildRtPcrReportBody(rtPcrTest) : tpmtTest ? buildTpmtGenotypingReportBody(tpmtTest) : cysticFibrosisNewbornTest ? buildCysticFibrosisNewbornScreenReportBody(cysticFibrosisNewbornTest) : kftTest ? buildKftReportBody(kftTest) : factorIiTest ? buildFactorIiReportBody(factorIiTest) : karyotypeTest ? buildKaryotypeReportBody(karyotypeTest) : lipidProfileTest ? buildLipidProfileReportBody(lipidProfileTest) : lftTest ? buildLftReportBody(lftTest) : hba1cTest ? buildHba1cReportBody(hba1cTest) : vitaminDTest ? buildVitaminDReportBody(vitaminDTest) : vitaminCTest ? buildVitaminCReportBody(vitaminCTest) : vitaminB12Test ? buildVitaminB12ReportBody(vitaminB12Test) : randomBloodSugarTest ? buildRandomBloodSugarReportBody(randomBloodSugarTest) : fastingBloodSugarTest ? buildFastingBloodSugarTest(fastingBloodSugarTest) : bTypeNatriureticPeptideTest ? buildBTypeNatriureticPeptideReportBody(bTypeNatriureticPeptideTest) : creatineKinaseTest ? buildCreatineKinaseReportBody(creatineKinaseTest) : beta2MicroglobulinTest ? buildBeta2MicroglobulinReportBody(beta2MicroglobulinTest) : altSgptTest ? buildAltSgptReportBody(altSgptTest) : dnphTest ? buildDnphReportBody(dnphTest) : diabeticProfileTest ? buildDiabeticProfileReportBody(diabeticProfileTest) : extendedDiabeticProfileTest ? buildDiabeticProfileReportBody(extendedDiabeticProfileTest, { extended: true }) : diabeticRenalProfileTest ? buildDiabeticRenalProfileReportBody(diabeticRenalProfileTest) : earSwabGramStainTest ? buildEarSwabGramStainReportBody(earSwabGramStainTest) : earSwabAfbStainTest ? buildEarSwabAfbStainReportBody(earSwabAfbStainTest) : fshPrlTest ? buildFshPrlReportBody(fshPrlTest) : fshLhPrlTest ? buildFshPrlReportBody(fshLhPrlTest, { includeLh: true }) : factorIiMutationTest ? buildFactorIiMutationReportBody(factorIiMutationTest) : factorViiiImmunodepletedTest ? buildFactorViiiImmunodepletedReportBody(factorViiiImmunodepletedTest) : femaleInfertilityProfileTest ? buildFemaleInfertilityProfileReportBody(femaleInfertilityProfileTest) : fernTest ? buildFernTestReportBody(fernTest) : wuchereriaBancroftiAntigenTest ? buildWuchereriaBancroftiAntigenReportBody(wuchereriaBancroftiAntigenTest) : filariaAntigenTest ? buildFilariaAntigenReportBody(filariaAntigenTest) : fluidAspirationCytologyTest ? buildFluidAspirationCytologyReportBody(fluidAspirationCytologyTest) : foetalHaemoglobinByHplcTest ? buildFoetalHaemoglobinByHplcReportBody(foetalHaemoglobinByHplcTest) : foetalHaemoglobinTest ? buildFoetalHaemoglobinReportBody(foetalHaemoglobinTest) : freeBetaHcgTest ? buildFreeBetaHcgReportBody(freeBetaHcgTest) : freeCholesterolTest ? buildFreeCholesterolReportBody(freeCholesterolTest) : freeEstradiolTest ? buildFreeEstradiolReportBody(freeEstradiolTest) : freePsaTest ? buildFreePsaReportBody(freePsaTest) : freeTestosteroneTest ? buildFreeTestosteroneReportBody(freeTestosteroneTest) : gad65AntibodyTest ? buildGad65AntibodyReportBody(gad65AntibodyTest) : gh90MinutesAfterGlucoseTest ? buildGh90MinutesAfterGlucoseReportBody(gh90MinutesAfterGlucoseTest) : ghFastingGlucoseTest ? buildGhFastingGlucoseReportBody(ghFastingGlucoseTest) : growthHormoneTest ? buildGrowthHormoneReportBody(growthHormoneTest) : glucoseToleranceTest ? buildGlucoseToleranceTestReportBody(glucoseToleranceTest) : gastrinLevelTest ? buildGastrinLevelReportBody(gastrinLevelTest) : fungusCultureTest ? buildFungusCultureReportBody(fungusCultureTest) : fungusCultureSensitivityTest ? buildFungusCultureSensitivityReportBody(fungusCultureSensitivityTest) : prealbuminTest ? buildPrealbuminReportBody(prealbuminTest) : haptoglobinTest ? buildHaptoglobinReportBody(haptoglobinTest) : gramStainBacterialVaginosisTest ? buildGramStainBacterialVaginosisReportBody(gramStainBacterialVaginosisTest) : aldolaseTest ? buildAldolaseReportBody(aldolaseTest) : urineProteinCreatinineRatioTest ? buildUrineProteinCreatinineRatioReportBody(urineProteinCreatinineRatioTest) : albuminCreatinineRatioTest ? buildAlbuminCreatinineRatioReportBody(albuminCreatinineRatioTest) : postPrandialBloodSugarTest ? buildPostPrandialBloodSugarReportBody(postPrandialBloodSugarTest) : tacrolimusTest ? buildTacrolimusReportBody(tacrolimusTest) : phosphorusTest ? buildPhosphorusReportBody(phosphorusTest) : alkalinePhosphataseTest ? buildAlkalinePhosphataseReportBody(alkalinePhosphataseTest) : clotRetractionTest ? buildClotRetractionReportBody(clotRetractionTest) : vitaminETest ? buildVitaminETest(vitaminETest) : vitaminB9Test ? buildVitaminB9ReportBody(vitaminB9Test) : vitaminKTest ? buildVitaminKReportBody(vitaminKTest) : ldlCholesterolTest ? buildLdlCholesterolReportBody(ldlCholesterolTest) : hdlCholesterolTest ? buildHdlCholesterolReportBody(hdlCholesterolTest) : indirectBilirubinTest ? buildIndirectBilirubinReportBody(indirectBilirubinTest) : calciumTest ? buildCalciumReportBody(calciumTest) : ferritinTest ? buildFerritinReportBody(ferritinTest) : cPeptideTest ? buildCPeptideReportBody(cPeptideTest) : vldlCholesterolTest ? buildVldlCholesterolReportBody(vldlCholesterolTest) : comprehensiveMetabolicPanelTest ? buildComprehensiveMetabolicPanelReportBody(comprehensiveMetabolicPanelTest) : electrolyteProfileTest ? buildElectrolyteProfileTest(electrolyteProfileTest) : potassiumTest ? buildPotassiumReportBody(potassiumTest) : astSgotTest ? buildAstSgotReportBody(astSgotTest) : globulinTest ? buildGlobulinReportBody(globulinTest) : albuminTest ? buildAlbuminReportBody(albuminTest) : digoxinTest ? buildDigoxinReportBody(digoxinTest) : randomUrineCopperTest ? buildRandomUrineCopperReportBody(randomUrineCopperTest) : bunTest ? buildBunReportBody(bunTest) : cbcTest ? buildCbcReportBody(cbcTest, cbcVariant) : bloodGroupTest ? buildBloodGroupReportBody(bloodGroupTest) : dDimerTest ? buildDDimerReportBody(dDimerTest) : sickleCellMutationTest ? buildSickleCellMutationAnalysisReportBody(sickleCellMutationTest) : rbcTest ? buildRbcReportBody(rbcTest) : plateletTest ? buildPlateletReportBody(plateletTest) : tlcTest ? buildTlcReportBody(tlcTest) : absoluteCountTest ? buildAbsoluteCountReportBody(absoluteCountTest, absoluteCountTemplate) : mchcTest ? buildMchcReportBody(mchcTest) : mchTest ? buildMchReportBody(mchTest) : mcvTest ? buildMcvReportBody(mcvTest) : mpvTest ? buildMpvReportBody(mpvTest) : hctPcvTest ? buildHctPcvReportBody(hctPcvTest) : esrTest ? buildEsrReportBody(esrTest) : pdwTest ? buildPdwReportBody(pdwTest) : hemoglobinTest ? buildHemoglobinReportBody(hemoglobinTest, reportData.patient.gender) : ptTest ? buildProthrombinTimeReportBody(ptTest) : apttTest ? buildApttReportBody(apttTest) : dlcTest ? buildDlcReportBody(dlcTest) : indirectCoombsTest ? buildIndirectCoombsReportBody(indirectCoombsTest) : directCoombsTest ? buildDirectCoombsReportBody(directCoombsTest) : fibrinogenTest ? buildFibrinogenReportBody(fibrinogenTest) : reticulocyteTest ? buildReticulocyteReportBody(reticulocyteTest) : clottingTimeTest ? buildClottingTimeReportBody(clottingTimeTest) : bleedingTimeTest ? buildBleedingTimeReportBody(bleedingTimeTest) : coagulationProfileTest ? buildCoagulationProfileReportBody(coagulationProfileTest) : factorVTest ? buildFactorVReportBody(factorVTest) : factorViiTest ? buildFactorViiReportBody(factorViiTest) : factorIxTest ? buildFactorIxTest(factorIxTest) : factorXTest ? buildFactorXTest(factorXTest) : factorXiTest ? buildFactorXiReportBody(factorXiTest) : factorViiiTest ? buildFactorViiiReportBody(factorViiiTest) : peripheralSmearTest ? buildPeripheralBloodSmearReportBody(peripheralSmearTest) : factorXiiTest ? buildFactorXiiReportBody(factorXiiTest) : factorXiiiTest ? buildFactorXiiiTest(factorXiiiTest) : `
         <table class="results-table">
           <thead>
             <tr>
@@ -24118,8 +24231,7 @@ function buildReportHtml(reportData) {
                 let valDisplay = escapeHtml(param.value || "-");
                 if (getCellReportDefinition(test)) valDisplay = valDisplay.replace(/\r?\n/g, "<br />");
                 if (isAbnormal) {
-                  const label = colorClass === 'high-val' ? 'High' : 'Low';
-                  valDisplay = `<span class="${colorClass}">${valDisplay}</span> &nbsp; <span class="${colorClass}" style="font-size: 13px; font-weight: bold;">${label}</span>`;
+                  valDisplay = `<span class="${colorClass}">${valDisplay}</span>`;
                 }
                 
                 const needsIndentation = [
@@ -24340,7 +24452,7 @@ function buildReportHtml(reportData) {
       <script data-report-pagination="true">${REPORT_PAGINATION_SCRIPT}</script>
     </body>
     </html>
-  `, [singleTest]), singleTest);
+  `, [singleTest]), singleTest));
 }
 
 function buildReportActionControls({ show, visitId, patientPhone = "", canDownload, canShareWhatsApp }) {

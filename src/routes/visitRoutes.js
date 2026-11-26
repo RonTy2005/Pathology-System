@@ -22,6 +22,41 @@ const IMAGING_REPORT_MIME_TYPES = new Set([
   "image/webp",
 ]);
 
+function normalizeReusableAdditionRow(row) {
+  return {
+    investigation: String(row?.investigation ?? "").trim(),
+    result: String(row?.result ?? "").trim(),
+    referenceValue: String(row?.referenceValue ?? "").trim(),
+    unit: String(row?.unit ?? "").trim(),
+  };
+}
+
+async function rememberReportAdditionTemplates(testId, additionalReportText, additionalReportRows) {
+  if (!Number.isInteger(Number(testId)) || Number(testId) <= 0) return;
+
+  const templates = new Map();
+  const text = String(additionalReportText || "").trim();
+  if (text) templates.set(`text:${text}`, { contentType: "text", content: text });
+
+  for (const row of Array.isArray(additionalReportRows) ? additionalReportRows : []) {
+    const normalized = normalizeReusableAdditionRow(row);
+    if (!Object.values(normalized).some(Boolean)) continue;
+    const content = JSON.stringify(normalized);
+    templates.set(`row:${content}`, { contentType: "row", content });
+  }
+
+  for (const template of templates.values()) {
+    await run(
+      `INSERT INTO report_addition_templates (test_id, content_type, content, usage_count, updated_at)
+       VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP)
+       ON CONFLICT(test_id, content_type, content)
+       DO UPDATE SET usage_count = report_addition_templates.usage_count + 1,
+                     updated_at = CURRENT_TIMESTAMP`,
+      [Number(testId), template.contentType, template.content],
+    );
+  }
+}
+
 function imagingRoleForCategory(category) {
   const categoryRoles = {
     "CT Scan": ROLES.CT_TECHNICIAN,
@@ -1310,6 +1345,48 @@ visitRouter.post(
   }
 });
 
+visitRouter.get(
+  "/test-addition-suggestions/:testId",
+  allowRoles(ROLES.ADMIN, ...TECHNICIAN_ROLES),
+  allowPermissions(PERMISSIONS.ENTER_RESULTS),
+  async (req, res, next) => {
+    try {
+      const testId = Number(req.params.testId);
+      if (!Number.isInteger(testId) || testId <= 0) {
+        return res.status(400).json({ message: "A valid catalogue test is required" });
+      }
+
+      const templates = await all(
+        `SELECT content_type, content
+         FROM report_addition_templates
+         WHERE test_id = ?
+         ORDER BY usage_count DESC, updated_at DESC, id DESC
+         LIMIT 60`,
+        [testId],
+      );
+      const textSuggestions = [];
+      const rowSuggestions = [];
+      for (const template of templates) {
+        if (template.content_type === "text" && String(template.content || "").trim()) {
+          textSuggestions.push(template.content);
+          continue;
+        }
+        if (template.content_type !== "row") continue;
+        try {
+          const row = normalizeReusableAdditionRow(JSON.parse(template.content));
+          if (Object.values(row).some(Boolean)) rowSuggestions.push(row);
+        } catch {
+          // Ignore a malformed legacy template instead of blocking result entry.
+        }
+      }
+
+      res.json({ textSuggestions, rowSuggestions });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
 visitRouter.post(
   "/:id/results",
   allowRoles(ROLES.ADMIN, ...TECHNICIAN_ROLES),
@@ -1423,6 +1500,11 @@ visitRouter.post(
         hasAdditionalReportRows ? JSON.stringify(normalizedAdditionalReportRows) : "[]",
         visitTestId,
       ]
+    );
+    await rememberReportAdditionTemplates(
+      visitTest.test_id,
+      hasAdditionalReportText ? additionalReportText : "",
+      hasAdditionalReportRows ? normalizedAdditionalReportRows : [],
     );
     });
 

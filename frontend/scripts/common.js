@@ -61,12 +61,88 @@ const API = {
   },
 };
 
+// Enables keyboard selection for the application's custom autocomplete lists.
+// Native datalist controls vary substantially across the supported Windows
+// browsers, so these explicit suggestion panels need their own interaction.
+function bindAutocompleteKeyboardNavigation(input, container, options = {}) {
+  if (!input || !container || input.dataset.autocompleteKeyboardBound === "true") return;
+  input.dataset.autocompleteKeyboardBound = "true";
+  const itemSelector = options.itemSelector || "button.result-btn, .autocomplete-item";
+  let activeIndex = -1;
+
+  const getItems = () => Array.from(container.querySelectorAll(itemSelector))
+    .filter((item) => !item.hidden && !item.disabled);
+  const setActive = (index) => {
+    const items = getItems();
+    activeIndex = items.length ? Math.max(-1, Math.min(index, items.length - 1)) : -1;
+    items.forEach((item, itemIndex) => {
+      const active = itemIndex === activeIndex;
+      item.classList.toggle("keyboard-active", active);
+      item.setAttribute("aria-selected", String(active));
+      if (active) item.scrollIntoView?.({ block: "nearest" });
+    });
+  };
+
+  input.addEventListener("input", () => setActive(-1));
+  input.addEventListener("keydown", (event) => {
+    if (event.isComposing || event.altKey || event.ctrlKey || event.metaKey) return;
+    const items = getItems();
+    if (!items.length) return;
+
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      event.stopPropagation();
+      const direction = event.key === "ArrowDown" ? 1 : -1;
+      const next = activeIndex < 0
+        ? (direction > 0 ? 0 : items.length - 1)
+        : (activeIndex + direction + items.length) % items.length;
+      setActive(next);
+      return;
+    }
+
+    if (event.key === "Enter" && activeIndex >= 0 && items[activeIndex]) {
+      event.preventDefault();
+      event.stopPropagation();
+      const selected = items[activeIndex];
+      setActive(-1);
+      selected.click();
+    }
+  });
+}
+
 const DEFAULT_BUSINESS_NAME = "Your Diagnostic Centre";
 let currentBusinessName = DEFAULT_BUSINESS_NAME;
 
 if (window.labLmsDesktop) {
   document.documentElement.classList.add("labshield-desktop");
 }
+
+// Windows 7-era display drivers can retain blank compositor tiles after a
+// large page is scrolled.  The desktop shell can request a native repaint;
+// wait until scrolling stops so this is imperceptible during normal use.
+function enableDesktopScrollRepaintRecovery() {
+  if (!window.labLmsDesktop?.requestRepaint) return;
+  let repaintTimer = null;
+  const requestRepaint = () => {
+    if (document.hidden) return;
+    window.labLmsDesktop.requestRepaint();
+  };
+  const queueRepaint = () => {
+    if (repaintTimer) window.clearTimeout(repaintTimer);
+    repaintTimer = window.setTimeout(() => {
+      repaintTimer = null;
+      requestRepaint();
+    }, 140);
+  };
+
+  window.addEventListener("scroll", queueRepaint, { passive: true });
+  window.addEventListener("focus", requestRepaint);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) requestRepaint();
+  });
+}
+
+enableDesktopScrollRepaintRecovery();
 
 function getBusinessName() {
   return currentBusinessName;
@@ -1046,10 +1122,12 @@ function renderResultAdditionalText(test, disabled = false) {
       <div data-additional-mode-panel="text" ${selectedMode === "text" ? "" : "hidden"}>
         <label for="${holderId}-input">Additional report text (optional)</label>
         <textarea id="${holderId}-input" data-additional-report-text data-saved-additional-text="${escapeResultFieldHtml(text)}" rows="4" maxlength="20000" placeholder="Enter advice, instructions, or additional text for this report." ${disabled ? "disabled" : ""}>${escapeResultFieldHtml(text)}</textarea>
+        <div class="report-addition-suggestion-menu" data-additional-text-suggestions hidden aria-label="Previously used report text"></div>
       </div>
       <div data-additional-mode-panel="test" ${selectedMode === "test" ? "" : "hidden"}>
-        <div class="additional-test-table-wrap"><table class="additional-test-entry-table"><thead><tr><th>Investigation</th><th>Result</th><th>Reference Value</th><th>Unit</th><th aria-label="Row actions"></th></tr></thead><tbody data-additional-test-rows>${(rows.length ? rows : [{}]).map((row) => renderAdditionalResultRow(row, disabled)).join("")}</tbody></table></div>
+        <div class="additional-test-table-wrap"><table class="additional-test-entry-table"><thead><tr><th>Investigation</th><th>Result</th><th>Reference Value</th><th>Unit</th><th aria-label="Row actions"></th></tr></thead><tbody data-additional-test-rows>${rows.map((row) => renderAdditionalResultRow(row, disabled)).join("")}</tbody></table></div>
         <button type="button" class="secondary-btn" data-additional-test-row-add ${disabled ? "disabled" : ""}>Add row</button>
+        <div class="report-addition-suggestion-menu" data-additional-row-suggestions hidden aria-label="Previously used test additions"></div>
       </div>
     </div>
   </div>`;
@@ -1075,6 +1153,58 @@ function attachResultAdditionalText(form) {
   const button = form.querySelector("[data-additional-text-toggle]");
   const holder = form.querySelector("[data-additional-text-holder]");
   if (!button || !holder) return;
+  const suggestionState = { text: [], rows: [], activeRow: null };
+  const textInput = holder.querySelector("[data-additional-report-text]");
+  const textSuggestionMenu = holder.querySelector("[data-additional-text-suggestions]");
+  const rowSuggestionMenu = holder.querySelector("[data-additional-row-suggestions]");
+
+  const addAdditionalTestRow = (focus = false) => {
+    const rows = holder.querySelector("[data-additional-test-rows]");
+    if (!rows) return null;
+    rows.insertAdjacentHTML("beforeend", renderAdditionalResultRow());
+    const row = rows.lastElementChild;
+    if (focus) row?.querySelector("[data-additional-investigation]")?.focus();
+    return row;
+  };
+  const hideSuggestionMenu = (menu) => {
+    if (menu) {
+      menu.hidden = true;
+      menu.innerHTML = "";
+    }
+  };
+  const showTextSuggestions = (filter = "") => {
+    if (!textSuggestionMenu) return;
+    const query = String(filter).trim().toLocaleLowerCase();
+    const matches = suggestionState.text.filter((suggestion) => !query || suggestion.toLocaleLowerCase().includes(query)).slice(0, 8);
+    if (!matches.length) return hideSuggestionMenu(textSuggestionMenu);
+    textSuggestionMenu.innerHTML = `<div class="report-addition-suggestion-heading">Previously used text</div>${matches.map((suggestion, index) => `<button type="button" class="report-addition-suggestion" data-additional-template="text" data-template-index="${suggestionState.text.indexOf(suggestion)}">${escapeResultFieldHtml(suggestion)}</button>`).join("")}`;
+    textSuggestionMenu.hidden = false;
+  };
+  const showRowSuggestions = (filter = "", row = null) => {
+    if (!rowSuggestionMenu) return;
+    if (row) suggestionState.activeRow = row;
+    const query = String(filter).trim().toLocaleLowerCase();
+    const matches = suggestionState.rows.filter((suggestion) => {
+      const searchable = `${suggestion.investigation} ${suggestion.result} ${suggestion.referenceValue} ${suggestion.unit}`.toLocaleLowerCase();
+      return !query || searchable.includes(query);
+    }).slice(0, 8);
+    if (!matches.length) return hideSuggestionMenu(rowSuggestionMenu);
+    rowSuggestionMenu.innerHTML = `<div class="report-addition-suggestion-heading">Previously used test additions</div>${matches.map((suggestion) => {
+      const index = suggestionState.rows.indexOf(suggestion);
+      const detail = [suggestion.result, suggestion.referenceValue, suggestion.unit].filter(Boolean).join(" · ");
+      return `<button type="button" class="report-addition-suggestion" data-additional-template="row" data-template-index="${index}"><strong>${escapeResultFieldHtml(suggestion.investigation || "Untitled investigation")}</strong>${detail ? `<span>${escapeResultFieldHtml(detail)}</span>` : ""}</button>`;
+    }).join("")}`;
+    rowSuggestionMenu.hidden = false;
+  };
+  const applyRowSuggestion = (row) => {
+    const target = suggestionState.activeRow?.isConnected ? suggestionState.activeRow : addAdditionalTestRow(false);
+    if (!target) return;
+    target.querySelector("[data-additional-investigation]").value = row.investigation || "";
+    target.querySelector("[data-additional-result]").value = row.result || "";
+    target.querySelector("[data-additional-reference-value]").value = row.referenceValue || "";
+    target.querySelector("[data-additional-unit]").value = row.unit || "";
+    target.querySelector("[data-additional-investigation]")?.focus();
+  };
   const setMode = (mode, focus = false) => {
     holder.querySelectorAll("[data-additional-mode-panel]").forEach((panel) => {
       panel.hidden = panel.dataset.additionalModePanel !== mode;
@@ -1084,6 +1214,10 @@ function attachResultAdditionalText(form) {
       modeButton.classList.toggle("is-selected", selected);
       modeButton.setAttribute("aria-pressed", String(selected));
     });
+    // Start a new Test addition with one editable row. If all rows were
+    // removed, leave the table empty until the technician chooses this mode
+    // again or clicks Add row.
+    if (mode === "test" && !holder.querySelector("[data-additional-test-rows]")?.children.length) addAdditionalTestRow(focus);
     if (focus) holder.querySelector(mode === "test" ? "[data-additional-investigation]" : "[data-additional-report-text]")?.focus();
   };
   button.addEventListener("click", () => {
@@ -1098,19 +1232,53 @@ function attachResultAdditionalText(form) {
     modeButton.addEventListener("click", () => setMode(modeButton.dataset.additionalMode, true));
   });
   holder.querySelector("[data-additional-test-row-add]")?.addEventListener("click", () => {
-    const rows = holder.querySelector("[data-additional-test-rows]");
-    if (!rows) return;
-    rows.insertAdjacentHTML("beforeend", renderAdditionalResultRow());
-    rows.lastElementChild?.querySelector("[data-additional-investigation]")?.focus();
+    addAdditionalTestRow(true);
+  });
+  textInput?.addEventListener("focus", () => showTextSuggestions(textInput.value));
+  textInput?.addEventListener("input", () => showTextSuggestions(textInput.value));
+  holder.addEventListener("focusin", (event) => {
+    const input = event.target.closest("[data-additional-investigation]");
+    if (input) showRowSuggestions(input.value, input.closest("[data-additional-test-row]"));
+  });
+  holder.addEventListener("input", (event) => {
+    const input = event.target.closest("[data-additional-investigation]");
+    if (input) showRowSuggestions(input.value, input.closest("[data-additional-test-row]"));
   });
   holder.addEventListener("click", (event) => {
+    const template = event.target.closest("[data-additional-template]");
+    if (template) {
+      event.preventDefault();
+      const index = Number(template.dataset.templateIndex);
+      if (template.dataset.additionalTemplate === "text" && suggestionState.text[index] !== undefined && textInput) {
+        textInput.value = suggestionState.text[index];
+        textInput.focus();
+        hideSuggestionMenu(textSuggestionMenu);
+      }
+      if (template.dataset.additionalTemplate === "row" && suggestionState.rows[index]) {
+        applyRowSuggestion(suggestionState.rows[index]);
+        hideSuggestionMenu(rowSuggestionMenu);
+      }
+      return;
+    }
     const removeButton = event.target.closest("[data-remove-additional-test-row]");
     if (!removeButton) return;
+    event.preventDefault();
+    event.stopPropagation();
     const row = removeButton.closest("[data-additional-test-row]");
-    const rows = holder.querySelector("[data-additional-test-rows]");
     row?.remove();
-    if (rows && !rows.children.length) rows.insertAdjacentHTML("beforeend", renderAdditionalResultRow());
   });
+
+  const testId = Number(form.dataset.testId);
+  if (Number.isInteger(testId) && testId > 0 && typeof API?.request === "function") {
+    API.request(`/api/visits/test-addition-suggestions/${testId}`).then((data) => {
+      suggestionState.text = Array.isArray(data?.textSuggestions) ? data.textSuggestions.filter((value) => typeof value === "string" && value.trim()) : [];
+      suggestionState.rows = normalizeAdditionalResultRows(data?.rowSuggestions || []);
+      if (document.activeElement === textInput) showTextSuggestions(textInput.value);
+    }).catch(() => {
+      // Suggestions are a convenience only; report entry must remain usable if
+      // an older server has not yet received this update.
+    });
+  }
 }
 
 async function savePendingResultAdditionalText(container, saveForm) {
@@ -1144,7 +1312,8 @@ function renderResultParameterField(parameter, savedResults = []) {
       ? "0.1 mL of 1 TU PPD"
       : "");
   const entryMode = parameter.entry_mode === "calculated" ? "calculated" : "manual";
-  const attributes = `data-parameter-row data-parameter-name="${escapeResultFieldHtml(parameterName)}" data-unit="${escapeResultFieldHtml(parameter.unit || "")}" data-range="${escapeResultFieldHtml(parameter.normal_range || "")}" data-entry-mode="${entryMode}" data-calculation-formula="${escapeResultFieldHtml(parameter.calculation_formula || "")}" data-calculation-precision="${escapeResultFieldHtml(parameter.calculation_precision ?? 2)}"`;
+  const manualOverride = entryMode === "calculated" && savedResult?.entry_mode === "manual";
+  const attributes = `data-parameter-row data-parameter-name="${escapeResultFieldHtml(parameterName)}" data-unit="${escapeResultFieldHtml(parameter.unit || "")}" data-range="${escapeResultFieldHtml(parameter.normal_range || "")}" data-entry-mode="${entryMode}" data-manual-override="${manualOverride ? "true" : "false"}" data-calculation-formula="${escapeResultFieldHtml(parameter.calculation_formula || "")}" data-calculation-precision="${escapeResultFieldHtml(parameter.calculation_precision ?? 2)}"`;
   const headerStyle = "grid-column: 1 / -1; background: #f8fafc; padding: 10px; border-radius: 4px; font-weight: bold; margin-top: 10px; border-bottom: 2px solid #ddd;";
   const isLongText = parameterName.toLowerCase().includes("peripheral smear")
     || [
@@ -1188,23 +1357,36 @@ function attachParameterCalculations(container) {
     if (!input) return;
 
     inputs.set(normalizeCalculationParameterName(row.dataset.parameterName), input);
-    input.addEventListener("input", calculate);
+    input.addEventListener("input", () => {
+      if (row.dataset.entryMode === "calculated") {
+        row.dataset.manualOverride = "true";
+        input.classList.add("manual-calculation-override");
+        input.title = "Manual override of the calculated value";
+        const note = row.querySelector(".auto-calculated-note");
+        if (note) note.textContent = "Manual override";
+      }
+      calculate();
+    });
   });
 
   calculatedRows.forEach((row) => {
     const input = row.querySelector("input, textarea");
     if (!input) return;
 
-    input.readOnly = true;
     input.classList.add("auto-calculated-input");
-    input.placeholder = "Calculated automatically";
-    input.title = "Calculated automatically from the source values for this test";
+    if (row.dataset.manualOverride === "true") {
+      input.classList.add("manual-calculation-override");
+      input.title = "Manual override of the calculated value";
+    } else {
+      input.placeholder = "Calculated automatically";
+      input.title = "Calculated automatically from the source values; type to override";
+    }
 
     const labelText = row.querySelector("span");
     if (labelText && !labelText.querySelector(".auto-calculated-note")) {
       const note = document.createElement("small");
       note.className = "auto-calculated-note";
-      note.textContent = "Auto-calculated";
+      note.textContent = row.dataset.manualOverride === "true" ? "Manual override" : "Auto-calculated — editable";
       labelText.append(note);
     }
   });
@@ -1260,6 +1442,7 @@ function attachParameterCalculations(container) {
       calculatedRows.forEach((row) => {
         const input = row.querySelector("input, textarea");
         if (!input) return;
+        if (row.dataset.manualOverride === "true") return;
 
         const value = calculateFormula(row.dataset.calculationFormula);
         if (value === null) {

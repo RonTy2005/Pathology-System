@@ -62,6 +62,7 @@ let clientHealthCheckInProgress = false;
 let clientHealthCheckFailures = 0;
 let connectedServerUrl = null;
 let mandatoryUpdateController;
+let lastDesktopRepaintAt = 0;
 let connectionStatus = {
   phase: "starting",
   message: appMode === "server" ? "Preparing laboratory data…" : "Connecting to your laboratory…",
@@ -452,6 +453,16 @@ ipcMain.handle("lab-lms:save-report-pdf", (event, payload) => {
     throw new Error("PDF requests are only accepted from the LabShield window.");
   }
   return saveReportPdf(event, payload);
+});
+ipcMain.on("lab-lms:request-repaint", (event) => {
+  // Older Windows display drivers can occasionally leave stale tiles after a
+  // long scroll.  Let the renderer request a full repaint, but throttle it so
+  // normal scrolling never turns into a stream of IPC calls.
+  if (!mainWindow || event.sender.id !== mainWindow.webContents.id) return;
+  const now = Date.now();
+  if (now - lastDesktopRepaintAt < 350) return;
+  lastDesktopRepaintAt = now;
+  event.sender.invalidate?.();
 });
 
 if (hasSingleInstanceLock) app.whenReady().then(async () => {

@@ -74,6 +74,18 @@ test('desktop CSS avoids paint containment for the installed app', () => {
   const css = fs.readFileSync(path.resolve(__dirname, '../frontend/styles/app.css'), 'utf8');
   assert.match(css, /\.labshield-desktop \.panel,[\s\S]*?backdrop-filter: none;[\s\S]*?contain: none;/);
   assert.match(css, /\.labshield-desktop \.autocomplete \.result-btn,[\s\S]*?contain: none;/);
+  assert.match(css, /html\.labshield-desktop body,[\s\S]*?background: #f6f8fb;/);
+});
+
+test('the desktop shell requests a throttled native repaint after a long scroll', () => {
+  const preload = fs.readFileSync(path.resolve(__dirname, '../desktop/preload.js'), 'utf8');
+  const main = fs.readFileSync(path.resolve(__dirname, '../desktop/main.js'), 'utf8');
+  const common = fs.readFileSync(path.resolve(__dirname, '../frontend/scripts/common.js'), 'utf8');
+  assert.match(preload, /requestRepaint: \(\) => ipcRenderer\.send\("lab-lms:request-repaint"\)/);
+  assert.match(main, /ipcMain\.on\("lab-lms:request-repaint"[\s\S]*?event\.sender\.invalidate\?\.\(\)/);
+  assert.match(main, /now - lastDesktopRepaintAt < 350/);
+  assert.match(common, /function enableDesktopScrollRepaintRecovery\(\)/);
+  assert.match(common, /window\.addEventListener\("scroll", queueRepaint, \{ passive: true \}\)/);
 });
 
 test('Windows validates the actual scheduled task definition without registering or launching anything', {skip:process.platform!=='win32'}, () => {

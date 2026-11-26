@@ -11,7 +11,7 @@ const { COMBINATIONS, getCombinationDefinition, repairKnownCombinationSchemas } 
 const { CELL_REPORT_DEFINITIONS, getCellReportDefinition, getCellReportParameters, getCellReportPreviewValue, repairCellReportSchemas } = require('../src/services/cellReportService');
 const { getFallbackReportParameters } = require('../src/services/reportSchemaService');
 const { applyCalculatedParameters } = require('../src/utils/resultCalculations');
-const { ensureAntiInsulinAntibodyTestConfiguration, ensureAntiLeptospiraAntibodyTestConfiguration, ensureAntiMicrosomalAntibodyTestConfiguration, ensureAntiDsDnaAntibodyTestConfiguration, ensureAntiSsDnaAntibodyTestConfiguration, ensureAntiHistoneAntibodyTestConfiguration, ensureAntiRibosomalPAntibodyTestConfiguration, ensureAntiCcpAbTestConfiguration, ensureAntiSpermAntibodyTestConfiguration, ensureApolipoproteinA1TestConfiguration, ensureUrineArsenicTestConfiguration, ensureArthritisProfileTestConfiguration, ensureAsciticFluidGramStainTestConfiguration, ensureAsciticFluidTotalProteinTestConfiguration, ensureBodyFluidBiochemistryTestConfiguration, ensureBodyFluidSpecificGravityTestConfiguration, ensureCsfFluidChlorideTestConfiguration, ensureCsfFluidProteinTestConfiguration, ensureCsfFluidAfbStainTestConfiguration, ensureCsfFluidGramStainTestConfiguration, ensureComplementC3TestConfiguration, ensureComplementC4TestConfiguration, ensureCancaAntiPr3TestConfiguration, ensureBronchialWashingCultureSensitivityTestConfiguration, ensureBactecAerobicCultureTestConfiguration, ensureBactecAnaerobicCultureTestConfiguration, ensureBronchialPapCytologyTestConfigurations, ensureCryoglobulinsScreeningTestConfiguration } = require('../src/db/init');
+const { ensureAntiInsulinAntibodyTestConfiguration, ensureAntiLeptospiraAntibodyTestConfiguration, ensureAntiMicrosomalAntibodyTestConfiguration, ensureAntiDsDnaAntibodyTestConfiguration, ensureAntiSsDnaAntibodyTestConfiguration, ensureAntiHistoneAntibodyTestConfiguration, ensureAntiRibosomalPAntibodyTestConfiguration, ensureAntiCcpAbTestConfiguration, ensureAntiSpermAntibodyTestConfiguration, ensureApolipoproteinA1TestConfiguration, ensureUrineArsenicTestConfiguration, ensureArthritisProfileTestConfiguration, ensureAsciticFluidGramStainTestConfiguration, ensureAsciticFluidTotalProteinTestConfiguration, ensureBodyFluidBiochemistryTestConfiguration, ensureBodyFluidSpecificGravityTestConfiguration, ensureCsfFluidChlorideTestConfiguration, ensureCsfFluidProteinTestConfiguration, ensureCsfFluidAfbStainTestConfiguration, ensureCsfFluidGramStainTestConfiguration, ensureComplementC3TestConfiguration, ensureComplementC4TestConfiguration, ensureCancaAntiPr3TestConfiguration, ensureBronchialWashingCultureSensitivityTestConfiguration, ensureBactecAerobicCultureTestConfiguration, ensureBactecAnaerobicCultureTestConfiguration, ensureBronchialPapCytologyTestConfigurations, ensureCryoglobulinsScreeningTestConfiguration, ensureFastingPostPrandialBloodSugarTestConfiguration, ensureLftTestConfiguration } = require('../src/db/init');
 const { sampleReport } = require('./audit-report-content.cjs');
 const { ensureUrinary17KetosteroidTestConfiguration } = require('../src/db/init');
 const { ensureUrinaryVmaTestConfiguration } = require('../src/db/init');
@@ -36,6 +36,7 @@ const { ensureWellWomenProfileTestConfiguration } = require('../src/db/init');
 const { ensureWoundSwabAfbStainTestConfiguration } = require('../src/db/init');
 const { ensureWoundSwabGramStainTestConfiguration } = require('../src/db/init');
 const { ensure17HydroxyprogesteroneTestConfiguration } = require('../src/db/init');
+const { ensureAfbReportSpecimenEntryConfiguration } = require('../src/db/init');
 const { isBillingOnlyTest } = require('../frontend/scripts/reportEligibility');
 
 function extractMainContentMarkup(html) {
@@ -159,6 +160,21 @@ test('Sputum AFB Stain retains method-specific AFB grading and confirmation cont
   assert.match(html, /Ziehl-Neelsen microscopy/);
   assert.match(html, /A positive smear is not species-specific/);
   assert.match(html, /A negative smear does not exclude tuberculosis/);
+});
+
+test('AFB reports print the manually entered sample type instead of the catalogue default', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'AFB (Z-N Stain)',
+    code: 'AFBZN',
+    sample_type: 'Sputum / Pus',
+    parameters: [
+      { parameter_name: 'Specimen / Sample Type', value: 'Cough specimen' },
+      { parameter_name: 'AFB Smear Result', value: 'No acid-fast bacilli seen' },
+      { parameter_name: 'AFB Smear Grade', value: 'Not graded' },
+    ],
+  }));
+  assert.match(html, /Cough specimen/);
+  assert.doesNotMatch(html, /<td colspan="3">Sputum \/ Pus<\/td>/);
 });
 
 test('Stool OBT presents method-aware occult-blood screening and follow-up context', () => {
@@ -531,6 +547,23 @@ test('LFT with GGT uses the liver-function panel with a dedicated GGT interpreta
   assert.match(html, /data-report-content="lft-with-ggt"/);
   assert.match(html, /GGTP/);
   assert.match(html, /GGT can help support a hepatic source/);
+});
+
+test('standard LFT excludes GGTP while the dedicated LFT with GGT format retains it', () => {
+  const parameters = [
+    { parameter_name: 'AST (SGOT)', value: '31', unit: 'U/L', normal_range: '15 - 40' },
+    { parameter_name: 'GGTP', value: '42', unit: 'U/L', normal_range: '0 - 73' },
+  ];
+  const standard = buildReportHtml(sampleReport({
+    name: 'Liver Function Test (LFT)', code: 'LFT001', sample_type: 'Serum', parameters,
+  }));
+  const withGgt = buildReportHtml(sampleReport({
+    name: 'LFT with GGT', code: 'LFTWITHGGT', sample_type: 'Serum', parameters,
+  }));
+
+  assert.doesNotMatch(standard, /<strong>GGTP<\/strong>/);
+  assert.doesNotMatch(standard, /GGT can help support a hepatic source/);
+  assert.match(withGgt, /<strong>GGTP<\/strong>/);
 });
 
 test('both LFT variants list bilirubin fractions before AST and the remaining analytes', () => {
@@ -3234,6 +3267,33 @@ test('Lipid Profile automatically calculates and prints HDL : VLDL ratio before 
   );
   assert.equal(calculated.find(parameter => parameter.parameter_name === 'HDL : VLDL Ratio').value, '2.50');
 
+  const manuallyCorrected = applyCalculatedParameters(
+    schema.map(parameter => ({
+      parameter_name: parameter.parameterName,
+      unit: parameter.unit,
+      normal_range: parameter.normalRange,
+      entry_mode: parameter.entryMode,
+      calculation_formula: parameter.calculationFormula,
+      calculation_precision: parameter.calculationPrecision,
+    })),
+    [
+      { parameter_name: 'HDL Cholesterol', value: '50' },
+      { parameter_name: 'VLDL Cholesterol', value: '20' },
+      { parameter_name: 'HDL : VLDL Ratio', value: '2.40', manualOverride: true },
+    ],
+  );
+  assert.deepEqual(
+    manuallyCorrected.find(parameter => parameter.parameter_name === 'HDL : VLDL Ratio'),
+    {
+      parameter_name: 'HDL : VLDL Ratio',
+      value: '2.40',
+      unit: 'Ratio',
+      normal_range: 'Calculated: HDL Cholesterol / VLDL Cholesterol',
+      reference_value_customized: false,
+      entry_mode: 'manual',
+    },
+  );
+
   const html = buildReportHtml(sampleReport({
     name: 'Lipid Profile',
     sample_type: 'Serum',
@@ -4793,6 +4853,26 @@ test('Urine RE preserves legacy narratives and custom results without inventing 
   assert.match(manual, /Existing manual body &lt;retained&gt;/);
   assert.doesNotMatch(manual, /data-report-content="urine-routine-examination"/);
   for (const name of ['Urine Protein / Albumin', 'Urine Reducing Substance', 'Urine Culture', 'Stool RE', 'Urine Protein 24 Hours']) assert.doesNotMatch(buildReportHtml(sampleReport({ name, parameters: [] })), /data-report-content="urine-routine-examination"/);
+});
+
+test('Urine RE/CS combines routine examination with culture and sensitivity reporting', () => {
+  const html = buildReportHtml(sampleReport({
+    name: 'Urine RE/CS (Routine Examination, Culture & Sensitivity)',
+    code: 'URINERECS',
+    sample_type: 'Urine',
+    parameters: [
+      { parameter_name: 'Specific Gravity', value: '1.020', normal_range: '1.005 - 1.030' },
+      { parameter_name: 'Culture Result', value: 'Escherichia coli isolated' },
+      { parameter_name: 'Antimicrobial Susceptibility', value: 'Report attached susceptibility panel' },
+    ],
+  }));
+  assert.match(html, /URINE ROUTINE EXAMINATION, CULTURE & SENSITIVITY \(RE\/CS\)/);
+  assert.match(html, /data-report-content="urine-re-culture-sensitivity"/);
+  assert.match(html, />ROUTINE EXAMINATION</);
+  assert.match(html, />CULTURE &amp; SENSITIVITY</);
+  assert.match(html, /Escherichia coli isolated/);
+  assert.match(html, /Report attached susceptibility panel/);
+  assert.doesNotMatch(html, /data-report-content="urine-routine-examination"/);
 });
 
 test('Urine RE schema repair expands only unused placeholders and retains test and parameter IDs', async () => {
@@ -9814,6 +9894,84 @@ async function fixture() {
   }
   return db;
 }
+
+test('FBS and PPBS supplies both entry fields even when an older pending visit used an empty catalogue format', async () => {
+  const db = await fixture();
+  try {
+    await db.run(
+      "INSERT INTO tests (id,name,code,category,sample_type,report_body) VALUES (12000,?,?,?,?,?)",
+      ["FBS & PPBS (Fasting & Postprandial Blood Sugar)", "FBS_PPBS", "Biochemistry", "Plasma", ""],
+    );
+    await db.run("INSERT INTO visit_tests (test_id) VALUES (12000)");
+
+    await ensureFastingPostPrandialBloodSugarTestConfiguration(db);
+    await ensureFastingPostPrandialBloodSugarTestConfiguration(db);
+
+    assert.deepEqual(
+      await db.all("SELECT parameter_name, unit, normal_range, entry_mode FROM test_parameters WHERE test_id = 12000 ORDER BY display_order"),
+      [
+        { parameter_name: "Glucose, Fasting, Plasma", unit: "mg/dL", normal_range: "70.00 - 100.00", entry_mode: "manual" },
+        { parameter_name: "Glucose, Post Prandial, 2 Hours, Plasma", unit: "mg/dL", normal_range: "100.00 - 140.00", entry_mode: "manual" },
+      ],
+    );
+  } finally {
+    await db.close();
+  }
+});
+
+test('standard LFT removes GGTP from its editable schema while LFT with GGT retains it', async () => {
+  const db = await fixture();
+  try {
+    await db.run("INSERT INTO tests (id,name,code,category,sample_type) VALUES (12010,?,?,?,?)", ["Liver Function Test (LFT)", "LFT001", "Biochemistry", "Serum"]);
+    await db.run("INSERT INTO tests (id,name,code,category,sample_type) VALUES (12011,?,?,?,?)", ["LFT with GGT", "LFTWITHGGT", "Biochemistry", "Serum"]);
+    await db.run("INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (12010,'GGTP','U/L','0 - 73','manual',1)");
+
+    await ensureLftTestConfiguration(db);
+    await ensureLftTestConfiguration(db);
+
+    assert.equal(
+      (await db.get("SELECT COUNT(*) AS count FROM test_parameters WHERE test_id = 12010 AND LOWER(parameter_name) IN ('ggtp', 'ggt')")).count,
+      0,
+    );
+    assert.equal(
+      (await db.get("SELECT COUNT(*) AS count FROM test_parameters WHERE test_id = 12011 AND parameter_name = 'GGTP'")).count,
+      1,
+    );
+  } finally {
+    await db.close();
+  }
+});
+
+test('all AFB catalogue formats receive one manual specimen entry field without changing non-AFB formats', async () => {
+  const db = await fixture();
+  try {
+    await db.run("INSERT INTO tests (id,name,code,category,sample_type) VALUES (12001,'AFB (Z-N Stain)','AFBZN','Microbiology','Sputum / Pus')");
+    await db.run("INSERT INTO tests (id,name,code,category,sample_type) VALUES (12002,'Sputum Culture (Non AFB)','SPUTUMNONAFB','Microbiology','Sputum')");
+    await db.run("INSERT INTO tests (id,name,code,category,sample_type) VALUES (12003,'Sputum Examination, AFB','SPUTUMAFB','Microbiology','Sputum')");
+    await db.run("INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (12001,'AFB Smear Result','','','manual',1)");
+    await db.run("INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (12002,'Culture Result','','','manual',1)");
+    await db.run("INSERT INTO test_parameters (test_id,parameter_name,unit,normal_range,entry_mode,display_order) VALUES (12003,'Type of Specimen','','','manual',1)");
+
+    await ensureAfbReportSpecimenEntryConfiguration(db);
+    await ensureAfbReportSpecimenEntryConfiguration(db);
+
+    const afbParameters = await db.all('SELECT parameter_name,entry_mode,display_order FROM test_parameters WHERE test_id=12001 ORDER BY display_order');
+    assert.deepEqual(afbParameters, [
+      { parameter_name: 'Specimen / Sample Type', entry_mode: 'manual', display_order: 1 },
+      { parameter_name: 'AFB Smear Result', entry_mode: 'manual', display_order: 2 },
+    ]);
+    assert.deepEqual(
+      (await db.all('SELECT parameter_name FROM test_parameters WHERE test_id=12002 ORDER BY display_order')).map(parameter => parameter.parameter_name),
+      ['Culture Result'],
+    );
+    assert.deepEqual(
+      (await db.all('SELECT parameter_name FROM test_parameters WHERE test_id=12003 ORDER BY display_order')).map(parameter => parameter.parameter_name),
+      ['Type of Specimen'],
+    );
+  } finally {
+    await db.close();
+  }
+});
 
 test('bronchial PAP cytology upgrades only unused blank placeholders and preserves neighbouring tests', async () => {
   const db = await fixture();

@@ -129,14 +129,21 @@
                 <div class="section-title">
                   <div>
                     <h3>Public report portal</h3>
-                    <span>Use your business website subdomain for patient QR links and online reports.</span>
+                    <span>Choose how this facility's patient QR links will be addressed.</span>
                   </div>
                 </div>
+                <fieldset class="field" style="border: 0; padding: 0; margin: 0;">
+                  <legend>Does this diagnostic centre have a public website?</legend>
+                  <div class="actions-row" role="radiogroup" aria-label="Diagnostic website availability">
+                    <label><input type="radio" name="diagnosticWebsiteAvailable" value="yes" checked /> Yes — use this lab's website or tunnel</label>
+                    <label><input type="radio" name="diagnosticWebsiteAvailable" value="no" /> No — plan to use the LabShield cloud portal</label>
+                  </div>
+                </fieldset>
                 <label class="field">
-                  <span>Public portal URL</span>
+                  <span>Current public portal URL</span>
                   <input id="patientPortalBaseUrl" type="url" maxlength="250" autocomplete="url" placeholder="https://reports.yourdomain.com" />
                 </label>
-                <p class="helper">Enter this only after its DNS and secure tunnel are connected to this server. Leave blank to use the automatic local-network address.</p>
+                <p class="helper">For an existing website/tunnel, keep its current URL here. Updating the app does not change this address or invalidate existing QR codes. The LabShield cloud portal choice is saved for the upcoming cloud-sync service and will never replace this URL automatically.</p>
                 <div class="form-grid">
                   <label class="field">
                     <span>Business opening time</span>

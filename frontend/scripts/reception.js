@@ -1169,6 +1169,11 @@ setupTabs("editTestTabGroup", { "edit-inlab": "editInlabTabContent", "edit-outsi
 doctorSearch.addEventListener("input", (event) => searchDoctors(event.target.value));
 testSearch.addEventListener("input", (event) => searchTests(event.target.value));
 editTestSearch.addEventListener("input", (event) => searchEditTests(event.target.value));
+bindAutocompleteKeyboardNavigation(doctorSearch, doctorResults);
+bindAutocompleteKeyboardNavigation(testSearch, testResults);
+bindAutocompleteKeyboardNavigation(editTestSearch, editTestResults);
+bindAutocompleteKeyboardNavigation(editDoctorSearch, editDoctorResults);
+bindAutocompleteKeyboardNavigation(patientNameInput, patientNameResults);
 document.getElementById("discount").addEventListener("input", updateTotals);
 document.getElementById("amountPaid").addEventListener("input", updateTotals);
 patientNameInput.addEventListener("input", (event) => {
@@ -1181,6 +1186,10 @@ patientNameInput.addEventListener("input", (event) => {
 });
 
 patientNameInput.addEventListener("keydown", (event) => {
+  // A highlighted matching patient takes priority: Enter selects that patient
+  // through the autocomplete handler above. Without an active suggestion,
+  // retain the existing fast Enter-to-next-field workflow.
+  if (event.defaultPrevented) return;
   if (event.key !== "Enter") return;
   event.preventDefault();
   dismissNewPatientBillingHistory();
@@ -2293,7 +2302,7 @@ async function loadResultsVisit(visitId) {
   resultsVisitDetails.innerHTML = pathologyTests
     .map(
       (test) => `
-        <form class="result-card" data-result-form data-visit-id="${visitId}" data-visit-test-id="${test.id}">
+        <form class="result-card" data-result-form data-visit-id="${visitId}" data-visit-test-id="${test.id}" data-test-id="${Number(test.test_id) || ""}">
           <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div>
               <strong>${test.name}</strong><br />
@@ -2356,6 +2365,7 @@ async function saveResultsForm(form) {
         value: input ? input.value : "",
         unit: row.dataset.unit,
         normal_range: row.dataset.range,
+        manualOverride: row.dataset.manualOverride === "true",
       };
     }),
   };

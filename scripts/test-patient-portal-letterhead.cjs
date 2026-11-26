@@ -71,3 +71,14 @@ test("new patient registrations receive a secure portal token before their bill 
   assert.match(routeSource, /const \{ createPatientPortalToken \} = require\("\.\.\/utils\/patientPortal"\);/);
   assert.match(routeSource, /created_at, patient_portal_token\s*\)\s*VALUES[\s\S]*?createPatientPortalToken\(\)/);
 });
+
+test("portal address choice is Super Admin-only and preserves existing tunnel URLs by default", () => {
+  const settingsRoute = fs.readFileSync(path.join(__dirname, "../src/routes/settingsRoutes.js"), "utf8");
+  const settingsService = fs.readFileSync(path.join(__dirname, "../src/services/businessSettingsService.js"), "utf8");
+  const adminPage = fs.readFileSync(path.join(__dirname, "../frontend/admin.html"), "utf8");
+
+  assert.match(settingsRoute, /updateDiagnosticWebsiteAvailable/);
+  assert.match(settingsService, /diagnosticWebsiteAvailable: Number\(settings\?\.diagnostic_website_available\) !== 0/);
+  assert.match(adminPage, /Does this diagnostic centre have a public website\?/);
+  assert.match(adminPage, /Updating the app does not change this address or invalidate existing QR codes\./);
+});

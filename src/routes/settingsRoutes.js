@@ -208,6 +208,7 @@ settingsRouter.patch("/business", authRequired, allowRoles(ROLES.SUPERADMIN), as
       ? validateBusinessLogoImage(req.body.businessLogoDataUrl)
       : undefined;
     const updatePatientPortalBaseUrl = Object.prototype.hasOwnProperty.call(req.body, "patientPortalBaseUrl");
+    const updateDiagnosticWebsiteAvailable = Object.prototype.hasOwnProperty.call(req.body, "diagnosticWebsiteAvailable");
     const updateBusinessHours = Object.prototype.hasOwnProperty.call(req.body, "businessOpeningTime")
       || Object.prototype.hasOwnProperty.call(req.body, "businessClosingTime");
     const updateReportLayout = Object.prototype.hasOwnProperty.call(req.body, "reportHeaderSpaceMm")
@@ -236,6 +237,9 @@ settingsRouter.patch("/business", authRequired, allowRoles(ROLES.SUPERADMIN), as
     const patientPortalBaseUrl = updatePatientPortalBaseUrl
       ? normalizePatientPortalBaseUrl(req.body.patientPortalBaseUrl)
       : previous.patientPortalBaseUrl;
+    const diagnosticWebsiteAvailable = updateDiagnosticWebsiteAvailable
+      ? req.body.diagnosticWebsiteAvailable
+      : previous.diagnosticWebsiteAvailable;
     const businessOpeningTime = updateBusinessHours
       ? normalizeBusinessTime(req.body.businessOpeningTime)
       : previous.businessOpeningTime;
@@ -260,6 +264,10 @@ settingsRouter.patch("/business", authRequired, allowRoles(ROLES.SUPERADMIN), as
 
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return res.status(400).json({ message: "Enter a valid email address or leave it blank." });
+    }
+
+    if (updateDiagnosticWebsiteAvailable && typeof diagnosticWebsiteAvailable !== "boolean") {
+      return res.status(400).json({ message: "Choose whether this diagnostic centre has a public website." });
     }
 
     if (updateBusinessHours && (businessOpeningTime === null || businessClosingTime === null)) {
@@ -310,6 +318,8 @@ settingsRouter.patch("/business", authRequired, allowRoles(ROLES.SUPERADMIN), as
       updateFacilityProfile,
       patientPortalBaseUrl,
       updatePatientPortalBaseUrl,
+      diagnosticWebsiteAvailable,
+      updateDiagnosticWebsiteAvailable,
       businessOpeningTime,
       businessClosingTime,
       updateBusinessHours,
@@ -334,7 +344,7 @@ settingsRouter.patch("/business", authRequired, allowRoles(ROLES.SUPERADMIN), as
 
     await logAction({
       userId: req.user.id,
-      action: completeSetup ? "business_setup_completed" : updateLetterhead || updateDefaultReportIncludesLetterhead || updateBusinessLogo || updatePatientPortalBaseUrl || updateBusinessHours || updateReportLayout || updateFacilityProfile || updateReportDoctorDetails || updateReportDoctorSignature ? "business_settings_updated" : "business_name_updated",
+      action: completeSetup ? "business_setup_completed" : updateLetterhead || updateDefaultReportIncludesLetterhead || updateBusinessLogo || updatePatientPortalBaseUrl || updateDiagnosticWebsiteAvailable || updateBusinessHours || updateReportLayout || updateFacilityProfile || updateReportDoctorDetails || updateReportDoctorSignature ? "business_settings_updated" : "business_name_updated",
       entityType: "business_settings",
       entityId: "1",
       meta: {
@@ -343,6 +353,8 @@ settingsRouter.patch("/business", authRequired, allowRoles(ROLES.SUPERADMIN), as
         facilityType: settings.facilityType,
         patientPortalBaseUrl: settings.patientPortalBaseUrl,
         patientPortalBaseUrlChanged: updatePatientPortalBaseUrl,
+        diagnosticWebsiteAvailable: settings.diagnosticWebsiteAvailable,
+        diagnosticWebsiteAvailabilityChanged: updateDiagnosticWebsiteAvailable,
         businessOpeningTime: settings.businessOpeningTime,
         businessClosingTime: settings.businessClosingTime,
         businessHoursChanged: updateBusinessHours,

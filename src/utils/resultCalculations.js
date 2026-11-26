@@ -60,6 +60,10 @@ function normalizeSubmittedParameter(parameter = {}) {
     value: String(parameter.value ?? "").trim(),
     unit: String(parameter.unit || "").trim(),
     normalRange: String(parameter.normal_range || "").trim(),
+    manualOverride: parameter.manualOverride === true
+      || parameter.manual_override === true
+      || parameter.manualOverride === 1
+      || parameter.manual_override === 1,
   };
 }
 
@@ -87,14 +91,17 @@ function applyCalculatedParameters(catalogParameters = [], submittedParameters =
     const parameterName = String(parameter.parameter_name || "").trim();
     const submitted = submittedByName.get(normalizeParameterName(parameterName));
     const entryMode = parameter.entry_mode === "calculated" ? "calculated" : "manual";
+    // A technician can deliberately correct a calculated value.  Store that
+    // correction as manual so future saves and report rendering preserve it.
+    const manualOverride = entryMode === "calculated" && submitted?.manualOverride === true;
     return {
       parameter_name: parameterName,
-      value: entryMode === "manual" ? (submitted?.value || "") : "",
+      value: entryMode === "manual" || manualOverride ? (submitted?.value || "") : "",
       unit: String(parameter.unit || submitted?.unit || "").trim(),
       normal_range: String(parameter.normal_range || submitted?.normalRange || "").trim(),
       reference_value_customized: parameter.reference_value_customized === 1 || parameter.reference_value_customized === true,
-      entry_mode: entryMode,
-      calculation_formula: entryMode === "calculated" ? String(parameter.calculation_formula || "").trim() : "",
+      entry_mode: manualOverride ? "manual" : entryMode,
+      calculation_formula: entryMode === "calculated" && !manualOverride ? String(parameter.calculation_formula || "").trim() : "",
       calculation_precision: clampPrecision(parameter.calculation_precision),
     };
   });
